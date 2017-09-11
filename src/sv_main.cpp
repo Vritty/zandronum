@@ -1704,34 +1704,6 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 					Printf ( "Master server message with wrong verification string received. Ignoring\n" );
 			}
 			return;
-
-		// [BB] 200 was CLCC_ATTEMPTCONNECTION in 97d-beta4.3 and earlier versions.
-		case 200: 
-			Printf( "Challenge (%d) from (%s). Likely an old client (97d-beta4.3 or older) trying to connect. Informing the client and ignoring IP for 10 seconds.\n", static_cast<int> (lCommand), NETWORK_GetFromAddress().ToString() );
-			// [BB] Block all further challenges of this IP for ten seconds to prevent log flooding.
-			g_floodProtectionIPQueue.addAddress ( NETWORK_GetFromAddress( ), g_lGameTime / 1000 );
-			// [BB] Try to tell the client in a 97d-beta4.3 compatible way, that his version is too old.
-			{
-				NETBUFFER_s	TempBuffer;
-
-				TempBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-				TempBuffer.Clear();
-
-				// Make sure the packet has a packet header. The client is expecting this!
-				NETWORK_WriteHeader( &TempBuffer.ByteStream, 0 /* = SVC_HEADER in 97d-beta4.3 */ );
-				NETWORK_WriteLong( &TempBuffer.ByteStream, 0 );
-
-				NETWORK_WriteByte( &TempBuffer.ByteStream, 254 /* = NETWORK_ERROR in 97d-beta4.3 */ );
-				NETWORK_WriteByte( &TempBuffer.ByteStream, 1 /* = NETWORK_ERRORCODE_WRONGVERSION in 97d-beta4.3 */ );
-				FString versionStringMessage;
-				versionStringMessage.Format ( "%s\nYou are way out of the loop :)", DOTVERSIONSTR );
-				NETWORK_WriteString( &TempBuffer.ByteStream, versionStringMessage.GetChars() );
-
-				NETWORK_LaunchPacket( &TempBuffer, NETWORK_GetFromAddress( ) );
-				TempBuffer.Free();
-			}
-
-			return;
 		default:
 
 			Printf( "Unknown challenge (%d) from %s. Ignoring IP for 10 seconds.\n", static_cast<int> (lCommand), NETWORK_GetFromAddress().ToString() );
