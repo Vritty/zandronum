@@ -1097,7 +1097,6 @@ void SERVER_GetPackets( void )
 
 //*****************************************************************************
 //
-EXTERN_CVAR( Bool, sv_logfiletimestamp )
 void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 {
 	// [BB] Ignore any chat messages with invalid chat mode. This is crucial because
@@ -1130,12 +1129,8 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 
 	// [BB] This is to make the lines readily identifiable, necessary
 	// for MiX-MaN's IRC server control tool for example.
-	bool sv_logfiletimestampOldValue = sv_logfiletimestamp;
 	if( sv_markchatlines )
-	{
 		Printf( "CHAT " );
-		sv_logfiletimestamp = false;
-	}
 	// Print this message in the server's local window.
 	if ( strnicmp( "/me", pszString, 3 ) == 0 )
 	{
@@ -1152,8 +1147,6 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 		else
 			Printf( "%s: %s\n", players[ulPlayer].userinfo.GetName(), pszString );
 	}
-	if( sv_markchatlines && sv_logfiletimestampOldValue )
-		sv_logfiletimestamp = true;
 }
 
 //*****************************************************************************
