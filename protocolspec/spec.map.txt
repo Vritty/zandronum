@@ -54,12 +54,6 @@ Command SetMapSky
 	String sky2
 EndCommand
 
-Command SetMapSkyScrollSpeed
-	ExtendedCommand
-	Bool isSky1
-	Float value
-EndCommand
-
 Command SecretFound
 	ExtendedCommand
 	Actor actor
@@ -76,15 +70,4 @@ Command DoScroller
 	Fixed x
 	Fixed y
 	Long affectee
-	Bool accel
-	Bool hasControl
-	Bool hasPos
-
-	If (hasControl)
-		Sector sector
-	EndIf
-
-	If (hasPos)
-		Byte pos
-	EndIf	
 EndCommand

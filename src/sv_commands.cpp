@@ -88,17 +88,6 @@ CVAR (Bool, sv_showwarnings, false, CVAR_GLOBALCONFIG|CVAR_ARCHIVE)
 EXTERN_CVAR( Float, sv_aircontrol )
 
 //*****************************************************************************
-class AdminClientIterator : public ClientIterator
-{
-protected:
-	bool isCurrentValid() const
-	{
-		return ClientIterator::isCurrentValid() && SERVER_GetClient( **this )->bRCONAccess;
-	}
-};
-
-
-//*****************************************************************************
 //	FUNCTIONS
 
 // [BB] Check if the actor has a valid net ID. Returns true if it does, returns false and prints a warning if not.
@@ -923,19 +912,6 @@ void SERVERCOMMANDS_MoveLocalPlayer( ULONG ulPlayer )
 	command.SetVelx( players[ulPlayer].mo->velx );
 	command.SetVely( players[ulPlayer].mo->vely );
 	command.SetVelz( players[ulPlayer].mo->velz );
-	command.sendCommandToClients( ulPlayer, SVCF_ONLYTHISCLIENT );
-}
-
-//*****************************************************************************
-//
-void SERVERCOMMANDS_SetLocalPlayerJumpTics( ULONG ulPlayer )
-{
-	if ( SERVER_IsValidClient( ulPlayer ) == false )
-		return;
-
-	ServerCommands::SetLocalPlayerJumpTics command;
-	command.SetClientTicOnServerEnd( SERVER_GetClient( ulPlayer )->ulClientGameTic );
-	command.SetJumpTics( players[ulPlayer].jumpTics );
 	command.sendCommandToClients( ulPlayer, SVCF_ONLYTHISCLIENT );
 }
 
@@ -3389,16 +3365,6 @@ void SERVERCOMMANDS_SetMapSky( ULONG ulPlayerExtra, ServerCommandFlags flags )
 }
 
 //*****************************************************************************
-//
-void SERVERCOMMANDS_SetMapSkyScrollSpeed( bool isSky1, ULONG ulPlayerExtra, ServerCommandFlags flags )
-{
-	ServerCommands::SetMapSkyScrollSpeed command;
-	command.SetIsSky1( isSky1 );
-	command.SetValue( isSky1 ? level.skyspeed1 : level.skyspeed2 );
-	command.sendCommandToClients ( ulPlayerExtra, flags );
-}
-
-//*****************************************************************************
 //*****************************************************************************
 //
 void SERVERCOMMANDS_GiveInventory( ULONG ulPlayer, AInventory *pInventory, ULONG ulPlayerExtra, ServerCommandFlags flags )
@@ -4348,18 +4314,13 @@ void SERVERCOMMANDS_RemoveFromJoinQueue( unsigned int index, ULONG ulPlayerExtra
 
 //*****************************************************************************
 //
-void SERVERCOMMANDS_DoScroller( LONG lType, LONG lXSpeed, LONG lYSpeed, LONG lAffectee, bool bAccel, LONG lControl, LONG lPos, ULONG ulPlayerExtra, ServerCommandFlags flags )
+void SERVERCOMMANDS_DoScroller( LONG lType, LONG lXSpeed, LONG lYSpeed, LONG lAffectee, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	ServerCommands::DoScroller command;
 	command.SetType( lType );
 	command.SetX( lXSpeed );
 	command.SetY( lYSpeed );
 	command.SetAffectee( lAffectee );
-	command.SetAccel( bAccel );
-	command.SetHasControl( lControl != -1 );
-	command.SetHasPos( lPos != DScroller::EScrollPos::scw_all );
-	command.SetSector( lControl == -1 ? nullptr : &sectors[lControl] );
-	command.SetPos( lPos );
 	command.sendCommandToClients ( ulPlayerExtra, flags );
 }
 
@@ -4582,14 +4543,6 @@ void SERVERCOMMANDS_SetCVar( const FBaseCVar &CVar, ULONG ulPlayerExtra, ServerC
 
 //*****************************************************************************
 //
-void SERVERCOMMANDS_SyncCVarToAdmins( const FBaseCVar &CVar )
-{
-	for ( AdminClientIterator it; it.notAtEnd(); ++it )
-		SERVERCOMMANDS_SetCVar( CVar, *it, SVCF_ONLYTHISCLIENT );
-}
-
-//*****************************************************************************
-//
 void SERVERCOMMANDS_SetDefaultSkybox( ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	NetCommand command( SVC2_SETDEFAULTSKYBOX );
@@ -4654,18 +4607,6 @@ void SERVERCOMMANDS_ShootDecal ( const FDecalTemplate* tpl, AActor* actor, fixed
 	command.addLong( tracedist );
 	command.addByte( permanent );
 	command.sendCommandToClients ( ulPlayerExtra, flags );
-}
-
-//*****************************************************************************
-// [TP]
-void SERVERCOMMANDS_RCONAccess( int client )
-{
-	if ( SERVER_IsValidClient( client ) == false )
-		return;
-
-	NetCommand command ( SVC2_RCONACCESS );
-	command.addByte ( SERVER_GetClient( client )->bRCONAccess );
-	command.sendCommandToOneClient( client );
 }
 
 //*****************************************************************************
