@@ -72,8 +72,13 @@ Command DoScroller
 	Long affectee
 	Bool accel
 	Bool hasControl
+	Bool hasPos
 
 	If (hasControl)
 		Sector sector
 	EndIf
+
+	If (hasPos)
+		Byte pos
+	EndIf	
 EndCommand

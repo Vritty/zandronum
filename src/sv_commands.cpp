@@ -4314,7 +4314,7 @@ void SERVERCOMMANDS_RemoveFromJoinQueue( unsigned int index, ULONG ulPlayerExtra
 
 //*****************************************************************************
 //
-void SERVERCOMMANDS_DoScroller( LONG lType, LONG lXSpeed, LONG lYSpeed, LONG lAffectee, bool bAccel, LONG lControl, ULONG ulPlayerExtra, ServerCommandFlags flags )
+void SERVERCOMMANDS_DoScroller( LONG lType, LONG lXSpeed, LONG lYSpeed, LONG lAffectee, bool bAccel, LONG lControl, LONG lPos, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	ServerCommands::DoScroller command;
 	command.SetType( lType );
@@ -4323,7 +4323,9 @@ void SERVERCOMMANDS_DoScroller( LONG lType, LONG lXSpeed, LONG lYSpeed, LONG lAf
 	command.SetAffectee( lAffectee );
 	command.SetAccel( bAccel );
 	command.SetHasControl( lControl != -1 );
+	command.SetHasPos( lPos != DScroller::EScrollPos::scw_all );
 	command.SetSector( lControl == -1 ? nullptr : &sectors[lControl] );
+	command.SetPos( lPos );
 	command.sendCommandToClients ( ulPlayerExtra, flags );
 }
 

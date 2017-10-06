@@ -1928,7 +1928,7 @@ void DScroller::UpdateToClient( ULONG ulClient )
 	case sc_ceiling:
 	case sc_carry_ceiling:
 
-		SERVERCOMMANDS_DoScroller( m_Type, m_dx, m_dy, m_Affectee, !!m_Accel, m_Control, ulClient, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_DoScroller( m_Type, m_dx, m_dy, m_Affectee, !!m_Accel, m_Control, m_Parts, ulClient, SVCF_ONLYTHISCLIENT );
 		break;
 	}
 }

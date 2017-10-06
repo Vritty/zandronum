@@ -8604,6 +8604,7 @@ static void client_EarthQuake( BYTESTREAM_s *pByteStream )
 void ServerCommands::DoScroller::Execute()
 {
 	int control = ContainsSector() ? (int)(sector - sectors) : -1;
+	int position = ContainsPos() ? pos : DScroller::scw_all;
 
 	// Check to make sure what we've read in is valid.
 	// [BB] sc_side is allowed, too, but we need to make a different check for it.
@@ -8629,7 +8630,7 @@ void ServerCommands::DoScroller::Execute()
 	}
 
 	// Finally, create the scroller.
-	new DScroller( (DScroller::EScrollType)type, x, y, control, affectee, (int)accel );
+	new DScroller( (DScroller::EScrollType)type, x, y, control, affectee, (int)accel, position );
 }
 
 //*****************************************************************************
