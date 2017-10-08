@@ -88,6 +88,21 @@ CVAR (Bool, sv_showwarnings, false, CVAR_GLOBALCONFIG|CVAR_ARCHIVE)
 EXTERN_CVAR( Float, sv_aircontrol )
 
 //*****************************************************************************
+class AdminClientIterator : public ClientIterator
+{
+public:
+	AdminClientIterator ( ULONG playerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 ) :
+		ClientIterator ( playerExtra, flags ) {}
+
+protected:
+	bool isCurrentValid() const
+	{
+		return ClientIterator::isCurrentValid() && SERVER_GetClient( **this )->bRCONAccess;
+	}
+};
+
+
+//*****************************************************************************
 //	FUNCTIONS
 
 // [BB] Check if the actor has a valid net ID. Returns true if it does, returns false and prints a warning if not.
@@ -4548,6 +4563,14 @@ void SERVERCOMMANDS_SetCVar( const FBaseCVar &CVar, ULONG ulPlayerExtra, ServerC
 
 //*****************************************************************************
 //
+void SERVERCOMMANDS_SyncCVarToAdmins( const FBaseCVar &CVar )
+{
+	for ( AdminClientIterator it; it.notAtEnd(); ++it )
+		SERVERCOMMANDS_SetCVar( CVar, *it, SVCF_ONLYTHISCLIENT );
+}
+
+//*****************************************************************************
+//
 void SERVERCOMMANDS_SetDefaultSkybox( ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	NetCommand command( SVC2_SETDEFAULTSKYBOX );
@@ -4612,6 +4635,18 @@ void SERVERCOMMANDS_ShootDecal ( const FDecalTemplate* tpl, AActor* actor, fixed
 	command.addLong( tracedist );
 	command.addByte( permanent );
 	command.sendCommandToClients ( ulPlayerExtra, flags );
+}
+
+//*****************************************************************************
+// [TP]
+void SERVERCOMMANDS_RCONAccess( int client )
+{
+	if ( SERVER_IsValidClient( client ) == false )
+		return;
+
+	NetCommand command ( SVC2_RCONACCESS );
+	command.addByte ( SERVER_GetClient( client )->bRCONAccess );
+	command.sendCommandToOneClient( client );
 }
 
 //*****************************************************************************

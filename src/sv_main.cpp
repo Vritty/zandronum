@@ -169,6 +169,7 @@ static	bool	server_InventoryUse( BYTESTREAM_s *pByteStream );
 static	bool	server_InventoryDrop( BYTESTREAM_s *pByteStream );
 static	bool	server_Puke( BYTESTREAM_s *pByteStream );
 static	bool	server_MorphCheat( BYTESTREAM_s *pByteStream );
+static	bool	server_CheckForClientCommandFlood( ULONG ulClient );
 static	bool	server_CheckForClientMinorCommandFlood( ULONG ulClient );
 static	bool	server_CheckJoinPassword( const FString& clientPassword );
 static	bool	server_InfoCheat( BYTESTREAM_s* pByteStream );
@@ -261,9 +262,9 @@ CUSTOM_CVAR( String, sv_hackerlistfile, "hackerlist.txt", CVAR_ARCHIVE|CVAR_NOSE
 
 CVAR( String, sv_motd, "", CVAR_ARCHIVE )
 CVAR( Bool, sv_defaultdmflags, false, 0 )
-CVAR( Bool, sv_forcepassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
-CVAR( Bool, sv_forcejoinpassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
-CVAR( Int, sv_forcerespawntime, 0, CVAR_ARCHIVE ) // [RK]
+CVAR( Bool, sv_forcepassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
+CVAR( Bool, sv_forcejoinpassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
+CVAR( Int, sv_forcerespawntime, 0, CVAR_ARCHIVE|CVAR_SERVERINFO ) // [RK]
 CVAR( Bool, sv_showlauncherqueries, false, CVAR_ARCHIVE )
 CVAR( Bool, sv_timestamp, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Int, sv_timestampformat, 0, CVAR_ARCHIVE|CVAR_NOSETBYACS )
@@ -273,12 +274,12 @@ CVAR( Int, sv_queryignoretime, 10, CVAR_ARCHIVE )
 CVAR( Bool, sv_markchatlines, false, CVAR_ARCHIVE )
 CVAR( Flag, sv_nokill, dmflags2, DF2_NOSUICIDE )
 CVAR( Bool, sv_pure, true, CVAR_SERVERINFO | CVAR_LATCH )
-CVAR( Int, sv_maxclientsperip, 2, CVAR_ARCHIVE )
-CVAR( Int, sv_afk2spec, 0, CVAR_ARCHIVE ) // [K6]
+CVAR( Int, sv_maxclientsperip, 2, CVAR_ARCHIVE | CVAR_SERVERINFO )
+CVAR( Int, sv_afk2spec, 0, CVAR_ARCHIVE | CVAR_SERVERINFO ) // [K6]
 CVAR( Bool, sv_forcelogintojoin, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Bool, sv_useticbuffer, true, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_DEBUGONLY )
 
-CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_NOSETBYACS )
+CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_SENSITIVESERVERSETTING|CVAR_NOSETBYACS )
 {
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 		return;
@@ -289,7 +290,7 @@ CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_NOSETB
 
 //*****************************************************************************
 // [BB] To stay compatible with old mods, the default value is at most 32.
-CUSTOM_CVAR( Int, sv_maxclients, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE )
+CUSTOM_CVAR( Int, sv_maxclients, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE | CVAR_SERVERINFO )
 {
 	if ( self < 0 )
 		self = 0;
@@ -303,7 +304,7 @@ CUSTOM_CVAR( Int, sv_maxclients, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE )
 
 //*****************************************************************************
 // [BB] To stay compatible with old mods, the default value is at most 32.
-CUSTOM_CVAR( Int, sv_maxplayers, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE )
+CUSTOM_CVAR( Int, sv_maxplayers, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE | CVAR_SERVERINFO )
 {
 	if ( self < 0 )
 		self = 0;
@@ -320,7 +321,7 @@ CUSTOM_CVAR( Int, sv_maxplayers, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE )
 
 //*****************************************************************************
 //
-CUSTOM_CVAR( String, sv_password, "password", CVAR_ARCHIVE|CVAR_NOSETBYACS )
+CUSTOM_CVAR( String, sv_password, "password", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SENSITIVESERVERSETTING )
 {
 	if ( strlen( self ) > 0 && strlen( self ) <= 4 )
 	{
@@ -331,7 +332,7 @@ CUSTOM_CVAR( String, sv_password, "password", CVAR_ARCHIVE|CVAR_NOSETBYACS )
 
 //*****************************************************************************
 //
-CUSTOM_CVAR( String, sv_joinpassword, "password", CVAR_ARCHIVE|CVAR_NOSETBYACS )
+CUSTOM_CVAR( String, sv_joinpassword, "password", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SENSITIVESERVERSETTING )
 {
 	if ( strlen( self ) > 0 && strlen( self ) <= 4 )
 	{
@@ -342,7 +343,7 @@ CUSTOM_CVAR( String, sv_joinpassword, "password", CVAR_ARCHIVE|CVAR_NOSETBYACS )
 
 //*****************************************************************************
 //
-CUSTOM_CVAR( String, sv_rconpassword, "", CVAR_ARCHIVE|CVAR_NOSETBYACS )
+CUSTOM_CVAR( String, sv_rconpassword, "", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SENSITIVESERVERSETTING )
 {
 	if ( strlen( self ) > 0 && strlen( self ) <= 4 )
 	{
@@ -353,7 +354,7 @@ CUSTOM_CVAR( String, sv_rconpassword, "", CVAR_ARCHIVE|CVAR_NOSETBYACS )
 
 //*****************************************************************************
 //
-CUSTOM_CVAR( Int, sv_maxpacketsize, 1024, CVAR_ARCHIVE )
+CUSTOM_CVAR( Int, sv_maxpacketsize, 1024, CVAR_ARCHIVE | CVAR_SERVERINFO )
 {
 	if ( self > MAX_UDP_PACKET )
 	{
@@ -4609,6 +4610,38 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		}
 		return false;
 
+	// [TP] Client sets a CVar over RCON.
+	case CLC_RCONSETCVAR:
+		{
+			FString cvarName = NETWORK_ReadString( pByteStream );
+			FString cvarValue = NETWORK_ReadString( pByteStream );
+			CLIENT_s &client = g_aClients[g_lCurrentClient];
+
+			if ( client.bRCONAccess )
+			{
+				FBaseCVar *cvar = FindCVar( cvarName, NULL );
+
+				if ( cvar != NULL )
+				{
+					CONSOLE_SetRCONPlayer( g_lCurrentClient );
+					cvar->CmdSet( cvarValue );
+					CONSOLE_SetRCONPlayer( MAXPLAYERS );
+					Printf( "%s changes %s to \"%s\"\n", client.Address.ToString(),
+						cvar->GetName(), cvarValue.GetChars() );
+				}
+				else
+				{
+					SERVER_PrintfPlayer( g_lCurrentClient, "No such CVar: %s", cvarName.GetChars() );
+				}
+			}
+			else
+			{
+				// [TP] Trying to set a CVar while not an RCON admin is considered possible command flooding.
+				if ( server_CheckForClientCommandFlood( g_lCurrentClient ))
+					return true;
+			}
+		}
+		break;
 	default:
 
 		Printf( PRINT_HIGH, "SERVER_ParseCommands: Unknown client message: %d\n", static_cast<int> (lCommand) );
@@ -5547,6 +5580,7 @@ static bool server_RequestRCON( BYTESTREAM_s *pByteStream )
 		Printf( "Incorrect RCON password attempt from %s.\n", players[g_lCurrentClient].userinfo.GetName() );
 	}
 
+	SERVERCOMMANDS_RCONAccess( g_lCurrentClient );
 	return ( false );
 }
 

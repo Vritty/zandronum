@@ -118,6 +118,7 @@
 #include "decallib.h"
 #include "network/servercommands.h"
 #include "am_map.h"
+#include "menu/menu.h"
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
@@ -367,6 +368,9 @@ static	int				g_lLatestServerGametic = 0;
 
 // [TP] Client's understanding of the account names of players.
 static FString				g_PlayerAccountNames[MAXPLAYERS];
+
+// [TP] Do we have RCON access to the server?
+static	bool				g_HasRCONAccess = false;
 
 //*****************************************************************************
 //	FUNCTIONS
@@ -2041,7 +2045,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 					// [TP] Only allow the server to set mod CVARs.
 					FBaseCVar* cvar = FindCVar( cvarName, NULL );
 
-					if (( cvar == NULL ) || (( cvar->GetFlags() & CVAR_MOD ) == 0 ))
+					if (( cvar == NULL ) || (( cvar->GetFlags() & ( CVAR_MOD | CVAR_SERVERINFO | CVAR_SENSITIVESERVERSETTING )) == 0 ))
 					{
 						CLIENT_PrintWarning( "SVC2_SETCVAR: The server attempted to set the value of "
 							"%s to \"%s\"\n", cvarName.GetChars(), cvarValue.GetChars() );
@@ -2125,6 +2129,32 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 					if ( actor && tpl )
 						ShootDecal( tpl, actor, actor->Sector, actor->x, actor->y, z, angle, tracedist, permanent );
+				}
+				break;
+
+			// [TP]
+			case SVC2_RCONACCESS:
+				if ( NETWORK_ReadByte( pByteStream ) )
+				{
+					if ( CLIENT_HasRCONAccess() == false )
+					{
+						// The server will send all server setting CVars that are not at default value. So, to ensure
+						// the rest are correct, we reset them now.
+						// NOTE: This is done before g_HasRCONAccess is set or the client would instead tell the server
+						// to reset the CVars.
+						for ( FBaseCVar* cvar = CVars; cvar; cvar = cvar->GetNext() )
+						{
+							if ( cvar->IsServerCVar() )
+								cvar->ResetToDefault();
+						}
+					}
+
+					g_HasRCONAccess = true;
+					M_RconAccessGranted();
+				}
+				else
+				{
+					g_HasRCONAccess = false;
 				}
 				break;
 
@@ -2572,6 +2602,12 @@ bool CLIENT_CanClipMovement( AActor *pActor )
 		return false;
 
 	return true;
+}
+
+//*****************************************************************************
+bool CLIENT_HasRCONAccess()
+{
+	return g_HasRCONAccess;
 }
 
 //*****************************************************************************
