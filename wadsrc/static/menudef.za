@@ -509,8 +509,6 @@ OptionMenu ZA_VotingSetupMenu
 {
 	Title	"VOTING SETUP"
 
-	// [TP] TODO: I'd like to have the entire the menu be disabled if voting is disabled entirely,  other than the
-	// voting enabled setting, of course.
 	Command	"Cancel current vote",			"rcon cancelvote"
 	StaticText	" "
 	Option	"Voting enabled",				"sv_nocallvote",			"ZA_AllowVoting"

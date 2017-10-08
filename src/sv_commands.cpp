@@ -90,10 +90,6 @@ EXTERN_CVAR( Float, sv_aircontrol )
 //*****************************************************************************
 class AdminClientIterator : public ClientIterator
 {
-public:
-	AdminClientIterator ( ULONG playerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 ) :
-		ClientIterator ( playerExtra, flags ) {}
-
 protected:
 	bool isCurrentValid() const
 	{
