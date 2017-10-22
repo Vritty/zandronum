@@ -2573,9 +2573,7 @@ void CLIENT_MoveThing( AActor *pActor, fixed_t X, fixed_t Y, fixed_t Z )
 //
 void CLIENT_AdjustPredictionToServerSideConsolePlayerMove( fixed_t X, fixed_t Y, fixed_t Z )
 {
-	players[consoleplayer].ServerXYZ[0] = X;
-	players[consoleplayer].ServerXYZ[1] = Y;
-	players[consoleplayer].ServerXYZ[2] = Z;
+	CLIENT_PREDICT_SetPosition( X, Y, Z );
 	CLIENT_PREDICT_PlayerTeleported( );
 }
 
@@ -2911,11 +2909,14 @@ void PLAYER_ResetPlayerData( player_t *pPlayer )
 	{
 		pPlayer->userinfo.Reset();
 	}
+	else
+	{
+		CLIENT_PREDICT_SetPosition( 0, 0, 0 );
+		CLIENT_PREDICT_SetVelocity( 0, 0, 0 );
+	}
 	memset( pPlayer->psprites, 0, sizeof( pPlayer->psprites ));
 
 	memset( &pPlayer->ulMedalCount, 0, sizeof( ULONG ) * NUM_MEDALS );
-	memset( &pPlayer->ServerXYZ, 0, sizeof( fixed_t ) * 3 );
-	memset( &pPlayer->ServerXYZVel, 0, sizeof( fixed_t ) * 3 );
 }
 
 //*****************************************************************************
@@ -3550,14 +3551,11 @@ void ServerCommands::SpawnPlayer::Execute()
 	}
 
 
-	// If this is the consoleplayer, set the realorigin and ServerXYZMom.
+	// If this is the consoleplayer, set the prediction origin and velocity.
 	if ( ulPlayer == static_cast<ULONG>(consoleplayer) )
 	{
 		CLIENT_AdjustPredictionToServerSideConsolePlayerMove( pPlayer->mo->x, pPlayer->mo->y, pPlayer->mo->z );
-
-		pPlayer->ServerXYZVel[0] = 0;
-		pPlayer->ServerXYZVel[1] = 0;
-		pPlayer->ServerXYZVel[2] = 0;
+		CLIENT_PREDICT_SetVelocity( 0, 0, 0 );
 	}
 
 	// [BB] Now that we have our inventory, tell the server the weapon we selected from it.
@@ -4281,13 +4279,8 @@ void ServerCommands::MoveLocalPlayer::Execute()
 	// Now that everything's check out, update stuff.
 	if ( pPlayer->bSpectating == false )
 	{
-		pPlayer->ServerXYZ[0] = x;
-		pPlayer->ServerXYZ[1] = y;
-		pPlayer->ServerXYZ[2] = z;
-
-		pPlayer->ServerXYZVel[0] = velx;
-		pPlayer->ServerXYZVel[1] = vely;
-		pPlayer->ServerXYZVel[2] = velz;
+		CLIENT_PREDICT_SetPosition( x, y, z );
+		CLIENT_PREDICT_SetVelocity( velx, vely, velz );
 	}
 	else
 	{
@@ -4704,12 +4697,7 @@ void ServerCommands::MoveThing::Execute()
 
 	// If the server is moving us, don't let our prediction get messed up.
 	if ( actor == players[consoleplayer].mo )
-	{
-		players[consoleplayer].ServerXYZ[0] = x;
-		players[consoleplayer].ServerXYZ[1] = y;
-		players[consoleplayer].ServerXYZ[2] = z;
-		CLIENT_PREDICT_PlayerTeleported( );
-	}
+		CLIENT_AdjustPredictionToServerSideConsolePlayerMove( x, y, z );
 }
 
 //*****************************************************************************

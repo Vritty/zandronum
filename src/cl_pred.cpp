@@ -78,6 +78,10 @@ static	bool		g_bPredicting = false;
 // Version of gametic for normal games, as well as demos.
 static	ULONG		g_ulGameTick;
 
+// Data used for the base of our predictions.
+static fixed_t		g_PositionBase[3];
+static fixed_t		g_VelocityBase[3];
+
 // Store crucial player attributes for prediction.
 static	ticcmd_t	g_SavedTiccmd[CLIENT_PREDICTION_TICS];
 static	angle_t		g_SavedAngle[CLIENT_PREDICTION_TICS];
@@ -111,6 +115,27 @@ void CLIENT_PREDICT_Construct( void )
 {
 	for ( int i = 0; i < CLIENT_PREDICTION_TICS; ++i )
 		g_SavedCrouchfactor[i] = FRACUNIT;
+
+	memset( g_PositionBase, 0, sizeof( g_PositionBase ));
+	memset( g_VelocityBase, 0, sizeof( g_VelocityBase ));
+}
+
+//*****************************************************************************
+//
+void CLIENT_PREDICT_SetPosition( fixed_t X, fixed_t Y, fixed_t Z )
+{
+	g_PositionBase[0] = X;
+	g_PositionBase[1] = Y;
+	g_PositionBase[2] = Z;
+}
+
+//*****************************************************************************
+//
+void CLIENT_PREDICT_SetVelocity( fixed_t X, fixed_t Y, fixed_t Z )
+{
+	g_VelocityBase[0] = X;
+	g_VelocityBase[1] = Y;
+	g_VelocityBase[2] = Z;
 }
 
 //*****************************************************************************
@@ -176,24 +201,24 @@ void CLIENT_PREDICT_PlayerPredict( void )
 #ifdef	_DEBUG
 	if (( cl_showonetickpredictionerrors ) && ( ulPredictionTicks == 0 ))
 	{
-		if (( pPlayer->ServerXYZ[0] != pPlayer->mo->x ) ||
-			( pPlayer->ServerXYZ[1] != pPlayer->mo->y ) ||
-			( pPlayer->ServerXYZ[2] != pPlayer->mo->z ))
+		if (( g_PositionBase[0] != pPlayer->mo->x ) ||
+			( g_PositionBase[1] != pPlayer->mo->y ) ||
+			( g_PositionBase[2] != pPlayer->mo->z ))
 		{
-			Printf( "(%d) WARNING! ServerXYZ does not match local origin after 1 tick!\n", static_cast<unsigned int> (g_ulGameTick) );
-			Printf( "     X: %d, %d\n", pPlayer->ServerXYZ[0], pPlayer->mo->x );
-			Printf( "     Y: %d, %d\n", pPlayer->ServerXYZ[1], pPlayer->mo->y );
-			Printf( "     Z: %d, %d\n", pPlayer->ServerXYZ[2], pPlayer->mo->z );
+			Printf( "(%d) WARNING! Server XYZ does not match local origin after 1 tick!\n", static_cast<unsigned int> (g_ulGameTick) );
+			Printf( "     X: %d, %d\n", g_PositionBase[0], pPlayer->mo->x );
+			Printf( "     Y: %d, %d\n", g_PositionBase[1], pPlayer->mo->y );
+			Printf( "     Z: %d, %d\n", g_PositionBase[2], pPlayer->mo->z );
 		}
 
-		if (( pPlayer->ServerXYZVel[0] != pPlayer->mo->velx ) ||
-			( pPlayer->ServerXYZVel[1] != pPlayer->mo->vely ) ||
-			( pPlayer->ServerXYZVel[2] != pPlayer->mo->velz ))
+		if (( g_VelocityBase[0] != pPlayer->mo->velx ) ||
+			( g_VelocityBase[1] != pPlayer->mo->vely ) ||
+			( g_VelocityBase[2] != pPlayer->mo->velz ))
 		{
-			Printf( "(%d) WARNING! ServerXYZVel does not match local origin after 1 tick!\n", static_cast<unsigned int> (g_ulGameTick) );
-			Printf( "     X: %d, %d\n", pPlayer->ServerXYZVel[0], pPlayer->mo->velx );
-			Printf( "     Y: %d, %d\n", pPlayer->ServerXYZVel[1], pPlayer->mo->vely );
-			Printf( "     Z: %d, %d\n", pPlayer->ServerXYZVel[2], pPlayer->mo->velz );
+			Printf( "(%d) WARNING! Server XYZ velocity does not match local origin after 1 tick!\n", static_cast<unsigned int> (g_ulGameTick) );
+			Printf( "     X: %d, %d\n", g_VelocityBase[0], pPlayer->mo->velx );
+			Printf( "     Y: %d, %d\n", g_VelocityBase[1], pPlayer->mo->vely );
+			Printf( "     Z: %d, %d\n", g_VelocityBase[2], pPlayer->mo->velz );
 		}
 	}
 #endif
@@ -204,14 +229,14 @@ void CLIENT_PREDICT_PlayerPredict( void )
 
 	// Set the player's position as told to him by the server.
 	CLIENT_MoveThing( pPlayer->mo,
-		pPlayer->ServerXYZ[0],
-		pPlayer->ServerXYZ[1],
-		pPlayer->ServerXYZ[2] );
+		g_PositionBase[0],
+		g_PositionBase[1],
+		g_PositionBase[2] );
 
 	// Set the player's velocity as told to him by the server.
-	pPlayer->mo->velx = pPlayer->ServerXYZVel[0];
-	pPlayer->mo->vely = pPlayer->ServerXYZVel[1];
-	pPlayer->mo->velz = pPlayer->ServerXYZVel[2];
+	pPlayer->mo->velx = g_VelocityBase[0];
+	pPlayer->mo->vely = g_VelocityBase[1];
+	pPlayer->mo->velz = g_VelocityBase[2];
 
 	// If we don't want to do any prediction, just tick the player and get out.
 	if ( cl_predict_players == false )
