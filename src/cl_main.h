@@ -190,6 +190,7 @@ bool				CLIENT_HasRCONAccess();
 void				CLIENT_PREDICT_Construct( void );
 void				CLIENT_PREDICT_SetPosition( fixed_t X, fixed_t Y, fixed_t Z );
 void				CLIENT_PREDICT_SetVelocity( fixed_t X, fixed_t Y, fixed_t Z );
+void				CLIENT_PREDICT_SetJumpTics( int tics );
 void				CLIENT_PREDICT_PlayerPredict( void );
 void				CLIENT_PREDICT_PlayerTeleported( void );
 bool				CLIENT_PREDICT_IsPredicting( void );

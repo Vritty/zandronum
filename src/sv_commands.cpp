@@ -928,6 +928,19 @@ void SERVERCOMMANDS_MoveLocalPlayer( ULONG ulPlayer )
 
 //*****************************************************************************
 //
+void SERVERCOMMANDS_SetLocalPlayerJumpTics( ULONG ulPlayer )
+{
+	if ( SERVER_IsValidClient( ulPlayer ) == false )
+		return;
+
+	ServerCommands::SetLocalPlayerJumpTics command;
+	command.SetClientTicOnServerEnd( SERVER_GetClient( ulPlayer )->ulClientGameTic );
+	command.SetJumpTics( players[ulPlayer].jumpTics );
+	command.sendCommandToClients( ulPlayer, SVCF_ONLYTHISCLIENT );
+}
+
+//*****************************************************************************
+//
 void SERVERCOMMANDS_DisconnectPlayer( ULONG ulPlayer, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
