@@ -124,6 +124,7 @@
 #include "p_enemy.h"
 #include "network/packetarchive.h"
 #include "p_lnspec.h"
+#include "unlagged.h"
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
@@ -592,6 +593,11 @@ void SERVER_Tick( void )
 
 		// Recieve packets.
 		SERVER_GetPackets( );
+
+		// We have to record player positions before emptying their movement buffer i.e.
+		// before their mobj moves.
+		// [BB] Tick the unlagged module.
+		UNLAGGED_Tick( );
 
 		// [BB] Process up to two movement commands for each client.
 		for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
