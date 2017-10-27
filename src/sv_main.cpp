@@ -600,7 +600,7 @@ void SERVER_Tick( void )
 				continue;
 
 			int numMoveCMDs = 0;
-			for ( unsigned int i = 0; i < g_aClients[ulIdx].MoveCMDs.Size(); ++i )
+			while ( g_aClients[ulIdx].MoveCMDs.Size( ) != 0 )
 			{
 				g_aClients[ulIdx].MoveCMDs[0]->process ( ulIdx );
 
