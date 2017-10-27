@@ -138,6 +138,7 @@ void SERVERCONSOLE_ReListPlayers( void );
 
 EXTERN_CVAR( Bool, sv_cheats );
 EXTERN_CVAR( Bool, sv_showwarnings );
+EXTERN_CVAR( Bool, sv_unlagged_debugactors )
 
 //*****************************************************************************
 //	PROTOTYPES
@@ -621,6 +622,12 @@ void SERVER_Tick( void )
 					break;
 			}
 		}
+
+		// However we need to spawn the unlagged debug actors here i.e. after having processed their
+		// movement commands which updated their last server gametic.
+		// [BB] Spawn debug actors if the server runner wants them.
+		if ( sv_unlagged_debugactors )
+			UNLAGGED_SpawnDebugActors( );
 
 		G_Ticker ();
 
