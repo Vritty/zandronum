@@ -16,6 +16,8 @@
 ---
 
 *+	- Added a new server administration menu, from which server settings can be changed without needing to use the console. The menu will ask for the RCON password if necessary. Gameplay and compatibility settings are now grayed out unless the user has RCON access and work online properly. Added various Zandronum-specific gameplay settings to the menu. [Dusk]
++	- "stat nettraffic" now also shows information on the number of many missing packets the client requests from the servers. [Torr Samaho]
+
 
 3.0
 ---

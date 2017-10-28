@@ -1128,6 +1128,7 @@ void CLIENT_CheckForMissingPackets( void )
 					fprintf( debugfile, "Missing packet %d.\n", static_cast<int> (lIdx) );
 
 				NETWORK_WriteLong( &g_LocalBuffer.ByteStream, lIdx );
+				CLIENTSTATISTICS_AddToMissingPacketsRequested ( 1 );
 			}
 		}
 

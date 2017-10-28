@@ -127,6 +127,7 @@ public:
 
 static	StatTracker			g_bytesSentStatTracker;
 static	StatTracker			g_bytesReceivedStatTracker;
+static	StatTracker			g_missingPacketsRequestedStatTracker;
 
 //*****************************************************************************
 //	FUNCTIONS
@@ -135,6 +136,7 @@ void CLIENTSTATISTICS_Construct( void )
 {
 	g_bytesSentStatTracker.Clear();
 	g_bytesReceivedStatTracker.Clear();
+	g_missingPacketsRequestedStatTracker.Clear();
 }
 
 //*****************************************************************************
@@ -144,6 +146,7 @@ void CLIENTSTATISTICS_Tick( void )
 	// Add to the number of bytes sent/received this second.
 	g_bytesSentStatTracker.TicPassed();
 	g_bytesReceivedStatTracker.TicPassed();
+	g_missingPacketsRequestedStatTracker.TicPassed();
 
 	// Every second, update the number of bytes sent last second with the number of bytes
 	// sent this second, and then reset the number of bytes sent this second.
@@ -151,6 +154,7 @@ void CLIENTSTATISTICS_Tick( void )
 	{
 		g_bytesSentStatTracker.SecondPassed ( );
 		g_bytesReceivedStatTracker.SecondPassed ( );
+		g_missingPacketsRequestedStatTracker.SecondPassed ( );
 	}
 }
 
@@ -169,19 +173,28 @@ void CLIENTSTATISTICS_AddToBytesReceived( ULONG ulBytes )
 }
 
 //*****************************************************************************
+//
+void CLIENTSTATISTICS_AddToMissingPacketsRequested( unsigned int Num )
+{
+	g_missingPacketsRequestedStatTracker.AddToTic ( Num );
+}
+
+//*****************************************************************************
 //	STATISTICS
 
 ADD_STAT( nettraffic )
 {
 	FString	Out;
 
-	Out.Format( "In: %5d/%5d/%5d        Out: %5d/%5d/%5d", 
+	Out.Format( "In: %5d/%5d/%5d        Out: %5d/%5d/%5d        Loss: %5d/%5d", 
 		static_cast<int> (g_bytesReceivedStatTracker.getValueThisTick()),
 		static_cast<int> (g_bytesReceivedStatTracker.getValueLastSecond()),
 		static_cast<int> (g_bytesReceivedStatTracker.getMaxValuePerSecond()),
 		static_cast<int> (g_bytesSentStatTracker.getValueThisTick()),
 		static_cast<int> (g_bytesSentStatTracker.getValueLastSecond()),
-		static_cast<int> (g_bytesSentStatTracker.getMaxValuePerSecond()) );
+		static_cast<int> (g_bytesSentStatTracker.getMaxValuePerSecond()),
+		static_cast<int> (g_missingPacketsRequestedStatTracker.getValueLastSecond()),
+		static_cast<int> (g_missingPacketsRequestedStatTracker.getMaxValuePerSecond()) );
 
 	return ( Out );
 }
