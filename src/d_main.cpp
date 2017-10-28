@@ -578,7 +578,7 @@ CVAR (Flag, sv_shotgunstart,		dmflags2, DF2_COOP_SHOTGUNSTART);
 //
 //==========================================================================
 
-// [BB/EP] Only necessary to handle ZADF_FORCE_GL_DEFAULTS.
+// [BB/EP] Only necessary to handle ZADF_FORCE_VIDEO_DEFAULTS.
 #ifndef NO_GL
 EXTERN_CVAR(Int, gl_lightmode)
 EXTERN_CVAR(Int, gl_distfog)
@@ -598,7 +598,7 @@ CUSTOM_CVAR (Int, zadmflags, 0, CVAR_SERVERINFO)
 	}
 
 #ifndef NO_GL
-	// [BB/EP] This makes gl_lightmode and gl_distfog handle ZADF_FORCE_GL_DEFAULTS.
+	// [BB/EP] This makes gl_lightmode and gl_distfog handle ZADF_FORCE_VIDEO_DEFAULTS.
 	// [BB] Don't do this on startup since gl.flags is not properly initialized yet.
 	if ( gamestate != GS_STARTUP )
 	{
@@ -615,7 +615,7 @@ CVAR (Flag, sv_unblockplayers,			zadmflags, ZADF_UNBLOCK_PLAYERS);
 CVAR (Flag, sv_nomedals,			zadmflags, ZADF_NO_MEDALS);
 CVAR (Flag, sv_sharekeys,			zadmflags, ZADF_SHARE_KEYS);
 CVAR (Flag, sv_keepteams,			zadmflags, ZADF_YES_KEEP_TEAMS);
-CVAR (Flag, sv_forcegldefaults,		zadmflags, ZADF_FORCE_GL_DEFAULTS);
+CVAR (Flag, sv_forcevideodefaults,	zadmflags, ZADF_FORCE_VIDEO_DEFAULTS);
 CVAR (Flag, sv_norocketjumping,		zadmflags, ZADF_NO_ROCKET_JUMPING);
 CVAR (Flag, sv_awarddamageinsteadkills,		zadmflags, ZADF_AWARD_DAMAGE_INSTEAD_KILLS);
 CVAR (Flag, sv_forcealpha,		zadmflags, ZADF_FORCE_ALPHA);
@@ -626,6 +626,9 @@ CVAR (Flag, sv_nodrop,				zadmflags, ZADF_NODROP);
 CVAR (Flag, sv_survival_nomapresetondeath, zadmflags, ZADF_SURVIVAL_NO_MAP_RESET_ON_DEATH);
 CVAR (Flag, sv_deadplayerscankeepinventory, zadmflags, ZADF_DEAD_PLAYERS_CAN_KEEP_INVENTORY);
 CVAR (Flag, sv_nounlaggedbfgtracers, zadmflags, ZADF_NOUNLAGGED_BFG_TRACERS);
+
+// Old name kept for compatibility
+CVAR (Flag, sv_forcegldefaults,		zadmflags, ZADF_FORCE_VIDEO_DEFAULTS);
 
 //==========================================================================
 //
