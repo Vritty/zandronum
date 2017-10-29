@@ -3376,6 +3376,16 @@ void SERVERCOMMANDS_SetMapSky( ULONG ulPlayerExtra, ServerCommandFlags flags )
 }
 
 //*****************************************************************************
+//
+void SERVERCOMMANDS_SetMapSkyScrollSpeed( bool isSky1, ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	ServerCommands::SetMapSkyScrollSpeed command;
+	command.SetIsSky1( isSky1 );
+	command.SetValue( isSky1 ? level.skyspeed1 : level.skyspeed2 );
+	command.sendCommandToClients ( ulPlayerExtra, flags );
+}
+
+//*****************************************************************************
 //*****************************************************************************
 //
 void SERVERCOMMANDS_GiveInventory( ULONG ulPlayer, AInventory *pInventory, ULONG ulPlayerExtra, ServerCommandFlags flags )

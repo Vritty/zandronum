@@ -335,6 +335,7 @@ void	SERVERCOMMANDS_SetMapNumTotalItems( ULONG ulPlayerExtra = MAXPLAYERS, Serve
 void	SERVERCOMMANDS_SetMapNumTotalSecrets( ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 void	SERVERCOMMANDS_SetMapMusic( const char *pszMusic, int track, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 void	SERVERCOMMANDS_SetMapSky( ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
+void	SERVERCOMMANDS_SetMapSkyScrollSpeed( bool isSky1, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 
 // Inventory commands. These give the player inventory items, takes them away, etc.
 void	SERVERCOMMANDS_GiveInventory( ULONG ulPlayer, AInventory *pInventory, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );

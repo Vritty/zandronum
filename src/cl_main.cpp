@@ -6883,6 +6883,16 @@ void ServerCommands::SetMapSky::Execute()
 
 //*****************************************************************************
 //
+void ServerCommands::SetMapSkyScrollSpeed::Execute()
+{
+	if ( isSky1 )
+		level.skyspeed1 = value;
+	else
+		level.skyspeed2 = value;
+}
+
+//*****************************************************************************
+//
 static void client_GiveInventory( BYTESTREAM_s *pByteStream )
 {
 	const PClass	*pType;

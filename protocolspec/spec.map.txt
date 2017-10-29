@@ -54,6 +54,12 @@ Command SetMapSky
 	String sky2
 EndCommand
 
+Command SetMapSkyScrollSpeed
+	ExtendedCommand
+	Bool isSky1
+	Float value
+EndCommand
+
 Command SecretFound
 	ExtendedCommand
 	Actor actor
