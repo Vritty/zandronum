@@ -2289,7 +2289,8 @@ static fixed_t PlayersRangeFromSpot (FPlayerStart *spot)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || !players[i].mo || players[i].health <= 0)
+		// [Proteh] Skip spectators from the range check too
+		if (!playeringame[i] || players[i].bSpectating || !players[i].mo || players[i].health <= 0)
 			continue;
 
 		distance = P_AproxDistance (players[i].mo->x - spot->x,
@@ -2312,7 +2313,8 @@ static fixed_t TeamLMSPlayersRangeFromSpot( ULONG ulPlayer, FPlayerStart *spot )
 	ulNumSpots = 0;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || !players[i].mo || players[i].health <= 0)
+		// [Proteh] Skip spectators too
+		if (!playeringame[i] || players[i].bSpectating || !players[i].mo || players[i].health <= 0)
 			continue;
 
 		// Ignore players on our team.
