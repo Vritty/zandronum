@@ -3719,6 +3719,18 @@ void GAME_ResetMap( bool bRunEnterScripts )
 		// If we're the server, tell clients to update their sky.
 		if (( bSendSkyUpdate ) && ( NETWORK_GetState( ) == NETSTATE_SERVER ))
 			SERVERCOMMANDS_SetMapSky( );
+
+		// [EP] Reset also the sky scroll speed if needed.
+		if ( level.skyspeed1 != pLevelInfo->skyspeed1 ) {
+			level.skyspeed1 = pLevelInfo->skyspeed1;
+			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				SERVERCOMMANDS_SetMapSkyScrollSpeed( /*isSky1 =*/ true );
+		}
+		if ( level.skyspeed2 != pLevelInfo->skyspeed2 ) {
+			level.skyspeed2 = pLevelInfo->skyspeed2;
+			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				SERVERCOMMANDS_SetMapSkyScrollSpeed( /*isSky1 =*/ false );
+		}
 	}
 
 	// Reset the number of monsters killed,  items picked up, and found secrets on the level.
