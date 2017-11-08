@@ -58,6 +58,7 @@
 // [BB] New #includes.
 #include "sv_commands.h"
 #include "cl_main.h"
+#include "cl_demo.h"
 #include "g_game.h"
 
 
@@ -607,6 +608,7 @@ void R_InterpolateView (player_t *player, fixed_t frac, InterpolationViewer *ivi
 		// [Leo] Zandronum-specific checks
 		( CLIENT_GetServerLagging( ) == false ) &&
 		( CLIENT_GetClientLagging( ) == false ) &&
+		( CLIENTDEMO_IsPlaying( ) == false ) &&
 		( GAME_GetEndLevelDelay( ) == false ) &&
 		( ~level.flags2 & LEVEL2_FROZEN || player->timefreezer != 0 ))
 	{
