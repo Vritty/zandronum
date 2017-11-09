@@ -5190,9 +5190,15 @@ bool ClientMoveCommand::process( const ULONG ulClient ) const
 	{
 		if ( pPlayer->mo )
 		{
-			// We already processed a movement command this tic, we have no choice left but to tick the body now.
+			// We already processed a movement command this tic.
 			if ( g_aClients[ulClient].lLastMoveTickProcess == gametic )
-					pPlayer->mo->Tick( );
+			{
+				// [Leo] We have no choice left but to tick the body now.
+				pPlayer->mo->Tick( );
+
+				// [EP] Make sure that the server sets the proper player psprite settings before running the psprite-events from this client command.
+				P_NewPspriteTick( pPlayer );
+			}
 
 			// [BB] Ignore the angle and pitch sent by the client if the client isn't authenticated yet.
 			// In this case the client still sends these values based on the previous map.
