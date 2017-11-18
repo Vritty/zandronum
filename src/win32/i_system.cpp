@@ -286,6 +286,7 @@ static void I_SelectTimer()
 	// Get the current time as the basetime.
 	basetime = timeGetTime();
 	// Set timer functions.
+	/* [Leo] Zandronum needs a consistent ticrate across clients/servers
 	if (TimerEventID != 0)
 	{
 		I_GetTime = I_GetTimeEventDriven;
@@ -293,6 +294,7 @@ static void I_SelectTimer()
 		I_FreezeTime = I_FreezeTimeEventDriven;
 	}
 	else
+	*/
 	{
 		I_GetTime = I_GetTimePolled;
 		I_WaitForTic = I_WaitForTicPolled;
@@ -407,7 +409,13 @@ static int I_WaitForTicPolled(int prevtic)
 
 	assert(TicFrozen == 0);
 	while ((time = I_GetTimePolled(false)) <= prevtic)
-	{ }
+	{
+		// [Leo] Since in Zandronum there is no alternative to polling,
+		// we allow sleeping here.
+		int sleep = ((( prevtic + 1 ) * 1000 ) / TICRATE ) - I_MSTime( );
+		if ( sleep > 2 )
+			I_Sleep( sleep - 2 );
+	}
 
 	return time;
 }
