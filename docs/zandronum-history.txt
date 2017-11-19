@@ -19,6 +19,7 @@
 +	- "stat nettraffic" now also shows information on the number of many missing packets the client requests from the servers. [Torr Samaho]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]
+-	- Fixed: The 'Color Setter' and the 'Fade Setter' things weren't handled properly on map resets. [Edward-san]
 !	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
 
