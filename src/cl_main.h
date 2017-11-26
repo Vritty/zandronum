@@ -135,6 +135,7 @@ bool				CLIENT_GetAllowSendingOfUserInfo( void );
 void				CLIENT_SetAllowSendingOfUserInfo( bool bAllow );
 int					CLIENT_GetLatestServerGametic( void );
 void				CLIENT_SetLatestServerGametic( int latestServerGametic );
+int					CLIENT_GetServerGameticOffset( void );
 bool				CLIENT_GetFullUpdateIncomplete ( void );
 unsigned int		CLIENT_GetEndFullUpdateTic( void );
 const FString		&CLIENT_GetPlayerAccountName( int player );

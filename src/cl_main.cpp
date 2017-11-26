@@ -146,6 +146,7 @@ EXTERN_CVAR( Float, turbo )
 EXTERN_CVAR( Float, sv_gravity )
 EXTERN_CVAR( Float, sv_aircontrol )
 EXTERN_CVAR( Bool, cl_hideaccount )
+EXTERN_CVAR( Int, cl_ticsperupdate )
 EXTERN_CVAR( String, name )
 
 //*****************************************************************************
@@ -363,8 +364,11 @@ static	LONG				g_lMissingPacketTicks;
 // Debugging variables.
 static	LONG				g_lLastCmd;
 
-// [CK] The most up-to-date server gametic
-static	int				g_lLatestServerGametic = 0;
+// [CK] The most up-to-date server gametic.
+static	int					g_lLatestServerGametic = 0;
+
+// Offset from the server gametic caused by cl_ticsperupdate.
+static	int					g_ServerGameticOffset;
 
 // [TP] Client's understanding of the account names of players.
 static FString				g_PlayerAccountNames[MAXPLAYERS];
@@ -547,6 +551,10 @@ void CLIENT_Tick( void )
 //
 void CLIENT_EndTick( void )
 {
+	// Take in account cl_ticsperupdate the next time we send a movement command.
+	if ( g_ServerGameticOffset < cl_ticsperupdate - 1 )
+		g_ServerGameticOffset++;
+
 	// [TP] Do we want to change our weapon or use an item or something like that?
 	if ( SendItemUse )
 	{
@@ -741,7 +749,17 @@ int CLIENT_GetLatestServerGametic( void )
 void CLIENT_SetLatestServerGametic( int latestServerGametic )
 {
 	if ( latestServerGametic >= 0 )
+	{
 		g_lLatestServerGametic = latestServerGametic;
+		g_ServerGameticOffset = 0;
+	}
+}
+
+//*****************************************************************************
+//
+int CLIENT_GetServerGameticOffset( void )
+{
+	return g_ServerGameticOffset;
 }
 
 //*****************************************************************************
@@ -817,7 +835,9 @@ void CLIENT_AttemptConnection( void )
 	g_lHighestReceivedSequence = -1;
 
 	g_lMissingPacketTicks = 0;
-	g_lLatestServerGametic = 0; // [CK] Reset this here since we plan on connecting to a new server
+
+	// [CK] Reset this here since we plan on connecting to a new server
+	CLIENT_SetLatestServerGametic( 0 );
 
 	 // Send connection signal to the server.
 	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, CLCC_ATTEMPTCONNECTION );
