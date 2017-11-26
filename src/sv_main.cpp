@@ -607,6 +607,9 @@ void SERVER_Tick( void )
 		if ( sv_unlagged_debugactors )
 			UNLAGGED_SpawnDebugActors( );
 
+		gametic++;
+		maketic++;
+
 		// Update the scoreboard if we have a new second to display.
 		if ( timelimit && (( level.time % TICRATE ) == 0 ) && ( level.time != iOldTime ))
 		{
@@ -686,9 +689,6 @@ void SERVER_Tick( void )
 			if ( ( SERVER_GetClient( ulIdx )->State == CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION ) && ( ( level.maptime % ( 2 * TICRATE ) ) == 0 ) )
 				SERVERCOMMANDS_MapAuthenticate ( level.mapname, ulIdx, SVCF_ONLYTHISCLIENT );
 		}
-
-		gametic++;
-		maketic++;
 
 		// Do some statistic stuff every second.
 		if (( gametic % TICRATE ) == 0 )
