@@ -22,6 +22,7 @@
 -	- Fixed: The 'Color Setter' and the 'Fade Setter' things weren't handled properly on map resets. [Edward-san]
 -	- Fixed: A_JumpIfTargetInsideMeleeRange and A_JumpIfTargetOutsideMeleeRange weren't handled properly online. [Edward-san]
 -	- Fixed: Same spot respawn didn't work anymore with dead spectators. [Edward-san]
+-	- Fixed: A_CheckLOF wasn't handled properly online. [Edward-san]
 !	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
 
