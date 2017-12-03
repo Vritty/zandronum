@@ -2470,8 +2470,14 @@ AActor *CLIENT_SpawnThing( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z,
 	{
 		// [BB] Calling StaticSpawn with "levelThing == true" will prevent
 		// BeginPlay from being called on pActor, so we have to do this manually.
-		if ( levelThing )
+		// [EP] Don't forget to drop the DROPPED flag if it wasn't present. See the comment in AActor::LevelSpawned for the reason.
+		if ( levelThing ) {
 			pActor->BeginPlay ();
+			if (!(pActor->GetDefault()->flags & MF_DROPPED))
+			{
+				pActor->flags &= ~MF_DROPPED;
+			}
+		}
 
 		pActor->lNetID = lNetID;
 		g_NetIDList.useID ( lNetID, pActor );
