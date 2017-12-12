@@ -8939,7 +8939,7 @@ static void client_IgnorePlayer( BYTESTREAM_s *pByteStream )
 		players[ulPlayer].bIgnoreChat = true;
 		players[ulPlayer].lIgnoreChatTicks = lTicks;
 
-		Printf( "%s\\c- will be ignored, because you're ignoring %s IP.\n", players[ulPlayer].userinfo.GetName(), players[ulPlayer].userinfo.GetGender() == GENDER_MALE ? "his" : players[ulPlayer].userinfo.GetGender() == GENDER_FEMALE ? "her" : "its" );
+		Printf( "%s will be ignored, because you're ignoring %s IP.\n", players[ulPlayer].userinfo.GetName(), players[ulPlayer].userinfo.GetGender() == GENDER_MALE ? "his" : players[ulPlayer].userinfo.GetGender() == GENDER_FEMALE ? "her" : "its" );
 	}
 }
 

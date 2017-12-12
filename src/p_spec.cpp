@@ -248,7 +248,7 @@ bool CheckIfExitIsGood (AActor *self, level_info_t *info)
 		if (( self->player != NULL ) && ( self->player->mo == self ))
 		{
 			// [K6/BB] The server should let the clients know who exited the level.
-			NETWORK_Printf ("%s \\c-exited the level.\n", self->player->userinfo.GetName());
+			NETWORK_Printf ("%s exited the level.\n", self->player->userinfo.GetName());
 		}
 	}
 	return true;

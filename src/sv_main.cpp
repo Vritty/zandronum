@@ -1517,7 +1517,7 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 			countryInfo.AppendFormat ( " (from: %s)", NETWORK_GetCountryCodeFromAddress ( SERVER_GetClient( g_lCurrentClient )->Address ).GetChars() );
 
 		FString message;
-		message.Format( "%s\\c-{ip} %s.%s\n", players[g_lCurrentClient].userinfo.GetName(),
+		message.Format( "%s{ip} %s.%s\n", players[g_lCurrentClient].userinfo.GetName(),
 			players[g_lCurrentClient].bSpectating ? "has connected" : "entered the game",
 			countryInfo.GetChars() );
 		server_PrintWithIP( message, g_aClients[g_lCurrentClient].Address );
@@ -2008,7 +2008,7 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 
 				if ( stricmp( szPlayerNameNoColor, szOldPlayerNameNoColor ) != 0 )
 				{
-					SERVER_Printf( "%s \\c-is now known as %s\n", szOldPlayerName, pPlayer->userinfo.GetName() );
+					SERVER_Printf( "%s is now known as %s\n", szOldPlayerName, pPlayer->userinfo.GetName() );
 
 					// [RC] Update clients using the RCON utility.
 					SERVER_RCON_UpdateInfo( SVRCU_PLAYERDATA );
@@ -2799,9 +2799,9 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 			FString message;
 
 			if ( ( gametic - g_aClients[ulClient].ulLastCommandTic ) == ( CLIENT_TIMEOUT * 35 ) )
-				message.Format( "%s\\c-{ip} timed out.\n", players[ulClient].userinfo.GetName() );
+				message.Format( "%s{ip} timed out.\n", players[ulClient].userinfo.GetName() );
 			else
-				message.Format( "client %s\\c-{ip} disconnected.\n", players[ulClient].userinfo.GetName() );
+				message.Format( "client %s{ip} disconnected.\n", players[ulClient].userinfo.GetName() );
 
 			server_PrintWithIP( message, g_aClients[ulClient].Address );
 		}
@@ -5545,7 +5545,7 @@ static bool server_RequestJoin( BYTESTREAM_s *pByteStream )
 			SERVERCOMMANDS_SetPlayerTeam( g_lCurrentClient );
 	}
 
-	SERVER_Printf( "%s \\c-joined the game.\n", players[g_lCurrentClient].userinfo.GetName() );
+	SERVER_Printf( "%s joined the game.\n", players[g_lCurrentClient].userinfo.GetName() );
 
 	// Update this player's info on the scoreboard.
 	SERVERCONSOLE_UpdatePlayerInfo( g_lCurrentClient, UDF_FRAGS );
