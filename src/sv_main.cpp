@@ -2213,7 +2213,7 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 	// Send the packet off.
 	SERVER_SendClientPacket( ulClient, true );
 
-	Printf( "%s \\c-disconnected. Ignoring IP for 10 seconds.\n", g_aClients[ulClient].Address.ToString() );
+	Printf( "%s disconnected. Ignoring IP for 10 seconds.\n", g_aClients[ulClient].Address.ToString() );
 
 	// [BB] Block this IP for ten seconds to prevent log flooding.
 	g_floodProtectionIPQueue.addAddress ( g_aClients[ulClient].Address, g_lGameTime / 1000 );
@@ -2806,7 +2806,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 			server_PrintWithIP( message, g_aClients[ulClient].Address );
 		}
 		else
-			Printf( "%s \\c-disconnected.\n", g_aClients[ulClient].Address.ToString() );
+			Printf( "%s disconnected.\n", g_aClients[ulClient].Address.ToString() );
 	}
 
 	// [RK] Disconnectd players need their vote removed/cancelled.
