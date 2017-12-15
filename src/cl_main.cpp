@@ -1398,12 +1398,12 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				// [TP] Is this a master ban?
 				if ( !!NETWORK_ReadByte( pByteStream ))
 				{
-					szErrorString = "Couldn't connect. \\cgYou have been banned from " GAMENAME "'s master server!\\c-\n"
+					szErrorString = "Couldn't connect. " TEXTCOLOR_RED "You have been banned from " GAMENAME "'s master server!" TEXTCOLOR_NORMAL "\n"
 						"If you feel this is in error, you may contact the staff at " FORUM_URL;
 				}
 				else
 				{
-					szErrorString = "Couldn't connect. \\cgYou have been banned from this server!\\c-";
+					szErrorString = "Couldn't connect. " TEXTCOLOR_RED "You have been banned from this server!" TEXTCOLOR_NORMAL;
 
 					// [RC] Read the reason for this ban.
 					const char		*pszBanReason = NETWORK_ReadString( pByteStream );

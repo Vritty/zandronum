@@ -3442,11 +3442,11 @@ void SERVER_KickPlayer( ULONG ulPlayer, const char *pszReason )
 	V_RemoveColorCodes( szName );
 
 	// Build the full kick string.
-	sprintf( szKickString, "\\ci%s\\ci was kicked from the server! Reason: %s\n", szName, pszReason );
+	sprintf( szKickString, TEXTCOLOR_ORANGE "%s" TEXTCOLOR_ORANGE " was kicked from the server! Reason: %s\n", szName, pszReason );
 	Printf( "%s", szKickString );
 
 	// Rebuild the string that will be displayed to clients. This time, color codes are allowed.
-	sprintf( szKickString, "\\ci%s\\ci was kicked from the server! Reason: %s\n", players[ulPlayer].userinfo.GetName(), pszReason );
+	sprintf( szKickString, TEXTCOLOR_ORANGE "%s" TEXTCOLOR_ORANGE " was kicked from the server! Reason: %s\n", players[ulPlayer].userinfo.GetName(), pszReason );
 
 	// Send the message out to all clients.
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
@@ -3491,7 +3491,7 @@ void SERVER_ForceToSpectate( ULONG ulPlayer, const char *pszReason )
 		return;
 	}
 
-	SERVER_Printf( PRINT_HIGH, "\\ci%s\\ci has been forced to spectate! Reason: %s\n",
+	SERVER_Printf( PRINT_HIGH, TEXTCOLOR_ORANGE "%s" TEXTCOLOR_ORANGE " has been forced to spectate! Reason: %s\n",
 		players[ulPlayer].userinfo.GetName(), pszReason );
 
 	// Make this player a spectator.
@@ -5739,12 +5739,12 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	// Player was on a team, so tell everyone that he's changing teams.
 	if ( bOnTeam )
 	{
-		SERVER_Printf( "%s \\c-defected to the \\c%c%s \\c-team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].ulTeam )), TEAM_GetName( players[g_lCurrentClient].ulTeam ));
+		SERVER_Printf( "%s defected to the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].ulTeam )), TEAM_GetName( players[g_lCurrentClient].ulTeam ));
 	}
 	// Otherwise, tell everyone he's joining a team.
 	else
 	{
-		SERVER_Printf( "%s \\c-joined the \\c%c%s \\c-team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].ulTeam )), TEAM_GetName( players[g_lCurrentClient].ulTeam ));
+		SERVER_Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].ulTeam )), TEAM_GetName( players[g_lCurrentClient].ulTeam ));
 	}
 
 	if ( players[g_lCurrentClient].mo )
