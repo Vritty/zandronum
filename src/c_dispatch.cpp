@@ -207,14 +207,12 @@ static const char *MenuDefCommands[] =
 	"menuconsole",
 	"clearnodecache",
 	"am_restorecolors",
-	"undocolorpic",
 	"special",
 	"puke",
 	"fpuke",
 	"pukename",
 	//"event",		// [SP] these won't be useful until zscript
 	//"netevent",
-	"openmenu",
 
 	// begin zandronum specific commands
 	"menu_spectate",
@@ -236,10 +234,6 @@ static const char *MenuDefCommands[] =
 	"rcon",
 	"menu_rconlogin",
 	"spectate",
-	"join",
-	"team",
-	"changeteam",
-	"callvote",
 };
 
 // CODE --------------------------------------------------------------------
