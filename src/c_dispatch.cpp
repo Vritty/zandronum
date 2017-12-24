@@ -234,6 +234,10 @@ static const char *MenuDefCommands[] =
 	"rcon",
 	"menu_rconlogin",
 	"spectate",
+	"join",
+	"team",
+	"changeteam",
+	"callvote",
 };
 
 // CODE --------------------------------------------------------------------
