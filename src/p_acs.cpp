@@ -334,9 +334,25 @@ FWorldGlobalArray ACS_GlobalArrays[NUM_GLOBALVARS];
 //
 //----------------------------------------------------------------------------
 
+struct FACSStackMemory
+{
+	int32_t& operator[](const size_t index)
+	{
+		if (index >= STACK_SIZE)
+		{
+			I_Error("Corrupted stack pointer in ACS VM");
+		}
+
+		return buffer[index];
+	}
+
+private:
+	int32_t buffer[STACK_SIZE];
+};
+
 struct FACSStack
 {
-	SDWORD buffer[STACK_SIZE];
+	FACSStackMemory buffer;
 	int sp;
 	FACSStack *next;
 	FACSStack *prev;
@@ -958,7 +974,20 @@ void P_CollectACSGlobalStrings()
 {
 	for (FACSStack *stack = FACSStack::head; stack != NULL; stack = stack->next)
 	{
-		GlobalACSStrings.MarkStringArray(stack->buffer, stack->sp);
+		const int32_t sp = stack->sp;
+
+		if (0 == sp)
+		{
+			continue;
+		}
+		else if (sp < 0 && sp >= STACK_SIZE)
+		{
+			I_Error("Corrupted stack pointer in ACS VM");
+		}
+		else
+		{
+			GlobalACSStrings.MarkStringArray(&stack->buffer[0], sp);
+		}
 	}
 	FBehavior::StaticMarkLevelVarStrings();
 	P_MarkWorldVarStrings();
@@ -7045,7 +7074,7 @@ inline int getshort (int *&pc)
 	return res;
 }
 
-static bool CharArrayParms(int &capacity, int &offset, int &a, int *Stack, int &sp, bool ranged)
+static bool CharArrayParms(int &capacity, int &offset, int &a, FACSStackMemory& Stack, int &sp, bool ranged)
 {
 	if (ranged)
 	{
@@ -7147,7 +7176,7 @@ int DLevelScript::RunScript ()
 	}
 
 	FACSStack stackobj;
-	SDWORD *Stack = stackobj.buffer;
+	FACSStackMemory& Stack = stackobj.buffer;
 	int &sp = stackobj.sp;
 
 	int *pc = this->pc;
@@ -7494,7 +7523,7 @@ int DLevelScript::RunScript ()
 				sp -= sizeof(CallReturn)/sizeof(int);
 				retsp = &Stack[sp];
 				activeBehavior->GetFunctionProfileData(activeFunction)->AddRun(runaway - ret->EntryInstrCount);
-				sp = int(locals - Stack);
+				sp = int(locals - &Stack[0]);
 				pc = ret->ReturnModule->Ofs2PC(ret->ReturnAddress);
 				activeFunction = ret->ReturnFunction;
 				activeBehavior = ret->ReturnModule;
