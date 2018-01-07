@@ -137,7 +137,8 @@ FButtonStatus Button_Mlook, Button_Klook, Button_Use, Button_AltAttack,
 	Button_ShowMedals;	// [BC] Added the "show medals" button.
 
 
-bool ParsingKeyConf, ParsingMenuDef = false;
+bool ParsingKeyConf;
+/*static*/ bool UnsafeExecutionContext; // [BB] Zandronum needs this in a header.
 
 // To add new actions, go to the console and type "key <action name>".
 // This will give you the key value to use in the first column. Then
@@ -197,49 +198,6 @@ static const char *KeyConfCommands[] =
 	"setslot",
 	"addplayerclass",
 	"clearplayerclasses"
-};
-
-static const char *MenuDefCommands[] =
-{
-	"snd_reset",
-	"reset2defaults",
-	"reset2saved",
-	"menuconsole",
-	"clearnodecache",
-	"am_restorecolors",
-	"undocolorpic",
-	"special",
-	"puke",
-	"fpuke",
-	"pukename",
-	//"event",		// [SP] these won't be useful until zscript
-	//"netevent",
-	"openmenu",
-
-	// begin zandronum specific commands
-	"menu_spectate",
-	"menu_changeteam",
-	"menu_disconnect",
-	"menu_startskirmish",
-	"querymaster",
-	"menu_join_selected_server",
-	"menu_callkickvote",
-	"menu_callmapvote",
-	"menu_calllimitvote",
-	"menu_ignore",
-	"menu_joingame",
-	"menu_help",
-	"menu_autoselect",
-	"menu_joingame",
-	"menu_joingamewithclass",
-	"menu_login",
-	"rcon",
-	"menu_rconlogin",
-	"spectate",
-	"join",
-	"team",
-	"changeteam",
-	"callvote",
 };
 
 // CODE --------------------------------------------------------------------
@@ -635,25 +593,6 @@ void C_DoCommand (const char *cmd, int keynum)
 		if (i < 0)
 		{
 			Printf ("Invalid command for KEYCONF: %s\n", beg);
-			return;
-		}
-	}
-
-	if (ParsingMenuDef)
-	{
-		int i;
-
-		for (i = countof(MenuDefCommands)-1; i >= 0; --i)
-		{
-			if (strnicmp (beg, MenuDefCommands[i], len) == 0 &&
-				MenuDefCommands[i][len] == 0)
-			{
-				break;
-			}
-		}
-		if (i < 0)
-		{
-			Printf ("Invalid command for MENUDEF: %s\n", beg);
 			return;
 		}
 	}
@@ -1144,6 +1083,17 @@ void FConsoleCommand::Run (FCommandLine &argv, APlayerPawn *who, int key)
 	m_RunFunc (argv, who, key);
 }
 
+void FUnsafeConsoleCommand::Run (FCommandLine &args, APlayerPawn *instigator, int key)
+{
+	if (UnsafeExecutionContext)
+	{
+		Printf(TEXTCOLOR_RED "Cannot execute unsafe command " TEXTCOLOR_GOLD "%s\n", m_Name);
+		return;
+	}
+
+	FConsoleCommand::Run (args, instigator, key);
+}
+
 FConsoleAlias::FConsoleAlias (const char *name, const char *command, bool noSave)
 	: FConsoleCommand (name, NULL),
 	  bRunning(false), bKill(false)
@@ -1438,9 +1388,13 @@ CCMD (alias)
 					alias = NULL;
 				}
 			}
+			else if (ParsingKeyConf)
+			{
+				new FUnsafeConsoleAlias (argv[1], argv[2]);
+			}
 			else
 			{
-				alias = new FConsoleAlias (argv[1], argv[2], ParsingKeyConf);
+				alias = new FConsoleAlias (argv[1], argv[2], false);
 			}
 		}
 	}
@@ -1576,6 +1530,13 @@ void FConsoleAlias::SafeDelete ()
 	{
 		bKill = true;
 	}
+}
+
+void FUnsafeConsoleAlias::Run (FCommandLine &args, APlayerPawn *instigator, int key)
+{
+	UnsafeExecutionContext = true;
+	FConsoleAlias::Run(args, instigator, key);
+	UnsafeExecutionContext = false;
 }
 
 void FExecList::AddCommand(const char *cmd, const char *file)
