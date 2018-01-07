@@ -708,7 +708,7 @@ CCMD (print)
 	}
 }
 
-CCMD (exec)
+UNSAFE_CCMD (exec)
 {
 	if (argv.argc() < 2)
 		return;
@@ -736,7 +736,7 @@ void execLogfile(const char *fn)
 	}
 }
 
-CCMD (logfile)
+UNSAFE_CCMD (logfile)
 {
 	// [BC/BB] This function may not be used by ConsoleCommand.
 	if ( ACS_IsCalledFromConsoleCommand( ))
@@ -944,7 +944,7 @@ CCMD (error)
 	}
 }
 
-CCMD (error_fatal)
+UNSAFE_CCMD (error_fatal)
 {
 	// [BB] This function may not be used by ConsoleCommand.
 	if ( ACS_IsCalledFromConsoleCommand( ))
@@ -1142,7 +1142,7 @@ CCMD (warp)
 //
 //==========================================================================
 
-CCMD (load)
+UNSAFE_CCMD (load)
 {
     // [BB] This function may not be used by ConsoleCommand.
     if ( ACS_IsCalledFromConsoleCommand() )
@@ -1171,7 +1171,7 @@ CCMD (load)
 //
 //==========================================================================
 
-CCMD (save)
+UNSAFE_CCMD (save)
 {
     // [BB] This function may not be used by ConsoleCommand.
     if ( ACS_IsCalledFromConsoleCommand() )

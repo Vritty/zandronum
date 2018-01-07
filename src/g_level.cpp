@@ -240,7 +240,7 @@ CCMD (map)
 //
 //==========================================================================
 
-CCMD (open)
+UNSAFE_CCMD (open)
 {
 	if (( NETWORK_GetState( ) == NETSTATE_CLIENT ) ||
 		( NETWORK_GetState( ) == NETSTATE_SERVER ))

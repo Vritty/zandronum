@@ -3321,7 +3321,7 @@ void D_DoomMain (void)
 //
 //==========================================================================
 
-CCMD(restart)
+UNSAFE_CCMD(restart)
 {
 	// remove command line args that would get in the way during restart
 	Args->RemoveArgs("-iwad");
@@ -3404,4 +3404,5 @@ void FStartupScreen::NetProgress(int) {}
 void FStartupScreen::NetMessage(char const *,...) {}
 void FStartupScreen::NetDone(void) {}
 bool FStartupScreen::NetLoop(bool (*)(void *),void *) { return false; }
+
 

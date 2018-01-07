@@ -420,7 +420,7 @@ void M_SaveDefaultsFinal ()
 	GameConfig = NULL;
 }
 
-CCMD (writeini)
+UNSAFE_CCMD (writeini)
 {
 	// [BB] This function may not be used by ConsoleCommand.
 	if ( ACS_IsCalledFromConsoleCommand( ))
