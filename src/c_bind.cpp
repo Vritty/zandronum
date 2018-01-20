@@ -716,7 +716,7 @@ void C_UnbindAll ()
 	AutomapBindings.UnbindAll();
 }
 
-CCMD (unbindall)
+UNSAFE_CCMD (unbindall)
 {
 	// [BC] This function may not be used by ConsoleCommand.
 	if ( ACS_IsCalledFromConsoleCommand( ))

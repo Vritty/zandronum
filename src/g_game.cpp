@@ -5042,7 +5042,7 @@ CCMD( stopdemo )
 		CLIENTDEMO_FinishPlaying( );
 }
 
-CCMD (timedemo)
+UNSAFE_CCMD (timedemo)
 {
 	if (argv.argc() > 1)
 	{
