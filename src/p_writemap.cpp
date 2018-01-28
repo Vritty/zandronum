@@ -26,7 +26,8 @@ static int WriteBEHAVIOR (FILE *file);
 	lumps[pos].Size = LittleLong(Write##name (file)); \
 	memcpy (lumps[pos].Name, #name, sizeof(#name)-1);
 
-CCMD (dumpmap)
+// [BB] Added "UNSAFE".
+UNSAFE_CCMD (dumpmap)
 {
 	const char *mapname;
 	FILE *file;
