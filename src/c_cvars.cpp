@@ -66,6 +66,7 @@
 #include "menu/menu.h"
 #include "cl_main.h"
 #include "cl_commands.h"
+#include "v_text.h"
 
 struct FLatchedValue
 {
@@ -177,6 +178,11 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 {
 	if ((Flags & CVAR_NOSET) && m_DoNoSet)
 	{
+		return;
+	}
+	else if (UnsafeExecutionContext && !(GetFlags() & CVAR_MOD))
+	{
+		Printf(TEXTCOLOR_RED "Cannot set console variable" TEXTCOLOR_GOLD " %s " TEXTCOLOR_RED "from unsafe command\n", GetName());
 		return;
 	}
 	// [BB] ConsoleCommand may not mess with the cvar.
