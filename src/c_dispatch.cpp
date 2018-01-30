@@ -59,6 +59,14 @@
 #include "g_level.h"
 #include "p_acs.h"
 #include "cl_demo.h"
+#include "c_bind.h"
+#include "d_event.h"
+#include "gi.h"
+#include "v_palette.h"
+#include "v_video.h"
+#include "menu/menu.h"
+#define NO_IMP
+#include "menu/optionmenuitems.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -140,6 +148,23 @@ FButtonStatus Button_Mlook, Button_Klook, Button_Use, Button_AltAttack,
 
 bool ParsingKeyConf;
 /*static*/ bool UnsafeExecutionContext; // [BB] Zandronum needs this in a header.
+
+class UnsafeExecutionScope
+{
+	const bool wasEnabled;
+
+public:
+	explicit UnsafeExecutionScope(const bool enable = true)
+	: wasEnabled(UnsafeExecutionContext)
+	{
+		UnsafeExecutionContext = enable;
+	}
+
+	~UnsafeExecutionScope()
+	{
+		UnsafeExecutionContext = wasEnabled;
+	}
+};
 
 // To add new actions, go to the console and type "key <action name>".
 // This will give you the key value to use in the first column. Then
@@ -237,10 +262,8 @@ void DWaitingCommand::Tick ()
 {
 	if (--TicsLeft == 0)
 	{
-		const bool wasUnsafe = UnsafeExecutionContext;
-		UnsafeExecutionContext = IsUnsafe;
+		UnsafeExecutionScope scope;
 		AddCommandString (Command);
-		UnsafeExecutionContext = wasUnsafe;
 		Destroy ();
 	}
 }
@@ -721,6 +744,15 @@ void C_DoCommand (const char *cmd, int keynum)
 			Printf ("Unknown command \"%.*s\"\n", (int)len, beg);
 		}
 	}
+}
+
+// [BB] Moved here from optionmenuitems.h
+bool FOptionMenuItemCommand::Activate()
+{
+	S_Sound (CHAN_VOICE | CHAN_UI, "menu/choose", snd_menuvolume, ATTN_NONE);
+	UnsafeExecutionScope scope;
+	C_DoCommand(mAction);
+	return true;
 }
 
 void AddCommandString (char *cmd, int keynum)
@@ -1546,9 +1578,8 @@ void FConsoleAlias::SafeDelete ()
 
 void FUnsafeConsoleAlias::Run (FCommandLine &args, APlayerPawn *instigator, int key)
 {
-	UnsafeExecutionContext = true;
+	UnsafeExecutionScope scope;
 	FConsoleAlias::Run(args, instigator, key);
-	UnsafeExecutionContext = false;
 }
 
 void FExecList::AddCommand(const char *cmd, const char *file)
