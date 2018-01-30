@@ -77,10 +77,12 @@ public:
 
 class FOptionMenuItemCommand : public FOptionMenuItemSubmenu
 {
+	bool mUnsafe;
 public:
 	FOptionMenuItemCommand(const char *label, const char *menu)
 		: FOptionMenuItemSubmenu(label, menu)
 	{
+		mUnsafe = true;
 	}
 
 	// [BB] Moved implementation to c_dispatch.cpp

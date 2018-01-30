@@ -743,7 +743,7 @@ void C_DoCommand (const char *cmd, int keynum)
 bool FOptionMenuItemCommand::Activate()
 {
 	S_Sound (CHAN_VOICE | CHAN_UI, "menu/choose", snd_menuvolume, ATTN_NONE);
-	UnsafeExecutionScope scope;
+	UnsafeExecutionScope scope(mUnsafe);
 	C_DoCommand(mAction);
 	return true;
 }
