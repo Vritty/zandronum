@@ -180,11 +180,6 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 	{
 		return;
 	}
-	else if (UnsafeExecutionContext && !(GetFlags() & CVAR_MOD))
-	{
-		Printf(TEXTCOLOR_RED "Cannot set console variable" TEXTCOLOR_GOLD " %s " TEXTCOLOR_RED "from unsafe command\n", GetName());
-		return;
-	}
 	// [BB] ConsoleCommand may not mess with the cvar.
 	else if ( ( Flags & CVAR_NOSETBYACS ) && ( ACS_IsCalledFromConsoleCommand() ) )
 		return;
@@ -1624,8 +1619,23 @@ FBaseCVar* C_GetRootCVar()
 	return CVars;
 }
 
+static bool IsUnsafe(const FBaseCVar *const var)
+{
+	const bool unsafe = UnsafeExecutionContext && !(var->GetFlags() & CVAR_MOD);
+	if (unsafe)
+	{
+		Printf(TEXTCOLOR_RED "Cannot set console variable" TEXTCOLOR_GOLD " %s " TEXTCOLOR_RED "from unsafe command\n", var->GetName());
+	}
+	return unsafe;
+}
+
 void FBaseCVar::CmdSet (const char *newval)
 {
+	if (IsUnsafe(this))
+	{
+		return;
+	}
+
 	UCVarValue val;
 
 	// Casting away the const is safe in this case.
@@ -1711,6 +1721,11 @@ CCMD (toggle)
 	{
 		if ( (var = FindCVar (argv[1], &prev)) )
 		{
+			if (IsUnsafe(var))
+			{
+				return;
+			}
+
 			val = var->GetGenericRep (CVAR_Bool);
 			val.Bool = !val.Bool;
 			var->SetGenericRep (val, CVAR_Bool);
