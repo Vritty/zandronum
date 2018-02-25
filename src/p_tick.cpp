@@ -316,7 +316,7 @@ void P_Ticker (void)
 	// [BB] Process up to two movement commands for each client.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		for ( int i = 0; i < 2; i++ )
+		for ( int i = 0; i < ( ( gametic % 3 == 0 ) ? 2 : 1 ); i++ )
 		{
 			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 			{
