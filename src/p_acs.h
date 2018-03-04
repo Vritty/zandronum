@@ -40,6 +40,8 @@
 #include "doomtype.h"
 // [BB] New #includes.
 #include "r_data/r_translate.h"
+#include <algorithm>
+#include "i_system.h"
 
 #define LOCAL_SIZE				20
 #define NUM_MAPVARS				128
