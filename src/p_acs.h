@@ -41,6 +41,7 @@
 // [BB] New #includes.
 #include "r_data/r_translate.h"
 #include <algorithm>
+#include <iterator>
 #include "i_system.h"
 
 #define LOCAL_SIZE				20
