@@ -1880,6 +1880,8 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	// should be able to go back is the gametic they connected with.
 	g_aClients[lClient].lLastServerGametic = gametic;
 
+	g_aClients[lClient].MoveCMDRegulator.reset( );
+
 	SERVER_InitClientSRPData ( lClient );
 
 	// [BB] Inform the client that he is connected and needs to authenticate the map.
@@ -4773,24 +4775,6 @@ void SERVER_UpdateThingVelocity( AActor *pActor, bool updateZ, bool updateXY )
 
 //*****************************************************************************
 //
-template <typename CommandType>
-static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
-{
-	CommandType *cmd = new CommandType ( pByteStream );
-
-	if ( sv_useticbuffer )
-	{
-		g_aClients[g_lCurrentClient].MoveCMDs.Push ( cmd );
-		return false;
-	}
-
-	const bool retValue = cmd->process ( g_lCurrentClient );
-	delete cmd;
-	return retValue;
-}
-
-//*****************************************************************************
-//
 static bool server_Ignore( BYTESTREAM_s *pByteStream )
 {
 	ULONG	ulTargetIdx = NETWORK_ReadByte( pByteStream );
@@ -5021,6 +5005,11 @@ public:
 	{
 		return true;
 	}
+
+	virtual int getClientTic ( ) const
+	{
+		return moveCmd.ulGametic;
+	}
 };
 
 //*****************************************************************************
@@ -5034,7 +5023,7 @@ static bool server_ClientMove( BYTESTREAM_s *pByteStream )
 	// in a buffer. This way we can limit the amount of movement commands
 	// we process for a player in a given tic to prevent the player from
 	// seemingly teleporting in case too many movement commands arrive at once.
-	return server_ParseBufferedCommand<ClientMoveCommand> ( pByteStream );
+	return g_aClients[g_lCurrentClient].MoveCMDRegulator.parseBufferedCommand<ClientMoveCommand>( pByteStream );
 }
 
 ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
@@ -5362,7 +5351,7 @@ static bool server_WeaponSelect( BYTESTREAM_s *pByteStream )
 	// [BB] To keep weapon sync when buffering movement commands, the weapon 
 	// select commands also need to be stored in the same buffer the keep
 	// the proper order of the commands.
-	return server_ParseBufferedCommand<ClientWeaponSelectCommand> ( pByteStream );
+	return g_aClients[g_lCurrentClient].MoveCMDRegulator.parseBufferedCommand<ClientWeaponSelectCommand>( pByteStream );
 }
 
 ClientWeaponSelectCommand::ClientWeaponSelectCommand ( BYTESTREAM_s *pByteStream )
@@ -6555,6 +6544,221 @@ FString CLIENT_s::GetAccountName() const
 		FString result;
 		result.Format ( "%td@localhost", this - g_aClients );
 		return result;
+	}
+}
+
+//*****************************************************************************
+//	ClientCommandRegulator implementation.
+
+// NOTE: A gap is the number of consecutive tics in which the server received no movement
+// commands from the client.
+//
+// This method's purpose is simply to manage the array of regularly occuring gaps/stutters.
+// Since regularly occuring gaps can slightly vary in length, the "gaps" are sorted (by
+// length) such that slots can be re-used if needed.
+// To be more precise, I thought that leaving room for one tic of difference would be good
+// considering that one tic is already 28ms of extra latency.
+// If a gap's length is one less than a slot, this slot is re-used, if it is one more, the
+// slot is re-used and its length is modified to match.
+// Otherwise a new slot is inserted. As such we have to make sure never to overlap with the
+// error room of other slots hence the "complexity" of this method.
+// This is only called if a gap does occur.
+// The argument is one plus the actual size of the gap.
+//
+// The duration of the biggest gap that occurred often enough will be considered as the safe latency.
+// Movement commands older than the safe latency will be considered safe to process.
+void ClientCommandRegulator::processGap( int tics )
+{
+	int idx;
+	for ( idx = 0; idx < (signed)Gaps.Size( ); idx++ )
+	{
+		if ( abs( Gaps[idx].Tics - tics ) <= 1 )
+		{
+			// Re-use this slot.
+			Gaps[idx].Count++;
+			Gaps[idx].Gametic = gametic;
+
+			if ( tics > Gaps[idx].Tics )
+			{
+				Gaps[idx].Tics = tics;
+
+				if ( (signed)Gaps.Size( ) > idx + 1 && Gaps[idx + 1].Tics - tics == 2 )
+				{
+					// There's overlap, merge them.
+					Gaps[idx + 1].Count += Gaps[idx].Count;
+					Gaps[idx + 1].Gametic = gametic;
+					Gaps.Delete( idx );
+				}
+			}
+
+			idx = -1;
+			break;
+		}
+		else if ( Gaps[idx].Tics > tics )
+		{
+			// Insert here but make sure there is no overlap.
+			if ( Gaps[idx].Tics - tics == 2 )
+			{
+				Gaps[idx].Count++;
+				Gaps[idx].Gametic = gametic;
+				idx = -1;
+			}
+			else if ( idx > 0 && tics - Gaps[idx - 1].Tics == 2 )
+			{
+				Gaps[idx - 1].Tics = tics;
+				Gaps[idx - 1].Count++;
+				Gaps[idx - 1].Gametic = gametic;
+				idx = -1;
+			}
+
+			break;
+		}
+	}
+
+	if ( idx != -1 )
+	{
+		CMDGap gap;
+		gap.Tics = tics;
+		gap.Count = 1;
+		gap.Gametic = gametic;
+		Gaps.Insert( idx, gap );
+	}
+}
+
+template<typename CommandType>
+bool ClientCommandRegulator::parseBufferedCommand( BYTESTREAM_s *pByteStream )
+{
+	ClientCommand *cmd = new CommandType( pByteStream );
+
+	if ( sv_useticbuffer )
+	{
+		// Check if a gap occured in the movement processing.
+		if ( cmd->isMoveCmd( ) && gametic - g_aClients[g_lCurrentClient].lLastMoveTick > 1 )
+		{
+			// Check if said gap resulted from packet loss (which we won't take in account)
+			// Otherwise the gap occured because of a ping spike (which we will take in account).
+			// NOTE: This ignores the fact that packets can be received in the wrong order.
+			// Nothing can be done for unordered packets because their gametic will not be
+			// in sequence resulting in the ClientCommandRegulator::move condition failing.
+			bool doProcess = true;
+			for ( int i = MoveCMDs.Size( ) - 1; i > -1; i-- )
+			{
+				if ( MoveCMDs[i]->isMoveCmd( ) )
+				{
+					if ( MoveCMDs[i]->getClientTic( ) != cmd->getClientTic( ) - 1 )
+						doProcess = false;
+
+					break;
+				}
+			}
+
+			if ( doProcess )
+				processGap( gametic - g_aClients[g_lCurrentClient].lLastMoveTick );
+		}
+
+		MoveCMDs.Push( cmd );
+		return false;
+	}
+
+	const bool retValue = cmd->process( g_lCurrentClient );
+	delete cmd;
+	return retValue;
+}
+
+void ClientCommandRegulator::reset( )
+{
+	for ( unsigned int i = 0; i < MoveCMDs.Size( ); i++ )
+	{
+		delete MoveCMDs[i];
+	}
+
+	SafeLatency = 0;
+	BaseTic = 0;
+	Gaps.Clear( );
+	MoveCMDs.Clear( );
+}
+
+void ClientCommandRegulator::tick( )
+{
+	// Check if any slot timed out.
+	for ( unsigned int i = 0; i < Gaps.Size( ); i++ )
+	{
+		if ( gametic - Gaps[i].Gametic >= TimeoutTics )
+		{
+			Gaps.Delete( i-- );
+		}
+	}
+
+	// Since the gaps are ordered in size, this loop simply extracts the size of the
+	// largest gap that occurred often enough.
+	SafeLatency = 0;
+	for ( int i = Gaps.Size( ) - 1; i > -1; i-- )
+	{
+		// Let's take in account values that occur at least 3 times.
+		// Hopefully this isn't too harsh considering the timeout value of 5 seconds.
+		if ( Gaps[i].Count > 2 )
+		{
+			SafeLatency = Gaps[i].Tics;
+			break;
+		}
+	}
+
+	// Select the "base" tic from which to apply the safe latency.
+	if ( SafeLatency && BaseTic == 0 )
+	{
+		int base = 0;
+		for ( int i = MoveCMDs.Size( ) - 1; i > -1; i-- )
+		{
+			if ( MoveCMDs[i]->isMoveCmd( ) )
+			{
+				base = MoveCMDs[i]->getClientTic( );
+			}
+		}
+		BaseTic = base;
+	}
+	else if ( BaseTic )
+	{
+		if ( SafeLatency == 0 )
+			BaseTic = 0;
+		else
+			BaseTic++;
+	}
+}
+
+// This is the most important part of the implementation:
+// The point of the safe latency is to delay the processing of movement commands by exactly
+// the right amount such that when the ping spikes occur again, instead of having the player
+// stop, we have exactly enough movement commands "in reserve" within the buffer to continue
+// the processing of his movement, effectively "streamlining" the process and completely
+// avoiding the jitter that would occur otherwise.
+void ClientCommandRegulator::move( int client )
+{
+	bool doMove = false;
+	for ( unsigned int i = 0; i < MoveCMDs.Size( ); i++ )
+	{
+		if ( MoveCMDs[i]->isMoveCmd( ) )
+		{
+			// The command is older than "BaseTic - SafeLatency", process it.
+			if ( BaseTic == 0 || MoveCMDs[i]->getClientTic( ) <= BaseTic - SafeLatency )
+				doMove = true;
+
+			break;
+		}
+	}
+	if ( doMove == false )
+		return;
+
+	while ( MoveCMDs.Size( ) != 0 )
+	{
+		// Process only one movement command.
+		const bool bMovement = MoveCMDs[0]->isMoveCmd( );
+		MoveCMDs[0]->process( client );
+
+		delete MoveCMDs[0];
+		MoveCMDs.Delete(0);
+
+		if ( bMovement == true )
+			break;
 	}
 }
 
