@@ -1631,9 +1631,9 @@ add_custom_target( protocolspec ALL
 	COMMAND ${PYTHON_EXECUTABLE}
 		"${CMAKE_SOURCE_DIR}/protocolspec/generator/codegenerator.py"
 		--spec "${CMAKE_SOURCE_DIR}/protocolspec/spec.txt"
-		--source "network/servercommands.cpp"
-		--header "network/servercommands.h"
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+		--source "${CMAKE_SOURCE_DIR}/src/network/servercommands.cpp"
+		--header "${CMAKE_SOURCE_DIR}/src/network/servercommands.h"
+	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/protocolspec/generator" )
 
 # [BB]
 if ( WIN32 )
