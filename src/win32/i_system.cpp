@@ -358,8 +358,14 @@ static int I_GetTimePolled(bool saveMS)
 	}
 	if (saveMS)
 	{
+		// [Leo] Replaced the expressions for TicStart and TicNext below.
+		/*
 		TicStart = tm;
 		TicNext = (tm * TICRATE / 1000 + 1) * 1000 / TICRATE;
+		*/
+		DWORD CurrentTic = ((tm - basetime) * TICRATE) / 1000;
+		TicStart = (CurrentTic * 1000 / TICRATE) + basetime;
+		TicNext = ((CurrentTic + 1) * 1000 / TICRATE) + basetime;
 	}
 
 	return ((tm-basetime)*TICRATE)/1000;
