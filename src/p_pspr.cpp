@@ -1030,7 +1030,8 @@ void A_GunFlash(AActor *self, FState *flash, const int Flags)
 		}
 	}
 
-	if (flash == NULL)
+	// [BB] In a crash log, client_GiveInventory was calling this with ReadyWeapon == NULL when giving some CustomInventory. 
+	if (flash == NULL && player->ReadyWeapon)
 	{
 		if (player->ReadyWeapon->bAltFire) flash = player->ReadyWeapon->FindState(NAME_AltFlash);
 		if (flash == NULL) flash = player->ReadyWeapon->FindState(NAME_Flash);
