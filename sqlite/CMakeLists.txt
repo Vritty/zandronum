@@ -11,37 +11,40 @@ set( ZAN_SQLITE_HASHED_ARCHIVE "${CMAKE_CURRENT_SOURCE_DIR}/sqlite-${ZAN_SQLITE_
 if( IS_DIRECTORY ${ZAN_SQLITE_HASHED_ARCHIVE} OR IS_SYMLINK ${ZAN_SQLITE_HASHED_ARCHIVE} )
 	message( FATAL_ERROR "SQLite: ${ZAN_SQLITE_HASHED_ARCHIVE} must be a valid file.\n"
 				"SQLite: Please remove it and try again." )
-elseif( NOT EXISTS ${ZAN_SQLITE_HASHED_ARCHIVE} )
+elseif( ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.c ) OR ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.h ) OR ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3ext.h ) )
 
-	if( IS_DIRECTORY ${ZAN_SQLITE_TEMP_ARCHIVE} OR IS_SYMLINK ${ZAN_SQLITE_TEMP_ARCHIVE} )
-		message( FATAL_ERROR "SQLite: ${ZAN_SQLITE_TEMP_ARCHIVE} must be a valid file.\n"
+	if( NOT EXISTS ${ZAN_SQLITE_HASHED_ARCHIVE} )
+		if( IS_DIRECTORY ${ZAN_SQLITE_TEMP_ARCHIVE} OR IS_SYMLINK ${ZAN_SQLITE_TEMP_ARCHIVE} )
+			message( FATAL_ERROR "SQLite: ${ZAN_SQLITE_TEMP_ARCHIVE} must be a valid file.\n"
 					"SQLite: Please remove it and try again." )
-	endif()
-	message( STATUS "SQLite: downloading the archive..." )
+		endif()
 
-	file( DOWNLOAD https://www.sqlite.org/${ZAN_SQLITE_YEAR}/${ZAN_SQLITE_DOWNLOAD_NAME}.tar.gz ${ZAN_SQLITE_TEMP_ARCHIVE}
-			SHOW_PROGRESS
-			STATUS ZAN_SQLITE_DOWNLOAD_STATUS )
+		message( STATUS "SQLite: downloading the archive..." )
 
-	# Report any problem if present and abort immediately.
-	list( GET ZAN_SQLITE_DOWNLOAD_STATUS 0 ZAN_SQLITE_DOWNLOAD_ERROR_CODE )
-	if( ZAN_SQLITE_DOWNLOAD_ERROR_CODE )
-		list( GET ZAN_SQLITE_DOWNLOAD_STATUS 1 ZAN_SQLITE_DOWNLOAD_ERROR_MESSAGE )
-		message( FATAL_ERROR "SQLite: download failed. Reason: ${ZAN_SQLITE_DOWNLOAD_ERROR_MESSAGE}" )
-	endif()
+		file( DOWNLOAD https://www.sqlite.org/${ZAN_SQLITE_YEAR}/${ZAN_SQLITE_DOWNLOAD_NAME}.tar.gz ${ZAN_SQLITE_TEMP_ARCHIVE}
+				SHOW_PROGRESS
+				STATUS ZAN_SQLITE_DOWNLOAD_STATUS )
 
-	# Check the hash. Abort immediately if it's not valid (something is wrong with the download)
-	file( SHA1 ${ZAN_SQLITE_TEMP_ARCHIVE} ZAN_SQLITE_CURRENT_SHA1 )
-	if( NOT ZAN_SQLITE_CURRENT_SHA1 STREQUAL ZAN_SQLITE_SHA1 )
-		message( FATAL_ERROR "SQLite: download failed. The downloaded file has a different hash:\n"
-					"SQLite:    valid:      ${ZAN_SQLITE_SHA1}\n"
-					"SQLite:    downloaded: ${ZAN_SQLITE_CURRENT_SHA1}" )
+		# Report any problem if present and abort immediately.
+		list( GET ZAN_SQLITE_DOWNLOAD_STATUS 0 ZAN_SQLITE_DOWNLOAD_ERROR_CODE )
+		if( ZAN_SQLITE_DOWNLOAD_ERROR_CODE )
+			list( GET ZAN_SQLITE_DOWNLOAD_STATUS 1 ZAN_SQLITE_DOWNLOAD_ERROR_MESSAGE )
+			message( FATAL_ERROR "SQLite: download failed. Reason: ${ZAN_SQLITE_DOWNLOAD_ERROR_MESSAGE}" )
+		endif()
+
+		# Check the hash. Abort immediately if it's not valid (something is wrong with the download)
+		file( SHA1 ${ZAN_SQLITE_TEMP_ARCHIVE} ZAN_SQLITE_CURRENT_SHA1 )
+		if( NOT ZAN_SQLITE_CURRENT_SHA1 STREQUAL ZAN_SQLITE_SHA1 )
+			message( FATAL_ERROR "SQLite: download failed. The downloaded file has a different hash:\n"
+						"SQLite:    valid:      ${ZAN_SQLITE_SHA1}\n"
+						"SQLite:    downloaded: ${ZAN_SQLITE_CURRENT_SHA1}" )
+		endif()
+
+		# Rename the archive.
+		execute_process( COMMAND ${CMAKE_COMMAND} -E rename ${ZAN_SQLITE_TEMP_ARCHIVE} ${ZAN_SQLITE_HASHED_ARCHIVE} )
 	endif()
 
 	message( STATUS "SQLite: saving the source files into the 'sqlite' directory." )
-
-	# Rename the archive.
-	execute_process( COMMAND ${CMAKE_COMMAND} -E rename ${ZAN_SQLITE_TEMP_ARCHIVE} ${ZAN_SQLITE_HASHED_ARCHIVE} )
 
 	# Extract the archive.
 	execute_process( COMMAND ${CMAKE_COMMAND} -E tar xzf ${ZAN_SQLITE_HASHED_ARCHIVE} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
