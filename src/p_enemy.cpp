@@ -3633,13 +3633,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_Detonate)
 
 	// [BC] If this explosion originated from a player, and it hit something, give the player
 	// credit for it.
-	if (( self->target ) && ( self->target->player ))
-	{
-		if ( self->target->player->bStruckPlayer )
-			PLAYER_StruckPlayer( self->target->player );
-		else
-			self->target->player->ulConsecutiveHits = 0;
-	}
+	PLAYER_CheckStruckPlayer ( self->target );
 }
 
 bool CheckBossDeath (AActor *actor)
