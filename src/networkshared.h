@@ -202,6 +202,7 @@ struct NETADDRESS_s
 	const char* ToStringNoPort() const;
 	bool LoadFromString( const char* string );
 	void LoadFromSocketAddress ( const struct sockaddr_in& sockaddr );
+	bool IsSet () const;
 
 private:
 	bool operator==( const NETADDRESS_s& );

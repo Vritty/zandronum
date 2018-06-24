@@ -507,7 +507,7 @@ void CLIENT_Tick( void )
 	case CTS_ATTEMPTINGCONNECTION:
 
 		// If we're not connected to a server, and have an IP specified, try to connect.
-		if ( g_AddressServer.abIP[0] )
+		if ( g_AddressServer.IsSet() )
 			CLIENT_AttemptConnection( );
 		break;
 	// A connection has been established with the server; now authenticate the level.
@@ -9140,7 +9140,7 @@ CCMD( reconnect )
 		CLIENT_QuitNetworkGame( NULL );
 	
 	// Store the address of the server we were on.
-	if ( g_AddressLastConnected.abIP[0] == 0 )
+	if ( g_AddressLastConnected.IsSet() == false )
 	{
 		Printf( "Unknown IP for last server. Use \"connect <server ip>\".\n" );
 		return;

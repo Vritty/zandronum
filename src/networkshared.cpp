@@ -716,6 +716,13 @@ const char* NETADDRESS_s::ToStringNoPort() const
 
 //*****************************************************************************
 //
+bool NETADDRESS_s::IsSet() const
+{
+	return ( abIP[0] != 0 );
+}
+
+//*****************************************************************************
+//
 bool NETWORK_StringToIP( const char *pszAddress, char *pszIP0, char *pszIP1, char *pszIP2, char *pszIP3 )
 {
 	char	szCopy[16];
