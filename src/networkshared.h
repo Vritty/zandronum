@@ -197,7 +197,36 @@ public:
 	{
 		return szAddress[i];
 	}
+
+	void Clear()
+	{
+		for ( int i = 0; i < 4; ++i )
+			szAddress[i][0] = 0;
+	}
+
+	bool IsEqualTo ( const IPStringArray& other ) const
+	{
+		for ( int i = 0; i < 4; ++i )
+		{
+			if ( stricmp ( szAddress[i], other[i] ) != 0 )
+				return false;
+		}
+		return true;
+	}
+
+	void copyFrom ( const IPStringArray& other )
+	{
+		for (int i = 0; i < 4; ++i)
+			sprintf ( szAddress[i], "%s", other[i] );
+	}
+
+	std::ostream& print ( std::ostream& os ) const
+	{
+		return os << szAddress[0] << "." << szAddress[1] << "." << szAddress[2] << "." << szAddress[3];
+	}
 };
+
+extern std::ostream &operator<< ( std::ostream &os, const IPStringArray &input );
 
 //*****************************************************************************
 struct NETADDRESS_s

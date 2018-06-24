@@ -65,6 +65,13 @@ static	int		g_OutboundBytesMeasured = 0;
 
 //*****************************************************************************
 //
+extern std::ostream &operator<< ( std::ostream &os, const IPStringArray &input ) {
+	input.print ( os );
+	return os;
+}
+
+//*****************************************************************************
+//
 NETBUFFER_s::NETBUFFER_s ( )
 {
 	this->pbData = NULL;
@@ -958,10 +965,7 @@ bool IPFileParser::parseNextLine( FILE *pFile, IPADDRESSBAN_s &IP, ULONG &BanIdx
 				}
 				else
 				{
-					IP.szIP[0][0] = 0;
-					IP.szIP[1][0] = 0;
-					IP.szIP[2][0] = 0;
-					IP.szIP[3][0] = 0;
+					IP.szIP.Clear();
 				}
 			}
 
@@ -1171,10 +1175,7 @@ ULONG IPList::doesEntryExist( const IPStringArray &szAddress ) const
 {
 	for ( ULONG ulIdx = 0; ulIdx < _ipVector.size( ); ulIdx++ )
 	{
-		if (( stricmp( szAddress[0], _ipVector[ulIdx].szIP[0] ) == 0 ) &&
-			( stricmp( szAddress[1], _ipVector[ulIdx].szIP[1] ) == 0 ) &&
-			( stricmp( szAddress[2], _ipVector[ulIdx].szIP[2] ) == 0 ) &&
-			( stricmp( szAddress[3], _ipVector[ulIdx].szIP[3] ) == 0 ))
+		if ( szAddress.IsEqualTo ( _ipVector[ulIdx].szIP ) )
 		{
 			return ( ulIdx );
 		}
@@ -1241,10 +1242,7 @@ std::string IPList::getEntryAsString( const ULONG ulIdx, bool bIncludeComment, b
 	if ( ulIdx < _ipVector.size() )
 	{
 		// Address.
-		entryStream << _ipVector[ulIdx].szIP[0] << "."
-					<< _ipVector[ulIdx].szIP[1] << "."
-					<< _ipVector[ulIdx].szIP[2] << "."
-					<< _ipVector[ulIdx].szIP[3];
+		entryStream << _ipVector[ulIdx].szIP;
 
 		// Expiration date.
 		if ( bIncludeExpiration && _ipVector[ulIdx].tExpirationDate != 0 && _ipVector[ulIdx].tExpirationDate != -1 )
@@ -1309,7 +1307,7 @@ void IPList::addEntry( const IPStringArray &szAddress, const char *pszPlayerName
 	ulIdx = doesEntryExist( szAddress );
 	if ( ulIdx != _ipVector.size() )
 	{
-		messageStream << szAddress[0] << "." << szAddress[1] << "."	<< szAddress[2] << "." << szAddress[3] << " already exists in list";
+		messageStream << szAddress << " already exists in list";
 		if ( ( getEntry ( ulIdx ).tExpirationDate != tExpiration ) || ( strnicmp ( getEntry ( ulIdx ).szComment, PlayerNameAndComment.c_str(), 127 ) ) )
 		{
 			messageStream << ". Just updating the expiration date and reason.\n";
@@ -1327,10 +1325,7 @@ void IPList::addEntry( const IPStringArray &szAddress, const char *pszPlayerName
 
 	// Add the entry and comment into memory.
 	IPADDRESSBAN_s newIPEntry;
-	sprintf( newIPEntry.szIP[0], "%s", szAddress[0] );
-	sprintf( newIPEntry.szIP[1], "%s", szAddress[1] );
-	sprintf( newIPEntry.szIP[2], "%s", szAddress[2] );
-	sprintf( newIPEntry.szIP[3], "%s", szAddress[3] );
+	newIPEntry.szIP.copyFrom ( szAddress );
 	strncpy( newIPEntry.szComment, PlayerNameAndComment.c_str(), 127 );
 	newIPEntry.szComment[127] = 0;
 	newIPEntry.tExpirationDate = tExpiration;
@@ -1359,7 +1354,7 @@ void IPList::addEntry( const IPStringArray &szAddress, const char *pszPlayerName
 		fputs( OutString.c_str(), pFile );
 		fclose( pFile );
 
-		messageStream << szAddress[0] << "." << szAddress[1] << "."	<< szAddress[2] << "." << szAddress[3] << " added to list.";
+		messageStream << szAddress << " added to list.";
 		if ( tExpiration )
 			messageStream << " It expires on " << szDate << ".";
 		
@@ -1415,7 +1410,7 @@ void IPList::removeEntry( const IPStringArray &szAddress, std::string &Message )
 	ULONG entryIdx = doesEntryExist( szAddress );
 
 	std::stringstream messageStream;
-	messageStream << szAddress[0] << "." << szAddress[1] << "." << szAddress[2] << "." << szAddress[3];
+	messageStream << szAddress;
 
 	if ( entryIdx < _ipVector.size() )
 	{
