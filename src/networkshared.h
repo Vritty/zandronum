@@ -204,11 +204,27 @@ public:
 			szAddress[i][0] = 0;
 	}
 
+	void SetToZeroes ( )
+	{
+		for ( int i = 0; i < 4; ++i )
+			sprintf( szAddress[i], "0" );
+	}
+
 	bool IsEqualTo ( const IPStringArray& other ) const
 	{
 		for ( int i = 0; i < 4; ++i )
 		{
 			if ( stricmp ( szAddress[i], other[i] ) != 0 )
+				return false;
+		}
+		return true;
+	}
+
+	bool Matches ( const IPStringArray& otherWithWildcards ) const
+	{
+		for ( int i = 0; i < 4; ++i )
+		{
+			if (( otherWithWildcards[i][0] != '*' ) && ( stricmp( szAddress[i], otherWithWildcards[i] ) != 0 ) )
 				return false;
 		}
 		return true;
@@ -223,6 +239,13 @@ public:
 	std::ostream& print ( std::ostream& os ) const
 	{
 		return os << szAddress[0] << "." << szAddress[1] << "." << szAddress[2] << "." << szAddress[3];
+	}
+
+	operator std::string () const
+	{
+		std::string stringRepresentation;
+		stringRepresentation = stringRepresentation + szAddress[0] + "." + szAddress[1] + "." + szAddress[2] + "." + szAddress[3];
+		return stringRepresentation;
 	}
 };
 

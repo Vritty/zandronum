@@ -1099,7 +1099,7 @@ void IPList::removeExpiredEntries( void )
 			std::string	Message;
 
 			Message = "Temporary ban for ";
-			Message = Message + _ipVector[ulIdx].szIP[0] + "." + _ipVector[ulIdx].szIP[1] + "." + _ipVector[ulIdx].szIP[2] + "." + _ipVector[ulIdx].szIP[3];
+			Message += std::string ( _ipVector[ulIdx].szIP );
 			
 			// Add the ban reason.
 			if ( strlen( _ipVector[ulIdx].szComment ) )
@@ -1132,10 +1132,7 @@ ULONG IPList::getFirstMatchingEntryIndex( const IPStringArray &szAddress ) const
 {
 	for ( ULONG ulIdx = 0; ulIdx < _ipVector.size(); ulIdx++ )
 	{
-		if ((( _ipVector[ulIdx].szIP[0][0] == '*' ) || ( stricmp( szAddress[0], _ipVector[ulIdx].szIP[0] ) == 0 )) &&
-			(( _ipVector[ulIdx].szIP[1][0] == '*' ) || ( stricmp( szAddress[1], _ipVector[ulIdx].szIP[1] ) == 0 )) &&
-			(( _ipVector[ulIdx].szIP[2][0] == '*' ) || ( stricmp( szAddress[2], _ipVector[ulIdx].szIP[2] ) == 0 )) &&
-			(( _ipVector[ulIdx].szIP[3][0] == '*' ) || ( stricmp( szAddress[3], _ipVector[ulIdx].szIP[3] ) == 0 )))
+		if ( szAddress.Matches ( _ipVector[ulIdx].szIP ) )
 		{
 			return ( ulIdx );
 		}
@@ -1191,12 +1188,7 @@ IPADDRESSBAN_s IPList::getEntry( const ULONG ulIdx ) const
 	if ( ulIdx >= _ipVector.size() )
 	{
 		IPADDRESSBAN_s	ZeroBan;
-
-		sprintf( ZeroBan.szIP[0], "0" );
-		sprintf( ZeroBan.szIP[1], "0" );
-		sprintf( ZeroBan.szIP[2], "0" );
-		sprintf( ZeroBan.szIP[3], "0" );
-
+		ZeroBan.szIP.SetToZeroes();
 		ZeroBan.szComment[0] = 0;
 		ZeroBan.tExpirationDate = 0;
 
@@ -1335,7 +1327,7 @@ void IPList::addEntry( const IPStringArray &szAddress, const char *pszPlayerName
 	if ( (pFile = fopen( _filename.c_str(), "a" )) )
 	{
 		OutString = "\n";
-		OutString = OutString + szAddress[0] + "." + szAddress[1] + "." + szAddress[2] + "." + szAddress[3];
+		OutString += std::string ( szAddress );
 
 		// [RC] Write the expiration date of this ban.
 		if ( tExpiration )
