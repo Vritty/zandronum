@@ -690,14 +690,6 @@ const char* NETADDRESS_s::ToHostName() const
 
 //*****************************************************************************
 //
-void NETADDRESS_s::ToIPStringArray( IPStringArray& address ) const
-{
-	for ( int i = 0; i < 4; ++i )
-		itoa( abIP[i], address[i], 10 );
-}
-
-//*****************************************************************************
-//
 void NETADDRESS_s::SetPort ( USHORT port )
 {
 	usPort = htons( port );
@@ -726,6 +718,14 @@ const char* NETADDRESS_s::ToStringNoPort() const
 bool NETADDRESS_s::IsSet() const
 {
 	return ( abIP[0] != 0 );
+}
+
+//*****************************************************************************
+//
+void IPStringArray::SetFrom ( const NETADDRESS_s &Address )
+{
+	for ( int i = 0; i < 4; ++i )
+		itoa( Address.abIP[i], szAddress[i], 10 );
 }
 
 //*****************************************************************************
@@ -954,7 +954,7 @@ bool IPFileParser::parseNextLine( FILE *pFile, IPADDRESSBAN_s &IP, ULONG &BanIdx
 						return ( false );
 					}
 
-					IPAddress.ToIPStringArray ( IP.szIP );
+					IP.szIP.SetFrom ( IPAddress );
 					IP.tExpirationDate = 0;
 
 					BanIdx++;
@@ -1146,7 +1146,7 @@ ULONG IPList::getFirstMatchingEntryIndex( const IPStringArray &szAddress ) const
 ULONG IPList::getFirstMatchingEntryIndex( const NETADDRESS_s &Address ) const
 {
 	IPStringArray szAddress;
-	Address.ToIPStringArray( szAddress );
+	szAddress.SetFrom ( Address );
 	return getFirstMatchingEntryIndex( szAddress );
 }
 
@@ -1162,7 +1162,7 @@ bool IPList::isIPInList( const IPStringArray &szAddress ) const
 bool IPList::isIPInList( const NETADDRESS_s &Address ) const
 {
 	IPStringArray szAddress;
-	Address.ToIPStringArray( szAddress );
+	szAddress.SetFrom ( Address );
 	return isIPInList( szAddress );
 }
 
@@ -1203,7 +1203,7 @@ IPADDRESSBAN_s IPList::getEntry( const ULONG ulIdx ) const
 ULONG IPList::getEntryIndex( const NETADDRESS_s &Address ) const
 {
 	IPStringArray szAddress;
-	Address.ToIPStringArray ( szAddress );
+	szAddress.SetFrom ( Address );
 	return doesEntryExist( szAddress );
 }
 
@@ -1371,7 +1371,7 @@ void IPList::addEntry( const char *pszIPAddress, const char *pszPlayerName, cons
 		addEntry( szStringBan, pszPlayerName, pszComment, Message, tExpiration );
 	else if ( BanAddress.LoadFromString( pszIPAddress ))
 	{
-		BanAddress.ToIPStringArray ( szStringBan );
+		szStringBan.SetFrom ( BanAddress );
 		addEntry( szStringBan, pszPlayerName, pszComment, Message, tExpiration );
 	}
 	else

@@ -1821,7 +1821,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	}
 
 	// Check if this IP has been banned.
-	g_aClients[lClient].Address.ToIPStringArray( szAddress );
+	szAddress.SetFrom ( g_aClients[lClient].Address );
 	if ( SERVERBAN_IsIPBanned( szAddress ))
 	{
 		// Client has been banned! GET THE FUCK OUT OF HERE!

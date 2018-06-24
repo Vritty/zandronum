@@ -175,6 +175,8 @@ enum
 //-- STRUCTURES ------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
+struct NETADDRESS_s;
+
 //==========================================================================
 //
 // IPStringArray
@@ -193,11 +195,6 @@ public:
 		return szAddress[i];
 	}
 
-	char* operator[] ( int i )
-	{
-		return szAddress[i];
-	}
-
 	void Clear()
 	{
 		for ( int i = 0; i < 4; ++i )
@@ -209,6 +206,8 @@ public:
 		for ( int i = 0; i < 4; ++i )
 			sprintf( szAddress[i], "0" );
 	}
+
+	void SetFrom ( const NETADDRESS_s &Address );
 
 	bool SetFromString ( const char *pszAddressString );
 
@@ -269,7 +268,6 @@ struct NETADDRESS_s
 	bool Compare ( const NETADDRESS_s& other, bool ignorePort = false ) const;
 	bool CompareNoPort ( const NETADDRESS_s& other ) const { return Compare( other, true ); }
 	const char* ToHostName() const;
-	void ToIPStringArray ( IPStringArray& address ) const;
 	struct sockaddr_in ToSocketAddress() const;
 	void SetPort ( USHORT port );
 	const char* ToString() const;

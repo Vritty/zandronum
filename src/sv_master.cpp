@@ -302,7 +302,7 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 		}
 	
 		// Now, check to see if this IP has been banend from this server.
-		Address.ToIPStringArray( szAddress );
+		szAddress.SetFrom ( Address );
 		if ( SERVERBAN_IsIPBanned( szAddress ))
 		{
 			// Write our header.
