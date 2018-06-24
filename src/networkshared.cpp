@@ -723,7 +723,7 @@ bool NETADDRESS_s::IsSet() const
 
 //*****************************************************************************
 //
-bool NETWORK_StringToIP( const char *pszAddress, char *pszIP0, char *pszIP1, char *pszIP2, char *pszIP3 )
+bool NETWORK_StringToIP( const char *pszAddress, IPStringArray &StringArray )
 {
 	char	szCopy[16];
 	char	*pszCopy;
@@ -771,19 +771,19 @@ bool NETWORK_StringToIP( const char *pszAddress, char *pszIP0, char *pszIP1, cha
 			{
 			case 0:
 
-				strcpy( pszIP0, szTemp );
+				strcpy( StringArray[0], szTemp );
 				break;
 			case 1:
 
-				strcpy( pszIP1, szTemp );
+				strcpy( StringArray[1], szTemp );
 				break;
 			case 2:
 
-				strcpy( pszIP2, szTemp );
+				strcpy( StringArray[2], szTemp );
 				break;
 			case 3:
 
-				strcpy( pszIP3, szTemp );
+				strcpy( StringArray[3], szTemp );
 				break;
 			}
 			ulIdx++;
@@ -799,17 +799,14 @@ bool NETWORK_StringToIP( const char *pszAddress, char *pszIP0, char *pszIP1, cha
 		}
 	}
 
-	strcpy( pszIP3, szTemp );
+	strcpy( StringArray[3], szTemp );
 
 	// Finally, make sure each entry of our string is valid.
-	if ((( atoi( pszIP0 ) < 0 ) || ( atoi( pszIP0 ) > 255 )) && ( _stricmp( "*", pszIP0 ) != 0 ))
-		return ( false );
-	if ((( atoi( pszIP1 ) < 0 ) || ( atoi( pszIP1 ) > 255 )) && ( _stricmp( "*", pszIP1 ) != 0 ))
-		return ( false );
-	if ((( atoi( pszIP2 ) < 0 ) || ( atoi( pszIP2 ) > 255 )) && ( _stricmp( "*", pszIP2 ) != 0 ))
-		return ( false );
-	if ((( atoi( pszIP3 ) < 0 ) || ( atoi( pszIP3 ) > 255 )) && ( _stricmp( "*", pszIP3 ) != 0 ))
-		return ( false );
+	for ( int i = 0; i < 4; ++i )
+	{
+		if ((( atoi( StringArray[i] ) < 0 ) || ( atoi( StringArray[i] ) > 255 )) && ( _stricmp( "*", StringArray[i] ) != 0 ))
+			return ( false );
+	}
 
     return ( true );
 }
@@ -915,7 +912,7 @@ bool IPFileParser::parseNextLine( FILE *pFile, IPADDRESSBAN_s &IP, ULONG &BanIdx
 		{
 			if ( lPosition > 0 )
 			{
-				if ( NETWORK_StringToIP( szIP, IP.szIP[0], IP.szIP[1], IP.szIP[2], IP.szIP[3] ))
+				if ( NETWORK_StringToIP( szIP, IP.szIP ))
 				{
 					if ( BanIdx == _listLength )
 					{
@@ -1383,7 +1380,7 @@ void IPList::addEntry( const char *pszIPAddress, const char *pszPlayerName, cons
 	NETADDRESS_s	BanAddress;
 	IPStringArray	szStringBan;
 
-	if ( NETWORK_StringToIP( pszIPAddress, szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3] ))
+	if ( NETWORK_StringToIP( pszIPAddress, szStringBan ))
 		addEntry( szStringBan, pszPlayerName, pszComment, Message, tExpiration );
 	else if ( BanAddress.LoadFromString( pszIPAddress ))
 	{
@@ -1441,7 +1438,7 @@ void IPList::removeEntry( const char *pszIPAddress, std::string &Message )
 {
 	IPStringArray szStringBan;
 
-	if ( NETWORK_StringToIP( pszIPAddress, szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3] ))
+	if ( NETWORK_StringToIP( pszIPAddress, szStringBan ))
 		removeEntry( szStringBan, Message );
 	else
 	{
