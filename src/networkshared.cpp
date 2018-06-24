@@ -1170,14 +1170,14 @@ bool IPList::isIPInList( const NETADDRESS_s &Address ) const
 
 //*****************************************************************************
 //
-ULONG IPList::doesEntryExist( const char *pszIP0, const char *pszIP1, const char *pszIP2, const char *pszIP3 ) const
+ULONG IPList::doesEntryExist( const IPStringArray &szAddress ) const
 {
 	for ( ULONG ulIdx = 0; ulIdx < _ipVector.size( ); ulIdx++ )
 	{
-		if (( stricmp( pszIP0, _ipVector[ulIdx].szIP[0] ) == 0 ) &&
-			( stricmp( pszIP1, _ipVector[ulIdx].szIP[1] ) == 0 ) &&
-			( stricmp( pszIP2, _ipVector[ulIdx].szIP[2] ) == 0 ) &&
-			( stricmp( pszIP3, _ipVector[ulIdx].szIP[3] ) == 0 ))
+		if (( stricmp( szAddress[0], _ipVector[ulIdx].szIP[0] ) == 0 ) &&
+			( stricmp( szAddress[1], _ipVector[ulIdx].szIP[1] ) == 0 ) &&
+			( stricmp( szAddress[2], _ipVector[ulIdx].szIP[2] ) == 0 ) &&
+			( stricmp( szAddress[3], _ipVector[ulIdx].szIP[3] ) == 0 ))
 		{
 			return ( ulIdx );
 		}
@@ -1212,9 +1212,9 @@ IPADDRESSBAN_s IPList::getEntry( const ULONG ulIdx ) const
 //
 ULONG IPList::getEntryIndex( const NETADDRESS_s &Address ) const
 {
-	char szAddress[4][4];
+	IPStringArray szAddress;
 	Address.ToIPStringArray ( szAddress );
-	return doesEntryExist( szAddress[0], szAddress[1], szAddress[2], szAddress[3] );
+	return doesEntryExist( szAddress );
 }
 
 //*****************************************************************************
@@ -1274,7 +1274,7 @@ std::string IPList::getEntryAsString( const ULONG ulIdx, bool bIncludeComment, b
 
 //*****************************************************************************
 //
-void IPList::addEntry( const char *pszIP0, const char *pszIP1, const char *pszIP2, const char *pszIP3, const char *pszPlayerName, const char *pszCommentUncleaned, std::string &Message, time_t tExpiration )
+void IPList::addEntry( const IPStringArray &szAddress, const char *pszPlayerName, const char *pszCommentUncleaned, std::string &Message, time_t tExpiration )
 {
 	FILE				*pFile;
 	std::string			OutString;
@@ -1309,10 +1309,10 @@ void IPList::addEntry( const char *pszIP0, const char *pszIP1, const char *pszIP
 	}
 
 	// Address is already in the list.
-	ulIdx = doesEntryExist( pszIP0, pszIP1, pszIP2, pszIP3 );
+	ulIdx = doesEntryExist( szAddress );
 	if ( ulIdx != _ipVector.size() )
 	{
-		messageStream << pszIP0 << "." << pszIP1 << "."	<< pszIP2 << "." << pszIP3 << " already exists in list";
+		messageStream << szAddress[0] << "." << szAddress[1] << "."	<< szAddress[2] << "." << szAddress[3] << " already exists in list";
 		if ( ( getEntry ( ulIdx ).tExpirationDate != tExpiration ) || ( strnicmp ( getEntry ( ulIdx ).szComment, PlayerNameAndComment.c_str(), 127 ) ) )
 		{
 			messageStream << ". Just updating the expiration date and reason.\n";
@@ -1330,10 +1330,10 @@ void IPList::addEntry( const char *pszIP0, const char *pszIP1, const char *pszIP
 
 	// Add the entry and comment into memory.
 	IPADDRESSBAN_s newIPEntry;
-	sprintf( newIPEntry.szIP[0], "%s", pszIP0 );
-	sprintf( newIPEntry.szIP[1], "%s", pszIP1 );
-	sprintf( newIPEntry.szIP[2], "%s", pszIP2 );
-	sprintf( newIPEntry.szIP[3], "%s", pszIP3 );
+	sprintf( newIPEntry.szIP[0], "%s", szAddress[0] );
+	sprintf( newIPEntry.szIP[1], "%s", szAddress[1] );
+	sprintf( newIPEntry.szIP[2], "%s", szAddress[2] );
+	sprintf( newIPEntry.szIP[3], "%s", szAddress[3] );
 	strncpy( newIPEntry.szComment, PlayerNameAndComment.c_str(), 127 );
 	newIPEntry.szComment[127] = 0;
 	newIPEntry.tExpirationDate = tExpiration;
@@ -1343,7 +1343,7 @@ void IPList::addEntry( const char *pszIP0, const char *pszIP1, const char *pszIP
 	if ( (pFile = fopen( _filename.c_str(), "a" )) )
 	{
 		OutString = "\n";
-		OutString = OutString + pszIP0 + "." + pszIP1 + "." + pszIP2 + "." + pszIP3;
+		OutString = OutString + szAddress[0] + "." + szAddress[1] + "." + szAddress[2] + "." + szAddress[3];
 
 		// [RC] Write the expiration date of this ban.
 		if ( tExpiration )
@@ -1362,7 +1362,7 @@ void IPList::addEntry( const char *pszIP0, const char *pszIP1, const char *pszIP
 		fputs( OutString.c_str(), pFile );
 		fclose( pFile );
 
-		messageStream << pszIP0 << "." << pszIP1 << "."	<< pszIP2 << "." << pszIP3 << " added to list.";
+		messageStream << szAddress[0] << "." << szAddress[1] << "."	<< szAddress[2] << "." << szAddress[3] << " added to list.";
 		if ( tExpiration )
 			messageStream << " It expires on " << szDate << ".";
 		
@@ -1381,14 +1381,14 @@ void IPList::addEntry( const char *pszIP0, const char *pszIP1, const char *pszIP
 void IPList::addEntry( const char *pszIPAddress, const char *pszPlayerName, const char *pszComment, std::string &Message, time_t tExpiration )
 {
 	NETADDRESS_s	BanAddress;
-	char			szStringBan[4][4];
+	IPStringArray	szStringBan;
 
 	if ( NETWORK_StringToIP( pszIPAddress, szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3] ))
-		addEntry( szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3], pszPlayerName, pszComment, Message, tExpiration );
+		addEntry( szStringBan, pszPlayerName, pszComment, Message, tExpiration );
 	else if ( BanAddress.LoadFromString( pszIPAddress ))
 	{
 		BanAddress.ToIPStringArray ( szStringBan );
-		addEntry( szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3], pszPlayerName, pszComment, Message, tExpiration );
+		addEntry( szStringBan, pszPlayerName, pszComment, Message, tExpiration );
 	}
 	else
 	{
@@ -1413,12 +1413,12 @@ void IPList::removeEntry( ULONG ulEntryIdx )
 //*****************************************************************************
 //
 // Removes the entry with the given IP. Writes a success/failure message to Message.
-void IPList::removeEntry( const char *pszIP0, const char *pszIP1, const char *pszIP2, const char *pszIP3, std::string &Message )
+void IPList::removeEntry( const IPStringArray &szAddress, std::string &Message )
 {
-	ULONG entryIdx = doesEntryExist( pszIP0, pszIP1, pszIP2, pszIP3 );
+	ULONG entryIdx = doesEntryExist( szAddress );
 
 	std::stringstream messageStream;
-	messageStream << pszIP0 << "." << pszIP1 << "." << pszIP2 << "." << pszIP3;
+	messageStream << szAddress[0] << "." << szAddress[1] << "." << szAddress[2] << "." << szAddress[3];
 
 	if ( entryIdx < _ipVector.size() )
 	{
@@ -1439,10 +1439,10 @@ void IPList::removeEntry( const char *pszIP0, const char *pszIP1, const char *ps
 // Removes the entry with the given address. Writes a success/failure message to Message.
 void IPList::removeEntry( const char *pszIPAddress, std::string &Message )
 {
-	char			szStringBan[4][4];
+	IPStringArray szStringBan;
 
 	if ( NETWORK_StringToIP( pszIPAddress, szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3] ))
-		removeEntry( szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3], Message );
+		removeEntry( szStringBan, Message );
 	else
 	{
 		Message = "Invalid IP address string: ";

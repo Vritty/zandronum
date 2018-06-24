@@ -377,15 +377,15 @@ public:
 	ULONG			getFirstMatchingEntryIndex( const NETADDRESS_s &Address ) const;
 	bool			isIPInList( const IPStringArray &szAddress ) const;
 	bool			isIPInList( const NETADDRESS_s &Address ) const;
-	ULONG			doesEntryExist( const char *pszIP0, const char *pszIP1, const char *pszIP2, const char *pszIP3 ) const;
+	ULONG			doesEntryExist( const IPStringArray &szAddress ) const;
 	IPADDRESSBAN_s	getEntry( const ULONG ulIdx ) const;
 	std::string		getEntryAsString( const ULONG ulIdx, bool bIncludeComment = true, bool bIncludeExpiration = true, bool bInludeNewline = true ) const;
 	ULONG			getEntryIndex( const NETADDRESS_s &Address ) const; // [RC]
 	const char		*getEntryComment( const NETADDRESS_s &Address ) const; // [RC]
 	time_t			getEntryExpiration( const NETADDRESS_s &Address ) const; // [RC]
-	void			addEntry( const char *pszIP0, const char *pszIP1, const char *pszIP2, const char *pszIP3, const char *pszPlayerName, const char *pszComment, std::string &Message, time_t tExpiration );
+	void			addEntry( const IPStringArray &szAddress, const char *pszPlayerName, const char *pszComment, std::string &Message, time_t tExpiration );
 	void			addEntry( const char *pszIPAddress, const char *pszPlayerName, const char *pszComment, std::string &Message, time_t tExpiration );
-	void			removeEntry( const char *pszIP0, const char *pszIP1, const char *pszIP2, const char *pszIP3, std::string &Message );
+	void			removeEntry( const IPStringArray &szAddress, std::string &Message );
 	void			removeEntry( const char *pszIPAddress, std::string &Message );
 	void			removeEntry( ULONG ulEntryIdx ); // [RC]
 	void			copy( IPList &destination ); // [RC]

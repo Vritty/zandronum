@@ -1671,7 +1671,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	FString			clientPassword;
 	char			szServerPassword[MAX_NETWORK_STRING];
 	unsigned int	clientNetworkGameVersion;
-	char			szAddress[4][4];
+	IPStringArray	szAddress;
 	ULONG			ulIdx;
 	NETADDRESS_s	AddressFrom;
 	bool			bAdminClientConnecting;
@@ -7091,7 +7091,7 @@ static void	server_LogPacket( BYTESTREAM_s *pByteStream, NETADDRESS_s Address, c
 	// Log all further packets from this IP.
 	if ( !g_HackerIPList.isIPInList( Address ) )
 	{
-		char szAddress[4][4];
+		IPStringArray szAddress;
 		Address.ToIPStringArray ( szAddress );
 		std::string reason;
 		reason = "Hacker";

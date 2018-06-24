@@ -260,7 +260,7 @@ void SERVER_MASTER_Broadcast( void )
 //
 void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ulTime, bool bBroadcasting )
 {
-	char		szAddress[4][4];
+	IPStringArray szAddress;
 	ULONG		ulIdx;
 	ULONG		ulBits;
 
