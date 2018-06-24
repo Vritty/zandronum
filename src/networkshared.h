@@ -171,13 +171,33 @@ enum
 // This is the longest possible string we can pass over the network.
 #define	MAX_NETWORK_STRING			2048
 
-//*****************************************************************************
-// [BB] Allows to easily use char[4][4] references as function arguments.
-typedef char IPStringArray[4][4];
-
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- STRUCTURES ------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
+
+//==========================================================================
+//
+// IPStringArray
+//
+// @author Benjamin Berkels
+//
+//==========================================================================
+
+class IPStringArray
+{
+private:
+	char szAddress[4][4];
+public:
+	const char* operator[] ( int i ) const
+	{
+		return szAddress[i];
+	}
+
+	char* operator[] ( int i )
+	{
+		return szAddress[i];
+	}
+};
 
 //*****************************************************************************
 struct NETADDRESS_s
@@ -213,7 +233,7 @@ private:
 struct IPADDRESSBAN_s
 {
 	// The IP address in char form (can be a number or a wildcard).
-	char		szIP[4][4];
+	IPStringArray szIP;
 
 	// Comment regarding the banned address.
 	char		szComment[128];
