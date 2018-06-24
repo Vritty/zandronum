@@ -210,6 +210,8 @@ public:
 			sprintf( szAddress[i], "0" );
 	}
 
+	bool SetFromString ( const char *pszAddressString );
+
 	bool IsEqualTo ( const IPStringArray& other ) const
 	{
 		for ( int i = 0; i < 4; ++i )
@@ -378,7 +380,6 @@ void			NETWORK_WriteVariable( BYTESTREAM_s *byteStream, int value );
 void			NETWORK_WriteShortByte( BYTESTREAM_s *byteStream, int value, int bits );
 
 void			NETWORK_WriteHeader( BYTESTREAM_s *pByteStream, int Byte );
-bool			NETWORK_StringToIP( const char *pszAddress, IPStringArray &StringArray );
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- CLASSES ---------------------------------------------------------------------------------------------------------------------------------------
