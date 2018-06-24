@@ -2843,11 +2843,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 		pInfo = SERVER_SAVE_GetSavedInfo( players[ulClient].userinfo.GetName(), g_aClients[ulClient].Address );
 		if ( pInfo )
 		{
-			pInfo->Address.abIP[0] = 0;
-			pInfo->Address.abIP[1] = 0;
-			pInfo->Address.abIP[2] = 0;
-			pInfo->Address.abIP[3] = 0;
-			pInfo->Address.usPort = 0;
+			pInfo->Address.Clear();
 			pInfo->bInitialized = false;
 			pInfo->lFragCount = 0;
 			pInfo->lPointCount = 0;

@@ -564,6 +564,13 @@ void NETWORK_WriteShortByte( BYTESTREAM_s *byteStream, int value, int bits )
 //
 NETADDRESS_s::NETADDRESS_s()
 {
+	Clear();
+}
+
+//*****************************************************************************
+//
+void NETADDRESS_s::Clear()
+{
 	abIP[0] = abIP[1] = abIP[2] = abIP[3] = 0;
 	usPort = 0;
 }

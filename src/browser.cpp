@@ -162,14 +162,7 @@ NETADDRESS_s BROWSER_GetAddress( ULONG ulServer )
 	if (( ulServer >= MAX_BROWSER_SERVERS ) || ( g_BrowserServerList[ulServer].ulActiveState != AS_ACTIVE ))
 	{
 		NETADDRESS_s	Dummy;
-
-		Dummy.abIP[0] = 0;
-		Dummy.abIP[1] = 0;
-		Dummy.abIP[2] = 0;
-		Dummy.abIP[3] = 0;
-		Dummy.usPort = 0;
-		Dummy.usPad = 0;
-
+		Dummy.Clear();
 		return ( Dummy );
 	}
 
@@ -359,11 +352,7 @@ void BROWSER_ClearServerList( void )
 	{
 		g_BrowserServerList[ulIdx].ulActiveState = AS_INACTIVE;
 
-		g_BrowserServerList[ulIdx].Address.abIP[0] = 0;
-		g_BrowserServerList[ulIdx].Address.abIP[1] = 0;
-		g_BrowserServerList[ulIdx].Address.abIP[2] = 0;
-		g_BrowserServerList[ulIdx].Address.abIP[3] = 0;
-		g_BrowserServerList[ulIdx].Address.usPort = 0;
+		g_BrowserServerList[ulIdx].Address.Clear();
 	}
 }
 

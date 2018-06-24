@@ -188,12 +188,10 @@ struct NETADDRESS_s
 	// The IP address's port extension.
 	USHORT		usPort;
 
-	// What's this for?
-	USHORT		usPad;
-
 	NETADDRESS_s();
 	explicit NETADDRESS_s ( const char* string, bool* ok = NULL );
 
+	void Clear ();
 	bool Compare ( const NETADDRESS_s& other, bool ignorePort = false ) const;
 	bool CompareNoPort ( const NETADDRESS_s& other ) const { return Compare( other, true ); }
 	const char* ToHostName() const;
