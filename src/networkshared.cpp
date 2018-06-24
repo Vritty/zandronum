@@ -943,10 +943,7 @@ bool IPFileParser::parseNextLine( FILE *pFile, IPADDRESSBAN_s &IP, ULONG &BanIdx
 						return ( false );
 					}
 
-					_itoa( IPAddress.abIP[0], IP.szIP[0], 10 );
-					_itoa( IPAddress.abIP[1], IP.szIP[1], 10 );
-					_itoa( IPAddress.abIP[2], IP.szIP[2], 10 );
-					_itoa( IPAddress.abIP[3], IP.szIP[3], 10 );
+					IPAddress.ToIPStringArray ( IP.szIP );
 					IP.tExpirationDate = 0;
 
 					BanIdx++;
@@ -1209,12 +1206,7 @@ IPADDRESSBAN_s IPList::getEntry( const ULONG ulIdx ) const
 ULONG IPList::getEntryIndex( const NETADDRESS_s &Address ) const
 {
 	char szAddress[4][4];
-
-	itoa( Address.abIP[0], szAddress[0], 10 );
-	itoa( Address.abIP[1], szAddress[1], 10 );
-	itoa( Address.abIP[2], szAddress[2], 10 );
-	itoa( Address.abIP[3], szAddress[3], 10 );
-
+	Address.ToIPStringArray ( szAddress );
 	return doesEntryExist( szAddress[0], szAddress[1], szAddress[2], szAddress[3] );
 }
 
@@ -1388,11 +1380,7 @@ void IPList::addEntry( const char *pszIPAddress, const char *pszPlayerName, cons
 		addEntry( szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3], pszPlayerName, pszComment, Message, tExpiration );
 	else if ( BanAddress.LoadFromString( pszIPAddress ))
 	{
-		itoa( BanAddress.abIP[0], szStringBan[0], 10 );
-		itoa( BanAddress.abIP[1], szStringBan[1], 10 );
-		itoa( BanAddress.abIP[2], szStringBan[2], 10 );
-		itoa( BanAddress.abIP[3], szStringBan[3], 10 );
-
+		BanAddress.ToIPStringArray ( szStringBan );
 		addEntry( szStringBan[0], szStringBan[1], szStringBan[2], szStringBan[3], pszPlayerName, pszComment, Message, tExpiration );
 	}
 	else

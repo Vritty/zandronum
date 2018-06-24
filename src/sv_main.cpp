@@ -7092,11 +7092,7 @@ static void	server_LogPacket( BYTESTREAM_s *pByteStream, NETADDRESS_s Address, c
 	if ( !g_HackerIPList.isIPInList( Address ) )
 	{
 		char szAddress[4][4];
-
-		itoa( Address.abIP[0], szAddress[0], 10 );
-		itoa( Address.abIP[1], szAddress[1], 10 );
-		itoa( Address.abIP[2], szAddress[2], 10 );
-		itoa( Address.abIP[3], szAddress[3], 10 );
+		Address.ToIPStringArray ( szAddress );
 		std::string reason;
 		reason = "Hacker";
 		g_HackerIPList.addEntry( szAddress[0], szAddress[1], szAddress[2],  szAddress[3], "", pszReason, reason, SERVERBAN_ParseBanLength ( "perm" ) );
