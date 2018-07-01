@@ -287,7 +287,7 @@ public:
 	const char* ToString() const;
 	const char* ToStringNoPort() const;
 	bool LoadFromString( const char* string );
-	void LoadFromSocketAddress ( const struct sockaddr_in& sockaddr );
+	void LoadFromSocketAddress ( const struct sockaddr& sockaddr );
 	bool IsSet () const;
 	void WriteToStream ( BYTESTREAM_s *pByteStream, bool IncludePort = true ) const;
 	void ReadFromStream ( BYTESTREAM_s *pByteStream, bool IncludePort = true );

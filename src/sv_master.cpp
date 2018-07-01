@@ -216,7 +216,7 @@ void SERVER_MASTER_Broadcast( void )
 	broadcast_addr.sin_addr.s_addr = INADDR_BROADCAST;
 	broadcast_addr.sin_port = htons( DEFAULT_BROADCAST_PORT );
 	NETADDRESS_s AddressBroadcast;
-	AddressBroadcast.LoadFromSocketAddress( broadcast_addr );
+	AddressBroadcast.LoadFromSocketAddress( reinterpret_cast<const sockaddr&> ( broadcast_addr ) );
 
 	// [BB] Under all Windows versions broadcasts to INADDR_BROADCAST seem to work fine
 	// while class A broadcasts don't work under Vista/7. So just use INADDR_BROADCAST.

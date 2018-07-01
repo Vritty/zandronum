@@ -645,16 +645,17 @@ bool NETADDRESS_s::LoadFromString ( const char* string )
 			*(int *)&sadr.sin_addr = ulRet;
 	}
 
-	this->LoadFromSocketAddress( sadr );
+	this->LoadFromSocketAddress( reinterpret_cast<sockaddr&>(sadr) );
 	return true;
 }
 
 //*****************************************************************************
 //
-void NETADDRESS_s::LoadFromSocketAddress ( const sockaddr_in& sockaddr )
+void NETADDRESS_s::LoadFromSocketAddress ( const struct sockaddr& sockaddr )
 {
-	*(int *)&this->abIP = *(const int *)&sockaddr.sin_addr;
-	this->usPort = sockaddr.sin_port;
+	const sockaddr_in ipv4 = reinterpret_cast<const sockaddr_in&> ( sockaddr );
+	*( int * )&this->abIP = *(const int *)&ipv4.sin_addr;
+	this->usPort = ipv4.sin_port;
 }
 
 //*****************************************************************************
