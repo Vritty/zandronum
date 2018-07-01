@@ -281,11 +281,7 @@ void MASTERSERVER_SendServerIPToLauncher( const NETADDRESS_s &Address, BYTESTREA
 {
 	// Tell the launcher the IP of this server on the list.
 	NETWORK_WriteByte( pByteStream, MSC_SERVER );
-	NETWORK_WriteByte( pByteStream, Address.abIP[0] );
-	NETWORK_WriteByte( pByteStream, Address.abIP[1] );
-	NETWORK_WriteByte( pByteStream, Address.abIP[2] );
-	NETWORK_WriteByte( pByteStream, Address.abIP[3] );
-	NETWORK_WriteShort( pByteStream, ntohs( Address.usPort ));
+	Address.WriteToStream ( pByteStream );
 }
 
 //*****************************************************************************
@@ -307,10 +303,7 @@ void MASTERSERVER_SendServerIPBlockToLauncher( const NETADDRESS_s &Address, cons
 
 	// Tell the launcher the IP and all ports of the servers on that IP.
 	NETWORK_WriteByte( pByteStream, PortList.size() );
-	NETWORK_WriteByte( pByteStream, Address.abIP[0] );
-	NETWORK_WriteByte( pByteStream, Address.abIP[1] );
-	NETWORK_WriteByte( pByteStream, Address.abIP[2] );
-	NETWORK_WriteByte( pByteStream, Address.abIP[3] );
+	Address.WriteToStream ( pByteStream, false );
 	for ( unsigned int i = 0; i < PortList.size(); ++i )
 		NETWORK_WriteShort( pByteStream, ntohs( PortList[i] ) );
 }

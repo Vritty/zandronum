@@ -722,6 +722,26 @@ bool NETADDRESS_s::IsSet() const
 
 //*****************************************************************************
 //
+void NETADDRESS_s::WriteToStream ( BYTESTREAM_s *pByteStream, bool IncludePort ) const
+{
+	for ( int i = 0; i < 4; ++i )
+		NETWORK_WriteByte( pByteStream, abIP[i] );
+	if ( IncludePort )
+		NETWORK_WriteShort( pByteStream, ntohs( usPort ));
+}
+
+//*****************************************************************************
+//
+void NETADDRESS_s::ReadFromStream ( BYTESTREAM_s *pByteStream, bool IncludePort )
+{
+	for ( int i = 0; i < 4; ++i )
+		abIP[i] = NETWORK_ReadByte( pByteStream );
+	if ( IncludePort )
+		usPort = htons( NETWORK_ReadShort( pByteStream ));
+}
+
+//*****************************************************************************
+//
 void IPStringArray::SetFrom ( const NETADDRESS_s &Address )
 {
 	for ( int i = 0; i < 4; ++i )

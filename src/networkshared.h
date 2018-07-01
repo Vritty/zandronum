@@ -176,6 +176,7 @@ enum
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
 struct NETADDRESS_s;
+struct BYTESTREAM_s;
 
 //==========================================================================
 //
@@ -275,6 +276,8 @@ struct NETADDRESS_s
 	bool LoadFromString( const char* string );
 	void LoadFromSocketAddress ( const struct sockaddr_in& sockaddr );
 	bool IsSet () const;
+	void WriteToStream ( BYTESTREAM_s *pByteStream, bool IncludePort = true ) const;
+	void ReadFromStream ( BYTESTREAM_s *pByteStream, bool IncludePort = true );
 
 private:
 	bool operator==( const NETADDRESS_s& );

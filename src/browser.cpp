@@ -402,11 +402,7 @@ bool BROWSER_GetServerList( BYTESTREAM_s *pByteStream )
 			{
 				// Read in address information.
 				NETADDRESS_s serverAddress;
-				serverAddress.abIP[0] = NETWORK_ReadByte( pByteStream );
-				serverAddress.abIP[1] = NETWORK_ReadByte( pByteStream );
-				serverAddress.abIP[2] = NETWORK_ReadByte( pByteStream );
-				serverAddress.abIP[3] = NETWORK_ReadByte( pByteStream );
-				serverAddress.usPort = htons( NETWORK_ReadShort( pByteStream ));
+				serverAddress.ReadFromStream ( pByteStream );
 
 				BROWSER_AddServerToList ( serverAddress );
 			}
@@ -419,10 +415,7 @@ bool BROWSER_GetServerList( BYTESTREAM_s *pByteStream )
 				ULONG ulPorts = 0;
 				while (( ulPorts = NETWORK_ReadByte( pByteStream ) ))
 				{
-					serverAddress.abIP[0] = NETWORK_ReadByte( pByteStream );
-					serverAddress.abIP[1] = NETWORK_ReadByte( pByteStream );
-					serverAddress.abIP[2] = NETWORK_ReadByte( pByteStream );
-					serverAddress.abIP[3] = NETWORK_ReadByte( pByteStream );
+					serverAddress.ReadFromStream ( pByteStream, false );
 					for ( ULONG ulIdx = 0; ulIdx < ulPorts; ++ulIdx )
 					{
 						serverAddress.usPort = htons( NETWORK_ReadShort( pByteStream ));
