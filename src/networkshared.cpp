@@ -660,13 +660,16 @@ void NETADDRESS_s::LoadFromSocketAddress ( const struct sockaddr& sockaddr )
 
 //*****************************************************************************
 //
-sockaddr_in NETADDRESS_s::ToSocketAddress() const
+sockaddr NETADDRESS_s::ToSocketAddress() const
 {
-	sockaddr_in result;
+	sockaddr result;
 	memset( &result, 0, sizeof result );
-	*(int *)&result.sin_addr = *(const int *)&abIP;
-	result.sin_port = usPort;
-	result.sin_family = AF_INET;
+
+	struct sockaddr_in *ipv4 = reinterpret_cast <struct sockaddr_in *> ( &result );
+	*(int *)&ipv4->sin_addr = *(int *)&abIP;
+	ipv4->sin_port = usPort;
+	ipv4->sin_family = AF_INET;
+
 	return result;
 }
 

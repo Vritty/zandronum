@@ -281,7 +281,7 @@ public:
 	void Clear ();
 	bool Compare ( const NETADDRESS_s& other, bool ignorePort = false ) const;
 	bool CompareNoPort ( const NETADDRESS_s& other ) const { return Compare( other, true ); }
-	struct sockaddr_in ToSocketAddress() const;
+	struct sockaddr ToSocketAddress() const;
 	void SetPort ( USHORT port );
 	const char* ToString() const;
 	const char* ToStringNoPort() const;
