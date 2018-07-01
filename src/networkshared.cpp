@@ -672,25 +672,6 @@ sockaddr_in NETADDRESS_s::ToSocketAddress() const
 
 //*****************************************************************************
 //
-const char* NETADDRESS_s::ToHostName() const
-{
-	//gethostbyaddr();
-	struct hostent *hp;
-	struct sockaddr_in socketAddress = ToSocketAddress();
-	static char		s_szName[256];
-
-	hp = gethostbyaddr( (char *) &(socketAddress.sin_addr), sizeof(socketAddress.sin_addr), AF_INET );
-
-	if ( hp )
-		strncpy ( s_szName, (char *)hp->h_name, sizeof(s_szName) - 1 );
-	else
-		sprintf ( s_szName, "host_not_found" );
-
-	return s_szName;
-}
-
-//*****************************************************************************
-//
 void NETADDRESS_s::SetPort ( USHORT port )
 {
 	usPort = htons( port );
