@@ -1484,14 +1484,11 @@ struct ASCENDINGIPSORT_S
 	// [RC] Sorts the list ascendingly by IP, then by comment.
 	bool operator()( IPADDRESSBAN_s rpStart, IPADDRESSBAN_s rpEnd )
 	{
-		// Check each IP component.
-		for ( int i = 0; i < 4; i++ )
-		{
-			if ( atoi( rpStart.szIP[i] ) != atoi( rpEnd.szIP[i] ))
-				return ( atoi( rpStart.szIP[i] ) < atoi(rpEnd.szIP[i] ));
-		}
-
-		return ( strcmp( rpEnd.szComment, rpStart.szComment ) != 0 );
+		const int cmp = rpStart.szIP.CompareForSort ( rpEnd.szIP );
+		if ( cmp == 0 )
+			return ( strcmp( rpEnd.szComment, rpStart.szComment ) != 0 );
+		else
+			return ( cmp < 0 );
 	}
 };
 

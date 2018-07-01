@@ -190,11 +190,12 @@ class IPStringArray
 {
 private:
 	char szAddress[4][4];
-public:
+
 	const char* operator[] ( int i ) const
 	{
 		return szAddress[i];
 	}
+public:
 
 	void Clear()
 	{
@@ -220,6 +221,16 @@ public:
 				return false;
 		}
 		return true;
+	}
+
+	int CompareForSort ( const IPStringArray& other )
+	{
+		for ( int i = 0; i < 4; ++i )
+		{
+			if ( atoi( szAddress[i] ) != atoi( other[i] ) )
+				return ( atoi( szAddress[i] ) < atoi ( other[i] ) ) ? -1 : 1;
+		}
+		return 0;
 	}
 
 	bool Matches ( const IPStringArray& otherWithWildcards ) const
