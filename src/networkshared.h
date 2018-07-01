@@ -267,11 +267,10 @@ extern std::ostream &operator<< ( std::ostream &os, const IPStringArray &input )
 //*****************************************************************************
 struct NETADDRESS_s
 {
-private:
+public:
 	// Four digit IP address.
 	BYTE		abIP[4];
 
-public:
 	// The IP address's port extension.
 	USHORT		usPort;
 
