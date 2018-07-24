@@ -320,13 +320,13 @@ const char *BYTESTREAM_s::ReadString()
 
 //*****************************************************************************
 //
-bool NETWORK_ReadBit( BYTESTREAM_s *byteStream )
+bool BYTESTREAM_s::ReadBit()
 {
-	byteStream->EnsureBitSpace( 1, false );
+	this->EnsureBitSpace( 1, false );
 
 	// Use a bit shift to extract a bit from our current byte
-	bool result = !!( *byteStream->bitBuffer & ( 1 << byteStream->bitShift ));
-	byteStream->bitShift++;
+	bool result = !!( *this->bitBuffer & ( 1 << this->bitShift ));
+	this->bitShift++;
 	return result;
 }
 
@@ -335,8 +335,8 @@ bool NETWORK_ReadBit( BYTESTREAM_s *byteStream )
 int NETWORK_ReadVariable( BYTESTREAM_s *byteStream )
 {
 	// Read two bits to form an integer 0...3
-	int length = NETWORK_ReadBit( byteStream );
-	length |= NETWORK_ReadBit( byteStream ) << 1;
+	int length = byteStream->ReadBit();
+	length |= byteStream->ReadBit() << 1;
 
 	// Use this length to read in an integer of variable length.
 	switch ( length )

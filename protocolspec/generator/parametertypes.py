@@ -177,7 +177,7 @@ class BoolParameter(SpecParameter):
 		self.cxxtypename = 'bool'
 
 	def writeread(self, writer, command, reference, **args):
-		writer.writeline('command.{reference} = NETWORK_ReadBit( bytestream );'.format(**locals()))
+		writer.writeline('command.{reference} = bytestream->ReadBit();'.format(**locals()))
 
 	def writesend(self, writer, command, reference, **args):
 		writer.writecontext('command.addBit( this->{reference} );'.format(**locals()))
