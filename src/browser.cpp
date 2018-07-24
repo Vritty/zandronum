@@ -617,7 +617,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 
 	// Team damage scale.
 	if ( ulFlags & SQF_TEAMDAMAGE )
-		NETWORK_ReadFloat( pByteStream );
+		pByteStream->ReadFloat();
 
 	// [CW] Deprecated!
 	if ( ulFlags & SQF_TEAMSCORES )

@@ -94,12 +94,8 @@ class ByteParameter(SpecParameter):
 
 	# Writes code to read in this parameter.
 	def writeread(self, writer, command, reference):
-		if ( self.methodname() != "Byte" ) and ( self.methodname() != "Short" ) and ( self.methodname() != "Long" ):
-			readfunction = 'NETWORK_Read' + self.methodname()
-			writer.writeline('command.{reference} = {readfunction}( bytestream );'.format(**locals()))
-		else:
-			readfunction = 'Read' + self.methodname()
-			writer.writeline('command.{reference} = bytestream->{readfunction}();'.format(**locals()))
+		readfunction = 'Read' + self.methodname()
+		writer.writeline('command.{reference} = bytestream->{readfunction}();'.format(**locals()))
 
 	# Writes code to write this parameter to a NetCommand.
 	def writesend(self, writer, command, reference):
@@ -168,7 +164,7 @@ class FloatParameter(SpecParameter):
 		self.cxxtypename = 'float'
 
 	def writeread(self, writer, command, reference, **args):
-		writer.writeline('command.{reference} = NETWORK_ReadFloat( bytestream );'.format(**locals()))
+		writer.writeline('command.{reference} = bytestream->ReadFloat();'.format(**locals()))
 
 	def writesend(self, writer, command, reference, **args):
 		writer.writeline('command.addFloat( this->{reference} );'.format(**locals()))
@@ -346,9 +342,9 @@ class Vector3Parameter(SpecParameter):
 
 	def writeread(self, writer, command, reference, **args):
 		writer.writecontext('''
-			command.{reference}.X = NETWORK_ReadFloat( bytestream );
-			command.{reference}.Y = NETWORK_ReadFloat( bytestream );
-			command.{reference}.Z = NETWORK_ReadFloat( bytestream );'''.format(**locals()))
+			command.{reference}.X = bytestream->ReadFloat();
+			command.{reference}.Y = bytestream->ReadFloat();
+			command.{reference}.Z = bytestream->ReadFloat();'''.format(**locals()))
 
 	def writesend(self, writer, command, reference, **args):
 		writer.writecontext('''
@@ -414,10 +410,7 @@ class SectorParameter(SpecParameter):
 		resolvingFunction = self.resolvingFunction
 		self.indexVariable = indexVariable
 		writer.declare('int', indexVariable)
-		if ( indexLength != "Short" ) and ( indexLength != "Long" ):
-			writer.writeline('{indexVariable} = NETWORK_Read{indexLength}( bytestream );'.format(**locals()))
-		else:
-			writer.writeline('{indexVariable} = bytestream->Read{indexLength}();'.format(**locals()))
+		writer.writeline('{indexVariable} = bytestream->Read{indexLength}();'.format(**locals()))
 		writer.writeline('command.{reference} = {resolvingFunction}( {indexVariable} );'.format(**locals()))
 
 	def writereadchecks(self, writer, command, reference, **args):

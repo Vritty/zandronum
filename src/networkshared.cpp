@@ -275,7 +275,7 @@ int BYTESTREAM_s::ReadLong()
 
 //*****************************************************************************
 //
-float NETWORK_ReadFloat( BYTESTREAM_s *pByteStream )
+float BYTESTREAM_s::ReadFloat()
 {
 	union
 	{
@@ -283,7 +283,7 @@ float NETWORK_ReadFloat( BYTESTREAM_s *pByteStream )
 		int		i;
 	} dat;
 
-	dat.i = pByteStream->ReadLong();
+	dat.i = this->ReadLong();
 	return ( dat.f );
 }
 

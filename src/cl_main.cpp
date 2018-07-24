@@ -5653,7 +5653,7 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	fraglimit.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for timelimit.
-	Value.Float = NETWORK_ReadFloat( pByteStream );
+	Value.Float = pByteStream->ReadFloat();
 	timelimit.ForceSet( Value, CVAR_Float );
 
 	// Read in, and set the value for pointlimit.
@@ -5693,15 +5693,15 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	sv_maxteams.ForceSet( Value, CVAR_Int );
 
 	// [BB] Read in, and set the value for sv_gravity.
-	Value.Float = NETWORK_ReadFloat( pByteStream );
+	Value.Float = pByteStream->ReadFloat();
 	sv_gravity.ForceSet( Value, CVAR_Float );
 
 	// [BB] Read in, and set the value for sv_aircontrol.
-	Value.Float = NETWORK_ReadFloat( pByteStream );
+	Value.Float = pByteStream->ReadFloat();
 	sv_aircontrol.ForceSet( Value, CVAR_Float );
 
 	// [WS] Read in, and set the value for sv_coop_damagefactor.
-	Value.Float = NETWORK_ReadFloat( pByteStream );
+	Value.Float = pByteStream->ReadFloat();
 	sv_coop_damagefactor.ForceSet( Value, CVAR_Float );
 
 	// [WS] Read in, and set the value for alwaysapplydmflags.
@@ -8794,17 +8794,17 @@ static void client_DoFlashFader( BYTESTREAM_s *pByteStream )
 	ULONG	ulPlayer;
 
 	// Read in the colors, time for the flash fader and which player to apply the effect to.
-	fR1 = NETWORK_ReadFloat( pByteStream );
-	fG1 = NETWORK_ReadFloat( pByteStream );
-	fB1 = NETWORK_ReadFloat( pByteStream );
-	fA1 = NETWORK_ReadFloat( pByteStream );
+	fR1 = pByteStream->ReadFloat();
+	fG1 = pByteStream->ReadFloat();
+	fB1 = pByteStream->ReadFloat();
+	fA1 = pByteStream->ReadFloat();
 
-	fR2 = NETWORK_ReadFloat( pByteStream );
-	fG2 = NETWORK_ReadFloat( pByteStream );
-	fB2 = NETWORK_ReadFloat( pByteStream );
-	fA2 = NETWORK_ReadFloat( pByteStream );
+	fR2 = pByteStream->ReadFloat();
+	fG2 = pByteStream->ReadFloat();
+	fB2 = pByteStream->ReadFloat();
+	fA2 = pByteStream->ReadFloat();
 
-	fTime = NETWORK_ReadFloat( pByteStream );
+	fTime = pByteStream->ReadFloat();
 
 	ulPlayer = pByteStream->ReadByte();
 
@@ -8990,7 +8990,7 @@ void APathFollower::InitFromStream ( BYTESTREAM_s *pByteStream )
 	APathFollower *pPathFollower = static_cast<APathFollower*> ( CLIENT_FindThingByNetID( pByteStream->ReadShort() ) );
 	const int currNodeId = pByteStream->ReadShort();
 	const int prevNodeId = pByteStream->ReadShort();
-	const float serverTime = NETWORK_ReadFloat( pByteStream );
+	const float serverTime = pByteStream->ReadFloat();
 
 	if ( pPathFollower )
 	{
