@@ -203,7 +203,7 @@ class ShortbyteParameter(SpecParameter):
 		self.cxxtypename = 'int'
 
 	def writeread(self, writer, command, reference, **args):
-		writer.writeline('command.{reference} = NETWORK_ReadShortByte( bytestream, {specialization} );'.format(specialization=self.specialization, **locals()))
+		writer.writeline('command.{reference} = bytestream->ReadShortByte( {specialization} );'.format(specialization=self.specialization, **locals()))
 
 	def writesend(self, writer, command, reference, **args):
 		specialization = self.specialization

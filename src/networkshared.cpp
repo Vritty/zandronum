@@ -351,16 +351,16 @@ int BYTESTREAM_s::ReadVariable()
 
 //*****************************************************************************
 //
-int NETWORK_ReadShortByte ( BYTESTREAM_s* byteStream, int bits )
+int BYTESTREAM_s::ReadShortByte ( int bits )
 {
 	if ( bits >= 0 && bits <= 8 )
 	{
-		byteStream->EnsureBitSpace( bits, false );
+		this->EnsureBitSpace( bits, false );
 		int mask = ( 1 << bits ) - 1; // Create a mask to cover the bits we want.
-		mask <<= byteStream->bitShift; // Shift the mask so that it covers the correct bits.
-		int result = *byteStream->bitBuffer & mask; // Apply the shifted mask on our byte to remove unwanted bits.
-		result >>= byteStream->bitShift; // Shift the result back to start from 0.
-		byteStream->bitShift += bits; // Increase shift to mark these bits as used.
+		mask <<= this->bitShift; // Shift the mask so that it covers the correct bits.
+		int result = *this->bitBuffer & mask; // Apply the shifted mask on our byte to remove unwanted bits.
+		result >>= this->bitShift; // Shift the result back to start from 0.
+		this->bitShift += bits; // Increase shift to mark these bits as used.
 		return result;
 	}
 	else
