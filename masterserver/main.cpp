@@ -408,7 +408,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 	// [RC] If this IP is in our flood queue, ignore it completely.
 	if ( g_floodProtectionIPQueue.addressInQueue( AddressFrom ) || g_ShortFloodQueue.addressInQueue( AddressFrom ))
 	{
-		while ( NETWORK_ReadByte( pByteStream ) != -1 ) // [RC] Is this really necessary?
+		while ( pByteStream->ReadByte() != -1 ) // [RC] Is this really necessary?
 			;
 		return;
 	}
@@ -451,7 +451,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			// [BB] If no value was send, NETWORK_ReadByte just returns -1.
 			// Thus, this is still compatible with older servers that don't tell us whether they enforce our bans
 			// and gives them the benefit of the doubt, i.e. it assumes that they enforce our bans.
-			const int temp = NETWORK_ReadByte( pByteStream );
+			const int temp = pByteStream->ReadByte();
 			newServer.bEnforcesBanList = ( temp != 0 );
 			newServer.bNewFormatServer = ( temp != -1 );
 			newServer.iServerRevision = ( ( pByteStream->pbStreamEnd - pByteStream->pbStream ) >= 4 ) ? NETWORK_ReadLong( pByteStream ) : NETWORK_ReadShort( pByteStream );

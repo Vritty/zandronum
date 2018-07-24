@@ -195,16 +195,16 @@ void CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		break;
 	case SVC2_SRP_USER_PROCESS_CHALLENGE:
 		{
-			const int lenSalt = NETWORK_ReadByte( pByteStream );
+			const int lenSalt = pByteStream->ReadByte();
 			TArray<unsigned char> salt;
 			salt.Resize ( lenSalt ); 
 			for ( int i = 0; i < lenSalt; ++i )
-				salt[i] = NETWORK_ReadByte( pByteStream );
+				salt[i] = pByteStream->ReadByte();
 			const int lenB = NETWORK_ReadShort( pByteStream );
 			TArray<unsigned char> bytesB;
 			bytesB.Resize ( lenB ); 
 			for ( int i = 0; i < lenB; ++i )
-				bytesB[i] = NETWORK_ReadByte( pByteStream );
+				bytesB[i] = pByteStream->ReadByte();
 
 			client_SRPUserProcessChallenge ( salt, bytesB );
 		}
@@ -221,7 +221,7 @@ void CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			// [BB] We may need to allocate more then lenHAMK!
 			bytesHAMK.Resize ( srp_user_get_session_key_length( g_usr ) ); 
 			for ( int i = 0; i < lenHAMK; ++i )
-				bytesHAMK[i] = NETWORK_ReadByte( pByteStream );
+				bytesHAMK[i] = pByteStream->ReadByte();
 
 			srp_user_verify_session( g_usr, &(bytesHAMK[0]) );
 

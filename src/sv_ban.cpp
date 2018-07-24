@@ -238,7 +238,7 @@ void SERVERBAN_ReadMasterServerBans( BYTESTREAM_s *pByteStream )
 //
 void SERVERBAN_ReadMasterServerBanlistPart( BYTESTREAM_s *pByteStream )
 {
-	const ULONG ulPacketNum = NETWORK_ReadByte ( pByteStream );
+	const ULONG ulPacketNum = pByteStream->ReadByte();
 
 	// [BB] The implementation assumes that the packets arrive in the correct order.
 	if ( ulPacketNum == 0 )
@@ -249,7 +249,7 @@ void SERVERBAN_ReadMasterServerBanlistPart( BYTESTREAM_s *pByteStream )
 
 	while ( 1 )
 	{
-		const LONG lCommand = NETWORK_ReadByte( pByteStream );
+		const LONG lCommand = pByteStream->ReadByte();
 
 		// [BB] End of packet (shouldn't be triggered for proper packets).
 		if ( lCommand == -1 )

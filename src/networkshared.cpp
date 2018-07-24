@@ -206,7 +206,7 @@ void BYTESTREAM_s::EnsureBitSpace( int bits, bool writing )
 		else
 		{
 			// No room for the value in this byte, so we need a new one.
-			if ( NETWORK_ReadByte( this ) != -1 )
+			if ( this->ReadByte() != -1 )
 			{
 				bitBuffer = pbStream - 1;
 			}
@@ -225,15 +225,15 @@ void BYTESTREAM_s::EnsureBitSpace( int bits, bool writing )
 
 //*****************************************************************************
 //
-int NETWORK_ReadByte( BYTESTREAM_s *pByteStream )
+int BYTESTREAM_s::ReadByte()
 {
 	int	Byte = -1;
 
-	if (( pByteStream->pbStream + 1 ) <= pByteStream->pbStreamEnd )
-		Byte = *pByteStream->pbStream;
+	if (( this->pbStream + 1 ) <= this->pbStreamEnd )
+		Byte = *this->pbStream;
 
 	// Advance the pointer.
-	pByteStream->pbStream += 1;
+	this->pbStream += 1;
 
 	return ( Byte );
 }
@@ -298,7 +298,7 @@ const char *NETWORK_ReadString( BYTESTREAM_s *pByteStream )
 	ULONG ulIdx = 0;
 	do
 	{
-		c = NETWORK_ReadByte( pByteStream );
+		c = pByteStream->ReadByte();
 		if ( c <= 0 )
 			break;
 
@@ -343,7 +343,7 @@ int NETWORK_ReadVariable( BYTESTREAM_s *byteStream )
 	{
 	default:
 	case 0: return 0;
-	case 1: return NETWORK_ReadByte( byteStream );
+	case 1: return byteStream->ReadByte();
 	case 2: return NETWORK_ReadShort( byteStream );
 	case 3: return NETWORK_ReadLong( byteStream );
 	}
@@ -720,7 +720,7 @@ void NETADDRESS_s::WriteToStream ( BYTESTREAM_s *pByteStream, bool IncludePort )
 void NETADDRESS_s::ReadFromStream ( BYTESTREAM_s *pByteStream, bool IncludePort )
 {
 	for ( int i = 0; i < 4; ++i )
-		abIP[i] = NETWORK_ReadByte( pByteStream );
+		abIP[i] = pByteStream->ReadByte();
 	if ( IncludePort )
 		usPort = htons( NETWORK_ReadShort( pByteStream ));
 }

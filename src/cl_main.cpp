@@ -1043,7 +1043,7 @@ void CLIENT_GetPackets( void )
 				{
 				case MSC_BEGINSERVERLISTPART:
 					{
-						ULONG ulPacketNum = NETWORK_ReadByte( pByteStream );
+						ULONG ulPacketNum = pByteStream->ReadByte();
 
 						// Get the list of servers.
 						bool bLastPartReceived = BROWSER_GetServerList( pByteStream );
@@ -1170,7 +1170,7 @@ bool CLIENT_ReadPacketHeader( BYTESTREAM_s *pByteStream )
 
 	// Read in the command. Since it's the first one in the packet, it should be
 	// SVC_HEADER or SVC_UNRELIABLEPACKET.
-	lCommand = NETWORK_ReadByte( pByteStream );
+	lCommand = pByteStream->ReadByte();
 
 	// If this is an unreliable packet, just break out of here and begin parsing it. There's no
 	// need to store it.
@@ -1239,7 +1239,7 @@ void CLIENT_ParsePacket( BYTESTREAM_s *pByteStream, bool bSequencedPacket )
 
 		// [BB] Memorize the current position in our demo stream.
 		CLIENTDEMO_MarkCurrentPosition();
-		lCommand = NETWORK_ReadByte( pByteStream );
+		lCommand = pByteStream->ReadByte();
 
 		// [TP] Reset the bit reading buffer.
 		pByteStream->bitBuffer = NULL;
@@ -1330,7 +1330,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			CLIENTDEMO_SetSkippingToNextMap ( false );
 
 			// [BB] Setting the game mode is necessary to decide whether 3D floors should be spawned or not.
-			GAMEMODE_SetCurrentMode ( static_cast<GAMEMODE_e>(NETWORK_ReadByte( pByteStream )) );
+			GAMEMODE_SetCurrentMode ( static_cast<GAMEMODE_e>(pByteStream->ReadByte()) );
 
 			bool	bPlaying;
 
@@ -1376,7 +1376,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			ULONG	ulErrorCode;
 
 			// Read in the error code.
-			ulErrorCode = NETWORK_ReadByte( pByteStream );
+			ulErrorCode = pByteStream->ReadByte();
 
 			// Build the error string based on the error code.
 			switch ( ulErrorCode )
@@ -1396,7 +1396,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case NETWORK_ERRORCODE_BANNED:
 
 				// [TP] Is this a master ban?
-				if ( !!NETWORK_ReadByte( pByteStream ))
+				if ( !!pByteStream->ReadByte())
 				{
 					szErrorString = "Couldn't connect. " TEXTCOLOR_RED "You have been banned from " GAMENAME "'s master server!" TEXTCOLOR_NORMAL "\n"
 						"If you feel this is in error, you may contact the staff at " FORUM_URL;
@@ -1441,7 +1441,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED:
 				{
 					std::list<std::pair<FString, FString> > serverPWADs;
-					const int numServerPWADs = NETWORK_ReadByte( pByteStream );
+					const int numServerPWADs = pByteStream->ReadByte();
 					for ( int i = 0; i < numServerPWADs; ++i )
 					{
 						std::pair<FString, FString> pwad;
@@ -1820,7 +1820,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 	case SVC_EXTENDEDCOMMAND:
 		{
-			const LONG lExtCommand = NETWORK_ReadByte( pByteStream );
+			const LONG lExtCommand = pByteStream->ReadByte();
 
 			if ( cl_showcommands )
 				Printf( "%s\n", GetStringSVC2 ( static_cast<SVC2> ( lExtCommand ) ) );
@@ -1837,7 +1837,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SETIGNOREWEAPONSELECT:
 				{
-					const bool bIgnoreWeaponSelect = !!NETWORK_ReadByte( pByteStream );
+					const bool bIgnoreWeaponSelect = !!pByteStream->ReadByte();
 					CLIENT_IgnoreWeaponSelect ( bIgnoreWeaponSelect );
 				}
 
@@ -1861,7 +1861,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_CANCELFADE:
 				{
-					const ULONG ulPlayer = NETWORK_ReadByte( pByteStream );
+					const ULONG ulPlayer = pByteStream->ReadByte();
 					AActor *activator = NULL;
 					// [BB] ( ulPlayer == MAXPLAYERS ) means that CancelFade was called with NULL as activator.
 					if ( PLAYER_IsValidPlayer ( ulPlayer ) )
@@ -1885,7 +1885,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_PLAYBOUNCESOUND:
 				{
 					AActor *pActor = CLIENT_FindThingByNetID( NETWORK_ReadShort( pByteStream ) );
-					const bool bOnfloor = !!NETWORK_ReadByte( pByteStream );
+					const bool bOnfloor = !!pByteStream->ReadByte();
 					if ( pActor )
 						pActor->PlayBounceSound ( bOnfloor );
 				}
@@ -1910,7 +1910,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_SETFASTCHASESTRAFECOUNT:
 				{
 					const LONG lID = NETWORK_ReadShort( pByteStream );
-					const LONG lStrafeCount = NETWORK_ReadByte( pByteStream ); 
+					const LONG lStrafeCount = pByteStream->ReadByte(); 
 					AActor *pActor = CLIENT_FindThingByNetID( lID );
 
 					if ( pActor == NULL )
@@ -1935,7 +1935,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_SETPOWERUPBLENDCOLOR:
 				{
 					// Read in the player ID.
-					const ULONG ulPlayer = NETWORK_ReadByte( pByteStream );
+					const ULONG ulPlayer = pByteStream->ReadByte();
 
 					// Read in the identification of the type of item to give.
 					const USHORT usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
@@ -1967,7 +1967,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			// [Dusk]
 			case SVC2_SETPLAYERHAZARDCOUNT:
 				{
-					const ULONG ulPlayer = NETWORK_ReadByte( pByteStream );
+					const ULONG ulPlayer = pByteStream->ReadByte();
 					const int hz = NETWORK_ReadShort( pByteStream );
 
 					if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
@@ -1979,9 +1979,9 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SCROLL3DMIDTEX:
 				{
-					const int i = NETWORK_ReadByte ( pByteStream );
+					const int i = pByteStream->ReadByte();
 					const int move = NETWORK_ReadLong ( pByteStream );
-					const bool ceiling = !!NETWORK_ReadByte ( pByteStream );
+					const bool ceiling = !!pByteStream->ReadByte();
 
 					if ( i < 0 || i >= numsectors || !move )
 						break;
@@ -1991,7 +1991,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				}
 			case SVC2_SETPLAYERLOGNUMBER:
 				{
-					const ULONG ulPlayer = NETWORK_ReadByte( pByteStream );
+					const ULONG ulPlayer = pByteStream->ReadByte();
 					const int arg0 = NETWORK_ReadShort( pByteStream );
 
 					if ( PLAYER_IsValidPlayerWithMo( ulPlayer ) == false ) 
@@ -2025,7 +2025,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SETPLAYERVIEWHEIGHT:
 				{
-					const ULONG ulPlayer = NETWORK_ReadByte( pByteStream );
+					const ULONG ulPlayer = pByteStream->ReadByte();
 					const int viewHeight = NETWORK_ReadLong( pByteStream );
 
 					if ( PLAYER_IsValidPlayerWithMo( ulPlayer ) == false ) 
@@ -2045,7 +2045,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_SETTHINGHEALTH:
 				{
 					const LONG lID = NETWORK_ReadShort( pByteStream );
-					const int health = NETWORK_ReadByte( pByteStream );
+					const int health = pByteStream->ReadByte();
 					AActor* mo = CLIENT_FindThingByNetID( lID );
 
 					if ( mo == NULL )
@@ -2102,14 +2102,14 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_PUSHTOJOINQUEUE:
 				{
-					int player = NETWORK_ReadByte( pByteStream );
-					int team = NETWORK_ReadByte( pByteStream );
+					int player = pByteStream->ReadByte();
+					int team = pByteStream->ReadByte();
 					JOINQUEUE_AddPlayer( player, team );
 				}
 				break;
 
 			case SVC2_REMOVEFROMJOINQUEUE:
-				JOINQUEUE_RemovePlayerAtPosition( NETWORK_ReadByte( pByteStream ) );
+				JOINQUEUE_RemovePlayerAtPosition( pByteStream->ReadByte() );
 				break;
 
 			case SVC2_SETDEFAULTSKYBOX:
@@ -2145,7 +2145,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 					fixed_t z = NETWORK_ReadShort( pByteStream ) << FRACBITS;
 					angle_t angle = NETWORK_ReadShort( pByteStream ) << FRACBITS;
 					fixed_t tracedist = NETWORK_ReadLong( pByteStream );
-					bool permanent = !!NETWORK_ReadByte( pByteStream );
+					bool permanent = !!pByteStream->ReadByte();
 					const FDecalTemplate* tpl = DecalLibrary.GetDecalByName( decalName );
 
 					if ( actor && tpl )
@@ -2155,7 +2155,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			// [TP]
 			case SVC2_RCONACCESS:
-				if ( NETWORK_ReadByte( pByteStream ) )
+				if ( pByteStream->ReadByte() )
 				{
 					if ( CLIENT_HasRCONAccess() == false )
 					{
@@ -4159,10 +4159,10 @@ static void client_SetPlayerPieces( BYTESTREAM_s *pByteStream )
 	ULONG			ulPieces;
 
 	// Read in the player.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the player's pieces.
-	ulPieces = NETWORK_ReadByte( pByteStream );
+	ulPieces = pByteStream->ReadByte();
 
 	// If the player doesn't exist, get out!
 	if ( playeringame[ulPlayer] == false )
@@ -5583,16 +5583,16 @@ static void client_SetGameMode( BYTESTREAM_s *pByteStream )
 {
 	UCVarValue	Value;
 
-	GAMEMODE_SetCurrentMode ( static_cast<GAMEMODE_e> ( NETWORK_ReadByte( pByteStream ) ) );
+	GAMEMODE_SetCurrentMode ( static_cast<GAMEMODE_e> ( pByteStream->ReadByte() ) );
 
 	// [BB] The client doesn't necessarily know the game mode in P_SetupLevel, so we have to call this here.
 	if ( domination )
 		DOMINATION_Init();
 
-	Value.Bool = !!NETWORK_ReadByte( pByteStream );
+	Value.Bool = !!pByteStream->ReadByte();
 	instagib.ForceSet( Value, CVAR_Bool );
 
-	Value.Bool = !!NETWORK_ReadByte( pByteStream );
+	Value.Bool = !!pByteStream->ReadByte();
 	buckshot.ForceSet( Value, CVAR_Bool );
 }
 
@@ -5603,11 +5603,11 @@ static void client_SetGameSkill( BYTESTREAM_s *pByteStream )
 	UCVarValue	Value;
 
 	// Read in the gameskill setting, and set gameskill to this setting.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	gameskill.ForceSet( Value, CVAR_Int );
 
 	// Do the same for botskill.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	botskill.ForceSet( Value, CVAR_Int );
 }
 
@@ -5661,19 +5661,19 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	pointlimit.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for duellimit.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	duellimit.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for winlimit.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	winlimit.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for wavelimit.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	wavelimit.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for sv_cheats.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	sv_cheats.ForceSet( Value, CVAR_Int );
 	// [BB] This ensures that am_cheat respects the sv_cheats value we just set.
 	am_cheat.Callback();
@@ -5681,15 +5681,15 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	turbo.Callback();
 
 	// Read in, and set the value for sv_fastweapons.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	sv_fastweapons.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for sv_maxlives.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	sv_maxlives.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for sv_maxteams.
-	Value.Int = NETWORK_ReadByte( pByteStream );
+	Value.Int = pByteStream->ReadByte();
 	sv_maxteams.ForceSet( Value, CVAR_Int );
 
 	// [BB] Read in, and set the value for sv_gravity.
@@ -5705,7 +5705,7 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	sv_coop_damagefactor.ForceSet( Value, CVAR_Float );
 
 	// [WS] Read in, and set the value for alwaysapplydmflags.
-	Value.Bool = !!NETWORK_ReadByte( pByteStream );
+	Value.Bool = !!pByteStream->ReadByte();
 	alwaysapplydmflags.ForceSet( Value, CVAR_Bool );
 
 	// [AM] Read in, and set the value for lobby.
@@ -5713,7 +5713,7 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	lobby.ForceSet( Value, CVAR_String );
 
 	// [TP] Yea.
-	Value.Bool = !!NETWORK_ReadByte( pByteStream );
+	Value.Bool = !!pByteStream->ReadByte();
 	sv_limitcommands.ForceSet( Value, CVAR_Bool );
 }
 
@@ -5735,7 +5735,7 @@ static void client_SetGameModeState( BYTESTREAM_s *pByteStream )
 	ULONG	ulModeState;
 	ULONG	ulCountdownTicks;
 
-	ulModeState = NETWORK_ReadByte( pByteStream );
+	ulModeState = pByteStream->ReadByte();
 	ulCountdownTicks = NETWORK_ReadShort( pByteStream );
 
 	if ( duel )
@@ -5775,7 +5775,7 @@ static void client_SetDuelNumDuels( BYTESTREAM_s *pByteStream )
 	ULONG	ulNumDuels;
 
 	// Read in the number of duels that have occured.
-	ulNumDuels = NETWORK_ReadByte( pByteStream );
+	ulNumDuels = pByteStream->ReadByte();
 
 	DUEL_SetNumDuels( ulNumDuels );
 }
@@ -5825,7 +5825,7 @@ static void client_SetInvasionWave( BYTESTREAM_s *pByteStream )
 	ULONG	ulWave;
 
 	// Read in the current wave we're on.
-	ulWave = NETWORK_ReadByte( pByteStream );
+	ulWave = pByteStream->ReadByte();
 
 	// Set the current wave in the invasion module.
 	INVASION_SetCurrentWave( ulWave );
@@ -5838,7 +5838,7 @@ static void client_SetSimpleCTFSTMode( BYTESTREAM_s *pByteStream )
 	bool	bSimpleCTFST;
 
 	// Read in whether or not we're in the simple version of these game modes.
-	bSimpleCTFST = !!NETWORK_ReadByte( pByteStream );
+	bSimpleCTFST = !!pByteStream->ReadByte();
 
 	// Set the simple CTF/ST mode.
 	TEAM_SetSimpleCTFSTMode( bSimpleCTFST );
@@ -5852,7 +5852,7 @@ static void client_DoPossessionArtifactPickedUp( BYTESTREAM_s *pByteStream )
 	ULONG	ulTicks;
 
 	// Read in the player who picked up the possession artifact.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Read in how many ticks remain until the player potentially scores a point.
 	ulTicks = NETWORK_ReadShort( pByteStream );
@@ -5888,7 +5888,7 @@ static void client_DoGameModeFight( BYTESTREAM_s *pByteStream )
 	ULONG	ulWave;
 
 	// What wave are we starting? (invasion only).
-	ulWave = NETWORK_ReadByte( pByteStream );
+	ulWave = pByteStream->ReadByte();
 
 	// Play fight sound, and draw gfx.
 	if ( duel )
@@ -5930,7 +5930,7 @@ static void client_DoGameModeWinSequence( BYTESTREAM_s *pByteStream )
 {
 	ULONG	ulWinner;
 
-	ulWinner = NETWORK_ReadByte( pByteStream );
+	ulWinner = pByteStream->ReadByte();
 
 	// Begin the win sequence.
 	if ( duel )
@@ -5963,14 +5963,14 @@ static void client_SetDominationState( BYTESTREAM_s *pByteStream )
 	if ( NumPoints > MAX_UDP_PACKET )
 	{
 		for ( unsigned int i = 0; i < NumPoints; ++i )
-			NETWORK_ReadByte( pByteStream );
+			pByteStream->ReadByte();
 		return;
 	}
 
 	unsigned int *PointOwners = new unsigned int[NumPoints];
 	for(unsigned int i = 0;i < NumPoints;i++)
 	{
-		PointOwners[i] = NETWORK_ReadByte( pByteStream );
+		PointOwners[i] = pByteStream->ReadByte();
 	}
 	DOMINATION_LoadInit(NumPoints, PointOwners);
 }
@@ -5979,8 +5979,8 @@ static void client_SetDominationState( BYTESTREAM_s *pByteStream )
 //
 static void client_SetDominationPointOwnership( BYTESTREAM_s *pByteStream )
 {
-	unsigned int ulPoint = NETWORK_ReadByte( pByteStream );
-	unsigned int ulPlayer = NETWORK_ReadByte( pByteStream );
+	unsigned int ulPoint = pByteStream->ReadByte();
+	unsigned int ulPlayer = pByteStream->ReadByte();
 
 	// If this is an invalid player, break out.
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
@@ -5998,13 +5998,13 @@ static void client_SetTeamFrags( BYTESTREAM_s *pByteStream )
 	bool	bAnnounce;
 
 	// Read in the team.
-	ulTeam = NETWORK_ReadByte( pByteStream );
+	ulTeam = pByteStream->ReadByte();
 
 	// Read in the fragcount.
 	lFragCount = NETWORK_ReadShort( pByteStream );
 
 	// Announce a lead change... but don't do it if we're receiving a snapshot of the level!
-	bAnnounce = !!NETWORK_ReadByte( pByteStream );
+	bAnnounce = !!pByteStream->ReadByte();
 	if ( g_ConnectionState != CTS_ACTIVE )
 		bAnnounce = false;
 
@@ -6021,13 +6021,13 @@ static void client_SetTeamScore( BYTESTREAM_s *pByteStream )
 	bool	bAnnounce;
 
 	// Read in the team having its score updated.
-	ulTeam = NETWORK_ReadByte( pByteStream );
+	ulTeam = pByteStream->ReadByte();
 
 	// Read in the team's new score.
 	lScore = NETWORK_ReadShort( pByteStream );
 
 	// Should it be announced?
-	bAnnounce = !!NETWORK_ReadByte( pByteStream );
+	bAnnounce = !!pByteStream->ReadByte();
 	
 	// Don't announce the score change if we're receiving a snapshot of the level!
 	if ( g_ConnectionState != CTS_ACTIVE )
@@ -6047,13 +6047,13 @@ static void client_SetTeamWins( BYTESTREAM_s *pByteStream )
 	bool	bAnnounce;
 
 	// Read in the team.
-	ulTeamIdx = NETWORK_ReadByte( pByteStream );
+	ulTeamIdx = pByteStream->ReadByte();
 
 	// Read in the wins.
 	lWinCount = NETWORK_ReadShort( pByteStream );
 
 	// Read in whether or not it should be announced.	
-	bAnnounce = !!NETWORK_ReadByte( pByteStream );
+	bAnnounce = !!pByteStream->ReadByte();
 
 	// Don't announce if we're receiving a snapshot of the level!
 	if ( g_ConnectionState != CTS_ACTIVE )
@@ -6071,7 +6071,7 @@ static void client_SetTeamReturnTicks( BYTESTREAM_s *pByteStream )
 	ULONG	ulTicks;
 
 	// Read in the team having its return ticks altered.
-	ulTeam = NETWORK_ReadByte( pByteStream );
+	ulTeam = pByteStream->ReadByte();
 
 	// Read in the return ticks value.
 	ulTicks = NETWORK_ReadShort( pByteStream );
@@ -6087,7 +6087,7 @@ static void client_TeamFlagReturned( BYTESTREAM_s *pByteStream )
 	ULONG	ulTeam;
 
 	// Read in the team that the flag has been returned for.
-	ulTeam = NETWORK_ReadByte( pByteStream );
+	ulTeam = pByteStream->ReadByte();
 
 	// Finally, just call this function that does all the dirty work.
 	TEAM_ExecuteReturnRoutine( ulTeam, NULL );
@@ -6101,8 +6101,8 @@ static void client_TeamFlagDropped( BYTESTREAM_s *pByteStream )
 	ULONG	ulTeamIdx;
 
 	// Read in the player that dropped a flag.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
-	ulTeamIdx = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
+	ulTeamIdx = pByteStream->ReadByte();
 
 	// Finally, just call this function that does all the dirty work.
 	TEAM_FlagDropped( &players[ulPlayer], ulTeamIdx );
@@ -6708,7 +6708,7 @@ static void client_CallVote( BYTESTREAM_s *pByteStream )
 	ULONG		ulVoteCaller;
 
 	// Read in the vote starter.
-	ulVoteCaller = NETWORK_ReadByte( pByteStream );
+	ulVoteCaller = pByteStream->ReadByte();
 
 	// Read in the command.
 	command = NETWORK_ReadString( pByteStream );
@@ -6731,10 +6731,10 @@ static void client_PlayerVote( BYTESTREAM_s *pByteStream )
 	bool	bYes;
 
 	// Read in the player making the vote.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Did the player vote yes?
-	bYes = !!NETWORK_ReadByte( pByteStream );
+	bYes = !!pByteStream->ReadByte();
 
 	if ( bYes )
 		CALLVOTE_VoteYes( ulPlayer );
@@ -6749,7 +6749,7 @@ static void client_VoteEnded( BYTESTREAM_s *pByteStream )
 	bool	bPassed;
 
 	// Did the vote pass?
-	bPassed = !!NETWORK_ReadByte( pByteStream );
+	bPassed = !!pByteStream->ReadByte();
 
 	CALLVOTE_EndVote( bPassed );
 }
@@ -6944,7 +6944,7 @@ static void client_GiveInventory( BYTESTREAM_s *pByteStream )
 	AInventory		*pInventory;
 
 	// Read in the player ID.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the identification of the type of item to give.
 	usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
@@ -7065,7 +7065,7 @@ static void client_TakeInventory( BYTESTREAM_s *pByteStream )
 	AInventory		*pInventory;
 
 	// Read in the player ID.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the identification of the type of item to take away.
 	actorNetworkIndex = NETWORK_ReadShort( pByteStream );
@@ -7131,7 +7131,7 @@ static void client_GivePowerup( BYTESTREAM_s *pByteStream )
 	AInventory		*pInventory;
 
 	// Read in the player ID.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the identification of the type of item to give.
 	usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
@@ -7140,7 +7140,7 @@ static void client_GivePowerup( BYTESTREAM_s *pByteStream )
 	lAmount = NETWORK_ReadShort( pByteStream );
 
 	// [TP]
-	bool isRune = !!NETWORK_ReadByte( pByteStream );
+	bool isRune = !!pByteStream->ReadByte();
 
 	// Read in the amount of time left on this powerup.
 	lEffectTics = ( isRune == false ) ? NETWORK_ReadShort( pByteStream ) : 0;
@@ -7205,7 +7205,7 @@ static void client_DoInventoryPickup( BYTESTREAM_s *pByteStream )
 	static FString		s_szLastMessage;
 
 	// Read in the player ID.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the class name of the item.
 	szClassName = NETWORK_ReadString( pByteStream );
@@ -7271,7 +7271,7 @@ static void client_DestroyAllInventory( BYTESTREAM_s *pByteStream )
 	ULONG			ulPlayer;
 
 	// Read in the player ID.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Check to make sure everything is valid. If not, break out.
 	if (( PLAYER_IsValidPlayer( ulPlayer ) == false ) || ( players[ulPlayer].mo == NULL ))
@@ -7287,7 +7287,7 @@ static void client_DestroyAllInventory( BYTESTREAM_s *pByteStream )
 //
 static void client_SetInventoryIcon( BYTESTREAM_s *pByteStream )
 {
-	const ULONG ulPlayer = NETWORK_ReadByte( pByteStream );
+	const ULONG ulPlayer = pByteStream->ReadByte();
 	const USHORT usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
 	const FString iconTexName = NETWORK_ReadString( pByteStream );
 
@@ -7322,13 +7322,13 @@ static void client_DoDoor( BYTESTREAM_s *pByteStream )
 	lSectorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the door type.
-	type = NETWORK_ReadByte( pByteStream );
+	type = pByteStream->ReadByte();
 
 	// Read in the speed.
 	lSpeed = NETWORK_ReadLong( pByteStream );
 
 	// Read in the direction.
-	lDirection = NETWORK_ReadByte( pByteStream );
+	lDirection = pByteStream->ReadByte();
 
 	// Read in the delay.
 	lLightTag = NETWORK_ReadShort( pByteStream );
@@ -7395,7 +7395,7 @@ static void client_ChangeDoorDirection( BYTESTREAM_s *pByteStream )
 	lDoorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the new direction the door should move in.
-	lDirection = NETWORK_ReadByte( pByteStream );
+	lDirection = pByteStream->ReadByte();
 
 	// Since we still want to receive direction as a byte, but -1 can't be represented in byte
 	// form, adjust the value into something that can be represented.
@@ -7433,13 +7433,13 @@ static void client_DoFloor( BYTESTREAM_s *pByteStream )
 	DFloor			*pFloor;
 
 	// Read in the type of floor.
-	lType = NETWORK_ReadByte( pByteStream );
+	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
 	lSectorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the direction of the floor.
-	lDirection = NETWORK_ReadByte( pByteStream );
+	lDirection = pByteStream->ReadByte();
 
 	// Read in the speed of the floor.
 	lSpeed = NETWORK_ReadLong( pByteStream );
@@ -7448,10 +7448,10 @@ static void client_DoFloor( BYTESTREAM_s *pByteStream )
 	FloorDestDist = NETWORK_ReadLong( pByteStream );
 
 	// Read in the floor's crush.
-	Crush = static_cast<SBYTE>( NETWORK_ReadByte( pByteStream ) );
+	Crush = static_cast<SBYTE>( pByteStream->ReadByte() );
 
 	// Read in the floor's crush type.
-	Hexencrush = !!NETWORK_ReadByte( pByteStream );
+	Hexencrush = !!pByteStream->ReadByte();
 
 	// Read in the floor's network ID.
 	lFloorID = NETWORK_ReadShort( pByteStream );
@@ -7515,7 +7515,7 @@ static void client_ChangeFloorDirection( BYTESTREAM_s *pByteStream )
 	lFloorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the new floor direction.
-	lDirection = NETWORK_ReadByte( pByteStream );
+	lDirection = pByteStream->ReadByte();
 
 	// Since we still want to receive direction as a byte, but -1 can't be represented in byte
 	// form, adjust the value into something that can be represented.
@@ -7545,7 +7545,7 @@ static void client_ChangeFloorType( BYTESTREAM_s *pByteStream )
 	lFloorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the new type of floor this is.
-	lType = NETWORK_ReadByte( pByteStream );
+	lType = pByteStream->ReadByte();
 
 	pFloor = P_GetFloorByID( lFloorID );
 	if ( pFloor == NULL )
@@ -7607,13 +7607,13 @@ static void client_StartFloorSound( BYTESTREAM_s *pByteStream )
 static void client_BuildStair( BYTESTREAM_s *pByteStream )
 {
 	// Read in the type of floor.
-	int Type = NETWORK_ReadByte( pByteStream );
+	int Type = pByteStream->ReadByte();
 
 	// Read in the sector ID.
 	int SectorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the direction of the floor.
-	int Direction = static_cast<SBYTE>( NETWORK_ReadByte( pByteStream ) );
+	int Direction = static_cast<SBYTE>( pByteStream->ReadByte() );
 
 	// Read in the speed of the floor.
 	fixed_t Speed = NETWORK_ReadLong( pByteStream );
@@ -7622,10 +7622,10 @@ static void client_BuildStair( BYTESTREAM_s *pByteStream )
 	fixed_t FloorDestDist = NETWORK_ReadLong( pByteStream );
 
 	// Read in the floor's crush.
-	int Crush = static_cast<SBYTE>( NETWORK_ReadByte( pByteStream ) );
+	int Crush = static_cast<SBYTE>( pByteStream->ReadByte() );
 
 	// Read in the floor's crush type.
-	bool Hexencrush = !!NETWORK_ReadByte( pByteStream );
+	bool Hexencrush = !!pByteStream->ReadByte();
 
 	// Read in the floor's reset count.
 	int ResetCount = NETWORK_ReadLong( pByteStream );
@@ -7688,13 +7688,13 @@ static void client_DoCeiling( BYTESTREAM_s *pByteStream )
 	DCeiling		*pCeiling;
 
 	// Read in the type of ceiling this is.
-	lType = NETWORK_ReadByte( pByteStream );
+	lType = pByteStream->ReadByte();
 
 	// Read in the sector this ceiling is attached to.
 	lSectorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the direction this ceiling is moving in.
-	lDirection = NETWORK_ReadByte( pByteStream );
+	lDirection = pByteStream->ReadByte();
 
 	// Read in the lowest distance the ceiling can travel before it stops.
 	BottomHeight = NETWORK_ReadLong( pByteStream );
@@ -7706,10 +7706,10 @@ static void client_DoCeiling( BYTESTREAM_s *pByteStream )
 	lSpeed = NETWORK_ReadLong( pByteStream );
 
 	// Does this ceiling damage those who get squashed by it?
-	lCrush = static_cast<SBYTE>( NETWORK_ReadByte( pByteStream ) );
+	lCrush = static_cast<SBYTE>( pByteStream->ReadByte() );
 
 	// Is this ceiling crush Hexen style?
-	Hexencrush = !!NETWORK_ReadByte( pByteStream );
+	Hexencrush = !!pByteStream->ReadByte();
 
 	// Does this ceiling make noise?
 	lSilent = NETWORK_ReadShort( pByteStream );
@@ -7771,7 +7771,7 @@ static void client_ChangeCeilingDirection( BYTESTREAM_s *pByteStream )
 	lCeilingID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the new ceiling direction.
-	lDirection = NETWORK_ReadByte( pByteStream );
+	lDirection = pByteStream->ReadByte();
 
 	// Since we still want to receive direction as a byte, but -1 can't be represented in byte
 	// form, adjust the value into something that can be represented.
@@ -7849,13 +7849,13 @@ static void client_DoPlat( BYTESTREAM_s *pByteStream )
 	DPlat			*pPlat;
 
 	// Read in the type of plat.
-	lType = NETWORK_ReadByte( pByteStream );
+	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
 	lSectorID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the plat status (moving up, down, etc.).
-	lStatus = NETWORK_ReadByte( pByteStream );
+	lStatus = pByteStream->ReadByte();
 
 	// Read in the high range of the plat.
 	High = NETWORK_ReadLong( pByteStream );
@@ -7924,7 +7924,7 @@ static void client_ChangePlatStatus( BYTESTREAM_s *pByteStream )
 	lPlatID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the direction (aka status).
-	lStatus = NETWORK_ReadByte( pByteStream );
+	lStatus = pByteStream->ReadByte();
 
 	pPlat = P_GetPlatByID( lPlatID );
 	if ( pPlat == NULL )
@@ -7948,7 +7948,7 @@ static void client_PlayPlatSound( BYTESTREAM_s *pByteStream )
 	lPlatID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the type of sound to be played.
-	lSoundType = NETWORK_ReadByte( pByteStream );
+	lSoundType = pByteStream->ReadByte();
 
 	pPlat = P_GetPlatByID( lPlatID );
 	if ( pPlat == NULL )
@@ -7993,7 +7993,7 @@ static void client_DoElevator( BYTESTREAM_s *pByteStream )
 	DElevator		*pElevator;
 
 	// Read in the type of elevator.
-	lType = NETWORK_ReadByte( pByteStream );
+	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
 	lSectorID = NETWORK_ReadShort( pByteStream );
@@ -8002,7 +8002,7 @@ static void client_DoElevator( BYTESTREAM_s *pByteStream )
 	lSpeed = NETWORK_ReadLong( pByteStream );
 
 	// Read in the direction.
-	lDirection = NETWORK_ReadByte( pByteStream );
+	lDirection = pByteStream->ReadByte();
 
 	// Read in the floor's destination distance.
 	lFloorDestDist = NETWORK_ReadLong( pByteStream );
@@ -8101,7 +8101,7 @@ static void client_DoPillar( BYTESTREAM_s *pByteStream )
 	DPillar			*pPillar;
 
 	// Read in the type of pillar.
-	lType = NETWORK_ReadByte( pByteStream );
+	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
 	lSectorID = NETWORK_ReadShort( pByteStream );
@@ -8115,8 +8115,8 @@ static void client_DoPillar( BYTESTREAM_s *pByteStream )
 	lCeilingTarget = NETWORK_ReadLong( pByteStream );
 
 	// Read in the crush info.
-	Crush = static_cast<SBYTE>( NETWORK_ReadByte( pByteStream ) );
-	Hexencrush = !!NETWORK_ReadByte( pByteStream );
+	Crush = static_cast<SBYTE>( pByteStream->ReadByte() );
+	Hexencrush = !!pByteStream->ReadByte();
 
 	// Read in the pillar ID.
 	lPillarID = NETWORK_ReadShort( pByteStream );
@@ -8185,7 +8185,7 @@ static void client_DoWaggle( BYTESTREAM_s *pByteStream )
 	DWaggleBase		*pWaggle;
 
 	// Read in whether or not this is a ceiling waggle.
-	bCeiling = !!NETWORK_ReadByte( pByteStream );
+	bCeiling = !!pByteStream->ReadByte();
 
 	// Read in the sector ID.
 	lSectorID = NETWORK_ReadShort( pByteStream );
@@ -8200,7 +8200,7 @@ static void client_DoWaggle( BYTESTREAM_s *pByteStream )
 	lTicker = NETWORK_ReadLong( pByteStream );
 
 	// Read in the state the waggle is in.
-	lState = NETWORK_ReadByte( pByteStream );
+	lState = pByteStream->ReadByte();
 
 	// Read in the waggle ID.
 	lWaggleID = NETWORK_ReadShort( pByteStream );
@@ -8411,7 +8411,7 @@ static void client_DoPolyDoor( BYTESTREAM_s *pByteStream )
 	DPolyDoor		*pPolyDoor;
 
 	// Read in the type of poly door (swing or slide).
-	lType = NETWORK_ReadByte( pByteStream );
+	lType = pByteStream->ReadByte();
 
 	// Read in the speed.
 	lXSpeed = NETWORK_ReadLong( pByteStream );
@@ -8551,7 +8551,7 @@ static void client_PlayPolyobjSound( BYTESTREAM_s *pByteStream )
 	lID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the polyobject mode.
-	PolyMode = !!NETWORK_ReadByte( pByteStream );
+	PolyMode = !!pByteStream->ReadByte();
 
 	pPoly = PO_GetPolyobj( lID );
 	if ( pPoly == NULL )
@@ -8655,7 +8655,7 @@ static void client_EarthQuake( BYTESTREAM_s *pByteStream )
 	lID = NETWORK_ReadShort( pByteStream );
 
 	// Read in the intensity of the quake.
-	lIntensity = NETWORK_ReadByte( pByteStream );
+	lIntensity = pByteStream->ReadByte();
 
 	// Read in the duration of the quake.
 	lDuration = NETWORK_ReadShort( pByteStream );
@@ -8723,7 +8723,7 @@ static void client_SetScroller( BYTESTREAM_s *pByteStream )
 	LONG					lTag;
 
 	// Read in the type of scroller.
-	Type = (DScroller::EScrollType)NETWORK_ReadByte( pByteStream );
+	Type = (DScroller::EScrollType)pByteStream->ReadByte();
 
 	// Read in the X speed.
 	dX = NETWORK_ReadLong( pByteStream );
@@ -8763,7 +8763,7 @@ static void client_SetWallScroller( BYTESTREAM_s *pByteStream )
 	lId = NETWORK_ReadLong( pByteStream );
 
 	// Read in the side choice.
-	lSidechoice = NETWORK_ReadByte( pByteStream );
+	lSidechoice = pByteStream->ReadByte();
 
 	// Read in the X speed.
 	dX = NETWORK_ReadLong( pByteStream );
@@ -8806,7 +8806,7 @@ static void client_DoFlashFader( BYTESTREAM_s *pByteStream )
 
 	fTime = NETWORK_ReadFloat( pByteStream );
 
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// [BB] Sanity check.
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
@@ -8825,10 +8825,10 @@ static void client_GenericCheat( BYTESTREAM_s *pByteStream )
 	ULONG	ulCheat;
 
 	// Read in the player who's doing the cheat.
-	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the cheat.
-	ulCheat = NETWORK_ReadByte( pByteStream );
+	ulCheat = pByteStream->ReadByte();
 
 	if ( playeringame[ulPlayer] == false )
 		return;
@@ -8854,7 +8854,7 @@ static void client_SetCameraToTexture( BYTESTREAM_s *pByteStream )
 	pszTexture = NETWORK_ReadString( pByteStream );
 
 	// Read in the FOV of the camera.
-	lFOV = NETWORK_ReadByte( pByteStream );
+	lFOV = pByteStream->ReadByte();
 
 	// Find the actor that represents the camera. If we can't find the actor, then
 	// break out.
@@ -8882,26 +8882,26 @@ static void client_CreateTranslation( BYTESTREAM_s *pByteStream, bool bIsTypeTwo
 	// Read in which translation is being created.
 	Translation.ulIdx = NETWORK_ReadShort( pByteStream );
 
-	const bool bIsEdited = !!NETWORK_ReadByte( pByteStream );
+	const bool bIsEdited = !!pByteStream->ReadByte();
 
 	// Read in the range that's being translated.
-	Translation.ulStart = NETWORK_ReadByte( pByteStream );
-	Translation.ulEnd = NETWORK_ReadByte( pByteStream );
+	Translation.ulStart = pByteStream->ReadByte();
+	Translation.ulEnd = pByteStream->ReadByte();
 
 	if ( bIsTypeTwo == false )
 	{
-		Translation.ulPal1 = NETWORK_ReadByte( pByteStream );
-		Translation.ulPal2 = NETWORK_ReadByte( pByteStream );
+		Translation.ulPal1 = pByteStream->ReadByte();
+		Translation.ulPal2 = pByteStream->ReadByte();
 		Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE1;
 	}
 	else
 	{
-		Translation.ulR1 = NETWORK_ReadByte( pByteStream );
-		Translation.ulG1 = NETWORK_ReadByte( pByteStream );
-		Translation.ulB1 = NETWORK_ReadByte( pByteStream );
-		Translation.ulR2 = NETWORK_ReadByte( pByteStream );
-		Translation.ulG2 = NETWORK_ReadByte( pByteStream );
-		Translation.ulB2 = NETWORK_ReadByte( pByteStream );
+		Translation.ulR1 = pByteStream->ReadByte();
+		Translation.ulG1 = pByteStream->ReadByte();
+		Translation.ulB1 = pByteStream->ReadByte();
+		Translation.ulR2 = pByteStream->ReadByte();
+		Translation.ulG2 = pByteStream->ReadByte();
+		Translation.ulB2 = pByteStream->ReadByte();
 		Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE2;
 	}
 
@@ -8937,7 +8937,7 @@ static void client_CreateTranslation( BYTESTREAM_s *pByteStream, bool bIsTypeTwo
 //
 static void client_IgnorePlayer( BYTESTREAM_s *pByteStream )
 {
-	ULONG	ulPlayer = NETWORK_ReadByte( pByteStream );
+	ULONG	ulPlayer = pByteStream->ReadByte();
 	LONG	lTicks = NETWORK_ReadLong( pByteStream );
 
 	if ( ulPlayer < MAXPLAYERS )
@@ -8953,7 +8953,7 @@ static void client_IgnorePlayer( BYTESTREAM_s *pByteStream )
 //
 static void client_DoPusher( BYTESTREAM_s *pByteStream )
 {
-	const ULONG ulType = NETWORK_ReadByte( pByteStream );
+	const ULONG ulType = pByteStream->ReadByte();
 	const int iLineNum = NETWORK_ReadShort( pByteStream );
 	const int iMagnitude = NETWORK_ReadLong( pByteStream );
 	const int iAngle = NETWORK_ReadLong( pByteStream );
@@ -8972,7 +8972,7 @@ static void client_AdjustPusher( BYTESTREAM_s *pByteStream )
 	const int iTag = NETWORK_ReadShort( pByteStream );
 	const int iMagnitude = NETWORK_ReadLong( pByteStream );
 	const int iAngle = NETWORK_ReadLong( pByteStream );
-	const ULONG ulType = NETWORK_ReadByte( pByteStream );
+	const ULONG ulType = pByteStream->ReadByte();
 	AdjustPusher (iTag, iMagnitude, iAngle, static_cast<DPusher::EPusher> ( ulType ));
 }
 

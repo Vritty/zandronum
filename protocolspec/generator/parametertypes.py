@@ -94,8 +94,12 @@ class ByteParameter(SpecParameter):
 
 	# Writes code to read in this parameter.
 	def writeread(self, writer, command, reference):
-		readfunction = 'NETWORK_Read' + self.methodname()
-		writer.writeline('command.{reference} = {readfunction}( bytestream );'.format(**locals()))
+		if self.methodname() != "Byte":
+			readfunction = 'NETWORK_Read' + self.methodname()
+			writer.writeline('command.{reference} = {readfunction}( bytestream );'.format(**locals()))
+		else:
+			readfunction = 'Read' + self.methodname()
+			writer.writeline('command.{reference} = bytestream->{readfunction}();'.format(**locals()))
 
 	# Writes code to write this parameter to a NetCommand.
 	def writesend(self, writer, command, reference):
@@ -305,7 +309,7 @@ class PlayerParameter(SpecParameter):
 
 	def writeread(self, writer, command, reference, **args):
 		# Player self. We store both the index and a pointer to the player structure.
-		writer.writeline('command.{reference} = &players[NETWORK_ReadByte( bytestream )];'.format(**locals()))
+		writer.writeline('command.{reference} = &players[bytestream->ReadByte()];'.format(**locals()))
 
 	def writereadchecks(self, writer, command, reference, **args):
 		playernumber = next(writer.tempvar)
@@ -496,7 +500,7 @@ class ArrayParameter(SpecParameter):
 		# Use a size variable to store the size of this array.
 		sizevariable = next(writer.tempvar)
 		writer.declare('unsigned int', sizevariable)
-		writer.writeline('%s = NETWORK_ReadByte( bytestream );' % sizevariable)
+		writer.writeline('%s = bytestream->ReadByte();' % sizevariable)
 
 		# Allocate the array using the size we read.
 		writer.writeline('command.%s.Reserve( %s );' % (reference, sizevariable))

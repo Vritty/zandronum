@@ -394,7 +394,7 @@ bool BROWSER_GetServerList( BYTESTREAM_s *pByteStream )
 
 	while ( true )
 	{
-		const LONG lCommand = NETWORK_ReadByte( pByteStream );
+		const LONG lCommand = pByteStream->ReadByte();
 
 		switch ( lCommand )
 		{
@@ -413,7 +413,7 @@ bool BROWSER_GetServerList( BYTESTREAM_s *pByteStream )
 				// Read in address information.
 				NETADDRESS_s serverAddress;
 				ULONG ulPorts = 0;
-				while (( ulPorts = NETWORK_ReadByte( pByteStream ) ))
+				while (( ulPorts = pByteStream->ReadByte() ))
 				{
 					serverAddress.ReadFromStream ( pByteStream, false );
 					for ( ULONG ulIdx = 0; ulIdx < ulPorts; ++ulIdx )
@@ -469,7 +469,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	{
 		while ( 1 )
 		{
-			if ( NETWORK_ReadByte( pByteStream ) == -1 )
+			if ( pByteStream->ReadByte() == -1 )
 				return;
 		}
 	}
@@ -509,7 +509,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 			g_BrowserServerList[lServer].ulActiveState = AS_INACTIVE;
 			while ( 1 )
 			{
-				if ( NETWORK_ReadByte( pByteStream ) == -1 )
+				if ( pByteStream->ReadByte() == -1 )
 					return;
 			}
 		}
@@ -533,16 +533,16 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_MAPNAME )
 		g_BrowserServerList[lServer].Mapname = NETWORK_ReadString( pByteStream );
 	if ( ulFlags & SQF_MAXCLIENTS )
-		g_BrowserServerList[lServer].lMaxClients = NETWORK_ReadByte( pByteStream );
+		g_BrowserServerList[lServer].lMaxClients = pByteStream->ReadByte();
 
 	// Maximum slots.
 	if ( ulFlags & SQF_MAXPLAYERS )
-		NETWORK_ReadByte( pByteStream );
+		pByteStream->ReadByte();
 
 	// Read in the PWAD information.
 	if ( ulFlags & SQF_PWADS )
 	{
-		g_BrowserServerList[lServer].lNumPWADs = NETWORK_ReadByte( pByteStream );
+		g_BrowserServerList[lServer].lNumPWADs = pByteStream->ReadByte();
 		if ( g_BrowserServerList[lServer].lNumPWADs > 0 )
 		{
 			for ( ulIdx = 0; ulIdx < (ULONG)g_BrowserServerList[lServer].lNumPWADs; ulIdx++ )
@@ -552,9 +552,9 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 
 	if ( ulFlags & SQF_GAMETYPE )
 	{
-		g_BrowserServerList[lServer].GameMode = (GAMEMODE_e)NETWORK_ReadByte( pByteStream );
-		NETWORK_ReadByte( pByteStream );
-		NETWORK_ReadByte( pByteStream );
+		g_BrowserServerList[lServer].GameMode = (GAMEMODE_e)pByteStream->ReadByte();
+		pByteStream->ReadByte();
+		pByteStream->ReadByte();
 	}
 
 	// Game name.
@@ -567,19 +567,19 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 
 	// Force password.
 	if ( ulFlags & SQF_FORCEPASSWORD )
-		NETWORK_ReadByte( pByteStream );
+		pByteStream->ReadByte();
 
 	// Force join password.
 	if ( ulFlags & SQF_FORCEJOINPASSWORD )
-		NETWORK_ReadByte( pByteStream );
+		pByteStream->ReadByte();
 
 	// Game skill.
 	if ( ulFlags & SQF_GAMESKILL )
-		NETWORK_ReadByte( pByteStream );
+		pByteStream->ReadByte();
 
 	// Bot skill.
 	if ( ulFlags & SQF_BOTSKILL )
-		NETWORK_ReadByte( pByteStream );
+		pByteStream->ReadByte();
 
 	if ( ulFlags & SQF_DMFLAGS )
 	{
@@ -631,7 +631,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 
 	// Read in the number of players.
 	if ( ulFlags & SQF_NUMPLAYERS )
-		g_BrowserServerList[lServer].lNumPlayers = NETWORK_ReadByte( pByteStream );
+		g_BrowserServerList[lServer].lNumPlayers = pByteStream->ReadByte();
 
 	if ( ulFlags & SQF_PLAYERDATA )
 	{
@@ -649,19 +649,19 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 				g_BrowserServerList[lServer].Players[ulIdx].lPing = NETWORK_ReadShort( pByteStream );
 
 				// Read in whether or not the player is spectating.
-				g_BrowserServerList[lServer].Players[ulIdx].bSpectating = !!NETWORK_ReadByte( pByteStream );
+				g_BrowserServerList[lServer].Players[ulIdx].bSpectating = !!pByteStream->ReadByte();
 
 				// Read in whether or not the player is a bot.
-				g_BrowserServerList[lServer].Players[ulIdx].bIsBot = !!NETWORK_ReadByte( pByteStream );
+				g_BrowserServerList[lServer].Players[ulIdx].bIsBot = !!pByteStream->ReadByte();
 
 				if ( GAMEMODE_GetFlags( g_BrowserServerList[lServer].GameMode ) & GMF_PLAYERSONTEAMS )
 				{
 					// Team.
-					NETWORK_ReadByte( pByteStream );
+					pByteStream->ReadByte();
 				}
 
 				// Time.
-				NETWORK_ReadByte( pByteStream );
+				pByteStream->ReadByte();
 			}
 		}
 	}
@@ -669,7 +669,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	// [CW] Read in the number of the teams.
 	// [BB] Make sure that the number is valid!
 	if ( ulFlags & SQF_TEAMINFO_NUMBER )
-		g_ulNumberOfTeams = clamp ( NETWORK_ReadByte( pByteStream ), 2, MAX_TEAMS );
+		g_ulNumberOfTeams = clamp ( pByteStream->ReadByte(), 2, MAX_TEAMS );
 
 	// [CW] Read in the name of the teams.
 	if ( ulFlags & SQF_TEAMINFO_NAME )
@@ -695,7 +695,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	// [BB] Testing server and what's the binary name?
 	if ( ulFlags & SQF_TESTING_SERVER )
 	{
-		NETWORK_ReadByte( pByteStream );
+		pByteStream->ReadByte();
 		NETWORK_ReadString( pByteStream );
 	}
 
@@ -706,26 +706,26 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	// [BB] All dmflags and compatflags.
 	if ( ulFlags & SQF_ALL_DMFLAGS )
 	{
-		const ULONG ulNumFlags = NETWORK_ReadByte( pByteStream );
+		const ULONG ulNumFlags = pByteStream->ReadByte();
 		for ( ULONG ulIdx = 0; ulIdx < ulNumFlags; ulIdx++ )
 			NETWORK_ReadLong( pByteStream );
 	}
 
 	// [BB] Get special security settings like sv_enforcemasterbanlist.
 	if ( ulFlags & SQF_SECURITY_SETTINGS )
-		NETWORK_ReadByte( pByteStream );
+		pByteStream->ReadByte();
 
 	// [TP] Optional wads
 	if ( ulFlags & SQF_OPTIONAL_WADS )
 	{
-		for ( int i = NETWORK_ReadByte( pByteStream ); i > 0; --i )
-			NETWORK_ReadByte( pByteStream );
+		for ( int i = pByteStream->ReadByte(); i > 0; --i )
+			pByteStream->ReadByte();
 	}
 
 	// [TP] Dehacked patches
 	if ( ulFlags & SQF_DEH )
 	{
-		for ( int i = NETWORK_ReadByte( pByteStream ); i > 0; --i )
+		for ( int i = pByteStream->ReadByte(); i > 0; --i )
 			NETWORK_ReadString( pByteStream );
 	}
 

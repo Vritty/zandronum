@@ -160,7 +160,7 @@ void SERVER_RCON_ParseMessage( NETADDRESS_s Address, LONG lMessage, BYTESTREAM_s
 	{
 	case CLRC_BEGINCONNECTION:
 
-		server_rcon_HandleNewConnection( Address, NETWORK_ReadByte( pByteStream ));
+		server_rcon_HandleNewConnection( Address, pByteStream->ReadByte());
 		break;
 	case CLRC_PASSWORD:
 

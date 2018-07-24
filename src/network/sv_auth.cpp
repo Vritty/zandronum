@@ -275,16 +275,16 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 		{
 		case AUTH_SERVER_NEGOTIATE:
 			{
-				const int protovolVersion = NETWORK_ReadByte( pByteStream );
+				const int protovolVersion = pByteStream->ReadByte();
 				const unsigned int clientSessionID = NETWORK_ReadLong( pByteStream );
 				const int sessionID = NETWORK_ReadLong( pByteStream );
-				const int lenSalt = NETWORK_ReadByte( pByteStream );
+				const int lenSalt = pByteStream->ReadByte();
 				TArray<unsigned char> bytesSalt;
 				if ( lenSalt > 0 )
 				{
 					bytesSalt.Resize( lenSalt );
 					for ( int i = 0; i < lenSalt; ++i )
-						bytesSalt[i] = NETWORK_ReadByte( pByteStream );
+						bytesSalt[i] = pByteStream->ReadByte();
 				}
 				else
 					Printf ( "AUTH_SERVER_NEGOTIATE: Invalid length\n" );
@@ -313,7 +313,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 				{
 					bytesB.Resize( lenB );
 					for ( int i = 0; i < lenB; ++i )
-						bytesB[i] = NETWORK_ReadByte( pByteStream );
+						bytesB[i] = pByteStream->ReadByte();
 				}
 				else
 					Printf ( "AUTH_SERVER_SRP_STEP_TWO: Invalid length\n" );
@@ -336,7 +336,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 				{
 					bytesHAMK.Resize( lenHAMK );
 					for ( int i = 0; i < lenHAMK; ++i )
-						bytesHAMK[i] = NETWORK_ReadByte( pByteStream );
+						bytesHAMK[i] = pByteStream->ReadByte();
 				}
 				else
 					Printf ( "AUTH_SERVER_SRP_STEP_FOUR: Invalid length\n" );
@@ -362,7 +362,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 			break;
 		case AUTH_SERVER_USER_ERROR:
 			{
-				const int errorCode = NETWORK_ReadByte( pByteStream );
+				const int errorCode = pByteStream->ReadByte();
 				const unsigned int clientSessionID = NETWORK_ReadLong( pByteStream );
 				Printf ( "Error: Error authenticating user with session id %u.\n", clientSessionID );
 				FString errorMessage = "";
@@ -399,7 +399,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 			break;
 		case AUTH_SERVER_SESSION_ERROR:
 			{
-				const int errorCode = NETWORK_ReadByte( pByteStream );
+				const int errorCode = pByteStream->ReadByte();
 				const int sessionID = NETWORK_ReadLong( pByteStream );
 				Printf ( "Session error: " );
 				FString errorMessage = "";
@@ -471,7 +471,7 @@ bool SERVER_ProcessSRPClientCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			{
 				pClient->bytesA.Resize ( lenA ); 
 				for ( int i = 0; i < lenA; ++i )
-					pClient->bytesA[i] = NETWORK_ReadByte( pByteStream );
+					pClient->bytesA[i] = pByteStream->ReadByte();
 			}
 			else
 				Printf ( "CLC_SRP_USER_START_AUTHENTICATION: Invalid length\n" );
@@ -528,7 +528,7 @@ bool SERVER_ProcessSRPClientCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			{
 				pClient->bytesM.Resize ( lenM ); 
 				for ( int i = 0; i < lenM; ++i )
-					pClient->bytesM[i] = NETWORK_ReadByte( pByteStream );
+					pClient->bytesM[i] = pByteStream->ReadByte();
 			}
 			else
 				Printf ( "CLC_SRP_USER_PROCESS_CHALLENGE: Invalid length\n" );

@@ -1381,7 +1381,7 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 			players[g_lCurrentClient].bOnTeam = false;
 	}
 
-	lCommand = NETWORK_ReadByte( pByteStream );
+	lCommand = pByteStream->ReadByte();
 
 	// Read in the user's userinfo. If it returns false, the player was kicked for flooding
 	// (though this shouldn't happen anymore).
@@ -1563,7 +1563,7 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 	if ( g_floodProtectionIPQueue.isFull( ) || g_floodProtectionIPQueue.addressInQueue( NETWORK_GetFromAddress( )))
 		return;
 
-	lCommand = NETWORK_ReadByte( pByteStream );
+	lCommand = pByteStream->ReadByte();
 
 	// [BB] It's absolutely crucial that we only handle the first command in a packet
 	// that comes from someone that's not a client yet. Otherwise a single malformed
@@ -1604,9 +1604,9 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 		case LAUNCHER_SERVER_CHALLENGE:
 
 			// Read in three more bytes, because it was a long that was sent to us.
-			NETWORK_ReadByte( pByteStream );
-			NETWORK_ReadByte( pByteStream );
-			NETWORK_ReadByte( pByteStream );
+			pByteStream->ReadByte();
+			pByteStream->ReadByte();
+			pByteStream->ReadByte();
 
 			// Read in what the query wants to know.
 			ulFlags = NETWORK_ReadLong( pByteStream );
@@ -1721,9 +1721,9 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 			// User sent the version, password, start as spectator, restore frags, and network protcol version along with the challenge.
 			NETWORK_ReadString( pByteStream );
 			NETWORK_ReadString( pByteStream );
-			NETWORK_ReadByte( pByteStream );
-			NETWORK_ReadByte( pByteStream );
-			NETWORK_ReadByte( pByteStream );
+			pByteStream->ReadByte();
+			pByteStream->ReadByte();
+			pByteStream->ReadByte();
 			// [BB] Lump authentication string.
 			NETWORK_ReadString( pByteStream );
 			return;
@@ -1748,7 +1748,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	clientPassword.ToUpper();
 
 	// [BB] Read in the client connection flags.
-	const int connectFlags = NETWORK_ReadByte( pByteStream );
+	const int connectFlags = pByteStream->ReadByte();
 
 	// Read in whether or not the client wants to start as a spectator.
 	g_aClients[lClient].bWantStartAsSpectator = !!( connectFlags & CCF_STARTASSPECTATOR );
@@ -1760,10 +1760,10 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	g_aClients[lClient].bWantHideCountry = !!( connectFlags & CCF_HIDECOUNTRY );
 
 	// [TP] Save whether or not the player wants to hide his account.
-	g_aClients[lClient].WantHideAccount = !!NETWORK_ReadByte( pByteStream );
+	g_aClients[lClient].WantHideAccount = !!pByteStream->ReadByte();
 
 	// Read in the client's network game version.
-	clientNetworkGameVersion = NETWORK_ReadByte( pByteStream );
+	clientNetworkGameVersion = pByteStream->ReadByte();
 
 	g_aClients[lClient].SavedPackets.Clear();
 	g_aClients[lClient].PacketBuffer.Clear();
@@ -4226,7 +4226,7 @@ void SERVER_ParsePacket( BYTESTREAM_s *pByteStream )
 
 	while ( 1 )	 
 	{  
-		lCommand = NETWORK_ReadByte( pByteStream );
+		lCommand = pByteStream->ReadByte();
 
 		// End of message.
 		if ( lCommand == -1 )
@@ -4262,7 +4262,7 @@ void SERVER_ParsePacket( BYTESTREAM_s *pByteStream )
 					Printf( "Illegal command (%d) from non-authenticated client (%s).\n", static_cast<int> (lCommand), NETWORK_GetFromAddress().ToString() );
 
 				// [BB] Ignore the rest of the packet, it can't be valid.
-				while ( NETWORK_ReadByte( pByteStream ) != -1 );
+				while ( pByteStream->ReadByte() != -1 );
 				break;
 			}
 
@@ -4544,8 +4544,8 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 		// [TP] Client wishes to execute a special.
 		{
-			unsigned int special = NETWORK_ReadByte( pByteStream );
-			unsigned int argsSent = NETWORK_ReadByte( pByteStream );
+			unsigned int special = pByteStream->ReadByte();
+			unsigned int argsSent = pByteStream->ReadByte();
 			int args[5] = { 0, 0, 0, 0, 0 };
 
 			// [TP] Ensure that the client does not send more than five arguments.
@@ -4585,7 +4585,7 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			if ( server_CheckForClientMinorCommandFlood ( g_lCurrentClient ) == true )
 				return ( true );
 
-			SERVER_GetClient( SERVER_GetCurrentClient() )->WantHideAccount = !!NETWORK_ReadByte( pByteStream );
+			SERVER_GetClient( SERVER_GetCurrentClient() )->WantHideAccount = !!pByteStream->ReadByte();
 			SERVERCOMMANDS_SetPlayerAccountName( g_lCurrentClient );
 		}
 		return false;
@@ -4773,8 +4773,8 @@ void SERVER_UpdateThingVelocity( AActor *pActor, bool updateZ, bool updateXY )
 //
 static bool server_Ignore( BYTESTREAM_s *pByteStream )
 {
-	ULONG	ulTargetIdx = NETWORK_ReadByte( pByteStream );
-	bool	bIgnore = !!NETWORK_ReadByte( pByteStream );
+	ULONG	ulTargetIdx = pByteStream->ReadByte();
+	bool	bIgnore = !!pByteStream->ReadByte();
 	LONG	lTicks = NETWORK_ReadLong( pByteStream );
 
 	if ( !SERVER_IsValidClient( ulTargetIdx ))
@@ -4903,7 +4903,7 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 	ULONG ulPlayer = g_lCurrentClient;
 
 	// Read in the chat mode (normal, team, etc.)
-	ULONG ulChatMode = NETWORK_ReadByte( pByteStream );
+	ULONG ulChatMode = pByteStream->ReadByte();
 
 	// Read in the chat string.
 	const char	*pszChatString = NETWORK_ReadString( pByteStream );
@@ -5038,7 +5038,7 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 	moveCmd.ulServerGametic = NETWORK_ReadLong( pByteStream );
 
 	// Read in the information the client is sending us.
-	const ULONG ulBits = NETWORK_ReadByte( pByteStream );
+	const ULONG ulBits = pByteStream->ReadByte();
 
 	if ( ulBits & CLIENT_UPDATE_YAW )
 		pCmd->ucmd.yaw = NETWORK_ReadShort( pByteStream );
@@ -5050,7 +5050,7 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 		pCmd->ucmd.roll = NETWORK_ReadShort( pByteStream );
 
 	if ( ulBits & CLIENT_UPDATE_BUTTONS )
-		pCmd->ucmd.buttons = ( ulBits & CLIENT_UPDATE_BUTTONS_LONG ) ? NETWORK_ReadLong( pByteStream ) : NETWORK_ReadByte( pByteStream );
+		pCmd->ucmd.buttons = ( ulBits & CLIENT_UPDATE_BUTTONS_LONG ) ? NETWORK_ReadLong( pByteStream ) : pByteStream->ReadByte();
 
 	if ( ulBits & CLIENT_UPDATE_FORWARDMOVE )
 		pCmd->ucmd.forwardmove = NETWORK_ReadShort( pByteStream );
@@ -5635,7 +5635,7 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	// Read in the join password.
 	clientJoinPassword = NETWORK_ReadString( pByteStream );
 
-	lDesiredTeam = NETWORK_ReadByte( pByteStream );
+	lDesiredTeam = pByteStream->ReadByte();
 	if ( playeringame[g_lCurrentClient] == false )
 		return ( false );
 
@@ -5804,7 +5804,7 @@ static bool server_GenericCheat( BYTESTREAM_s *pByteStream )
 	ULONG	ulCheat;
 
 	// Read in the cheat.
-	ulCheat = NETWORK_ReadByte( pByteStream );
+	ulCheat = pByteStream->ReadByte();
 
 	// If it's legal, do the cheat.
 	if (( sv_cheats ) ||
@@ -5847,7 +5847,7 @@ static bool server_GiveCheat( BYTESTREAM_s *pByteStream, bool take )
 	pszItemName = NETWORK_ReadString( pByteStream );
 
 	// Read in the amount.
-	ulAmount = NETWORK_ReadByte( pByteStream );
+	ulAmount = pByteStream->ReadByte();
 
 	// If it's legal, do the cheat.
 	if ( sv_cheats )
@@ -5876,7 +5876,7 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 	// Read in the item name.
 	pszName = NETWORK_ReadString( pByteStream );
 
-	const bool bSetAngle = !!NETWORK_ReadByte( pByteStream );
+	const bool bSetAngle = !!pByteStream->ReadByte();
 	// [BB] The client only sends the angle, if it is supposed to be set.
 	const SHORT sAngle = bSetAngle ? NETWORK_ReadShort( pByteStream ) : 0;
 
@@ -5965,7 +5965,7 @@ static bool server_ChangeDisplayPlayer( BYTESTREAM_s *pByteStream )
 	ULONG		ulDisplayPlayer;
 
 	// Read in their display player.
-	ulDisplayPlayer = NETWORK_ReadByte( pByteStream );
+	ulDisplayPlayer = pByteStream->ReadByte();
 	if (( ulDisplayPlayer < MAXPLAYERS ) && playeringame[ulDisplayPlayer] )
 		g_aClients[g_lCurrentClient].ulDisplayPlayer = ulDisplayPlayer;
 
@@ -6193,7 +6193,7 @@ static bool server_CallVote( BYTESTREAM_s *pByteStream )
 	char		szCommand[128];
 
 	// Read in the type of vote happening.
-	ulVoteCmd = NETWORK_ReadByte( pByteStream );
+	ulVoteCmd = pByteStream->ReadByte();
 
 	// Read in the parameters for the vote.
 	FString		Parameters = NETWORK_ReadString( pByteStream );
@@ -6380,7 +6380,7 @@ static bool server_Puke( BYTESTREAM_s *pByteStream )
 		? NETWORK_ACSScriptFromNetID ( scriptNetID )
 		: -FName( NETWORK_ReadString( pByteStream ) );
 
-	ULONG ulArgn = NETWORK_ReadByte( pByteStream );
+	ULONG ulArgn = pByteStream->ReadByte();
 
 	// [BB] Valid clients don't send more than four args.
 	if ( ulArgn > 4 )
@@ -6392,7 +6392,7 @@ static bool server_Puke( BYTESTREAM_s *pByteStream )
 	int arg[4] = { 0, 0, 0, 0 };
 	for ( ULONG ulIdx = 0; ulIdx < ulArgn; ++ulIdx )
 		arg[ulIdx] = NETWORK_ReadLong ( pByteStream );
-	bool bAlways = !!NETWORK_ReadByte( pByteStream );
+	bool bAlways = !!pByteStream->ReadByte();
 
 	// [BB] A normal client checks if the script is pukeable and only requests to puke pukeable scripts.
 	// Thus if the requested script is not pukeable, the client was tampered with.
@@ -6475,7 +6475,7 @@ static bool server_InfoCheat( BYTESTREAM_s *pByteStream )
 {
 	LONG lID = NETWORK_ReadShort( pByteStream );
 	AActor* linetarget = CLIENT_FindThingByNetID( lID );
-	bool extended = !!NETWORK_ReadByte( pByteStream );
+	bool extended = !!pByteStream->ReadByte();
 
 	// [TP] Except not if we don't allow cheats.
 	if ( sv_cheats == false )

@@ -240,7 +240,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 		// [Dusk] Rewind back and try see if this is an old demo. Old demos started
 		// with a CLD_DEMOSTART (which was non-constant), followed by 12345678.
 		g_ByteStream.pbStream -= 4;
-		NETWORK_ReadByte( &g_ByteStream ); // Skip CLD_DEMOSTART
+		g_ByteStream.ReadByte(); // Skip CLD_DEMOSTART
 		if ( NETWORK_ReadLong( &g_ByteStream ) == 12345678 )
 		{
 			// [Dusk] Dig out the version string. It should be 13 bytes in.
@@ -254,7 +254,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 		return ( false );
 	}
 
-	if ( NETWORK_ReadByte( &g_ByteStream ) != CLD_DEMOLENGTH )
+	if ( g_ByteStream.ReadByte() != CLD_DEMOLENGTH )
 	{
 		I_Error( "CLIENTDEMO_ProcessDemoHeader: Expected CLD_DEMOLENGTH.\n" );
 		return ( false );
@@ -267,7 +267,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 	bBodyStart = false;
 	while ( bBodyStart == false )
 	{  
-		lCommand = NETWORK_ReadByte( &g_ByteStream );
+		lCommand = g_ByteStream.ReadByte();
 
 		switch ( lCommand )
 		{
@@ -284,7 +284,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 			// [Dusk] BUILD_ID is now stored in the demo. We don't do anything
 			// with it - it's of interest for external applications only. Just
 			// skip it here.
-			NETWORK_ReadByte( &g_ByteStream );
+			g_ByteStream.ReadByte();
 
 			// Read in the random number generator seed.
 			rngseed = NETWORK_ReadLong( &g_ByteStream );
@@ -355,15 +355,15 @@ void CLIENTDEMO_ReadUserInfo( void )
 	userinfo_t &info = players[consoleplayer].userinfo;
 	*static_cast<FStringCVar *>(info[NAME_Name]) =  NETWORK_ReadString( &g_ByteStream );
 	// [BB] Make sure that the gender is valid.
-	*static_cast<FIntCVar *>(info[NAME_Gender]) = clamp ( NETWORK_ReadByte( &g_ByteStream ), 0, 2 );
+	*static_cast<FIntCVar *>(info[NAME_Gender]) = clamp ( g_ByteStream.ReadByte(), 0, 2 );
 	info.ColorChanged( NETWORK_ReadLong( &g_ByteStream ) );
 	*static_cast<FFloatCVar *>(info[NAME_Autoaim]) = static_cast<float> ( NETWORK_ReadLong( &g_ByteStream ) ) / ANGLE_1 ;
 	*static_cast<FIntCVar *>(info[NAME_Skin]) = R_FindSkin( NETWORK_ReadString( &g_ByteStream ), players[consoleplayer].CurrentPlayerClass );
 	*static_cast<FIntCVar *>(info[NAME_RailColor]) = NETWORK_ReadLong( &g_ByteStream );
-	*static_cast<FIntCVar *>(info[NAME_Handicap]) = NETWORK_ReadByte( &g_ByteStream );
-	info.TicsPerUpdateChanged ( NETWORK_ReadByte( &g_ByteStream ) );
-	info.ConnectionTypeChanged ( NETWORK_ReadByte( &g_ByteStream ) );
-	info.ClientFlagsChanged ( NETWORK_ReadByte( &g_ByteStream ) ); // [CK] Client booleans
+	*static_cast<FIntCVar *>(info[NAME_Handicap]) = g_ByteStream.ReadByte();
+	info.TicsPerUpdateChanged ( g_ByteStream.ReadByte() );
+	info.ConnectionTypeChanged ( g_ByteStream.ReadByte() );
+	info.ClientFlagsChanged ( g_ByteStream.ReadByte() ); // [CK] Client booleans
 	info.PlayerClassChanged ( NETWORK_ReadString( &g_ByteStream ));
 
 	R_BuildPlayerTranslation( consoleplayer );
@@ -413,7 +413,7 @@ void CLIENTDEMO_ReadTiccmd( ticcmd_t *pCmd )
 	pCmd->ucmd.yaw = NETWORK_ReadShort( &g_ByteStream );
 	pCmd->ucmd.roll = NETWORK_ReadShort( &g_ByteStream );
 	pCmd->ucmd.pitch = NETWORK_ReadShort( &g_ByteStream );
-	pCmd->ucmd.buttons = NETWORK_ReadByte( &g_ByteStream );
+	pCmd->ucmd.buttons = g_ByteStream.ReadByte();
 	pCmd->ucmd.upmove = NETWORK_ReadShort( &g_ByteStream );
 	pCmd->ucmd.forwardmove = NETWORK_ReadShort( &g_ByteStream );
 	pCmd->ucmd.sidemove = NETWORK_ReadShort( &g_ByteStream );
@@ -481,7 +481,7 @@ void CLIENTDEMO_ReadPacket( void )
 
 	while ( 1 )
 	{  
-		lCommand = NETWORK_ReadByte( &g_ByteStream );
+		lCommand = g_ByteStream.ReadByte();
 
 		// [TP/BB] Reset the bit reading buffer.
 		g_ByteStream.bitBuffer = NULL;
@@ -523,7 +523,7 @@ void CLIENTDEMO_ReadPacket( void )
 			break;
 		case CLD_LOCALCOMMAND:
 
-			switch( static_cast<ClientDemoLocalCommand>( NETWORK_ReadByte( &g_ByteStream )))
+			switch( static_cast<ClientDemoLocalCommand>( g_ByteStream.ReadByte()))
 			{
 			case CLD_LCMD_INVUSE:
 
@@ -550,7 +550,7 @@ void CLIENTDEMO_ReadPacket( void )
 				break;
 			case CLD_LCMD_CHEAT:
 
-				cht_DoCheat( &players[consoleplayer], NETWORK_ReadByte( &g_ByteStream ));
+				cht_DoCheat( &players[consoleplayer], g_ByteStream.ReadByte());
 				break;
 			case CLD_LCMD_WARPCHEAT:
 
