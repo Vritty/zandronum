@@ -447,7 +447,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			newServer.Address = AddressFrom;
 			// [BB] If no verification string was send, NETWORK_ReadString just returns an empty string.
 			// Thus, this is still compatible with older servers that don't send the string.
-			newServer.MasterBanlistVerificationString = NETWORK_ReadString( pByteStream );
+			newServer.MasterBanlistVerificationString = pByteStream->ReadString();
 			// [BB] If no value was send, NETWORK_ReadByte just returns -1.
 			// Thus, this is still compatible with older servers that don't tell us whether they enforce our bans
 			// and gives them the benefit of the doubt, i.e. it assumes that they enforce our bans.
@@ -519,7 +519,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 		{
 			SERVER_s newServer;
 			newServer.Address = AddressFrom;
-			newServer.MasterBanlistVerificationString = NETWORK_ReadString( pByteStream );
+			newServer.MasterBanlistVerificationString = pByteStream->ReadString();
 			newServer.ServerVerificationInt = pByteStream->ReadLong();
 
 			std::set<SERVER_s, SERVERCompFunc>::iterator currentServer = g_UnverifiedServers.find ( newServer );
@@ -540,7 +540,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 		{
 			SERVER_s server;
 			server.Address = AddressFrom;
-			server.MasterBanlistVerificationString = NETWORK_ReadString( pByteStream );
+			server.MasterBanlistVerificationString = pByteStream->ReadString();
 
 			std::set<SERVER_s, SERVERCompFunc>::iterator currentServer = g_Servers.find ( server );
 

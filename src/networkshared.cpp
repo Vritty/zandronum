@@ -289,7 +289,7 @@ float BYTESTREAM_s::ReadFloat()
 
 //*****************************************************************************
 //
-const char *NETWORK_ReadString( BYTESTREAM_s *pByteStream )
+const char *BYTESTREAM_s::ReadString()
 {
 	int c;
 	static char		s_szString[MAX_NETWORK_STRING];
@@ -298,7 +298,7 @@ const char *NETWORK_ReadString( BYTESTREAM_s *pByteStream )
 	ULONG ulIdx = 0;
 	do
 	{
-		c = pByteStream->ReadByte();
+		c = this->ReadByte();
 		if ( c <= 0 )
 			break;
 

@@ -494,7 +494,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	pByteStream->ReadLong();
 
 	// Read in the version.
-	g_BrowserServerList[lServer].Version = NETWORK_ReadString( pByteStream );
+	g_BrowserServerList[lServer].Version = pByteStream->ReadString();
 
 	// If the version doesn't match ours, remove it from the list.
 	{
@@ -520,18 +520,18 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 
 	// Read the server name.
 	if ( ulFlags & SQF_NAME )
-		g_BrowserServerList[lServer].HostName = NETWORK_ReadString( pByteStream );
+		g_BrowserServerList[lServer].HostName = pByteStream->ReadString();
 
 	// Read the website URL.
 	if ( ulFlags & SQF_URL )
-		g_BrowserServerList[lServer].WadURL = NETWORK_ReadString( pByteStream );
+		g_BrowserServerList[lServer].WadURL = pByteStream->ReadString();
 
 	// Read the host's e-mail address.
 	if ( ulFlags & SQF_EMAIL )
-		g_BrowserServerList[lServer].EmailAddress = NETWORK_ReadString( pByteStream );
+		g_BrowserServerList[lServer].EmailAddress = pByteStream->ReadString();
 
 	if ( ulFlags & SQF_MAPNAME )
-		g_BrowserServerList[lServer].Mapname = NETWORK_ReadString( pByteStream );
+		g_BrowserServerList[lServer].Mapname = pByteStream->ReadString();
 	if ( ulFlags & SQF_MAXCLIENTS )
 		g_BrowserServerList[lServer].lMaxClients = pByteStream->ReadByte();
 
@@ -546,7 +546,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 		if ( g_BrowserServerList[lServer].lNumPWADs > 0 )
 		{
 			for ( ulIdx = 0; ulIdx < (ULONG)g_BrowserServerList[lServer].lNumPWADs; ulIdx++ )
-				g_BrowserServerList[lServer].PWADNames[ulIdx] = NETWORK_ReadString( pByteStream );
+				g_BrowserServerList[lServer].PWADNames[ulIdx] = pByteStream->ReadString();
 		}
 	}
 
@@ -559,11 +559,11 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 
 	// Game name.
 	if ( ulFlags & SQF_GAMENAME )
-		NETWORK_ReadString( pByteStream );
+		pByteStream->ReadString();
 
 	// Read in the IWAD name.
 	if ( ulFlags & SQF_IWAD )
-		g_BrowserServerList[lServer].IWADName = NETWORK_ReadString( pByteStream );
+		g_BrowserServerList[lServer].IWADName = pByteStream->ReadString();
 
 	// Force password.
 	if ( ulFlags & SQF_FORCEPASSWORD )
@@ -640,7 +640,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 			for ( ulIdx = 0; ulIdx < (ULONG)g_BrowserServerList[lServer].lNumPlayers; ulIdx++ )
 			{
 				// Read in this player's name.
-				g_BrowserServerList[lServer].Players[ulIdx].Name = NETWORK_ReadString( pByteStream );
+				g_BrowserServerList[lServer].Players[ulIdx].Name = pByteStream->ReadString();
 
 				// Read in "fragcount" (could be frags, points, etc.)
 				g_BrowserServerList[lServer].Players[ulIdx].lFragcount = pByteStream->ReadShort();
@@ -675,7 +675,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_TEAMINFO_NAME )
 	{
 		for ( ULONG ulIdx = 0; ulIdx < g_ulNumberOfTeams; ulIdx++ )
-			NETWORK_ReadString( pByteStream );
+			pByteStream->ReadString();
 	}
 
 	// [CW] Read in the color of the teams.
@@ -696,12 +696,12 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_TESTING_SERVER )
 	{
 		pByteStream->ReadByte();
-		NETWORK_ReadString( pByteStream );
+		pByteStream->ReadString();
 	}
 
 	// [BB] MD5 sum of the main data file (skulltag.wad / skulltag_data.pk3).
 	if ( ulFlags & SQF_DATA_MD5SUM )
-		NETWORK_ReadString( pByteStream );
+		pByteStream->ReadString();
 
 	// [BB] All dmflags and compatflags.
 	if ( ulFlags & SQF_ALL_DMFLAGS )
@@ -726,7 +726,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_DEH )
 	{
 		for ( int i = pByteStream->ReadByte(); i > 0; --i )
-			NETWORK_ReadString( pByteStream );
+			pByteStream->ReadString();
 	}
 
 	// Now that this server has been read in, resort the servers in the menu.

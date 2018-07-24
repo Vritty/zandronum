@@ -1144,7 +1144,7 @@ FName NETWORK_ReadName( BYTESTREAM_s* bytestream )
 	SDWORD index = bytestream->ReadShort();
 
 	if ( index == -1 )
-		return FName( NETWORK_ReadString( bytestream ));
+		return FName( bytestream->ReadString());
 	else
 		return FName( static_cast<ENamedName>( index ));
 }

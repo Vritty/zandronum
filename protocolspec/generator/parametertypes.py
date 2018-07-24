@@ -151,7 +151,7 @@ class StringParameter(SpecParameter):
 		self.cxxtypename = 'FString'
 
 	def writeread(self, writer, command, reference, **args):
-		writer.writeline('command.{reference} = NETWORK_ReadString( bytestream );'.format(**locals()))
+		writer.writeline('command.{reference} = bytestream->ReadString();'.format(**locals()))
 
 	def writesend(self, writer, command, reference, **args):
 		writer.writeline('command.addString( this->{reference} );'.format(**locals()))

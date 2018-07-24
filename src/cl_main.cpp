@@ -1301,7 +1301,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		Printf( "Connected!\n" );
 
 		// Read in the map name we now need to authenticate.
-		strncpy( g_szMapName, NETWORK_ReadString( pByteStream ), 8 );
+		strncpy( g_szMapName, pByteStream->ReadString(), 8 );
 		g_szMapName[8] = 0;
 
 		// [CK] Use the server's gametic to start at a reasonable number
@@ -1387,11 +1387,11 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				break;
 			case NETWORK_ERRORCODE_WRONGVERSION:
 
-				szErrorString.Format( "Failed connect. Your version is different.\nThis server is using version: %s\nPlease check http://www." DOMAIN_NAME "/ for updates.", NETWORK_ReadString( pByteStream ) );
+				szErrorString.Format( "Failed connect. Your version is different.\nThis server is using version: %s\nPlease check http://www." DOMAIN_NAME "/ for updates.", pByteStream->ReadString() );
 				break;
 			case NETWORK_ERRORCODE_WRONGPROTOCOLVERSION:
 
-				szErrorString.Format( "Failed connect. Your protocol version is different.\nServer uses: %s\nYou use:     %s\nPlease check http://www." DOMAIN_NAME "/ for a matching version.", NETWORK_ReadString( pByteStream ), GetVersionStringRev() );
+				szErrorString.Format( "Failed connect. Your protocol version is different.\nServer uses: %s\nYou use:     %s\nPlease check http://www." DOMAIN_NAME "/ for a matching version.", pByteStream->ReadString(), GetVersionStringRev() );
 				break;
 			case NETWORK_ERRORCODE_BANNED:
 
@@ -1406,7 +1406,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 					szErrorString = "Couldn't connect. " TEXTCOLOR_RED "You have been banned from this server!" TEXTCOLOR_NORMAL;
 
 					// [RC] Read the reason for this ban.
-					const char		*pszBanReason = NETWORK_ReadString( pByteStream );
+					const char		*pszBanReason = pByteStream->ReadString();
 					if ( strlen( pszBanReason ))
 						szErrorString = szErrorString + "\nReason for ban: " + pszBanReason;
 
@@ -1423,7 +1423,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 					}
 
 					// [TP] Read in contact information, if any.
-					FString contact = NETWORK_ReadString( pByteStream );
+					FString contact = pByteStream->ReadString();
 					if ( contact.IsNotEmpty() )
 					{
 						szErrorString.AppendFormat( "\nIf you feel this is in error, you may contact the server "
@@ -1445,8 +1445,8 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 					for ( int i = 0; i < numServerPWADs; ++i )
 					{
 						std::pair<FString, FString> pwad;
-						pwad.first = NETWORK_ReadString( pByteStream );
-						pwad.second = NETWORK_ReadString( pByteStream );
+						pwad.first = pByteStream->ReadString();
+						pwad.second = pByteStream->ReadString();
 						serverPWADs.push_back ( pwad );
 					}
 
@@ -2060,8 +2060,8 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SETCVAR:
 				{
-					const FString cvarName = NETWORK_ReadString( pByteStream );
-					const FString cvarValue = NETWORK_ReadString( pByteStream );
+					const FString cvarName = pByteStream->ReadString();
+					const FString cvarValue = pByteStream->ReadString();
 
 					// [TP] Only allow the server to set mod CVARs.
 					FBaseCVar* cvar = FindCVar( cvarName, NULL );
@@ -2092,7 +2092,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			// [EP]
 			case SVC2_SETMUGSHOTSTATE:
 				{
-					const char *statename = NETWORK_ReadString( pByteStream );
+					const char *statename = pByteStream->ReadString();
 					if ( StatusBar != NULL)
 					{
 						StatusBar->SetMugShotState( statename );
@@ -5709,7 +5709,7 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	alwaysapplydmflags.ForceSet( Value, CVAR_Bool );
 
 	// [AM] Read in, and set the value for lobby.
-	Value.String = const_cast<char*>(NETWORK_ReadString( pByteStream ));
+	Value.String = const_cast<char*>(pByteStream->ReadString());
 	lobby.ForceSet( Value, CVAR_String );
 
 	// [TP] Yea.
@@ -6711,13 +6711,13 @@ static void client_CallVote( BYTESTREAM_s *pByteStream )
 	ulVoteCaller = pByteStream->ReadByte();
 
 	// Read in the command.
-	command = NETWORK_ReadString( pByteStream );
+	command = pByteStream->ReadString();
 
 	// Read in the parameters.
-	parameters = NETWORK_ReadString( pByteStream );
+	parameters = pByteStream->ReadString();
 	
 	// Read in the reason.
-	reason = NETWORK_ReadString( pByteStream );
+	reason = pByteStream->ReadString();
 
 	// Begin the vote!
 	CALLVOTE_BeginVote( command, parameters, reason, ulVoteCaller );
@@ -7208,10 +7208,10 @@ static void client_DoInventoryPickup( BYTESTREAM_s *pByteStream )
 	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the class name of the item.
-	szClassName = NETWORK_ReadString( pByteStream );
+	szClassName = pByteStream->ReadString();
 
 	// Read in the pickup message.
-	pszPickupMessage = NETWORK_ReadString( pByteStream );
+	pszPickupMessage = pByteStream->ReadString();
 
 	// Check to make sure everything is valid. If not, break out.
 	if (( PLAYER_IsValidPlayer( ulPlayer ) == false ) || ( players[ulPlayer].mo == NULL ))
@@ -7289,7 +7289,7 @@ static void client_SetInventoryIcon( BYTESTREAM_s *pByteStream )
 {
 	const ULONG ulPlayer = pByteStream->ReadByte();
 	const USHORT usActorNetworkIndex = pByteStream->ReadShort();
-	const FString iconTexName = NETWORK_ReadString( pByteStream );
+	const FString iconTexName = pByteStream->ReadString();
 
 	// Check to make sure everything is valid. If not, break out.
 	if (( PLAYER_IsValidPlayer( ulPlayer ) == false ) || ( players[ulPlayer].mo == NULL ))
@@ -8664,7 +8664,7 @@ static void client_EarthQuake( BYTESTREAM_s *pByteStream )
 	lTremorRadius = pByteStream->ReadShort();
 
 	// [BB] Read in the quake sound.
-	FSoundID quakesound = NETWORK_ReadString( pByteStream );
+	FSoundID quakesound = pByteStream->ReadString();
 
 	// Find the actor that represents the center of the quake based on the network
 	// ID sent. If we can't find the actor, then the quake has no center.
@@ -8851,7 +8851,7 @@ static void client_SetCameraToTexture( BYTESTREAM_s *pByteStream )
 	lID = pByteStream->ReadShort();
 
 	// Read in the name of the texture.
-	pszTexture = NETWORK_ReadString( pByteStream );
+	pszTexture = pByteStream->ReadString();
 
 	// Read in the FOV of the camera.
 	lFOV = pByteStream->ReadByte();

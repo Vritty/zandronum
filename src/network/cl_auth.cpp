@@ -189,7 +189,7 @@ void CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 	{
 	case SVC2_SRP_USER_START_AUTHENTICATION:
 		{
-			const FString username = NETWORK_ReadString( pByteStream );
+			const FString username = pByteStream->ReadString();
 			client_SRPStartAuthentication ( username.GetChars() );
 		}
 		break;

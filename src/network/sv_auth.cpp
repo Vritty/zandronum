@@ -288,7 +288,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 				}
 				else
 					Printf ( "AUTH_SERVER_NEGOTIATE: Invalid length\n" );
-				const FString username = NETWORK_ReadString( pByteStream );
+				const FString username = pByteStream->ReadString();
 				const int clientID = SERVER_FindClientWithClientSessionID ( clientSessionID );
 				if ( clientID < MAXPLAYERS )
 				{
@@ -449,7 +449,7 @@ bool SERVER_ProcessSRPClientCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		{
 			CLIENT_s *pClient = SERVER_GetClient(SERVER_GetCurrentClient());
 
-			pClient->username = NETWORK_ReadString( pByteStream );
+			pClient->username = pByteStream->ReadString();
 			pClient->clientSessionID = M_Random.GenRand32();
 
 #if EMULATE_AUTH_SERVER

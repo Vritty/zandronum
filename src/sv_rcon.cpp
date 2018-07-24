@@ -164,7 +164,7 @@ void SERVER_RCON_ParseMessage( NETADDRESS_s Address, LONG lMessage, BYTESTREAM_s
 		break;
 	case CLRC_PASSWORD:
 
-		server_rcon_HandleLogin( server_rcon_FindCandidate( Address ), NETWORK_ReadString( pByteStream ));
+		server_rcon_HandleLogin( server_rcon_FindCandidate( Address ), pByteStream->ReadString());
 		break;	
 	case CLRC_PONG:
 
@@ -178,7 +178,7 @@ void SERVER_RCON_ParseMessage( NETADDRESS_s Address, LONG lMessage, BYTESTREAM_s
 		iIndex = server_rcon_FindClient( Address );
 		if ( iIndex != -1 )
 		{
-			const char *szCommand = NETWORK_ReadString( pByteStream );
+			const char *szCommand = pByteStream->ReadString();
 			// [BB] Log the command before adding it. If we don't have a server GUI, the command
 			// is executed immediately and may cause Skulltag to exit before the command is logged.
 			Printf( "-> %s (RCON by %s)\n", szCommand, Address.ToString() );
@@ -202,7 +202,7 @@ void SERVER_RCON_ParseMessage( NETADDRESS_s Address, LONG lMessage, BYTESTREAM_s
 		iIndex = server_rcon_FindClient( Address );
 		if ( iIndex != -1 )
 		{
-			const char* part = NETWORK_ReadString( pByteStream );
+			const char* part = pByteStream->ReadString();
 			TArray<FString> list = C_GetTabCompletes( part );
 			g_MessageBuffer.Clear();
 

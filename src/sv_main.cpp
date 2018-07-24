@@ -1627,7 +1627,7 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 
 			if ( NETWORK_GetFromAddress().Compare( SERVER_MASTER_GetMasterAddress() ))
 			{
-				FString MasterBanlistVerificationString = NETWORK_ReadString( pByteStream );
+				FString MasterBanlistVerificationString = pByteStream->ReadString();
 				if ( SERVER_GetMasterBanlistVerificationString().Compare ( MasterBanlistVerificationString ) == 0 )
 				{
 					if ( lCommand == MASTER_SERVER_BANLIST )
@@ -1719,13 +1719,13 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 			SERVER_ConnectionError( AddressFrom, "Server is full.", NETWORK_ERRORCODE_SERVERISFULL );
 
 			// User sent the version, password, start as spectator, restore frags, and network protcol version along with the challenge.
-			NETWORK_ReadString( pByteStream );
-			NETWORK_ReadString( pByteStream );
+			pByteStream->ReadString();
+			pByteStream->ReadString();
 			pByteStream->ReadByte();
 			pByteStream->ReadByte();
 			pByteStream->ReadByte();
 			// [BB] Lump authentication string.
-			NETWORK_ReadString( pByteStream );
+			pByteStream->ReadString();
 			return;
 		}
 	}
@@ -1736,7 +1736,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 		SERVER_DisconnectClient( lClient, false, true );
 
 	// Read in the client version info.
-	clientVersion = NETWORK_ReadString( pByteStream );
+	clientVersion = pByteStream->ReadString();
 	// [BB] Hijack the player name cleaning system to get rid of inappropriate chars in the version string.
 	// Tampered clients can put in anything here!
 	V_CleanPlayerName ( clientVersion );
@@ -1744,7 +1744,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	clientVersion = clientVersion.Left ( 32 );
 
 	// Read in the client's password.
-	clientPassword = NETWORK_ReadString( pByteStream );
+	clientPassword = pByteStream->ReadString();
 	clientPassword.ToUpper();
 
 	// [BB] Read in the client connection flags.
@@ -1829,7 +1829,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 		return;
 	}
 
-	if ( sv_pure && strcmp ( NETWORK_ReadString( pByteStream ), g_lumpsAuthenticationChecksum.GetChars() ) )
+	if ( sv_pure && strcmp ( pByteStream->ReadString(), g_lumpsAuthenticationChecksum.GetChars() ) )
 	{
 		// Client fails the lump authentication.
 		SERVER_ClientError( lClient, NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED );
@@ -1957,7 +1957,7 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 	while (( name = NETWORK_ReadName( pByteStream ) ) != NAME_None )
 	{
 		names.insert( name );
-		value = NETWORK_ReadString( pByteStream	);
+		value = pByteStream->ReadString();
 
 		if ( name == NAME_Name )
 		{
@@ -4526,7 +4526,7 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 		// [TP] Client wishes to KILL
 		{
-			FString what = NETWORK_ReadString( pByteStream );
+			FString what = pByteStream->ReadString();
 
 			if ( sv_cheats )
 			{
@@ -4607,8 +4607,8 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 	// [TP] Client sets a CVar over RCON.
 	case CLC_RCONSETCVAR:
 		{
-			FString cvarName = NETWORK_ReadString( pByteStream );
-			FString cvarValue = NETWORK_ReadString( pByteStream );
+			FString cvarName = pByteStream->ReadString();
+			FString cvarValue = pByteStream->ReadString();
 			CLIENT_s &client = g_aClients[g_lCurrentClient];
 
 			if ( client.bRCONAccess )
@@ -4906,7 +4906,7 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 	ULONG ulChatMode = pByteStream->ReadByte();
 
 	// Read in the chat string.
-	const char	*pszChatString = NETWORK_ReadString( pByteStream );
+	const char	*pszChatString = pByteStream->ReadString();
 
 	// [BB] If the client is flooding the server with commands, the client is
 	// kicked and we don't need to handle the command.
@@ -5481,7 +5481,7 @@ static bool server_RequestJoin( BYTESTREAM_s *pByteStream )
 	ULONG		ulGametic;
 
 	// Read in the join password.
-	clientJoinPassword = NETWORK_ReadString( pByteStream );
+	clientJoinPassword = pByteStream->ReadString();
 
 	// [BB/Spleen] Read in the client's gametic.
 	ulGametic = pByteStream->ReadLong();
@@ -5545,7 +5545,7 @@ static bool server_RequestRCON( BYTESTREAM_s *pByteStream )
 	const char	*pszUserPassword;
 
 	// If the user password matches our PW, and we have a PW set, give him RCON access.
-	pszUserPassword = NETWORK_ReadString( pByteStream );
+	pszUserPassword = pByteStream->ReadString();
 
 	// [BB] If the client is flooding the server with commands, the client is
 	// kicked and we don't need to handle the command.
@@ -5576,7 +5576,7 @@ static bool server_RCONCommand( BYTESTREAM_s *pByteStream )
 	const char	*pszCommand;
 
 	// Read in the command the user sent us.
-	pszCommand = NETWORK_ReadString( pByteStream );
+	pszCommand = pByteStream->ReadString();
 
 	// If they don't have RCON access, quit.
 	if ( !g_aClients[g_lCurrentClient].bRCONAccess )
@@ -5633,7 +5633,7 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	FString		clientJoinPassword;
 
 	// Read in the join password.
-	clientJoinPassword = NETWORK_ReadString( pByteStream );
+	clientJoinPassword = pByteStream->ReadString();
 
 	lDesiredTeam = pByteStream->ReadByte();
 	if ( playeringame[g_lCurrentClient] == false )
@@ -5844,7 +5844,7 @@ static bool server_GiveCheat( BYTESTREAM_s *pByteStream, bool take )
 	ULONG		ulAmount;
 
 	// Read in the item name.
-	pszItemName = NETWORK_ReadString( pByteStream );
+	pszItemName = pByteStream->ReadString();
 
 	// Read in the amount.
 	ulAmount = pByteStream->ReadByte();
@@ -5874,7 +5874,7 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 	AActor			*pActor;
 
 	// Read in the item name.
-	pszName = NETWORK_ReadString( pByteStream );
+	pszName = pByteStream->ReadString();
 
 	const bool bSetAngle = !!pByteStream->ReadByte();
 	// [BB] The client only sends the angle, if it is supposed to be set.
@@ -5980,7 +5980,7 @@ static bool server_AuthenticateLevel( BYTESTREAM_s *pByteStream )
 	ULONG								ulCountdownTicks;
 
 	// [BB] Read the name of the map, the client is trying to authenticate.
-	const FString mapnameString = NETWORK_ReadString( pByteStream );
+	const FString mapnameString = pByteStream->ReadString();
 
 	// [BB] The client sent us the authentication data of the wrong level.
 	// This can happen if the map changes too quickly twice in a row: In that case
@@ -6196,10 +6196,10 @@ static bool server_CallVote( BYTESTREAM_s *pByteStream )
 	ulVoteCmd = pByteStream->ReadByte();
 
 	// Read in the parameters for the vote.
-	FString		Parameters = NETWORK_ReadString( pByteStream );
+	FString		Parameters = pByteStream->ReadString();
 
 	// Read in the reason for the vote.
-	FString		Reason = NETWORK_ReadString( pByteStream );
+	FString		Reason = pByteStream->ReadString();
 
 	//==============
 	// VERIFICATION
@@ -6378,7 +6378,7 @@ static bool server_Puke( BYTESTREAM_s *pByteStream )
 	// [TP/BB] Resolve the script netid into a script number
 	const int scriptNum = ( scriptNetID != NO_SCRIPT_NETID )
 		? NETWORK_ACSScriptFromNetID ( scriptNetID )
-		: -FName( NETWORK_ReadString( pByteStream ) );
+		: -FName( pByteStream->ReadString() );
 
 	ULONG ulArgn = pByteStream->ReadByte();
 
@@ -6416,7 +6416,7 @@ static bool server_Puke( BYTESTREAM_s *pByteStream )
 //
 static bool server_MorphCheat( BYTESTREAM_s *pByteStream )
 {
-	const char *pszMorphClass = NETWORK_ReadString( pByteStream );
+	const char *pszMorphClass = pByteStream->ReadString();
 
 	// If it's legal, do the moprh.
 	if ( sv_cheats )

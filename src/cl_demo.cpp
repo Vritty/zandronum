@@ -246,7 +246,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 			// [Dusk] Dig out the version string. It should be 13 bytes in.
 			g_ByteStream.pbStream = g_pbDemoBuffer + 13;
 			I_Error( "CLIENTDEMO_ProcessDemoHeader: This is an old, version %s demo file.\n", 
-				NETWORK_ReadString( &g_ByteStream ));
+				g_ByteStream.ReadString());
 		}
 
 		// [Dusk] Otherwise, this file is just garbage.
@@ -279,7 +279,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 				I_Error( "Demo requires an older version of " GAMENAME "!\n" );
 
 			// Read in the DOTVERSIONSTR the demo was recorded with.
-			Printf( "Version %s demo\n", NETWORK_ReadString( &g_ByteStream ));
+			Printf( "Version %s demo\n", g_ByteStream.ReadString());
 
 			// [Dusk] BUILD_ID is now stored in the demo. We don't do anything
 			// with it - it's of interest for external applications only. Just
@@ -353,18 +353,18 @@ void CLIENTDEMO_WriteUserInfo( void )
 void CLIENTDEMO_ReadUserInfo( void )
 {
 	userinfo_t &info = players[consoleplayer].userinfo;
-	*static_cast<FStringCVar *>(info[NAME_Name]) =  NETWORK_ReadString( &g_ByteStream );
+	*static_cast<FStringCVar *>(info[NAME_Name]) =  g_ByteStream.ReadString();
 	// [BB] Make sure that the gender is valid.
 	*static_cast<FIntCVar *>(info[NAME_Gender]) = clamp ( g_ByteStream.ReadByte(), 0, 2 );
 	info.ColorChanged( g_ByteStream.ReadLong() );
 	*static_cast<FFloatCVar *>(info[NAME_Autoaim]) = static_cast<float> ( g_ByteStream.ReadLong() ) / ANGLE_1 ;
-	*static_cast<FIntCVar *>(info[NAME_Skin]) = R_FindSkin( NETWORK_ReadString( &g_ByteStream ), players[consoleplayer].CurrentPlayerClass );
+	*static_cast<FIntCVar *>(info[NAME_Skin]) = R_FindSkin( g_ByteStream.ReadString(), players[consoleplayer].CurrentPlayerClass );
 	*static_cast<FIntCVar *>(info[NAME_RailColor]) = g_ByteStream.ReadLong();
 	*static_cast<FIntCVar *>(info[NAME_Handicap]) = g_ByteStream.ReadByte();
 	info.TicsPerUpdateChanged ( g_ByteStream.ReadByte() );
 	info.ConnectionTypeChanged ( g_ByteStream.ReadByte() );
 	info.ClientFlagsChanged ( g_ByteStream.ReadByte() ); // [CK] Client booleans
-	info.PlayerClassChanged ( NETWORK_ReadString( &g_ByteStream ));
+	info.PlayerClassChanged ( g_ByteStream.ReadString());
 
 	R_BuildPlayerTranslation( consoleplayer );
 	if ( StatusBar )
@@ -530,7 +530,7 @@ void CLIENTDEMO_ReadPacket( void )
 				{
 					AInventory	*pInventory;
 
-					pszString = NETWORK_ReadString( &g_ByteStream );
+					pszString = g_ByteStream.ReadString();
 
 					if ( players[consoleplayer].mo )
 					{
@@ -880,13 +880,13 @@ void CLIENTDEMO_ReadDemoWads( void )
 	// Read the names of WADs and store them in the array
 	TArray<FString> WadNames;
 	for ( ULONG i = 0; i < ulWADCount; i++ )
-		WadNames.Push( NETWORK_ReadString( &g_ByteStream ) );
+		WadNames.Push( g_ByteStream.ReadString() );
 
 	// Read the authentication strings and check that it matches our current
 	// checksum. If not, inform the user that the demo authentication failed,
 	// and display some hopefully helpful information
-	FString demoHash = NETWORK_ReadString( &g_ByteStream );
-	FString demoMapHash = NETWORK_ReadString( &g_ByteStream );
+	FString demoHash = g_ByteStream.ReadString();
+	FString demoMapHash = g_ByteStream.ReadString();
 
 	// Generate the map collection checksum on our end
 	NETWORK_MakeMapCollectionChecksum( );
