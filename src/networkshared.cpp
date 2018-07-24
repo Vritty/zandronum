@@ -157,9 +157,9 @@ LONG NETBUFFER_s::WriteTo( BYTESTREAM_s &ByteStream ) const
 
 //*****************************************************************************
 //
-void NETWORK_AdvanceByteStreamPointer( BYTESTREAM_s *pByteStream, const int NumBytes, const bool OutboundTraffic )
+void BYTESTREAM_s::AdvancePointer( const int NumBytes, const bool OutboundTraffic )
 {
-	pByteStream->pbStream += NumBytes;
+	this->pbStream += NumBytes;
 
 	if ( g_MeasuringOutboundTraffic && OutboundTraffic )
 		g_OutboundBytesMeasured += NumBytes;
@@ -401,7 +401,7 @@ void NETWORK_WriteByte( BYTESTREAM_s *pByteStream, int Byte )
 	*pByteStream->pbStream = Byte;
 
 	// Advance the pointer.
-	NETWORK_AdvanceByteStreamPointer ( pByteStream, 1, true );
+	pByteStream->AdvancePointer ( 1, true );
 }
 
 //*****************************************************************************
@@ -418,7 +418,7 @@ void NETWORK_WriteShort( BYTESTREAM_s *pByteStream, int Short )
 	pByteStream->pbStream[1] = Short >> 8;
 
 	// Advance the pointer.
-	NETWORK_AdvanceByteStreamPointer ( pByteStream, 2, true );
+	pByteStream->AdvancePointer ( 2, true );
 }
 
 //*****************************************************************************
@@ -437,7 +437,7 @@ void NETWORK_WriteLong( BYTESTREAM_s *pByteStream, int Long )
 	pByteStream->pbStream[3] = ( Long >> 24 );
 
 	// Advance the pointer.
-	NETWORK_AdvanceByteStreamPointer ( pByteStream, 4, true );
+	pByteStream->AdvancePointer ( 4, true );
 }
 
 //*****************************************************************************
@@ -494,7 +494,7 @@ void NETWORK_WriteBuffer( BYTESTREAM_s *pByteStream, const void *pvBuffer, int n
 	memcpy( pByteStream->pbStream, pvBuffer, nLength );
 
 	// Advance the pointer.
-	NETWORK_AdvanceByteStreamPointer ( pByteStream, nLength, true );
+	pByteStream->AdvancePointer ( nLength, true );
 }
 
 //*****************************************************************************

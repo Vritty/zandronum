@@ -334,6 +334,7 @@ struct BYTESTREAM_s
 	// [RC] Whether or not we've logged this.
 	bool		bPacketAlreadyLogged;
 #endif
+	void AdvancePointer( const int NumBytes, const bool OutboundTraffic );
 };
 
 
