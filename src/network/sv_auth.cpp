@@ -266,7 +266,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 {
 	while ( 1 )	 
 	{  
-		const unsigned int commandNum = NETWORK_ReadLong( pByteStream );
+		const unsigned int commandNum = pByteStream->ReadLong();
 
 		if ( commandNum == -1u )
 			break;
@@ -276,8 +276,8 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 		case AUTH_SERVER_NEGOTIATE:
 			{
 				const int protovolVersion = pByteStream->ReadByte();
-				const unsigned int clientSessionID = NETWORK_ReadLong( pByteStream );
-				const int sessionID = NETWORK_ReadLong( pByteStream );
+				const unsigned int clientSessionID = pByteStream->ReadLong();
+				const int sessionID = pByteStream->ReadLong();
 				const int lenSalt = pByteStream->ReadByte();
 				TArray<unsigned char> bytesSalt;
 				if ( lenSalt > 0 )
@@ -306,7 +306,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 			break;
 		case AUTH_SERVER_SRP_STEP_TWO:
 			{
-				const int sessionID = NETWORK_ReadLong( pByteStream );
+				const int sessionID = pByteStream->ReadLong();
 				const int lenB = pByteStream->ReadShort();
 				TArray<unsigned char> bytesB;
 				if ( lenB > 0 )
@@ -329,7 +329,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 			break;
 		case AUTH_SERVER_SRP_STEP_FOUR:
 			{
-				const int sessionID = NETWORK_ReadLong( pByteStream );
+				const int sessionID = pByteStream->ReadLong();
 				const int lenHAMK = pByteStream->ReadShort();
 				TArray<unsigned char> bytesHAMK;
 				if ( lenHAMK > 0 )
@@ -363,7 +363,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 		case AUTH_SERVER_USER_ERROR:
 			{
 				const int errorCode = pByteStream->ReadByte();
-				const unsigned int clientSessionID = NETWORK_ReadLong( pByteStream );
+				const unsigned int clientSessionID = pByteStream->ReadLong();
 				Printf ( "Error: Error authenticating user with session id %u.\n", clientSessionID );
 				FString errorMessage = "";
 				switch ( errorCode )
@@ -400,7 +400,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 		case AUTH_SERVER_SESSION_ERROR:
 			{
 				const int errorCode = pByteStream->ReadByte();
-				const int sessionID = NETWORK_ReadLong( pByteStream );
+				const int sessionID = pByteStream->ReadLong();
 				Printf ( "Session error: " );
 				FString errorMessage = "";
 				switch ( errorCode )

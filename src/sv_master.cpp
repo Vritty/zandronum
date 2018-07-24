@@ -642,7 +642,7 @@ NETADDRESS_s SERVER_MASTER_GetMasterAddress( void )
 //
 void SERVER_MASTER_HandleVerificationRequest( BYTESTREAM_s *pByteStream  )
 {
-	LONG lVerificationNumber = NETWORK_ReadLong( pByteStream );
+	LONG lVerificationNumber = pByteStream->ReadLong();
 
 	g_MasterServerBuffer.Clear();
 	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, SERVER_MASTER_VERIFICATION );

@@ -1609,10 +1609,10 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 			pByteStream->ReadByte();
 
 			// Read in what the query wants to know.
-			ulFlags = NETWORK_ReadLong( pByteStream );
+			ulFlags = pByteStream->ReadLong();
 
 			// Read in the time the launcher sent us.
-			ulTime = NETWORK_ReadLong( pByteStream );
+			ulTime = pByteStream->ReadLong();
 
 			// Received launcher query!
 			if ( sv_showlauncherqueries )
@@ -4507,8 +4507,8 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 	case CLC_WARPCHEAT:
 
 		{
-			fixed_t x = NETWORK_ReadLong( pByteStream );
-			fixed_t y = NETWORK_ReadLong( pByteStream );
+			fixed_t x = pByteStream->ReadLong();
+			fixed_t y = pByteStream->ReadLong();
 
 			if ( sv_cheats || players[g_lCurrentClient].bSpectating )
 			{
@@ -4552,14 +4552,14 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			if ( argsSent > countof( args ))
 			{
 				for ( unsigned int i = 0; i < argsSent; ++i )
-					NETWORK_ReadLong( pByteStream );
+					pByteStream->ReadLong();
 
 				SERVER_KickPlayer( g_lCurrentClient, "Sent an invalid packet." );
 				return true;
 			}
 
 			for ( unsigned int i = 0; i < argsSent; ++i )
-				args[i] = NETWORK_ReadLong( pByteStream );
+				args[i] = pByteStream->ReadLong();
 
 			if ( sv_cheats )
 			{
@@ -4775,7 +4775,7 @@ static bool server_Ignore( BYTESTREAM_s *pByteStream )
 {
 	ULONG	ulTargetIdx = pByteStream->ReadByte();
 	bool	bIgnore = !!pByteStream->ReadByte();
-	LONG	lTicks = NETWORK_ReadLong( pByteStream );
+	LONG	lTicks = pByteStream->ReadLong();
 
 	if ( !SERVER_IsValidClient( ulTargetIdx ))
 		return false;
@@ -5029,13 +5029,13 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 	memset(pCmd, 0, sizeof(*pCmd));
 
 	// Read in the client's gametic.
-	moveCmd.ulGametic = NETWORK_ReadLong( pByteStream );
+	moveCmd.ulGametic = pByteStream->ReadLong();
 
 	// [CK] Read in the client's last and latest known server gametic.
 	// [BB] Since the packets possibly arrive in wrong order, we can't
 	// do reasonable sanity checks on the tic here. Instead this is done
 	// when processing the command.
-	moveCmd.ulServerGametic = NETWORK_ReadLong( pByteStream );
+	moveCmd.ulServerGametic = pByteStream->ReadLong();
 
 	// Read in the information the client is sending us.
 	const ULONG ulBits = pByteStream->ReadByte();
@@ -5050,7 +5050,7 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 		pCmd->ucmd.roll = pByteStream->ReadShort();
 
 	if ( ulBits & CLIENT_UPDATE_BUTTONS )
-		pCmd->ucmd.buttons = ( ulBits & CLIENT_UPDATE_BUTTONS_LONG ) ? NETWORK_ReadLong( pByteStream ) : pByteStream->ReadByte();
+		pCmd->ucmd.buttons = ( ulBits & CLIENT_UPDATE_BUTTONS_LONG ) ? pByteStream->ReadLong() : pByteStream->ReadByte();
 
 	if ( ulBits & CLIENT_UPDATE_FORWARDMOVE )
 		pCmd->ucmd.forwardmove = pByteStream->ReadShort();
@@ -5062,12 +5062,12 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 		pCmd->ucmd.upmove = pByteStream->ReadShort();
 
 	// Always read in the angle and pitch.
-	moveCmd.angle = NETWORK_ReadLong( pByteStream );
-	moveCmd.pitch = NETWORK_ReadLong( pByteStream );
+	moveCmd.angle = pByteStream->ReadLong();
+	moveCmd.pitch = pByteStream->ReadLong();
 
 	// [BB] Extra scope to create a local variable.
 	{
-		const SDWORD check = NETWORK_ReadLong( pByteStream );
+		const SDWORD check = pByteStream->ReadLong();
 #ifdef LOG_SUSPICIOUS_CLIENTS
 		const bool angleCheckFailed = ( ( pCmd->ucmd.yaw == 0 ) && ( pPlayer->mo->reactiontime == 0 ) && ( pPlayer->playerstate == PST_LIVE ) && ( pPlayer->mo ) && ( clientMoveCmd.angle != pPlayer->mo->angle ) && ( ( g_aClients[g_lCurrentClient].ulClientGameTic + 1 ) == ulGametic ) );
 		// [BB] If the received checksum doesn't match the checksum of the received ticcmd,
@@ -5256,7 +5256,7 @@ static bool server_MissingPacket( BYTESTREAM_s *pByteStream )
 	// If this client just requested missing packets, ignore the request.
 	if ( gametic <= ( g_aClients[g_lCurrentClient].lLastPacketLossTick + ( TICRATE / 4 )))
 	{
-		while ( NETWORK_ReadLong( pByteStream ) != -1 )
+		while ( pByteStream->ReadLong() != -1 )
 			;
 
 		return ( false );
@@ -5264,13 +5264,13 @@ static bool server_MissingPacket( BYTESTREAM_s *pByteStream )
 
 	// Keep reading in packets until we hit -1.
 	lLastPacket = -1;
-	while (( lPacket = NETWORK_ReadLong( pByteStream )) != -1 )
+	while (( lPacket = pByteStream->ReadLong()) != -1 )
 	{
 		// The missing packet sequence must be sent to us in ascending order. If it's not,
 		// the server could potentially go into an infinite loop, or be lagged heavily.
 		if (( lPacket <= lLastPacket ) || ( lPacket < 0 ))
 		{
-			while ( NETWORK_ReadLong( pByteStream ) != -1 )
+			while ( pByteStream->ReadLong() != -1 )
 				;
 
 			SERVER_KickPlayer( g_lCurrentClient, "Invalid missing packet request." );
@@ -5301,7 +5301,7 @@ static bool server_UpdateClientPing( BYTESTREAM_s *pByteStream )
 {
 	ULONG	ulPing;
 
-	ulPing = NETWORK_ReadLong( pByteStream );
+	ulPing = pByteStream->ReadLong();
 
 	const unsigned int nowTime = I_MSTime( );
 	// [BB] This ping information from the client doesn't make sense.
@@ -5484,7 +5484,7 @@ static bool server_RequestJoin( BYTESTREAM_s *pByteStream )
 	clientJoinPassword = NETWORK_ReadString( pByteStream );
 
 	// [BB/Spleen] Read in the client's gametic.
-	ulGametic = NETWORK_ReadLong( pByteStream );
+	ulGametic = pByteStream->ReadLong();
 
 	// Player can't rejoin game if he's not spectating!
 	if (( playeringame[g_lCurrentClient] == false ) || ( players[g_lCurrentClient].bSpectating == false ))
@@ -5777,7 +5777,7 @@ static bool server_SpectateInfo( BYTESTREAM_s *pByteStream )
 	pPlayer = &players[g_lCurrentClient];
 
 	// Read in the client's gametic.
-	ulGametic = NETWORK_ReadLong( pByteStream );
+	ulGametic = pByteStream->ReadLong();
 
 	// [BB] Only spectators may send spectate info. Otherwise the player would get a free "tick".
 	if ( pPlayer->bSpectating == false )
@@ -6373,7 +6373,7 @@ static bool server_InventoryDrop( BYTESTREAM_s *pByteStream )
 //
 static bool server_Puke( BYTESTREAM_s *pByteStream )
 {
-	const int scriptNetID = NETWORK_ReadLong( pByteStream );
+	const int scriptNetID = pByteStream->ReadLong();
 
 	// [TP/BB] Resolve the script netid into a script number
 	const int scriptNum = ( scriptNetID != NO_SCRIPT_NETID )
@@ -6391,7 +6391,7 @@ static bool server_Puke( BYTESTREAM_s *pByteStream )
 
 	int arg[4] = { 0, 0, 0, 0 };
 	for ( ULONG ulIdx = 0; ulIdx < ulArgn; ++ulIdx )
-		arg[ulIdx] = NETWORK_ReadLong ( pByteStream );
+		arg[ulIdx] = pByteStream->ReadLong();
 	bool bAlways = !!pByteStream->ReadByte();
 
 	// [BB] A normal client checks if the script is pukeable and only requests to puke pukeable scripts.

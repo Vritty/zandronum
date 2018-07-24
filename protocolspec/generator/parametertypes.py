@@ -94,7 +94,7 @@ class ByteParameter(SpecParameter):
 
 	# Writes code to read in this parameter.
 	def writeread(self, writer, command, reference):
-		if ( self.methodname() != "Byte" ) and ( self.methodname() != "Short" ):
+		if ( self.methodname() != "Byte" ) and ( self.methodname() != "Short" ) and ( self.methodname() != "Long" ):
 			readfunction = 'NETWORK_Read' + self.methodname()
 			writer.writeline('command.{reference} = {readfunction}( bytestream );'.format(**locals()))
 		else:
@@ -364,7 +364,7 @@ class FixedParameter(SpecParameter):
 		self.cxxtypename = 'fixed_t'
 
 	def writeread(self, writer, command, reference, **args):
-		writer.writeline('command.{reference} = NETWORK_ReadLong( bytestream );'.format(**locals()))
+		writer.writeline('command.{reference} = bytestream->ReadLong();'.format(**locals()))
 
 	def writesend(self, writer, command, reference, **args):
 		writer.writeline('command.addLong( this->{reference} );'.format(**locals()))
@@ -414,7 +414,7 @@ class SectorParameter(SpecParameter):
 		resolvingFunction = self.resolvingFunction
 		self.indexVariable = indexVariable
 		writer.declare('int', indexVariable)
-		if ( indexLength != "Short" ):
+		if ( indexLength != "Short" ) and ( indexLength != "Long" ):
 			writer.writeline('{indexVariable} = NETWORK_Read{indexLength}( bytestream );'.format(**locals()))
 		else:
 			writer.writeline('{indexVariable} = bytestream->Read{indexLength}();'.format(**locals()))

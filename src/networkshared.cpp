@@ -255,20 +255,20 @@ int BYTESTREAM_s::ReadShort()
 
 //*****************************************************************************
 //
-int NETWORK_ReadLong( BYTESTREAM_s *pByteStream )
+int BYTESTREAM_s::ReadLong()
 {
 	int	Long = -1;
 
-	if (( pByteStream->pbStream + 4 ) <= pByteStream->pbStreamEnd )
+	if (( this->pbStream + 4 ) <= this->pbStreamEnd )
 	{
-		Long = (( pByteStream->pbStream[0] )
-		+ ( pByteStream->pbStream[1] << 8 )
-		+ ( pByteStream->pbStream[2] << 16 )
-		+ ( pByteStream->pbStream[3] << 24 ));
+		Long = (( this->pbStream[0] )
+		+ ( this->pbStream[1] << 8 )
+		+ ( this->pbStream[2] << 16 )
+		+ ( this->pbStream[3] << 24 ));
 	}
 
 	// Advance the pointer.
-	pByteStream->pbStream += 4;
+	this->pbStream += 4;
 
 	return ( Long );
 }
@@ -283,7 +283,7 @@ float NETWORK_ReadFloat( BYTESTREAM_s *pByteStream )
 		int		i;
 	} dat;
 
-	dat.i = NETWORK_ReadLong( pByteStream );
+	dat.i = pByteStream->ReadLong();
 	return ( dat.f );
 }
 
@@ -345,7 +345,7 @@ int NETWORK_ReadVariable( BYTESTREAM_s *byteStream )
 	case 0: return 0;
 	case 1: return byteStream->ReadByte();
 	case 2: return byteStream->ReadShort();
-	case 3: return NETWORK_ReadLong( byteStream );
+	case 3: return byteStream->ReadLong();
 	}
 }
 

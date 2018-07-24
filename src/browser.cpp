@@ -491,7 +491,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 		g_BrowserServerList[lServer].lPing = I_MSTime( ) - g_BrowserServerList[lServer].lMSTime;
 
 	// Read in the time we sent to the server.
-	NETWORK_ReadLong( pByteStream );
+	pByteStream->ReadLong();
 
 	// Read in the version.
 	g_BrowserServerList[lServer].Version = NETWORK_ReadString( pByteStream );
@@ -516,7 +516,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	}
 
 	// Read in the data that will be sent to us.
-	ulFlags = NETWORK_ReadLong( pByteStream );
+	ulFlags = pByteStream->ReadLong();
 
 	// Read the server name.
 	if ( ulFlags & SQF_NAME )
@@ -584,13 +584,13 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_DMFLAGS )
 	{
 		// DMFlags.
-		NETWORK_ReadLong( pByteStream );
+		pByteStream->ReadLong();
 
 		// DMFlags2.
-		NETWORK_ReadLong( pByteStream );
+		pByteStream->ReadLong();
 
 		// Compatflags.
-		NETWORK_ReadLong( pByteStream );
+		pByteStream->ReadLong();
 	}
 
 	if ( ulFlags & SQF_LIMITS )
@@ -682,7 +682,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_TEAMINFO_COLOR )
 	{
 		for ( ULONG ulIdx = 0; ulIdx < g_ulNumberOfTeams; ulIdx++ )
-			NETWORK_ReadLong( pByteStream );
+			pByteStream->ReadLong();
 	}
 
 	// [CW] Read in the score of the teams.
@@ -708,7 +708,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	{
 		const ULONG ulNumFlags = pByteStream->ReadByte();
 		for ( ULONG ulIdx = 0; ulIdx < ulNumFlags; ulIdx++ )
-			NETWORK_ReadLong( pByteStream );
+			pByteStream->ReadLong();
 	}
 
 	// [BB] Get special security settings like sv_enforcemasterbanlist.

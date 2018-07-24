@@ -207,7 +207,7 @@ void SERVERBAN_ReadMasterServerBans( BYTESTREAM_s *pByteStream )
 	g_MasterServerBanExemptions.clear( );
 
 	// Read the list of bans.
-	for ( LONG i = 0, lNumEntries = NETWORK_ReadLong( pByteStream ); i < lNumEntries; i++ )
+	for ( LONG i = 0, lNumEntries = pByteStream->ReadLong(); i < lNumEntries; i++ )
 	{
 		const char		*pszBan = NETWORK_ReadString( pByteStream );
 		std::string		Message;
@@ -216,7 +216,7 @@ void SERVERBAN_ReadMasterServerBans( BYTESTREAM_s *pByteStream )
 	}
 
 	// Read the list of exemptions.
-	for ( LONG i = 0, lNumEntries = NETWORK_ReadLong( pByteStream ); i < lNumEntries; i++ )
+	for ( LONG i = 0, lNumEntries = pByteStream->ReadLong(); i < lNumEntries; i++ )
 	{
 		const char		*pszBan = NETWORK_ReadString( pByteStream );
 		std::string		Message;

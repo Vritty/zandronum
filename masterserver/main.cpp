@@ -425,7 +425,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 		return;
 	}
 
-	lCommand = NETWORK_ReadLong( pByteStream );
+	lCommand = pByteStream->ReadLong();
 	switch ( lCommand )
 	{
 
@@ -454,7 +454,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			const int temp = pByteStream->ReadByte();
 			newServer.bEnforcesBanList = ( temp != 0 );
 			newServer.bNewFormatServer = ( temp != -1 );
-			newServer.iServerRevision = ( ( pByteStream->pbStreamEnd - pByteStream->pbStream ) >= 4 ) ? NETWORK_ReadLong( pByteStream ) : pByteStream->ReadShort();
+			newServer.iServerRevision = ( ( pByteStream->pbStreamEnd - pByteStream->pbStream ) >= 4 ) ? pByteStream->ReadLong() : pByteStream->ReadShort();
 
 			std::set<SERVER_s, SERVERCompFunc>::iterator currentServer = g_Servers.find ( newServer );
 
@@ -520,7 +520,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			SERVER_s newServer;
 			newServer.Address = AddressFrom;
 			newServer.MasterBanlistVerificationString = NETWORK_ReadString( pByteStream );
-			newServer.ServerVerificationInt = NETWORK_ReadLong( pByteStream );
+			newServer.ServerVerificationInt = pByteStream->ReadLong();
 
 			std::set<SERVER_s, SERVERCompFunc>::iterator currentServer = g_UnverifiedServers.find ( newServer );
 

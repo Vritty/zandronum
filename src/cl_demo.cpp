@@ -235,13 +235,13 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 	LONG	lCommand;
 
 	// [Dusk] Check ZCLD instead of CLD_DEMOSTART
-	if ( NETWORK_ReadLong( &g_ByteStream ) != g_demoSignature )
+	if ( g_ByteStream.ReadLong() != g_demoSignature )
 	{
 		// [Dusk] Rewind back and try see if this is an old demo. Old demos started
 		// with a CLD_DEMOSTART (which was non-constant), followed by 12345678.
 		g_ByteStream.pbStream -= 4;
 		g_ByteStream.ReadByte(); // Skip CLD_DEMOSTART
-		if ( NETWORK_ReadLong( &g_ByteStream ) == 12345678 )
+		if ( g_ByteStream.ReadLong() == 12345678 )
 		{
 			// [Dusk] Dig out the version string. It should be 13 bytes in.
 			g_ByteStream.pbStream = g_pbDemoBuffer + 13;
@@ -260,7 +260,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 		return ( false );
 	}
 
-	g_lDemoLength = NETWORK_ReadLong( &g_ByteStream );
+	g_lDemoLength = g_ByteStream.ReadLong();
 	g_ByteStream.pbStreamEnd = g_pbDemoBuffer + g_lDemoLength + ( g_lDemoLength & 1 );
 
 	// Continue to read header commands until we reach the body of the demo.
@@ -287,7 +287,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 			g_ByteStream.ReadByte();
 
 			// Read in the random number generator seed.
-			rngseed = NETWORK_ReadLong( &g_ByteStream );
+			rngseed = g_ByteStream.ReadLong();
 			FRandom::StaticClearRandom( );
 			break;
 /*
@@ -356,10 +356,10 @@ void CLIENTDEMO_ReadUserInfo( void )
 	*static_cast<FStringCVar *>(info[NAME_Name]) =  NETWORK_ReadString( &g_ByteStream );
 	// [BB] Make sure that the gender is valid.
 	*static_cast<FIntCVar *>(info[NAME_Gender]) = clamp ( g_ByteStream.ReadByte(), 0, 2 );
-	info.ColorChanged( NETWORK_ReadLong( &g_ByteStream ) );
-	*static_cast<FFloatCVar *>(info[NAME_Autoaim]) = static_cast<float> ( NETWORK_ReadLong( &g_ByteStream ) ) / ANGLE_1 ;
+	info.ColorChanged( g_ByteStream.ReadLong() );
+	*static_cast<FFloatCVar *>(info[NAME_Autoaim]) = static_cast<float> ( g_ByteStream.ReadLong() ) / ANGLE_1 ;
 	*static_cast<FIntCVar *>(info[NAME_Skin]) = R_FindSkin( NETWORK_ReadString( &g_ByteStream ), players[consoleplayer].CurrentPlayerClass );
-	*static_cast<FIntCVar *>(info[NAME_RailColor]) = NETWORK_ReadLong( &g_ByteStream );
+	*static_cast<FIntCVar *>(info[NAME_RailColor]) = g_ByteStream.ReadLong();
 	*static_cast<FIntCVar *>(info[NAME_Handicap]) = g_ByteStream.ReadByte();
 	info.TicsPerUpdateChanged ( g_ByteStream.ReadByte() );
 	info.ConnectionTypeChanged ( g_ByteStream.ReadByte() );
@@ -555,8 +555,8 @@ void CLIENTDEMO_ReadPacket( void )
 			case CLD_LCMD_WARPCHEAT:
 
 				{
-					fixed_t x = NETWORK_ReadLong( &g_ByteStream );
-					fixed_t y = NETWORK_ReadLong( &g_ByteStream );
+					fixed_t x = g_ByteStream.ReadLong();
+					fixed_t y = g_ByteStream.ReadLong();
 					Printf( "warp %g %g\n", FIXED2FLOAT( x ), FIXED2FLOAT( y ));
 					P_TeleportMove( players[consoleplayer].mo, x, y, ONFLOORZ, true );
 				}

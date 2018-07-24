@@ -1522,7 +1522,7 @@ void G_Ticker ()
 
 			pByteStream = &NETWORK_GetNetworkMessageBuffer( )->ByteStream;
 
-			lCommand = NETWORK_ReadLong( pByteStream );
+			lCommand = pByteStream->ReadLong();
 			if ( lCommand == SERVER_LAUNCHER_CHALLENGE )
 				BROWSER_ParseServerQuery( pByteStream, true );
 		}
