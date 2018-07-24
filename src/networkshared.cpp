@@ -240,15 +240,15 @@ int BYTESTREAM_s::ReadByte()
 
 //*****************************************************************************
 //
-int NETWORK_ReadShort( BYTESTREAM_s *pByteStream )
+int BYTESTREAM_s::ReadShort()
 {
 	int	Short = -1;
 
-	if (( pByteStream->pbStream + 2 ) <= pByteStream->pbStreamEnd )
-		Short = (short)(( pByteStream->pbStream[0] ) + ( pByteStream->pbStream[1] << 8 ));
+	if (( this->pbStream + 2 ) <= this->pbStreamEnd )
+		Short = (short)(( this->pbStream[0] ) + ( this->pbStream[1] << 8 ));
 
 	// Advance the pointer.
-	pByteStream->pbStream += 2;
+	this->pbStream += 2;
 
 	return ( Short );
 }
@@ -344,7 +344,7 @@ int NETWORK_ReadVariable( BYTESTREAM_s *byteStream )
 	default:
 	case 0: return 0;
 	case 1: return byteStream->ReadByte();
-	case 2: return NETWORK_ReadShort( byteStream );
+	case 2: return byteStream->ReadShort();
 	case 3: return NETWORK_ReadLong( byteStream );
 	}
 }
@@ -722,7 +722,7 @@ void NETADDRESS_s::ReadFromStream ( BYTESTREAM_s *pByteStream, bool IncludePort 
 	for ( int i = 0; i < 4; ++i )
 		abIP[i] = pByteStream->ReadByte();
 	if ( IncludePort )
-		usPort = htons( NETWORK_ReadShort( pByteStream ));
+		usPort = htons( pByteStream->ReadShort());
 }
 
 //*****************************************************************************

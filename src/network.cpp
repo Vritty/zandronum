@@ -1141,7 +1141,7 @@ int NETWORK_ACSScriptToNetID( int script )
 //
 FName NETWORK_ReadName( BYTESTREAM_s* bytestream )
 {
-	SDWORD index = NETWORK_ReadShort( bytestream );
+	SDWORD index = bytestream->ReadShort();
 
 	if ( index == -1 )
 		return FName( NETWORK_ReadString( bytestream ));

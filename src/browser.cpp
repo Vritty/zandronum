@@ -418,7 +418,7 @@ bool BROWSER_GetServerList( BYTESTREAM_s *pByteStream )
 					serverAddress.ReadFromStream ( pByteStream, false );
 					for ( ULONG ulIdx = 0; ulIdx < ulPorts; ++ulIdx )
 					{
-						serverAddress.usPort = htons( NETWORK_ReadShort( pByteStream ));
+						serverAddress.usPort = htons( pByteStream->ReadShort());
 						BROWSER_AddServerToList ( serverAddress );
 					}
 				}
@@ -596,23 +596,23 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_LIMITS )
 	{
 		// Fraglimit.
-		NETWORK_ReadShort( pByteStream );
+		pByteStream->ReadShort();
 
 		// Timelimit.
-		if ( NETWORK_ReadShort( pByteStream ))
+		if ( pByteStream->ReadShort())
 		{
 			// Time left.
-			NETWORK_ReadShort( pByteStream );
+			pByteStream->ReadShort();
 		}
 
 		// Duellimit.
-		NETWORK_ReadShort( pByteStream );
+		pByteStream->ReadShort();
 
 		// Pointlimit.
-		NETWORK_ReadShort( pByteStream );
+		pByteStream->ReadShort();
 
 		// Winlimit.
-		NETWORK_ReadShort( pByteStream );
+		pByteStream->ReadShort();
 	}
 
 	// Team damage scale.
@@ -623,10 +623,10 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_TEAMSCORES )
 	{
 		// Blue score.
-		NETWORK_ReadShort( pByteStream );
+		pByteStream->ReadShort();
 
 		// Red score.
-		NETWORK_ReadShort( pByteStream );
+		pByteStream->ReadShort();
 	}
 
 	// Read in the number of players.
@@ -643,10 +643,10 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 				g_BrowserServerList[lServer].Players[ulIdx].Name = NETWORK_ReadString( pByteStream );
 
 				// Read in "fragcount" (could be frags, points, etc.)
-				g_BrowserServerList[lServer].Players[ulIdx].lFragcount = NETWORK_ReadShort( pByteStream );
+				g_BrowserServerList[lServer].Players[ulIdx].lFragcount = pByteStream->ReadShort();
 
 				// Read in the player's ping.
-				g_BrowserServerList[lServer].Players[ulIdx].lPing = NETWORK_ReadShort( pByteStream );
+				g_BrowserServerList[lServer].Players[ulIdx].lPing = pByteStream->ReadShort();
 
 				// Read in whether or not the player is spectating.
 				g_BrowserServerList[lServer].Players[ulIdx].bSpectating = !!pByteStream->ReadByte();
@@ -689,7 +689,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	if ( ulFlags & SQF_TEAMINFO_SCORE )
 	{
 		for ( ULONG ulIdx = 0; ulIdx < g_ulNumberOfTeams; ulIdx++ )
-			NETWORK_ReadShort( pByteStream );
+			pByteStream->ReadShort();
 	}
 
 	// [BB] Testing server and what's the binary name?

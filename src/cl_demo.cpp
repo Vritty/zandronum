@@ -274,7 +274,7 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 		case CLD_DEMOVERSION:
 
 			// Read in the DEMOGAMEVERSION the demo was recorded with.
-			lDemoVersion = NETWORK_ReadShort( &g_ByteStream );
+			lDemoVersion = g_ByteStream.ReadShort();
 			if ( lDemoVersion < MINDEMOVERSION )
 				I_Error( "Demo requires an older version of " GAMENAME "!\n" );
 
@@ -410,13 +410,13 @@ void CLIENTDEMO_WriteTiccmd( ticcmd_t *pCmd )
 void CLIENTDEMO_ReadTiccmd( ticcmd_t *pCmd )
 {
 	// Read the contents of ticcmd.
-	pCmd->ucmd.yaw = NETWORK_ReadShort( &g_ByteStream );
-	pCmd->ucmd.roll = NETWORK_ReadShort( &g_ByteStream );
-	pCmd->ucmd.pitch = NETWORK_ReadShort( &g_ByteStream );
+	pCmd->ucmd.yaw = g_ByteStream.ReadShort();
+	pCmd->ucmd.roll = g_ByteStream.ReadShort();
+	pCmd->ucmd.pitch = g_ByteStream.ReadShort();
 	pCmd->ucmd.buttons = g_ByteStream.ReadByte();
-	pCmd->ucmd.upmove = NETWORK_ReadShort( &g_ByteStream );
-	pCmd->ucmd.forwardmove = NETWORK_ReadShort( &g_ByteStream );
-	pCmd->ucmd.sidemove = NETWORK_ReadShort( &g_ByteStream );
+	pCmd->ucmd.upmove = g_ByteStream.ReadShort();
+	pCmd->ucmd.forwardmove = g_ByteStream.ReadShort();
+	pCmd->ucmd.sidemove = g_ByteStream.ReadShort();
 }
 
 //*****************************************************************************
@@ -875,7 +875,7 @@ void CLIENTDEMO_ClearFreeSpectatorPlayer( void )
 void CLIENTDEMO_ReadDemoWads( void )
 {
 	// Read the count of WADs
-	ULONG ulWADCount = NETWORK_ReadShort( &g_ByteStream );
+	ULONG ulWADCount = g_ByteStream.ReadShort();
 
 	// Read the names of WADs and store them in the array
 	TArray<FString> WadNames;

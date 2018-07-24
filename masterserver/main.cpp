@@ -454,7 +454,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			const int temp = pByteStream->ReadByte();
 			newServer.bEnforcesBanList = ( temp != 0 );
 			newServer.bNewFormatServer = ( temp != -1 );
-			newServer.iServerRevision = ( ( pByteStream->pbStreamEnd - pByteStream->pbStream ) >= 4 ) ? NETWORK_ReadLong( pByteStream ) : NETWORK_ReadShort( pByteStream );
+			newServer.iServerRevision = ( ( pByteStream->pbStreamEnd - pByteStream->pbStream ) >= 4 ) ? NETWORK_ReadLong( pByteStream ) : pByteStream->ReadShort();
 
 			std::set<SERVER_s, SERVERCompFunc>::iterator currentServer = g_Servers.find ( newServer );
 
@@ -576,7 +576,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			if ( lCommand == LAUNCHER_MASTER_CHALLENGE )
 			{
 				// [BB] Check if the requested version of the protocol matches ours.
-				const unsigned short usVersion = NETWORK_ReadShort( pByteStream );
+				const unsigned short usVersion = pByteStream->ReadShort();
 
 				if ( usVersion != MASTER_SERVER_VERSION )
 				{

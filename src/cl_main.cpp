@@ -1884,7 +1884,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_PLAYBOUNCESOUND:
 				{
-					AActor *pActor = CLIENT_FindThingByNetID( NETWORK_ReadShort( pByteStream ) );
+					AActor *pActor = CLIENT_FindThingByNetID( pByteStream->ReadShort() );
 					const bool bOnfloor = !!pByteStream->ReadByte();
 					if ( pActor )
 						pActor->PlayBounceSound ( bOnfloor );
@@ -1893,8 +1893,8 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SETTHINGREACTIONTIME:
 				{
-					const LONG lID = NETWORK_ReadShort( pByteStream ); 
-					const LONG lReactionTime = NETWORK_ReadShort( pByteStream );
+					const LONG lID = pByteStream->ReadShort(); 
+					const LONG lReactionTime = pByteStream->ReadShort();
 					AActor *pActor = CLIENT_FindThingByNetID( lID );
 
 					if ( pActor == NULL )
@@ -1909,7 +1909,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			// [Dusk]
 			case SVC2_SETFASTCHASESTRAFECOUNT:
 				{
-					const LONG lID = NETWORK_ReadShort( pByteStream );
+					const LONG lID = pByteStream->ReadShort();
 					const LONG lStrafeCount = pByteStream->ReadByte(); 
 					AActor *pActor = CLIENT_FindThingByNetID( lID );
 
@@ -1938,7 +1938,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 					const ULONG ulPlayer = pByteStream->ReadByte();
 
 					// Read in the identification of the type of item to give.
-					const USHORT usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
+					const USHORT usActorNetworkIndex = pByteStream->ReadShort();
 
 					// Read in the blend color of the powerup.
 					const ULONG ulBlendColor = NETWORK_ReadLong( pByteStream );
@@ -1968,7 +1968,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_SETPLAYERHAZARDCOUNT:
 				{
 					const ULONG ulPlayer = pByteStream->ReadByte();
-					const int hz = NETWORK_ReadShort( pByteStream );
+					const int hz = pByteStream->ReadShort();
 
 					if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
 						break;
@@ -1992,7 +1992,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_SETPLAYERLOGNUMBER:
 				{
 					const ULONG ulPlayer = pByteStream->ReadByte();
-					const int arg0 = NETWORK_ReadShort( pByteStream );
+					const int arg0 = pByteStream->ReadShort();
 
 					if ( PLAYER_IsValidPlayerWithMo( ulPlayer ) == false ) 
 						break;
@@ -2004,8 +2004,8 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SETTHINGSPECIAL:
 				{
-					const LONG lID = NETWORK_ReadShort( pByteStream ); 
-					const LONG lSpecial = NETWORK_ReadShort( pByteStream );
+					const LONG lID = pByteStream->ReadShort(); 
+					const LONG lSpecial = pByteStream->ReadShort();
 					AActor *pActor = CLIENT_FindThingByNetID( lID );
 
 					if ( pActor == NULL )
@@ -2044,7 +2044,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SETTHINGHEALTH:
 				{
-					const LONG lID = NETWORK_ReadShort( pByteStream );
+					const LONG lID = pByteStream->ReadShort();
 					const int health = pByteStream->ReadByte();
 					AActor* mo = CLIENT_FindThingByNetID( lID );
 
@@ -2114,7 +2114,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_SETDEFAULTSKYBOX:
 				{
-					int mobjNetID = NETWORK_ReadShort( pByteStream );
+					int mobjNetID = pByteStream->ReadShort();
 					if ( mobjNetID == -1  )
 						level.DefaultSkybox = NULL;
 					else
@@ -2128,7 +2128,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 			case SVC2_FLASHSTEALTHMONSTER:
 				{
-					AActor* mobj = CLIENT_FindThingByNetID( NETWORK_ReadShort( pByteStream ));
+					AActor* mobj = CLIENT_FindThingByNetID( pByteStream->ReadShort());
 
 					if ( mobj && ( mobj->flags & MF_STEALTH ))
 					{
@@ -2141,9 +2141,9 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_SHOOTDECAL:
 				{
 					FName decalName = NETWORK_ReadName( pByteStream );
-					AActor* actor = CLIENT_FindThingByNetID( NETWORK_ReadShort( pByteStream ));
-					fixed_t z = NETWORK_ReadShort( pByteStream ) << FRACBITS;
-					angle_t angle = NETWORK_ReadShort( pByteStream ) << FRACBITS;
+					AActor* actor = CLIENT_FindThingByNetID( pByteStream->ReadShort());
+					fixed_t z = pByteStream->ReadShort() << FRACBITS;
+					angle_t angle = pByteStream->ReadShort() << FRACBITS;
 					fixed_t tracedist = NETWORK_ReadLong( pByteStream );
 					bool permanent = !!pByteStream->ReadByte();
 					const FDecalTemplate* tpl = DecalLibrary.GetDecalByName( decalName );
@@ -5649,7 +5649,7 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	UCVarValue	Value;
 
 	// Read in, and set the value for fraglimit.
-	Value.Int = NETWORK_ReadShort( pByteStream );
+	Value.Int = pByteStream->ReadShort();
 	fraglimit.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for timelimit.
@@ -5657,7 +5657,7 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	timelimit.ForceSet( Value, CVAR_Float );
 
 	// Read in, and set the value for pointlimit.
-	Value.Int = NETWORK_ReadShort( pByteStream );
+	Value.Int = pByteStream->ReadShort();
 	pointlimit.ForceSet( Value, CVAR_Int );
 
 	// Read in, and set the value for duellimit.
@@ -5723,7 +5723,7 @@ static void client_SetGameEndLevelDelay( BYTESTREAM_s *pByteStream )
 {
 	ULONG	ulDelay;
 
-	ulDelay = NETWORK_ReadShort( pByteStream );
+	ulDelay = pByteStream->ReadShort();
 
 	GAME_SetEndLevelDelay( ulDelay );
 }
@@ -5736,7 +5736,7 @@ static void client_SetGameModeState( BYTESTREAM_s *pByteStream )
 	ULONG	ulCountdownTicks;
 
 	ulModeState = pByteStream->ReadByte();
-	ulCountdownTicks = NETWORK_ReadShort( pByteStream );
+	ulCountdownTicks = pByteStream->ReadShort();
 
 	if ( duel )
 	{
@@ -5808,10 +5808,10 @@ static void client_SetInvasionNumMonstersLeft( BYTESTREAM_s *pByteStream )
 	ULONG	ulNumArchVilesLeft;
 
 	// Read in the number of monsters left.
-	ulNumMonstersLeft = NETWORK_ReadShort( pByteStream );
+	ulNumMonstersLeft = pByteStream->ReadShort();
 
 	// Read in the number of arch-viles left.
-	ulNumArchVilesLeft = NETWORK_ReadShort( pByteStream );
+	ulNumArchVilesLeft = pByteStream->ReadShort();
 
 	// Set the number of monsters/archies left.
 	INVASION_SetNumMonstersLeft( ulNumMonstersLeft );
@@ -5855,7 +5855,7 @@ static void client_DoPossessionArtifactPickedUp( BYTESTREAM_s *pByteStream )
 	ulPlayer = pByteStream->ReadByte();
 
 	// Read in how many ticks remain until the player potentially scores a point.
-	ulTicks = NETWORK_ReadShort( pByteStream );
+	ulTicks = pByteStream->ReadShort();
 
 	// If this is an invalid player, break out.
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
@@ -5909,7 +5909,7 @@ static void client_DoGameModeCountdown( BYTESTREAM_s *pByteStream )
 {
 	ULONG	ulTicks;
 
-	ulTicks = NETWORK_ReadShort( pByteStream );
+	ulTicks = pByteStream->ReadShort();
 
 	// Begin the countdown.
 	if ( duel )
@@ -6001,7 +6001,7 @@ static void client_SetTeamFrags( BYTESTREAM_s *pByteStream )
 	ulTeam = pByteStream->ReadByte();
 
 	// Read in the fragcount.
-	lFragCount = NETWORK_ReadShort( pByteStream );
+	lFragCount = pByteStream->ReadShort();
 
 	// Announce a lead change... but don't do it if we're receiving a snapshot of the level!
 	bAnnounce = !!pByteStream->ReadByte();
@@ -6024,7 +6024,7 @@ static void client_SetTeamScore( BYTESTREAM_s *pByteStream )
 	ulTeam = pByteStream->ReadByte();
 
 	// Read in the team's new score.
-	lScore = NETWORK_ReadShort( pByteStream );
+	lScore = pByteStream->ReadShort();
 
 	// Should it be announced?
 	bAnnounce = !!pByteStream->ReadByte();
@@ -6050,7 +6050,7 @@ static void client_SetTeamWins( BYTESTREAM_s *pByteStream )
 	ulTeamIdx = pByteStream->ReadByte();
 
 	// Read in the wins.
-	lWinCount = NETWORK_ReadShort( pByteStream );
+	lWinCount = pByteStream->ReadShort();
 
 	// Read in whether or not it should be announced.	
 	bAnnounce = !!pByteStream->ReadByte();
@@ -6074,7 +6074,7 @@ static void client_SetTeamReturnTicks( BYTESTREAM_s *pByteStream )
 	ulTeam = pByteStream->ReadByte();
 
 	// Read in the return ticks value.
-	ulTicks = NETWORK_ReadShort( pByteStream );
+	ulTicks = pByteStream->ReadShort();
 
 	// Finally, set the return ticks for the given team.
 	TEAM_SetReturnTicks( ulTeam, ulTicks );
@@ -6947,7 +6947,7 @@ static void client_GiveInventory( BYTESTREAM_s *pByteStream )
 	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the identification of the type of item to give.
-	usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
+	usActorNetworkIndex = pByteStream->ReadShort();
 
 	// Read in the amount of this inventory type the player has.
 	lAmount = NETWORK_ReadLong( pByteStream );
@@ -7068,7 +7068,7 @@ static void client_TakeInventory( BYTESTREAM_s *pByteStream )
 	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the identification of the type of item to take away.
-	actorNetworkIndex = NETWORK_ReadShort( pByteStream );
+	actorNetworkIndex = pByteStream->ReadShort();
 
 	// Read in the new amount of this inventory type the player has.
 	lAmount = NETWORK_ReadLong( pByteStream );
@@ -7134,16 +7134,16 @@ static void client_GivePowerup( BYTESTREAM_s *pByteStream )
 	ulPlayer = pByteStream->ReadByte();
 
 	// Read in the identification of the type of item to give.
-	usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
+	usActorNetworkIndex = pByteStream->ReadShort();
 
 	// Read in the amount of this inventory type the player has.
-	lAmount = NETWORK_ReadShort( pByteStream );
+	lAmount = pByteStream->ReadShort();
 
 	// [TP]
 	bool isRune = !!pByteStream->ReadByte();
 
 	// Read in the amount of time left on this powerup.
-	lEffectTics = ( isRune == false ) ? NETWORK_ReadShort( pByteStream ) : 0;
+	lEffectTics = ( isRune == false ) ? pByteStream->ReadShort() : 0;
 
 	// Check to make sure everything is valid. If not, break out.
 	if (( PLAYER_IsValidPlayer( ulPlayer ) == false ) || ( players[ulPlayer].mo == NULL ))
@@ -7288,7 +7288,7 @@ static void client_DestroyAllInventory( BYTESTREAM_s *pByteStream )
 static void client_SetInventoryIcon( BYTESTREAM_s *pByteStream )
 {
 	const ULONG ulPlayer = pByteStream->ReadByte();
-	const USHORT usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
+	const USHORT usActorNetworkIndex = pByteStream->ReadShort();
 	const FString iconTexName = NETWORK_ReadString( pByteStream );
 
 	// Check to make sure everything is valid. If not, break out.
@@ -7319,7 +7319,7 @@ static void client_DoDoor( BYTESTREAM_s *pByteStream )
 	DDoor			*pDoor;
 
 	// Read in the sector ID.
-	lSectorID = NETWORK_ReadShort( pByteStream );
+	lSectorID = pByteStream->ReadShort();
 
 	// Read in the door type.
 	type = pByteStream->ReadByte();
@@ -7331,10 +7331,10 @@ static void client_DoDoor( BYTESTREAM_s *pByteStream )
 	lDirection = pByteStream->ReadByte();
 
 	// Read in the delay.
-	lLightTag = NETWORK_ReadShort( pByteStream );
+	lLightTag = pByteStream->ReadShort();
 
 	// Read in the door ID.
-	lDoorID = NETWORK_ReadShort( pByteStream );
+	lDoorID = pByteStream->ReadShort();
 
 	// Make sure the sector ID is valid.
 	if (( lSectorID >= 0 ) && ( lSectorID < numsectors ))
@@ -7371,7 +7371,7 @@ static void client_DestroyDoor( BYTESTREAM_s *pByteStream )
 	LONG	lDoorID;
 
 	// Read in the door ID.
-	lDoorID = NETWORK_ReadShort( pByteStream );
+	lDoorID = pByteStream->ReadShort();
 
 	pDoor = P_GetDoorByID( lDoorID );
 	if ( pDoor == NULL )
@@ -7392,7 +7392,7 @@ static void client_ChangeDoorDirection( BYTESTREAM_s *pByteStream )
 	LONG	lDirection;
 
 	// Read in the door ID.
-	lDoorID = NETWORK_ReadShort( pByteStream );
+	lDoorID = pByteStream->ReadShort();
 
 	// Read in the new direction the door should move in.
 	lDirection = pByteStream->ReadByte();
@@ -7436,7 +7436,7 @@ static void client_DoFloor( BYTESTREAM_s *pByteStream )
 	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
-	lSectorID = NETWORK_ReadShort( pByteStream );
+	lSectorID = pByteStream->ReadShort();
 
 	// Read in the direction of the floor.
 	lDirection = pByteStream->ReadByte();
@@ -7454,7 +7454,7 @@ static void client_DoFloor( BYTESTREAM_s *pByteStream )
 	Hexencrush = !!pByteStream->ReadByte();
 
 	// Read in the floor's network ID.
-	lFloorID = NETWORK_ReadShort( pByteStream );
+	lFloorID = pByteStream->ReadShort();
 
 	// Since we still want to receive direction as a byte, but -1 can't be represented in byte
 	// form, adjust the value into something that can be represented.
@@ -7490,7 +7490,7 @@ static void client_DestroyFloor( BYTESTREAM_s *pByteStream )
 	LONG		lFloorID;
 
 	// Read in the floor ID.
-	lFloorID = NETWORK_ReadShort( pByteStream );
+	lFloorID = pByteStream->ReadShort();
 
 	pFloor = P_GetFloorByID( lFloorID );
 	if ( pFloor == NULL )
@@ -7512,7 +7512,7 @@ static void client_ChangeFloorDirection( BYTESTREAM_s *pByteStream )
 	LONG		lDirection;
 
 	// Read in the floor ID.
-	lFloorID = NETWORK_ReadShort( pByteStream );
+	lFloorID = pByteStream->ReadShort();
 
 	// Read in the new floor direction.
 	lDirection = pByteStream->ReadByte();
@@ -7542,7 +7542,7 @@ static void client_ChangeFloorType( BYTESTREAM_s *pByteStream )
 	LONG		lType;
 
 	// Read in the floor ID.
-	lFloorID = NETWORK_ReadShort( pByteStream );
+	lFloorID = pByteStream->ReadShort();
 
 	// Read in the new type of floor this is.
 	lType = pByteStream->ReadByte();
@@ -7566,7 +7566,7 @@ static void client_ChangeFloorDestDist( BYTESTREAM_s *pByteStream )
 	fixed_t		DestDist;
 
 	// Read in the floor ID.
-	lFloorID = NETWORK_ReadShort( pByteStream );
+	lFloorID = pByteStream->ReadShort();
 
 	// Read in the new floor destination distance.
 	DestDist = NETWORK_ReadLong( pByteStream );
@@ -7589,7 +7589,7 @@ static void client_StartFloorSound( BYTESTREAM_s *pByteStream )
 	LONG		lFloorID;
 
 	// Read in the floor ID.
-	lFloorID = NETWORK_ReadShort( pByteStream );
+	lFloorID = pByteStream->ReadShort();
 
 	pFloor = P_GetFloorByID( lFloorID );
 	if ( pFloor == NULL )
@@ -7610,7 +7610,7 @@ static void client_BuildStair( BYTESTREAM_s *pByteStream )
 	int Type = pByteStream->ReadByte();
 
 	// Read in the sector ID.
-	int SectorID = NETWORK_ReadShort( pByteStream );
+	int SectorID = pByteStream->ReadShort();
 
 	// Read in the direction of the floor.
 	int Direction = static_cast<SBYTE>( pByteStream->ReadByte() );
@@ -7643,7 +7643,7 @@ static void client_BuildStair( BYTESTREAM_s *pByteStream )
 	int PerStepTime = NETWORK_ReadLong( pByteStream );
 
 	// Read in the floor's network ID.
-	int FloorID = NETWORK_ReadShort( pByteStream );
+	int FloorID = pByteStream->ReadShort();
 
 	// Invalid sector.
 	if (( SectorID >= numsectors ) || ( SectorID < 0 ))
@@ -7691,7 +7691,7 @@ static void client_DoCeiling( BYTESTREAM_s *pByteStream )
 	lType = pByteStream->ReadByte();
 
 	// Read in the sector this ceiling is attached to.
-	lSectorID = NETWORK_ReadShort( pByteStream );
+	lSectorID = pByteStream->ReadShort();
 
 	// Read in the direction this ceiling is moving in.
 	lDirection = pByteStream->ReadByte();
@@ -7712,10 +7712,10 @@ static void client_DoCeiling( BYTESTREAM_s *pByteStream )
 	Hexencrush = !!pByteStream->ReadByte();
 
 	// Does this ceiling make noise?
-	lSilent = NETWORK_ReadShort( pByteStream );
+	lSilent = pByteStream->ReadShort();
 
 	// Read in the network ID of the ceiling.
-	lCeilingID = NETWORK_ReadShort( pByteStream );
+	lCeilingID = pByteStream->ReadShort();
 
 	// Since we still want to receive direction as a byte, but -1 can't be represented in byte
 	// form, adjust the value into something that can be represented.
@@ -7746,7 +7746,7 @@ static void client_DestroyCeiling( BYTESTREAM_s *pByteStream )
 	LONG		lCeilingID;
 
 	// Read in the ceiling ID.
-	lCeilingID = NETWORK_ReadShort( pByteStream );
+	lCeilingID = pByteStream->ReadShort();
 
 	pCeiling = P_GetCeilingByID( lCeilingID );
 	if ( pCeiling == NULL )
@@ -7768,7 +7768,7 @@ static void client_ChangeCeilingDirection( BYTESTREAM_s *pByteStream )
 	LONG		lDirection;
 
 	// Read in the ceiling ID.
-	lCeilingID = NETWORK_ReadShort( pByteStream );
+	lCeilingID = pByteStream->ReadShort();
 
 	// Read in the new ceiling direction.
 	lDirection = pByteStream->ReadByte();
@@ -7799,7 +7799,7 @@ static void client_ChangeCeilingSpeed( BYTESTREAM_s *pByteStream )
 	LONG		lSpeed;
 
 	// Read in the ceiling ID.
-	lCeilingID = NETWORK_ReadShort( pByteStream );
+	lCeilingID = pByteStream->ReadShort();
 
 	// Read in the new ceiling speed.
 	lSpeed = NETWORK_ReadLong( pByteStream );
@@ -7822,7 +7822,7 @@ static void client_PlayCeilingSound( BYTESTREAM_s *pByteStream )
 	LONG		lCeilingID;
 
 	// Read in the ceiling ID.
-	lCeilingID = NETWORK_ReadShort( pByteStream );
+	lCeilingID = pByteStream->ReadShort();
 
 	pCeiling = P_GetCeilingByID( lCeilingID );
 	if ( pCeiling == NULL )
@@ -7852,7 +7852,7 @@ static void client_DoPlat( BYTESTREAM_s *pByteStream )
 	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
-	lSectorID = NETWORK_ReadShort( pByteStream );
+	lSectorID = pByteStream->ReadShort();
 
 	// Read in the plat status (moving up, down, etc.).
 	lStatus = pByteStream->ReadByte();
@@ -7867,7 +7867,7 @@ static void client_DoPlat( BYTESTREAM_s *pByteStream )
 	lSpeed = NETWORK_ReadLong( pByteStream );
 
 	// Read in the plat ID.
-	lPlatID = NETWORK_ReadShort( pByteStream );
+	lPlatID = pByteStream->ReadShort();
 
 	// Invalid sector.
 	if (( lSectorID >= numsectors ) || ( lSectorID < 0 ))
@@ -7900,7 +7900,7 @@ static void client_DestroyPlat( BYTESTREAM_s *pByteStream )
 	LONG	lPlatID;
 
 	// Read in the plat ID.
-	lPlatID = NETWORK_ReadShort( pByteStream );
+	lPlatID = pByteStream->ReadShort();
 
 	pPlat = P_GetPlatByID( lPlatID );
 	if ( pPlat == NULL )
@@ -7921,7 +7921,7 @@ static void client_ChangePlatStatus( BYTESTREAM_s *pByteStream )
 	LONG	lStatus;
 
 	// Read in the plat ID.
-	lPlatID = NETWORK_ReadShort( pByteStream );
+	lPlatID = pByteStream->ReadShort();
 
 	// Read in the direction (aka status).
 	lStatus = pByteStream->ReadByte();
@@ -7945,7 +7945,7 @@ static void client_PlayPlatSound( BYTESTREAM_s *pByteStream )
 	LONG	lSoundType;
 
 	// Read in the plat ID.
-	lPlatID = NETWORK_ReadShort( pByteStream );
+	lPlatID = pByteStream->ReadShort();
 
 	// Read in the type of sound to be played.
 	lSoundType = pByteStream->ReadByte();
@@ -7996,7 +7996,7 @@ static void client_DoElevator( BYTESTREAM_s *pByteStream )
 	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
-	lSectorID = NETWORK_ReadShort( pByteStream );
+	lSectorID = pByteStream->ReadShort();
 
 	// Read in the speed.
 	lSpeed = NETWORK_ReadLong( pByteStream );
@@ -8011,7 +8011,7 @@ static void client_DoElevator( BYTESTREAM_s *pByteStream )
 	lCeilingDestDist = NETWORK_ReadLong( pByteStream );
 
 	// Read in the elevator ID.
-	lElevatorID = NETWORK_ReadShort( pByteStream );
+	lElevatorID = pByteStream->ReadShort();
 
 	// Invalid sector.
 	if (( lSectorID >= numsectors ) || ( lSectorID < 0 ))
@@ -8043,7 +8043,7 @@ static void client_DestroyElevator( BYTESTREAM_s *pByteStream )
 	DElevator	*pElevator;
 
 	// Read in the elevator ID.
-	lElevatorID = NETWORK_ReadShort( pByteStream );
+	lElevatorID = pByteStream->ReadShort();
 
 	pElevator = P_GetElevatorByID( lElevatorID );
 	if ( pElevator == NULL )
@@ -8071,7 +8071,7 @@ static void client_StartElevatorSound( BYTESTREAM_s *pByteStream )
 	DElevator	*pElevator;
 
 	// Read in the elevator ID.
-	lElevatorID = NETWORK_ReadShort( pByteStream );
+	lElevatorID = pByteStream->ReadShort();
 
 	pElevator = P_GetElevatorByID( lElevatorID );
 	if ( pElevator == NULL )
@@ -8104,7 +8104,7 @@ static void client_DoPillar( BYTESTREAM_s *pByteStream )
 	lType = pByteStream->ReadByte();
 
 	// Read in the sector ID.
-	lSectorID = NETWORK_ReadShort( pByteStream );
+	lSectorID = pByteStream->ReadShort();
 
 	// Read in the speeds.
 	lFloorSpeed = NETWORK_ReadLong( pByteStream );
@@ -8119,7 +8119,7 @@ static void client_DoPillar( BYTESTREAM_s *pByteStream )
 	Hexencrush = !!pByteStream->ReadByte();
 
 	// Read in the pillar ID.
-	lPillarID = NETWORK_ReadShort( pByteStream );
+	lPillarID = pByteStream->ReadShort();
 
 	// Invalid sector.
 	if (( lSectorID >= numsectors ) || ( lSectorID < 0 ))
@@ -8153,7 +8153,7 @@ static void client_DestroyPillar( BYTESTREAM_s *pByteStream )
 	DPillar		*pPillar;
 
 	// Read in the elevator ID.
-	lPillarID = NETWORK_ReadShort( pByteStream );
+	lPillarID = pByteStream->ReadShort();
 
 	pPillar = P_GetPillarByID( lPillarID );
 	if ( pPillar == NULL )
@@ -8188,7 +8188,7 @@ static void client_DoWaggle( BYTESTREAM_s *pByteStream )
 	bCeiling = !!pByteStream->ReadByte();
 
 	// Read in the sector ID.
-	lSectorID = NETWORK_ReadShort( pByteStream );
+	lSectorID = pByteStream->ReadShort();
 
 	// Read in the waggle's attributes.
 	lOriginalDistance = NETWORK_ReadLong( pByteStream );
@@ -8203,7 +8203,7 @@ static void client_DoWaggle( BYTESTREAM_s *pByteStream )
 	lState = pByteStream->ReadByte();
 
 	// Read in the waggle ID.
-	lWaggleID = NETWORK_ReadShort( pByteStream );
+	lWaggleID = pByteStream->ReadShort();
 
 	// Invalid sector.
 	if (( lSectorID >= numsectors ) || ( lSectorID < 0 ))
@@ -8235,7 +8235,7 @@ static void client_DestroyWaggle( BYTESTREAM_s *pByteStream )
 	DWaggleBase		*pWaggle;
 
 	// Read in the waggle ID.
-	lWaggleID = NETWORK_ReadShort( pByteStream );
+	lWaggleID = pByteStream->ReadShort();
 
 	pWaggle = P_GetWaggleByID( lWaggleID );
 	if ( pWaggle == NULL )
@@ -8257,7 +8257,7 @@ static void client_UpdateWaggle( BYTESTREAM_s *pByteStream )
 	DWaggleBase		*pWaggle;
 
 	// Read in the waggle ID.
-	lWaggleID = NETWORK_ReadShort( pByteStream );
+	lWaggleID = pByteStream->ReadShort();
 
 	// Read in the waggle's accumulator.
 	lAccumulator = NETWORK_ReadLong( pByteStream );
@@ -8286,7 +8286,7 @@ static void client_DoRotatePoly( BYTESTREAM_s *pByteStream )
 	lSpeed = NETWORK_ReadLong( pByteStream );
 
 	// Read in the polyobject ID.
-	lPolyNum = NETWORK_ReadShort( pByteStream );
+	lPolyNum = pByteStream->ReadShort();
 
 	// Make sure the polyobj exists before we try to work with it.
 	pPoly = PO_GetPolyobj( lPolyNum );
@@ -8317,7 +8317,7 @@ static void client_DestroyRotatePoly( BYTESTREAM_s *pByteStream )
 	TThinkerIterator<DRotatePoly>	Iterator;
 
 	// Read in the DRotatePoly ID.
-	lID = NETWORK_ReadShort( pByteStream );
+	lID = pByteStream->ReadShort();
 
 	// Try to find the object from the ID. If it exists, destroy it.
 	pPoly = NULL;
@@ -8349,7 +8349,7 @@ static void client_DoMovePoly( BYTESTREAM_s *pByteStream )
 	lYSpeed = NETWORK_ReadLong( pByteStream );
 
 	// Read in the polyobject ID.
-	lPolyNum = NETWORK_ReadShort( pByteStream );
+	lPolyNum = pByteStream->ReadShort();
 
 	// Make sure the polyobj exists before we try to work with it.
 	pPoly = PO_GetPolyobj( lPolyNum );
@@ -8381,7 +8381,7 @@ static void client_DestroyMovePoly( BYTESTREAM_s *pByteStream )
 	TThinkerIterator<DMovePoly>		Iterator;
 
 	// Read in the DMovePoly ID.
-	lID = NETWORK_ReadShort( pByteStream );
+	lID = pByteStream->ReadShort();
 
 	// Try to find the object from the ID. If it exists, destroy it.
 	pPoly = NULL;
@@ -8419,7 +8419,7 @@ static void client_DoPolyDoor( BYTESTREAM_s *pByteStream )
 	lSpeed = NETWORK_ReadLong( pByteStream );
 
 	// Read in the polyobject ID.
-	lPolyNum = NETWORK_ReadShort( pByteStream );
+	lPolyNum = pByteStream->ReadShort();
 
 	// Make sure the polyobj exists before we try to work with it.
 	pPoly = PO_GetPolyobj( lPolyNum );
@@ -8449,7 +8449,7 @@ static void client_DestroyPolyDoor( BYTESTREAM_s *pByteStream )
 	TThinkerIterator<DPolyDoor>		Iterator;
 
 	// Read in the DPolyDoor ID.
-	lID = NETWORK_ReadShort( pByteStream );
+	lID = pByteStream->ReadShort();
 
 	// Try to find the object from the ID. If it exists, destroy it.
 	pPoly = NULL;
@@ -8480,7 +8480,7 @@ static void client_SetPolyDoorSpeedPosition( BYTESTREAM_s *pByteStream )
 	LONG			lDeltaY;
 
 	// Read in the polyobject ID.
-	lPolyID = NETWORK_ReadShort( pByteStream );
+	lPolyID = pByteStream->ReadShort();
 
 	// Read in the polyobject x/yspeed.
 	lXSpeed = NETWORK_ReadLong( pByteStream );
@@ -8517,7 +8517,7 @@ static void client_SetPolyDoorSpeedRotation( BYTESTREAM_s *pByteStream )
 	LONG			lDeltaAngle;
 
 	// Read in the polyobject ID.
-	lPolyID = NETWORK_ReadShort( pByteStream );
+	lPolyID = pByteStream->ReadShort();
 
 	// Read in the polyobject speed.
 	lSpeed = NETWORK_ReadLong( pByteStream );
@@ -8548,7 +8548,7 @@ static void client_PlayPolyobjSound( BYTESTREAM_s *pByteStream )
 	FPolyObj	*pPoly;
 
 	// Read in the polyobject ID.
-	lID = NETWORK_ReadShort( pByteStream );
+	lID = pByteStream->ReadShort();
 
 	// Read in the polyobject mode.
 	PolyMode = !!pByteStream->ReadByte();
@@ -8568,7 +8568,7 @@ static void client_StopPolyobjSound( BYTESTREAM_s *pByteStream )
 	FPolyObj	*pPoly;
 
 	// Read in the polyobject ID.
-	lID = NETWORK_ReadShort( pByteStream );
+	lID = pByteStream->ReadShort();
 
 	pPoly = PO_GetPolyobj( lID );
 	if ( pPoly == NULL )
@@ -8589,7 +8589,7 @@ static void client_SetPolyobjPosition( BYTESTREAM_s *pByteStream )
 	LONG			lDeltaY;
 
 	// Read in the polyobject number.
-	lPolyNum = NETWORK_ReadShort( pByteStream );
+	lPolyNum = pByteStream->ReadShort();
 
 	// Read in the XY position of the polyobj.
 	lX = NETWORK_ReadLong( pByteStream );
@@ -8622,7 +8622,7 @@ static void client_SetPolyobjRotation( BYTESTREAM_s *pByteStream )
 	LONG			lDeltaAngle;
 
 	// Read in the polyobject number.
-	lPolyNum = NETWORK_ReadShort( pByteStream );
+	lPolyNum = pByteStream->ReadShort();
 
 	// Read in the angle of the polyobj.
 	lAngle = NETWORK_ReadLong( pByteStream );
@@ -8652,16 +8652,16 @@ static void client_EarthQuake( BYTESTREAM_s *pByteStream )
 	LONG	lTremorRadius;
 
 	// Read in the center's network ID.
-	lID = NETWORK_ReadShort( pByteStream );
+	lID = pByteStream->ReadShort();
 
 	// Read in the intensity of the quake.
 	lIntensity = pByteStream->ReadByte();
 
 	// Read in the duration of the quake.
-	lDuration = NETWORK_ReadShort( pByteStream );
+	lDuration = pByteStream->ReadShort();
 
 	// Read in the tremor radius of the quake.
-	lTremorRadius = NETWORK_ReadShort( pByteStream );
+	lTremorRadius = pByteStream->ReadShort();
 
 	// [BB] Read in the quake sound.
 	FSoundID quakesound = NETWORK_ReadString( pByteStream );
@@ -8732,7 +8732,7 @@ static void client_SetScroller( BYTESTREAM_s *pByteStream )
 	dY = NETWORK_ReadLong( pByteStream );
 
 	// Read in the sector being scrolled.
-	lTag = NETWORK_ReadShort( pByteStream );
+	lTag = pByteStream->ReadShort();
 
 	// Check to make sure what we've read in is valid.
 	if (( Type != DScroller::sc_floor ) && ( Type != DScroller::sc_ceiling ) &&
@@ -8848,7 +8848,7 @@ static void client_SetCameraToTexture( BYTESTREAM_s *pByteStream )
 	FTextureID	picNum;
 
 	// Read in the ID of the camera.
-	lID = NETWORK_ReadShort( pByteStream );
+	lID = pByteStream->ReadShort();
 
 	// Read in the name of the texture.
 	pszTexture = NETWORK_ReadString( pByteStream );
@@ -8880,7 +8880,7 @@ static void client_CreateTranslation( BYTESTREAM_s *pByteStream, bool bIsTypeTwo
 	FRemapTable	*pTranslation;
 
 	// Read in which translation is being created.
-	Translation.ulIdx = NETWORK_ReadShort( pByteStream );
+	Translation.ulIdx = pByteStream->ReadShort();
 
 	const bool bIsEdited = !!pByteStream->ReadByte();
 
@@ -8954,11 +8954,11 @@ static void client_IgnorePlayer( BYTESTREAM_s *pByteStream )
 static void client_DoPusher( BYTESTREAM_s *pByteStream )
 {
 	const ULONG ulType = pByteStream->ReadByte();
-	const int iLineNum = NETWORK_ReadShort( pByteStream );
+	const int iLineNum = pByteStream->ReadShort();
 	const int iMagnitude = NETWORK_ReadLong( pByteStream );
 	const int iAngle = NETWORK_ReadLong( pByteStream );
-	const LONG lSourceNetID = NETWORK_ReadShort( pByteStream );
-	const int iAffectee = NETWORK_ReadShort( pByteStream );
+	const LONG lSourceNetID = pByteStream->ReadShort();
+	const int iAffectee = pByteStream->ReadShort();
 
 	line_t *pLine = ( iLineNum >= 0 && iLineNum < numlines ) ? &lines[iLineNum] : NULL;
 	new DPusher ( static_cast<DPusher::EPusher> ( ulType ), pLine, iMagnitude, iAngle, CLIENT_FindThingByNetID( lSourceNetID ), iAffectee );
@@ -8969,7 +8969,7 @@ static void client_DoPusher( BYTESTREAM_s *pByteStream )
 void AdjustPusher (int tag, int magnitude, int angle, DPusher::EPusher type);
 static void client_AdjustPusher( BYTESTREAM_s *pByteStream )
 {
-	const int iTag = NETWORK_ReadShort( pByteStream );
+	const int iTag = pByteStream->ReadShort();
 	const int iMagnitude = NETWORK_ReadLong( pByteStream );
 	const int iAngle = NETWORK_ReadLong( pByteStream );
 	const ULONG ulType = pByteStream->ReadByte();
@@ -8987,9 +8987,9 @@ void ServerCommands::ReplaceTextures::Execute()
 //
 void APathFollower::InitFromStream ( BYTESTREAM_s *pByteStream )
 {
-	APathFollower *pPathFollower = static_cast<APathFollower*> ( CLIENT_FindThingByNetID( NETWORK_ReadShort( pByteStream ) ) );
-	const int currNodeId = NETWORK_ReadShort( pByteStream );
-	const int prevNodeId = NETWORK_ReadShort( pByteStream );
+	APathFollower *pPathFollower = static_cast<APathFollower*> ( CLIENT_FindThingByNetID( pByteStream->ReadShort() ) );
+	const int currNodeId = pByteStream->ReadShort();
+	const int prevNodeId = pByteStream->ReadShort();
 	const float serverTime = NETWORK_ReadFloat( pByteStream );
 
 	if ( pPathFollower )

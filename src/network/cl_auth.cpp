@@ -200,7 +200,7 @@ void CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			salt.Resize ( lenSalt ); 
 			for ( int i = 0; i < lenSalt; ++i )
 				salt[i] = pByteStream->ReadByte();
-			const int lenB = NETWORK_ReadShort( pByteStream );
+			const int lenB = pByteStream->ReadShort();
 			TArray<unsigned char> bytesB;
 			bytesB.Resize ( lenB ); 
 			for ( int i = 0; i < lenB; ++i )
@@ -211,7 +211,7 @@ void CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		break;
 	case SVC2_SRP_USER_VERIFY_SESSION:
 		{
-			const int lenHAMK = NETWORK_ReadShort( pByteStream );
+			const int lenHAMK = pByteStream->ReadShort();
 
 			// [BB] The following crashes if g_usr is not properly initialized.
 			if ( g_usr == NULL )

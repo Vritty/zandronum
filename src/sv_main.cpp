@@ -4599,8 +4599,8 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				return ( true );
 
 			CLIENT_s *client = SERVER_GetClient( SERVER_GetCurrentClient() );
-			client->ScreenWidth = NETWORK_ReadShort( pByteStream );
-			client->ScreenHeight = NETWORK_ReadShort( pByteStream );
+			client->ScreenWidth = pByteStream->ReadShort();
+			client->ScreenHeight = pByteStream->ReadShort();
 		}
 		return false;
 
@@ -5041,25 +5041,25 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 	const ULONG ulBits = pByteStream->ReadByte();
 
 	if ( ulBits & CLIENT_UPDATE_YAW )
-		pCmd->ucmd.yaw = NETWORK_ReadShort( pByteStream );
+		pCmd->ucmd.yaw = pByteStream->ReadShort();
 
 	if ( ulBits & CLIENT_UPDATE_PITCH )
-		pCmd->ucmd.pitch = NETWORK_ReadShort( pByteStream );
+		pCmd->ucmd.pitch = pByteStream->ReadShort();
 
 	if ( ulBits & CLIENT_UPDATE_ROLL )
-		pCmd->ucmd.roll = NETWORK_ReadShort( pByteStream );
+		pCmd->ucmd.roll = pByteStream->ReadShort();
 
 	if ( ulBits & CLIENT_UPDATE_BUTTONS )
 		pCmd->ucmd.buttons = ( ulBits & CLIENT_UPDATE_BUTTONS_LONG ) ? NETWORK_ReadLong( pByteStream ) : pByteStream->ReadByte();
 
 	if ( ulBits & CLIENT_UPDATE_FORWARDMOVE )
-		pCmd->ucmd.forwardmove = NETWORK_ReadShort( pByteStream );
+		pCmd->ucmd.forwardmove = pByteStream->ReadShort();
 
 	if ( ulBits & CLIENT_UPDATE_SIDEMOVE )
-		pCmd->ucmd.sidemove = NETWORK_ReadShort( pByteStream );
+		pCmd->ucmd.sidemove = pByteStream->ReadShort();
 
 	if ( ulBits & CLIENT_UPDATE_UPMOVE )
-		pCmd->ucmd.upmove = NETWORK_ReadShort( pByteStream );
+		pCmd->ucmd.upmove = pByteStream->ReadShort();
 
 	// Always read in the angle and pitch.
 	moveCmd.angle = NETWORK_ReadLong( pByteStream );
@@ -5085,7 +5085,7 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 	}
 	// [BB] If the client is attacking, he always sends the name of the weapon he's using.
 	if ( pCmd->ucmd.buttons & BT_ATTACK )
-		moveCmd.usWeaponNetworkIndex = NETWORK_ReadShort( pByteStream );
+		moveCmd.usWeaponNetworkIndex = pByteStream->ReadShort();
 	else
 		moveCmd.usWeaponNetworkIndex = 0;
 }
@@ -5352,7 +5352,7 @@ static bool server_WeaponSelect( BYTESTREAM_s *pByteStream )
 
 ClientWeaponSelectCommand::ClientWeaponSelectCommand ( BYTESTREAM_s *pByteStream )
 	// Read in the identification of the weapon the player is selecting.
-	: usActorNetworkIndex ( NETWORK_ReadShort( pByteStream ) ) { }
+	: usActorNetworkIndex ( pByteStream->ReadShort() ) { }
 
 bool ClientWeaponSelectCommand::process( const ULONG ulClient ) const
 {
@@ -5878,7 +5878,7 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 
 	const bool bSetAngle = !!pByteStream->ReadByte();
 	// [BB] The client only sends the angle, if it is supposed to be set.
-	const SHORT sAngle = bSetAngle ? NETWORK_ReadShort( pByteStream ) : 0;
+	const SHORT sAngle = bSetAngle ? pByteStream->ReadShort() : 0;
 
 	pSource = players[g_lCurrentClient].mo;
 	if ( pSource == NULL )
@@ -6332,7 +6332,7 @@ static bool server_InventoryUseAll( BYTESTREAM_s *pByteStream )
 //
 static bool server_InventoryUse( BYTESTREAM_s *pByteStream )
 {
-	USHORT usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
+	USHORT usActorNetworkIndex = pByteStream->ReadShort();
 
 	if (gamestate == GS_LEVEL && !paused && PLAYER_IsValidPlayerWithMo(g_lCurrentClient) )
 	{
@@ -6353,7 +6353,7 @@ static bool server_InventoryDrop( BYTESTREAM_s *pByteStream )
 	USHORT		usActorNetworkIndex = 0;
 	AInventory	*pItem;
 
-	usActorNetworkIndex = NETWORK_ReadShort( pByteStream );
+	usActorNetworkIndex = pByteStream->ReadShort();
 
 	// [BB] The server may forbid dropping completely.
 	if ( zadmflags & ZADF_NODROP )
@@ -6473,7 +6473,7 @@ static bool server_CheckLogin ( const ULONG ulClient )
 //
 static bool server_InfoCheat( BYTESTREAM_s *pByteStream )
 {
-	LONG lID = NETWORK_ReadShort( pByteStream );
+	LONG lID = pByteStream->ReadShort();
 	AActor* linetarget = CLIENT_FindThingByNetID( lID );
 	bool extended = !!pByteStream->ReadByte();
 

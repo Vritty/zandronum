@@ -307,7 +307,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 		case AUTH_SERVER_SRP_STEP_TWO:
 			{
 				const int sessionID = NETWORK_ReadLong( pByteStream );
-				const int lenB = NETWORK_ReadShort( pByteStream );
+				const int lenB = pByteStream->ReadShort();
 				TArray<unsigned char> bytesB;
 				if ( lenB > 0 )
 				{
@@ -330,7 +330,7 @@ void SERVER_AUTH_ParsePacket( BYTESTREAM_s *pByteStream )
 		case AUTH_SERVER_SRP_STEP_FOUR:
 			{
 				const int sessionID = NETWORK_ReadLong( pByteStream );
-				const int lenHAMK = NETWORK_ReadShort( pByteStream );
+				const int lenHAMK = pByteStream->ReadShort();
 				TArray<unsigned char> bytesHAMK;
 				if ( lenHAMK > 0 )
 				{
@@ -465,7 +465,7 @@ bool SERVER_ProcessSRPClientCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		{
 			CLIENT_s *pClient = SERVER_GetClient(SERVER_GetCurrentClient());
 
-			const int lenA = NETWORK_ReadShort( pByteStream );
+			const int lenA = pByteStream->ReadShort();
 
 			if ( lenA > 0 )
 			{
@@ -523,7 +523,7 @@ bool SERVER_ProcessSRPClientCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		{
 			CLIENT_s *pClient = SERVER_GetClient(SERVER_GetCurrentClient());
 
-			const int lenM = NETWORK_ReadShort( pByteStream );
+			const int lenM = pByteStream->ReadShort();
 			if ( lenM > 0 )
 			{
 				pClient->bytesM.Resize ( lenM ); 
