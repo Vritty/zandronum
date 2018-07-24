@@ -190,7 +190,7 @@ class VariableParameter(SpecParameter):
 		self.cxxtypename = 'int'
 
 	def writeread(self, writer, command, reference, **args):
-		writer.writeline('command.{reference} = NETWORK_ReadVariable( bytestream );'.format(**locals()))
+		writer.writeline('command.{reference} = bytestream->ReadVariable();'.format(**locals()))
 
 	def writesend(self, writer, command, reference, **args):
 		writer.writecontext('command.addVariable( this->{reference} );'.format(**locals()))

@@ -332,20 +332,20 @@ bool BYTESTREAM_s::ReadBit()
 
 //*****************************************************************************
 //
-int NETWORK_ReadVariable( BYTESTREAM_s *byteStream )
+int BYTESTREAM_s::ReadVariable()
 {
 	// Read two bits to form an integer 0...3
-	int length = byteStream->ReadBit();
-	length |= byteStream->ReadBit() << 1;
+	int length = this->ReadBit();
+	length |= this->ReadBit() << 1;
 
 	// Use this length to read in an integer of variable length.
 	switch ( length )
 	{
 	default:
 	case 0: return 0;
-	case 1: return byteStream->ReadByte();
-	case 2: return byteStream->ReadShort();
-	case 3: return byteStream->ReadLong();
+	case 1: return this->ReadByte();
+	case 2: return this->ReadShort();
+	case 3: return this->ReadLong();
 	}
 }
 

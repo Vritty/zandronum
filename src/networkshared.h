@@ -323,6 +323,7 @@ struct BYTESTREAM_s
 	float ReadFloat();
 	const char* ReadString();
 	bool ReadBit();
+	int ReadVariable();
 
 	// Pointer to our stream of data.
 	BYTE		*pbStream;
@@ -384,7 +385,6 @@ void			NETWORK_ReadBuffer( BYTESTREAM_s *byteStream, void* buffer, size_t length
 void			NETWORK_StartTrafficMeasurement ( );
 int				NETWORK_StopTrafficMeasurement ( );
 
-int				NETWORK_ReadVariable( BYTESTREAM_s *byteStream );
 int				NETWORK_ReadShortByte ( BYTESTREAM_s* byteStream, int bits );
 void			NETWORK_WriteByte( BYTESTREAM_s *pByteStream, int Byte );
 void			NETWORK_WriteShort( BYTESTREAM_s *pByteStream, int Short );
