@@ -461,7 +461,7 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	if ( teamplay || teamgame || teamlms || teampossession || (( deathmatch == false ) && ( teamgame == false )))
 	{
 		if ( ulBits & SQF_TEAMDAMAGE )
-			NETWORK_WriteFloat( &g_MasterServerBuffer.ByteStream, teamdamage );
+			g_MasterServerBuffer.ByteStream.WriteFloat( teamdamage );
 	}
 
 	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )

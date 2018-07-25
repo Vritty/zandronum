@@ -442,7 +442,7 @@ void BYTESTREAM_s::WriteLong( int Long )
 
 //*****************************************************************************
 //
-void NETWORK_WriteFloat( BYTESTREAM_s *pByteStream, float Float )
+void BYTESTREAM_s::WriteFloat( float Float )
 {
 	union
 	{
@@ -452,7 +452,7 @@ void NETWORK_WriteFloat( BYTESTREAM_s *pByteStream, float Float )
 
 	dat.f = Float;
 
-	pByteStream->WriteLong( dat.l );
+	this->WriteLong( dat.l );
 }
 
 //*****************************************************************************
