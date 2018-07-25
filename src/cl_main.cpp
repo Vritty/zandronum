@@ -9109,18 +9109,7 @@ CCMD( timeout )
 
 	// Clear out the existing players.
 	CLIENT_ClearAllPlayers();
-/*
-	// If we're connected in any way, send a disconnect signal.
-	if ( g_ConnectionState != CTS_DISCONNECTED )
-	{
-		NETWORK_WriteByte( &g_LocalBuffer, CONNECT_QUIT );
-		g_lBytesSent += g_LocalBuffer.cursize;
-		if ( g_lBytesSent > g_lMaxBytesSent )
-			g_lMaxBytesSent = g_lBytesSent;
-		NETWORK_LaunchPacket( g_LocalBuffer, g_AddressServer );
-		g_LocalBuffer.Clear();
-	}
-*/
+
 	// Clear out our copy of the server address.
 	memset( &g_AddressServer, 0, sizeof( g_AddressServer ));
 	CLIENT_SetConnectionState( CTS_DISCONNECTED );

@@ -1601,15 +1601,6 @@ CCMD( fillbufferwithshit )
 {
 	// Fill the packet with 1k of SHIT!
 	NETWORK_FillBufferWithShit( &g_NetworkMessage.ByteStream, 1024 );
-/*
-	ULONG	ulIdx;
-
-	// Fill the packet with 1k of SHIT!
-	for ( ulIdx = 0; ulIdx < 1024; ulIdx++ )
-		NETWORK_WriteByte( &g_NetworkMessage, M_Random( ));
-
-//	g_NetworkMessage.Clear();
-*/
 }
 
 CCMD( testnetstring )
