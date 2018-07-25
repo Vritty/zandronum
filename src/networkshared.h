@@ -335,6 +335,8 @@ struct BYTESTREAM_s
 	void WriteVariable( int value );
 	void WriteShortByte( int value, int bits );
 
+	void WriteHeader( int Byte );
+
 	// Pointer to our stream of data.
 	BYTE		*pbStream;
 
@@ -394,8 +396,6 @@ void			NETWORK_ReadBuffer( BYTESTREAM_s *byteStream, void* buffer, size_t length
 
 void			NETWORK_StartTrafficMeasurement ( );
 int				NETWORK_StopTrafficMeasurement ( );
-
-void			NETWORK_WriteHeader( BYTESTREAM_s *pByteStream, int Byte );
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- CLASSES ---------------------------------------------------------------------------------------------------------------------------------------

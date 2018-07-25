@@ -2134,7 +2134,7 @@ void SERVER_ConnectionError( NETADDRESS_s Address, const char *pszMessage, ULONG
 	Printf( "Denied connection for %s: %s\n", Address.ToString(), pszMessage );
 
 	// Make sure the packet has a packet header. The client is expecting this!
-	NETWORK_WriteHeader( &TempBuffer.ByteStream, SVC_HEADER );
+	TempBuffer.ByteStream.WriteHeader( SVC_HEADER );
 	TempBuffer.ByteStream.WriteLong( 0 );
 
 	TempBuffer.ByteStream.WriteByte( SVCC_ERROR );

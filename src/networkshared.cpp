@@ -499,11 +499,11 @@ void NETWORK_WriteBuffer( BYTESTREAM_s *pByteStream, const void *pvBuffer, int n
 
 //*****************************************************************************
 //
-void NETWORK_WriteHeader( BYTESTREAM_s *pByteStream, int Byte )
+void BYTESTREAM_s::WriteHeader( int Byte )
 {
-	pByteStream->WriteByte( Byte );
-	pByteStream->bitBuffer = NULL;
-	pByteStream->bitShift = -1;
+	this->WriteByte( Byte );
+	this->bitBuffer = NULL;
+	this->bitShift = -1;
 }
 
 //*****************************************************************************
