@@ -508,13 +508,13 @@ void NETWORK_WriteHeader( BYTESTREAM_s *pByteStream, int Byte )
 
 //*****************************************************************************
 //
-void NETWORK_WriteBit( BYTESTREAM_s *byteStream, bool bit )
+void BYTESTREAM_s::WriteBit( bool bit )
 {
 	// Add a bit to this byte
-	byteStream->EnsureBitSpace( 1, true );
+	this->EnsureBitSpace( 1, true );
 	if ( bit )
-		*byteStream->bitBuffer |= 1 << byteStream->bitShift;
-	++byteStream->bitShift;
+		*this->bitBuffer |= 1 << this->bitShift;
+	++this->bitShift;
 }
 
 //*****************************************************************************
@@ -534,8 +534,8 @@ void NETWORK_WriteVariable( BYTESTREAM_s *byteStream, int value )
 		length = 3; // Must be sent as a long
 
 	// Write this length as two bits
-	NETWORK_WriteBit( byteStream, !!( length & 1 ) );
-	NETWORK_WriteBit( byteStream, !!( length & 2 ) );
+	byteStream->WriteBit( !!( length & 1 ) );
+	byteStream->WriteBit( !!( length & 2 ) );
 
 	// Depending on the required length, write the value.
 	switch ( length )

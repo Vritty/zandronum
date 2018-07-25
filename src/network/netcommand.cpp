@@ -194,7 +194,7 @@ void NetCommand::addFloat ( const float FloatValue )
 //
 void NetCommand::addBit( const bool value )
 {
-	NETWORK_WriteBit( &_buffer.ByteStream, value );
+	_buffer.ByteStream.WriteBit( value );
 	_buffer.ulCurrentSize = _buffer.CalcSize();
 }
 
