@@ -325,6 +325,7 @@ struct BYTESTREAM_s
 	bool ReadBit();
 	int ReadVariable();
 	int ReadShortByte( int bits );
+	void ReadBuffer( void* buffer, size_t length );
 
 	void WriteByte( int Byte );
 	void WriteShort( int Short );
@@ -391,8 +392,6 @@ struct NETBUFFER_s
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- PROTOTYPES ------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
-
-void			NETWORK_ReadBuffer( BYTESTREAM_s *byteStream, void* buffer, size_t length );
 
 void			NETWORK_StartTrafficMeasurement ( );
 int				NETWORK_StopTrafficMeasurement ( );

@@ -1200,7 +1200,7 @@ bool SERVER_PerformAuthenticationChecksum( BYTESTREAM_s *pByteStream )
 
 	// Read in the client's checksum.
 	BYTE clientChecksum[sizeof serverChecksum];
-	NETWORK_ReadBuffer( pByteStream, clientChecksum, sizeof clientChecksum );
+	pByteStream->ReadBuffer( clientChecksum, sizeof clientChecksum );
 
 	// Compare the checksums.
 	return memcmp( serverChecksum, clientChecksum, sizeof serverChecksum ) == 0;
