@@ -211,7 +211,7 @@ void NetCommand::addVariable( const int value )
 //
 void NetCommand::addShortByte ( int value, int bits )
 {
-	NETWORK_WriteShortByte( &_buffer.ByteStream, value, bits );
+	_buffer.ByteStream.WriteShortByte( value, bits );
 	_buffer.ulCurrentSize = _buffer.CalcSize();
 }
 

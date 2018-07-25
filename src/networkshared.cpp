@@ -548,7 +548,7 @@ void BYTESTREAM_s::WriteVariable( int value )
 
 //*****************************************************************************
 //
-void NETWORK_WriteShortByte( BYTESTREAM_s *byteStream, int value, int bits )
+void BYTESTREAM_s::WriteShortByte( int value, int bits )
 {
 	if (( bits < 1 ) || ( bits > 8 ))
 	{
@@ -556,11 +556,11 @@ void NETWORK_WriteShortByte( BYTESTREAM_s *byteStream, int value, int bits )
 		return;
 	}
 
-	byteStream->EnsureBitSpace( bits, true );
+	this->EnsureBitSpace( bits, true );
 	value &= (( 1 << bits ) - 1 ); // Form a mask from the bits and trim our value using it.
-	value <<= byteStream->bitShift; // Shift the value to its proper position.
-	*byteStream->bitBuffer |= value; // Add it to the byte.
-	byteStream->bitShift += bits; // Bump the shift value accordingly.
+	value <<= this->bitShift; // Shift the value to its proper position.
+	*this->bitBuffer |= value; // Add it to the byte.
+	this->bitShift += bits; // Bump the shift value accordingly.
 }
 
 //=============================================================================
