@@ -188,7 +188,7 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 	// Write version information helpful for this demo.
 	g_ByteStream.WriteByte( CLD_DEMOVERSION );
 	g_ByteStream.WriteShort( DEMOGAMEVERSION );
-	NETWORK_WriteString( &g_ByteStream, GetVersionStringRev() );
+	g_ByteStream.WriteString( GetVersionStringRev() );
 	g_ByteStream.WriteByte( BUILD_ID );
 	g_ByteStream.WriteLong( rngseed );
 
@@ -196,19 +196,19 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 	g_ByteStream.WriteByte( CLD_DEMOWADS );
 	ULONG ulWADCount = 1 + NETWORK_GetPWADList().Size( ); // 1 for IWAD
 	g_ByteStream.WriteShort( ulWADCount );
-	NETWORK_WriteString( &g_ByteStream, NETWORK_GetIWAD ( ) );
+	g_ByteStream.WriteString( NETWORK_GetIWAD ( ) );
 
 	for ( unsigned int i = 0; i < NETWORK_GetPWADList().Size(); ++i )
-		NETWORK_WriteString( &g_ByteStream, NETWORK_GetPWADList()[i].name );
+		g_ByteStream.WriteString( NETWORK_GetPWADList()[i].name );
 
 	// [Dusk] Write the network authentication string, we need it to
 	// ensure we have the right WADs loaded.
-	NETWORK_WriteString( &g_ByteStream, g_lumpsAuthenticationChecksum.GetChars( ) );
+	g_ByteStream.WriteString( g_lumpsAuthenticationChecksum.GetChars( ) );
 
 	// [Dusk] Also generate and write the map collection checksum so we can
 	// authenticate the maps.
 	NETWORK_MakeMapCollectionChecksum( );
-	NETWORK_WriteString( &g_ByteStream, g_MapCollectionChecksum.GetChars( ) );
+	g_ByteStream.WriteString( g_MapCollectionChecksum.GetChars( ) );
 
 /*
 	// Write cvars chunk.
@@ -335,17 +335,17 @@ void CLIENTDEMO_WriteUserInfo( void )
 	g_ByteStream.WriteByte( CLD_USERINFO );
 
 	// Write the player's userinfo.
-	NETWORK_WriteString( &g_ByteStream, players[consoleplayer].userinfo.GetName() );
+	g_ByteStream.WriteString( players[consoleplayer].userinfo.GetName() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetGender() );
 	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetColor() );
 	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetAimDist() );
-	NETWORK_WriteString( &g_ByteStream, skins[players[consoleplayer].userinfo.GetSkin()].name );
+	g_ByteStream.WriteString( skins[players[consoleplayer].userinfo.GetSkin()].name );
 	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetRailColor() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetHandicap() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetTicsPerUpdate() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetConnectionType() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetClientFlags() ); // [CK] List of booleans
-	NETWORK_WriteString( &g_ByteStream, PlayerClasses[players[consoleplayer].CurrentPlayerClass].Type->Meta.GetMetaString( APMETA_DisplayName ));
+	g_ByteStream.WriteString( PlayerClasses[players[consoleplayer].CurrentPlayerClass].Type->Meta.GetMetaString( APMETA_DisplayName ));
 }
 
 //*****************************************************************************
@@ -724,7 +724,7 @@ void CLIENTDEMO_WriteLocalCommand( ClientDemoLocalCommand command, const char* p
 	g_ByteStream.WriteByte( command );
 
 	if ( pszArg != NULL )
-		NETWORK_WriteString( &g_ByteStream, pszArg );
+		g_ByteStream.WriteString( pszArg );
 }
 
 //*****************************************************************************

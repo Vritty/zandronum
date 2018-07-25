@@ -1163,7 +1163,7 @@ void NETWORK_WriteName( BYTESTREAM_s* bytestream, FName name )
 	else
 	{
 		bytestream->WriteShort( -1 );
-		NETWORK_WriteString( bytestream, name );
+		bytestream->WriteString( name );
 	}
 }
 

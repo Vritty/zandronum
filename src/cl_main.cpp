@@ -841,12 +841,12 @@ void CLIENT_AttemptConnection( void )
 
 	 // Send connection signal to the server.
 	g_LocalBuffer.ByteStream.WriteByte( CLCC_ATTEMPTCONNECTION );
-	NETWORK_WriteString( &g_LocalBuffer.ByteStream, DOTVERSIONSTR );
-	NETWORK_WriteString( &g_LocalBuffer.ByteStream, cl_password );
+	g_LocalBuffer.ByteStream.WriteString( DOTVERSIONSTR );
+	g_LocalBuffer.ByteStream.WriteString( cl_password );
 	g_LocalBuffer.ByteStream.WriteByte( cl_connect_flags );
 	g_LocalBuffer.ByteStream.WriteByte( cl_hideaccount );
 	g_LocalBuffer.ByteStream.WriteByte( NETGAMEVERSION );
-	NETWORK_WriteString( &g_LocalBuffer.ByteStream, g_lumpsAuthenticationChecksum.GetChars() );
+	g_LocalBuffer.ByteStream.WriteString( g_lumpsAuthenticationChecksum.GetChars() );
 }
 
 //*****************************************************************************
@@ -6847,7 +6847,7 @@ void ServerCommands::MapAuthenticate::Execute()
 
 	// [BB] Send the name of the map we are authenticating, this allows the
 	// server to check whether we try to authenticate the correct map.
-	NETWORK_WriteString( &g_LocalBuffer.ByteStream, mapName );
+	g_LocalBuffer.ByteStream.WriteString( mapName );
 
 	// Send a checksum of our verticies, linedefs, sidedefs, and sectors.
 	CLIENT_AuthenticateLevel( mapName );

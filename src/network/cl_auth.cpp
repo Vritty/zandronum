@@ -138,7 +138,7 @@ void client_RequestLogin ( const char* Username, const char* Password )
 {
 	g_password = Password;
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SRP_USER_REQUEST_LOGIN );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, Username );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( Username );
 }
 
 //*****************************************************************************

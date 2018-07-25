@@ -213,7 +213,7 @@ void SERVER_RCON_ParseMessage( NETADDRESS_s Address, LONG lMessage, BYTESTREAM_s
 				g_MessageBuffer.ByteStream.WriteByte( list.Size() );
 
 				for ( unsigned i = 0; i < list.Size(); ++i )
-					NETWORK_WriteString( &g_MessageBuffer.ByteStream, list[i] );
+					g_MessageBuffer.ByteStream.WriteString( list[i] );
 			}
 			else
 			{
@@ -241,7 +241,7 @@ void SERVER_RCON_Print( const char *pszString )
 	{
 		g_MessageBuffer.Clear();
 		g_MessageBuffer.ByteStream.WriteByte( SVRC_MESSAGE );
-		NETWORK_WriteString( &g_MessageBuffer.ByteStream, pszString );
+		g_MessageBuffer.ByteStream.WriteString( pszString );
 		NETWORK_LaunchPacket( &g_MessageBuffer, g_AuthedClients[i].Address );
 	}
 
@@ -311,14 +311,14 @@ static void server_WriteUpdateInfo( BYTESTREAM_s *pByteStream, int iUpdateType )
 
 				fsName.Format( "%s", players[i].userinfo.GetName() );
 				V_RemoveColorCodes( fsName );
-				NETWORK_WriteString( pByteStream, fsName );
+				pByteStream->WriteString( fsName );
 			}
 		}
 		break;
 	// Update the current map.
 	case SVRCU_MAP:
 
-		NETWORK_WriteString( pByteStream, level.mapname );
+		pByteStream->WriteString( level.mapname );
 		break;
 	// Update the number of other admins.
 	case SVRCU_ADMINCOUNT:
@@ -352,7 +352,7 @@ static void server_rcon_HandleNewConnection( NETADDRESS_s Address,  int iProtoco
 	{
 		g_MessageBuffer.ByteStream.WriteByte( SVRC_OLDPROTOCOL );
 		g_MessageBuffer.ByteStream.WriteByte( PROTOCOL_VERSION );
-		NETWORK_WriteString( &g_MessageBuffer.ByteStream, DOTVERSIONSTR );
+		g_MessageBuffer.ByteStream.WriteString( DOTVERSIONSTR );
 		NETWORK_LaunchPacket( &g_MessageBuffer, Address );
 		g_BadRequestFloodQueue.addAddress( Address, gametic / 1000 );
 		return;
@@ -376,7 +376,7 @@ static void server_rcon_HandleNewConnection( NETADDRESS_s Address,  int iProtoco
 
 	g_MessageBuffer.Clear();
 	g_MessageBuffer.ByteStream.WriteByte( SVRC_SALT );
-	NETWORK_WriteString( &g_MessageBuffer.ByteStream, Candidate.szSalt );
+	g_MessageBuffer.ByteStream.WriteString( Candidate.szSalt );
 	NETWORK_LaunchPacket( &g_MessageBuffer, Address );
 }
 
@@ -432,7 +432,7 @@ static void server_rcon_HandleLogin( int iCandidateIndex, const char *pszHash )
 
 		// Tell him some info about the server.
 		g_MessageBuffer.ByteStream.WriteByte( PROTOCOL_VERSION );
-		NETWORK_WriteString( &g_MessageBuffer.ByteStream, sv_hostname.GetGenericRep( CVAR_String ).String );
+		g_MessageBuffer.ByteStream.WriteString( sv_hostname.GetGenericRep( CVAR_String ).String );
 		
 		// Send updates.
 		g_MessageBuffer.ByteStream.WriteByte( NUM_RCON_UPDATES );
@@ -442,7 +442,7 @@ static void server_rcon_HandleLogin( int iCandidateIndex, const char *pszHash )
 		// Send the console history.
 		g_MessageBuffer.ByteStream.WriteByte( g_RecentConsoleLines.size() );
 		for( std::list<FString>::iterator i = g_RecentConsoleLines.begin(); i != g_RecentConsoleLines.end(); ++i )
-			NETWORK_WriteString( &g_MessageBuffer.ByteStream, *i );
+			g_MessageBuffer.ByteStream.WriteString( *i );
 
 		NETWORK_LaunchPacket( &g_MessageBuffer, g_Candidates[iCandidateIndex].Address );
 		SERVER_RCON_UpdateInfo( SVRCU_ADMINCOUNT );

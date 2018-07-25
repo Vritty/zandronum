@@ -243,7 +243,7 @@ void SERVER_AUTH_Negotiate ( const char *Username, const unsigned int ClientSess
 	g_AuthServerBuffer.ByteStream.WriteLong( SERVER_AUTH_NEGOTIATE );
 	g_AuthServerBuffer.ByteStream.WriteByte( AUTH_PROTOCOL_VERSION );
 	g_AuthServerBuffer.ByteStream.WriteLong( ClientSessionID);
-	NETWORK_WriteString( &g_AuthServerBuffer.ByteStream, Username );
+	g_AuthServerBuffer.ByteStream.WriteString( Username );
 	NETWORK_LaunchPacket( &g_AuthServerBuffer, g_AuthServerAddress );
 }
 

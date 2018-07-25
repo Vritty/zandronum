@@ -154,7 +154,7 @@ public:
 			finishCurrentAndStartNewPacket();
 
 		_netBuffer.ByteStream.WriteByte( EntryType );
-		NETWORK_WriteString( &_netBuffer.ByteStream, BanEntry );
+		_netBuffer.ByteStream.WriteString( BanEntry );
 		_ulSizeOfPacket += ulCommandSize;
 	}
 
@@ -169,7 +169,7 @@ private:
 	void startPacket ( ) {
 		_netBuffer.Clear();
 		_netBuffer.ByteStream.WriteByte( MASTER_SERVER_BANLISTPART );
-		NETWORK_WriteString( &_netBuffer.ByteStream, _destServer.MasterBanlistVerificationString.c_str() );
+		_netBuffer.ByteStream.WriteString( _destServer.MasterBanlistVerificationString.c_str() );
 		_netBuffer.ByteStream.WriteByte( _ulPacketNum );
 		_ulSizeOfPacket = 2 + _destServer.MasterBanlistVerificationString.length();
 		++_ulPacketNum;
@@ -246,17 +246,17 @@ void MASTERSERVER_SendBanlistToServer( const SERVER_s &Server )
 		// This allows the server to verify that the list actually was sent from our master
 		// (and is not just a packet with forged source IP).
 		if ( Server.MasterBanlistVerificationString.size() )
-			NETWORK_WriteString( &g_MessageBuffer.ByteStream, Server.MasterBanlistVerificationString.c_str() );
+			g_MessageBuffer.ByteStream.WriteString( Server.MasterBanlistVerificationString.c_str() );
 
 		// Write all the bans.
 		g_MessageBuffer.ByteStream.WriteLong( g_BannedIPs.size( ));
 		for ( ULONG i = 0; i < g_BannedIPs.size( ); i++ )
-			NETWORK_WriteString( &g_MessageBuffer.ByteStream, g_BannedIPs.getEntryAsString( i, false, false, false ).c_str( ));
+			g_MessageBuffer.ByteStream.WriteString( g_BannedIPs.getEntryAsString( i, false, false, false ).c_str( ));
 
 		// Write all the exceptions.
 		g_MessageBuffer.ByteStream.WriteLong( g_BannedIPExemptions.size( ));
 		for ( ULONG i = 0; i < g_BannedIPExemptions.size( ); i++ )
-			NETWORK_WriteString( &g_MessageBuffer.ByteStream, g_BannedIPExemptions.getEntryAsString( i, false, false, false ).c_str( ));
+			g_MessageBuffer.ByteStream.WriteString( g_BannedIPExemptions.getEntryAsString( i, false, false, false ).c_str( ));
 
 		NETWORK_LaunchPacket( &g_MessageBuffer, Server.Address );
 	}
@@ -271,7 +271,7 @@ void MASTERSERVER_RequestServerVerification( const SERVER_s &Server )
 {
 	g_MessageBuffer.Clear();
 	g_MessageBuffer.ByteStream.WriteByte( MASTER_SERVER_VERIFICATION );
-	NETWORK_WriteString( &g_MessageBuffer.ByteStream, Server.MasterBanlistVerificationString.c_str() );
+	g_MessageBuffer.ByteStream.WriteString( Server.MasterBanlistVerificationString.c_str() );
 	g_MessageBuffer.ByteStream.WriteLong( Server.ServerVerificationInt );
 	NETWORK_LaunchPacket( &g_MessageBuffer, Server.Address );
 }

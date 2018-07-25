@@ -457,26 +457,26 @@ void BYTESTREAM_s::WriteFloat( float Float )
 
 //*****************************************************************************
 //
-void NETWORK_WriteString( BYTESTREAM_s *pByteStream, const char *pszString )
+void BYTESTREAM_s::WriteString( const char *pszString )
 {
 	if (( pszString ) && ( strlen( pszString ) > MAX_NETWORK_STRING ))
 	{
-		Printf( "NETWORK_WriteString: String exceeds %d characters!\n", MAX_NETWORK_STRING );
+		Printf( "BYTESTREAM_s::WriteString: String exceeds %d characters!\n", MAX_NETWORK_STRING );
 		return;
 	}
 
 #ifdef	WIN32
 	if ( pszString == NULL )
-		NETWORK_WriteBuffer( pByteStream, "", 1 );
+		NETWORK_WriteBuffer( this, "", 1 );
 	else
-		NETWORK_WriteBuffer( pByteStream, pszString, (int)( strlen( pszString )) + 1 );
+		NETWORK_WriteBuffer( this, pszString, (int)( strlen( pszString )) + 1 );
 #else
 	if ( pszString == NULL )
-		pByteStream->WriteByte( 0 );
+		this->WriteByte( 0 );
 	else
 	{
 		NETWORK_WriteBuffer( pByteStream, pszString, strlen( pszString ));
-		pByteStream->WriteByte( 0 );
+		this->WriteByte( 0 );
 	}
 #endif
 }

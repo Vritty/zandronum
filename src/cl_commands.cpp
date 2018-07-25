@@ -176,7 +176,7 @@ static void clientcommands_WriteCVarToUserinfo( FName name, FBaseCVar *cvar )
 	}
 
 	NETWORK_WriteName( &CLIENT_GetLocalBuffer( )->ByteStream, name );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, value );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( value );
 }
 
 //*****************************************************************************
@@ -279,7 +279,7 @@ void CLIENTCOMMANDS_Say( ULONG ulMode, const char *pszString )
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SAY );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( ulMode );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, chatstring );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( chatstring );
 }
 
 //*****************************************************************************
@@ -440,7 +440,7 @@ void CLIENTCOMMANDS_RequestJoin( const char *pszJoinPassword )
 
 	g_ulLastJoinTime = gametic;
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_REQUESTJOIN );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszJoinPassword );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszJoinPassword );
 
 	// [BB/Spleen] Send the gametic so that the client doesn't think it's lagging.
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( gametic );
@@ -451,7 +451,7 @@ void CLIENTCOMMANDS_RequestJoin( const char *pszJoinPassword )
 void CLIENTCOMMANDS_RequestRCON( const char *pszRCONPassword )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_REQUESTRCON );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszRCONPassword );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszRCONPassword );
 }
 
 //*****************************************************************************
@@ -459,7 +459,7 @@ void CLIENTCOMMANDS_RequestRCON( const char *pszRCONPassword )
 void CLIENTCOMMANDS_RCONCommand( const char *pszCommand )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_RCONCOMMAND );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszCommand );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszCommand );
 }
 
 //*****************************************************************************
@@ -488,7 +488,7 @@ void CLIENTCOMMANDS_ChangeTeam( const char *pszJoinPassword, LONG lDesiredTeam )
 
 	g_ulLastChangeTeamTime = gametic;
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CHANGETEAM );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszJoinPassword );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszJoinPassword );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lDesiredTeam );
 }
 
@@ -513,7 +513,7 @@ void CLIENTCOMMANDS_GenericCheat( LONG lCheat )
 void CLIENTCOMMANDS_GiveCheat( char *pszItem, LONG lAmount )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_GIVECHEAT );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszItem );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszItem );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lAmount );
 }
 
@@ -522,7 +522,7 @@ void CLIENTCOMMANDS_GiveCheat( char *pszItem, LONG lAmount )
 void CLIENTCOMMANDS_TakeCheat( const char *item, LONG amount )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_TAKECHEAT );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, item );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( item );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( amount );
 }
 
@@ -541,7 +541,7 @@ void CLIENTCOMMANDS_SummonCheat( const char *pszItem, LONG lType, const bool bSe
 	}
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( commandtype );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszItem );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszItem );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bSetAngle );
 	if ( bSetAngle )
 		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( sAngle );
@@ -574,8 +574,8 @@ void CLIENTCOMMANDS_CallVote( LONG lVoteCommand, const char *pszArgument, const 
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CALLVOTE );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lVoteCommand );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszArgument );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszReason );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszArgument );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszReason );
 }
 
 //*****************************************************************************
@@ -660,7 +660,7 @@ void CLIENTCOMMANDS_Puke ( int scriptNum, int args[4], bool always )
 
 	// [TP/BB] If we don't have a netID on file for this script, we send the name as a string.
 	if ( scriptNetID == NO_SCRIPT_NETID )
-		NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, FName( ENamedName( -scriptNum )));
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteString( FName( ENamedName( -scriptNum )));
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( argn );
 
@@ -684,7 +684,7 @@ void CLIENTCOMMANDS_MorphCheat ( const char *pszMorphClass )
 	}
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_MORPHEX );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszMorphClass );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszMorphClass );
 }
 
 //*****************************************************************************
@@ -720,7 +720,7 @@ void CLIENTCOMMANDS_WarpCheat( fixed_t x, fixed_t y )
 void CLIENTCOMMANDS_KillCheat( const char* what )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_KILLCHEAT );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, what );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( what );
 }
 
 //*****************************************************************************
@@ -757,6 +757,6 @@ void CLIENTCOMMANDS_SetVideoResolution()
 void CLIENTCOMMANDS_RCONSetCVar( const char *cvarName, const char *cvarValue )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_RCONSETCVAR );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, cvarName );
-	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, cvarValue );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( cvarName );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( cvarValue );
 }

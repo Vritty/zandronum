@@ -1145,7 +1145,7 @@ void SERVER_RequestClientToAuthenticate( ULONG ulClient )
 {
 	g_aClients[ulClient].PacketBuffer.Clear();
 	g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( SVCC_AUTHENTICATE );
-	NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, level.mapname );
+	g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( level.mapname );
 	// [CK] This lets the client start off with a reasonable gametic. In case
 	// the client would like to do any kind of prediction from gametics in the
 	// future, we can use the current gametic as the base. This also prevents
@@ -2164,14 +2164,14 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 		Printf( "Incorrect version.\n" );
 
 		// Tell the client what version this server using.
-		NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, DOTVERSIONSTR );
+		g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( DOTVERSIONSTR );
 		break;
 	case NETWORK_ERRORCODE_WRONGPROTOCOLVERSION:
 
 		Printf( "Incorrect protocol version.\n" );
 
 		// Tell the client what version this server using.
-		NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, GetVersionStringRev() );
+		g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( GetVersionStringRev() );
 		break;
 	case NETWORK_ERRORCODE_BANNED:
 		{
@@ -2187,9 +2187,9 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 			if ( masterban == false )
 			{
 				// Tell the client why he was banned, and when his ban expires.
-				NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, banReason );
+				g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( banReason );
 				g_aClients[ulClient].PacketBuffer.ByteStream.WriteLong( (LONG) SERVERBAN_GetBanList( )->getEntryExpiration( g_aClients[ulClient].Address ));
-				NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, sv_hostemail );
+				g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( sv_hostemail );
 			}
 		}
 		break;
@@ -2200,8 +2200,8 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 		for ( unsigned int i = 0; i < NETWORK_GetPWADList().Size(); ++i )
 		{
 			const NetworkPWAD& pwad = NETWORK_GetPWADList()[i];
-			NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, pwad.name );
-			NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, pwad.checksum );
+			g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( pwad.name );
+			g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( pwad.checksum );
 		}
 
 		Printf( "%s authentication failed.\n", ( ulErrorCode == NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED ) ? "Protected lump" : "Level" );
