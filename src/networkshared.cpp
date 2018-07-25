@@ -519,7 +519,7 @@ void BYTESTREAM_s::WriteBit( bool bit )
 
 //*****************************************************************************
 //
-void NETWORK_WriteVariable( BYTESTREAM_s *byteStream, int value )
+void BYTESTREAM_s::WriteVariable( int value )
 {
 	int length;
 
@@ -534,15 +534,15 @@ void NETWORK_WriteVariable( BYTESTREAM_s *byteStream, int value )
 		length = 3; // Must be sent as a long
 
 	// Write this length as two bits
-	byteStream->WriteBit( !!( length & 1 ) );
-	byteStream->WriteBit( !!( length & 2 ) );
+	this->WriteBit( !!( length & 1 ) );
+	this->WriteBit( !!( length & 2 ) );
 
 	// Depending on the required length, write the value.
 	switch ( length )
 	{
-	case 1: byteStream->WriteByte( value ); break;
-	case 2: byteStream->WriteShort( value ); break;
-	case 3: byteStream->WriteLong( value ); break;
+	case 1: this->WriteByte( value ); break;
+	case 2: this->WriteShort( value ); break;
+	case 3: this->WriteLong( value ); break;
 	}
 }
 
