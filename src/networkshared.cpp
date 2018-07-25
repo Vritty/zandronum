@@ -200,7 +200,7 @@ void BYTESTREAM_s::EnsureBitSpace( int bits, bool writing )
 		if ( writing )
 		{
 			// Not enough bits left in our current byte, we need a new one.
-			NETWORK_WriteByte( this, 0 );
+			WriteByte( 0 );
 			bitBuffer = pbStream - 1;
 		}
 		else
@@ -390,18 +390,18 @@ void NETWORK_ReadBuffer( BYTESTREAM_s *byteStream, void *buffer, size_t length )
 
 //*****************************************************************************
 //
-void NETWORK_WriteByte( BYTESTREAM_s *pByteStream, int Byte )
+void BYTESTREAM_s::WriteByte( int Byte )
 {
-	if (( pByteStream->pbStream + 1 ) > pByteStream->pbStreamEnd )
+	if (( this->pbStream + 1 ) > this->pbStreamEnd )
 	{
-		Printf( "NETWORK_WriteByte: Overflow!\n" );
+		Printf( "BYTESTREAM_s::WriteByte: Overflow!\n" );
 		return;
 	}
 
-	*pByteStream->pbStream = Byte;
+	*this->pbStream = Byte;
 
 	// Advance the pointer.
-	pByteStream->AdvancePointer ( 1, true );
+	this->AdvancePointer ( 1, true );
 }
 
 //*****************************************************************************
@@ -472,11 +472,11 @@ void NETWORK_WriteString( BYTESTREAM_s *pByteStream, const char *pszString )
 		NETWORK_WriteBuffer( pByteStream, pszString, (int)( strlen( pszString )) + 1 );
 #else
 	if ( pszString == NULL )
-		NETWORK_WriteByte( pByteStream, 0 );
+		pByteStream->WriteByte( 0 );
 	else
 	{
 		NETWORK_WriteBuffer( pByteStream, pszString, strlen( pszString ));
-		NETWORK_WriteByte( pByteStream, 0 );
+		pByteStream->WriteByte( 0 );
 	}
 #endif
 }
@@ -501,7 +501,7 @@ void NETWORK_WriteBuffer( BYTESTREAM_s *pByteStream, const void *pvBuffer, int n
 //
 void NETWORK_WriteHeader( BYTESTREAM_s *pByteStream, int Byte )
 {
-	NETWORK_WriteByte( pByteStream, Byte );
+	pByteStream->WriteByte( Byte );
 	pByteStream->bitBuffer = NULL;
 	pByteStream->bitShift = -1;
 }
@@ -540,7 +540,7 @@ void NETWORK_WriteVariable( BYTESTREAM_s *byteStream, int value )
 	// Depending on the required length, write the value.
 	switch ( length )
 	{
-	case 1: NETWORK_WriteByte( byteStream, value ); break;
+	case 1: byteStream->WriteByte( value ); break;
 	case 2: NETWORK_WriteShort( byteStream, value ); break;
 	case 3: NETWORK_WriteLong( byteStream, value ); break;
 	}
@@ -710,7 +710,7 @@ bool NETADDRESS_s::IsSet() const
 void NETADDRESS_s::WriteToStream ( BYTESTREAM_s *pByteStream, bool IncludePort ) const
 {
 	for ( int i = 0; i < 4; ++i )
-		NETWORK_WriteByte( pByteStream, abIP[i] );
+		pByteStream->WriteByte( abIP[i] );
 	if ( IncludePort )
 		NETWORK_WriteShort( pByteStream, ntohs( usPort ));
 }

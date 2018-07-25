@@ -153,7 +153,7 @@ public:
 		if ( _ulSizeOfPacket + ulCommandSize > _ulMaxPacketSize - 1 )
 			finishCurrentAndStartNewPacket();
 
-		NETWORK_WriteByte( &_netBuffer.ByteStream, EntryType );
+		_netBuffer.ByteStream.WriteByte( EntryType );
 		NETWORK_WriteString( &_netBuffer.ByteStream, BanEntry );
 		_ulSizeOfPacket += ulCommandSize;
 	}
@@ -168,15 +168,15 @@ public:
 private:
 	void startPacket ( ) {
 		_netBuffer.Clear();
-		NETWORK_WriteByte( &_netBuffer.ByteStream, MASTER_SERVER_BANLISTPART );
+		_netBuffer.ByteStream.WriteByte( MASTER_SERVER_BANLISTPART );
 		NETWORK_WriteString( &_netBuffer.ByteStream, _destServer.MasterBanlistVerificationString.c_str() );
-		NETWORK_WriteByte( &_netBuffer.ByteStream, _ulPacketNum );
+		_netBuffer.ByteStream.WriteByte( _ulPacketNum );
 		_ulSizeOfPacket = 2 + _destServer.MasterBanlistVerificationString.length();
 		++_ulPacketNum;
 	}
 
 	void finishAndLaunchPacket ( const bool bIsFinal ) {
-		NETWORK_WriteByte( &_netBuffer.ByteStream, bIsFinal ? MSB_ENDBANLIST : MSB_ENDBANLISTPART );
+		_netBuffer.ByteStream.WriteByte( bIsFinal ? MSB_ENDBANLIST : MSB_ENDBANLISTPART );
 		NETWORK_LaunchPacket( &_netBuffer, _destServer.Address );
 	}
 
@@ -241,7 +241,7 @@ void MASTERSERVER_SendBanlistToServer( const SERVER_s &Server )
 	else
 	{
 		g_MessageBuffer.Clear();
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, MASTER_SERVER_BANLIST );
+		g_MessageBuffer.ByteStream.WriteByte( MASTER_SERVER_BANLIST );
 		// [BB] If the server sent us a verification string, send it along with the ban list.
 		// This allows the server to verify that the list actually was sent from our master
 		// (and is not just a packet with forged source IP).
@@ -270,7 +270,7 @@ void MASTERSERVER_SendBanlistToServer( const SERVER_s &Server )
 void MASTERSERVER_RequestServerVerification( const SERVER_s &Server )
 {
 	g_MessageBuffer.Clear();
-	NETWORK_WriteByte( &g_MessageBuffer.ByteStream, MASTER_SERVER_VERIFICATION );
+	g_MessageBuffer.ByteStream.WriteByte( MASTER_SERVER_VERIFICATION );
 	NETWORK_WriteString( &g_MessageBuffer.ByteStream, Server.MasterBanlistVerificationString.c_str() );
 	NETWORK_WriteLong( &g_MessageBuffer.ByteStream, Server.ServerVerificationInt );
 	NETWORK_LaunchPacket( &g_MessageBuffer, Server.Address );
@@ -280,7 +280,7 @@ void MASTERSERVER_RequestServerVerification( const SERVER_s &Server )
 void MASTERSERVER_SendServerIPToLauncher( const NETADDRESS_s &Address, BYTESTREAM_s *pByteStream )
 {
 	// Tell the launcher the IP of this server on the list.
-	NETWORK_WriteByte( pByteStream, MSC_SERVER );
+	pByteStream->WriteByte( MSC_SERVER );
 	Address.WriteToStream ( pByteStream );
 }
 
@@ -302,7 +302,7 @@ void MASTERSERVER_SendServerIPBlockToLauncher( const NETADDRESS_s &Address, cons
 		return;
 
 	// Tell the launcher the IP and all ports of the servers on that IP.
-	NETWORK_WriteByte( pByteStream, PortList.size() );
+	pByteStream->WriteByte( PortList.size() );
 	Address.WriteToStream ( pByteStream, false );
 	for ( unsigned int i = 0; i < PortList.size(); ++i )
 		NETWORK_WriteShort( pByteStream, ntohs( PortList[i] ) );
@@ -604,7 +604,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 				}
 
 				// Tell the launcher that we're done sending servers.
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, MSC_ENDSERVERLIST );
+				g_MessageBuffer.ByteStream.WriteByte( MSC_ENDSERVERLIST );
 
 				// Send the launcher our packet.
 				NETWORK_LaunchPacket( &g_MessageBuffer, AddressFrom );
@@ -618,8 +618,8 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 				std::set<SERVER_s, SERVERCompFunc>::const_iterator it = g_Servers.begin();
 
 				NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_BEGINSERVERLISTPART );
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, ulPacketNum );
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, MSC_SERVERBLOCK );
+				g_MessageBuffer.ByteStream.WriteByte( ulPacketNum );
+				g_MessageBuffer.ByteStream.WriteByte( MSC_SERVERBLOCK );
 				unsigned long ulSizeOfPacket = 6; // 4 (MSC_BEGINSERVERLISTPART) + 1 (0) + 1 (MSC_SERVERBLOCK)
 
 				while ( it != g_Servers.end() )
@@ -644,22 +644,22 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 					if ( ulSizeOfPacket + ulServerBlockNetSize > ulMaxPacketSize - 1 )
 					{
 						// [BB] ... close the current packet and start a new one.
-						NETWORK_WriteByte( &g_MessageBuffer.ByteStream, 0 ); // [BB] Terminate MSC_SERVERBLOCK by sending 0 ports.
-						NETWORK_WriteByte( &g_MessageBuffer.ByteStream, MSC_ENDSERVERLISTPART );
+						g_MessageBuffer.ByteStream.WriteByte( 0 ); // [BB] Terminate MSC_SERVERBLOCK by sending 0 ports.
+						g_MessageBuffer.ByteStream.WriteByte( MSC_ENDSERVERLISTPART );
 						NETWORK_LaunchPacket( &g_MessageBuffer, AddressFrom );
 
 						g_MessageBuffer.Clear();
 						++ulPacketNum;
 						ulSizeOfPacket = 5;
 						NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_BEGINSERVERLISTPART );
-						NETWORK_WriteByte( &g_MessageBuffer.ByteStream, ulPacketNum );
-						NETWORK_WriteByte( &g_MessageBuffer.ByteStream, MSC_SERVERBLOCK );
+						g_MessageBuffer.ByteStream.WriteByte( ulPacketNum );
+						g_MessageBuffer.ByteStream.WriteByte( MSC_SERVERBLOCK );
 					}
 					ulSizeOfPacket += ulServerBlockNetSize;
 					MASTERSERVER_SendServerIPBlockToLauncher ( serverAddress, serverPortList, &g_MessageBuffer.ByteStream );
 				}
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, 0 ); // [BB] Terminate MSC_SERVERBLOCK by sending 0 ports.
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, MSC_ENDSERVERLIST );
+				g_MessageBuffer.ByteStream.WriteByte( 0 ); // [BB] Terminate MSC_SERVERBLOCK by sending 0 ports.
+				g_MessageBuffer.ByteStream.WriteByte( MSC_ENDSERVERLIST );
 				NETWORK_LaunchPacket( &g_MessageBuffer, AddressFrom );
 				return;
 			}

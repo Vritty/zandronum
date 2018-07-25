@@ -111,7 +111,7 @@ void DOMINATION_SendState(ULONG ulPlayerExtra)
 	for(unsigned int i = 0;i < NumPoints;i++)
 	{
 		//one byte should be enough to hold the value of the team.
-		NETWORK_WriteByte(&SERVER_GetClient( ulPlayerExtra )->PacketBuffer.ByteStream, PointOwners[i]);
+		SERVER_GetClient( ulPlayerExtra )->PacketBuffer.ByteStream.WriteByte(PointOwners[i]);
 	}
 }
 

@@ -241,7 +241,7 @@ void SERVER_AUTH_Negotiate ( const char *Username, const unsigned int ClientSess
 {
 	g_AuthServerBuffer.Clear();
 	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, SERVER_AUTH_NEGOTIATE );
-	NETWORK_WriteByte( &g_AuthServerBuffer.ByteStream, AUTH_PROTOCOL_VERSION );
+	g_AuthServerBuffer.ByteStream.WriteByte( AUTH_PROTOCOL_VERSION );
 	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, ClientSessionID);
 	NETWORK_WriteString( &g_AuthServerBuffer.ByteStream, Username );
 	NETWORK_LaunchPacket( &g_AuthServerBuffer, g_AuthServerAddress );
@@ -256,7 +256,7 @@ void SERVER_AUTH_SRPMessage ( const int MagicNumber, const int SessionID, const 
 	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, SessionID );
 	NETWORK_WriteShort( &g_AuthServerBuffer.ByteStream, Bytes.Size() );
 	for ( unsigned int i = 0; i < Bytes.Size(); ++i )
-		NETWORK_WriteByte( &g_AuthServerBuffer.ByteStream, Bytes[i] );
+		g_AuthServerBuffer.ByteStream.WriteByte( Bytes[i] );
 	NETWORK_LaunchPacket( &g_AuthServerBuffer, g_AuthServerAddress );
 }
 

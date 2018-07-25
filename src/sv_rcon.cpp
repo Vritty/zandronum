@@ -209,15 +209,15 @@ void SERVER_RCON_ParseMessage( NETADDRESS_s Address, LONG lMessage, BYTESTREAM_s
 			// [TP] Let's not send too many of these though
 			if ( list.Size() < 50 )
 			{
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_TABCOMPLETE );
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, list.Size() );
+				g_MessageBuffer.ByteStream.WriteByte( SVRC_TABCOMPLETE );
+				g_MessageBuffer.ByteStream.WriteByte( list.Size() );
 
 				for ( unsigned i = 0; i < list.Size(); ++i )
 					NETWORK_WriteString( &g_MessageBuffer.ByteStream, list[i] );
 			}
 			else
 			{
-				NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_TOOMANYTABCOMPLETES );
+				g_MessageBuffer.ByteStream.WriteByte( SVRC_TOOMANYTABCOMPLETES );
 				NETWORK_WriteShort( &g_MessageBuffer.ByteStream, list.Size() );
 			}
 
@@ -240,7 +240,7 @@ void SERVER_RCON_Print( const char *pszString )
 	for ( unsigned int i = 0; i < g_AuthedClients.Size( ); i++ )
 	{
 		g_MessageBuffer.Clear();
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_MESSAGE );
+		g_MessageBuffer.ByteStream.WriteByte( SVRC_MESSAGE );
 		NETWORK_WriteString( &g_MessageBuffer.ByteStream, pszString );
 		NETWORK_LaunchPacket( &g_MessageBuffer, g_AuthedClients[i].Address );
 	}
@@ -279,7 +279,7 @@ void SERVER_RCON_UpdateInfo( int iUpdateType )
 	for ( unsigned int i = 0; i < g_AuthedClients.Size( ); i++ )
 	{	
 		g_MessageBuffer.Clear();
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_UPDATE );		
+		g_MessageBuffer.ByteStream.WriteByte( SVRC_UPDATE );		
 		server_WriteUpdateInfo( &g_MessageBuffer.ByteStream, iUpdateType );
 		NETWORK_LaunchPacket( &g_MessageBuffer, g_AuthedClients[i].Address );
 	}
@@ -295,14 +295,14 @@ void SERVER_RCON_UpdateInfo( int iUpdateType )
 
 static void server_WriteUpdateInfo( BYTESTREAM_s *pByteStream, int iUpdateType )
 {
-	NETWORK_WriteByte( &g_MessageBuffer.ByteStream, iUpdateType );
+	g_MessageBuffer.ByteStream.WriteByte( iUpdateType );
 
 	switch ( iUpdateType )
 	{
 	// Update the player data.
 	case SVRCU_PLAYERDATA:
 
-		NETWORK_WriteByte( pByteStream, SERVER_CountPlayers( true ));
+		pByteStream->WriteByte( SERVER_CountPlayers( true ));
 		for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
 		{
 			if ( playeringame[i] )
@@ -323,7 +323,7 @@ static void server_WriteUpdateInfo( BYTESTREAM_s *pByteStream, int iUpdateType )
 	// Update the number of other admins.
 	case SVRCU_ADMINCOUNT:
 
-		NETWORK_WriteByte( pByteStream, g_AuthedClients.Size() - 1 );
+		pByteStream->WriteByte( g_AuthedClients.Size() - 1 );
 		break;
 	}
 }
@@ -341,7 +341,7 @@ static void server_rcon_HandleNewConnection( NETADDRESS_s Address,  int iProtoco
 	// Banned client? Notify him, ignore him, and get out of here.
 	if ( SERVERBAN_IsIPBanned( Address ))
 	{
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_BANNED );
+		g_MessageBuffer.ByteStream.WriteByte( SVRC_BANNED );
 		NETWORK_LaunchPacket( &g_MessageBuffer, Address );
 		g_BadRequestFloodQueue.addAddress( Address, gametic / 1000 );
 		return;
@@ -350,8 +350,8 @@ static void server_rcon_HandleNewConnection( NETADDRESS_s Address,  int iProtoco
 	// Old protocol version? Notify, ignore, and quit.
 	if ( iProtocolVersion < MIN_PROTOCOL_VERSION )
 	{
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_OLDPROTOCOL );
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, PROTOCOL_VERSION );
+		g_MessageBuffer.ByteStream.WriteByte( SVRC_OLDPROTOCOL );
+		g_MessageBuffer.ByteStream.WriteByte( PROTOCOL_VERSION );
 		NETWORK_WriteString( &g_MessageBuffer.ByteStream, DOTVERSIONSTR );
 		NETWORK_LaunchPacket( &g_MessageBuffer, Address );
 		g_BadRequestFloodQueue.addAddress( Address, gametic / 1000 );
@@ -375,7 +375,7 @@ static void server_rcon_HandleNewConnection( NETADDRESS_s Address,  int iProtoco
 	g_Candidates.Push( Candidate );
 
 	g_MessageBuffer.Clear();
-	NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_SALT );
+	g_MessageBuffer.ByteStream.WriteByte( SVRC_SALT );
 	NETWORK_WriteString( &g_MessageBuffer.ByteStream, Candidate.szSalt );
 	NETWORK_LaunchPacket( &g_MessageBuffer, Address );
 }
@@ -406,7 +406,7 @@ static void server_rcon_HandleLogin( int iCandidateIndex, const char *pszHash )
 	if ( fsCorrectHash.Compare( pszHash ) || ( strlen( sv_rconpassword.GetGenericRep(CVAR_String).String ) == 0 ) )
 	{
 		// Wrong password.
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_INVALIDPASSWORD );
+		g_MessageBuffer.ByteStream.WriteByte( SVRC_INVALIDPASSWORD );
 		NETWORK_LaunchPacket( &g_MessageBuffer, g_Candidates[iCandidateIndex].Address ); // [RC] Note: Be sure to finish any packets before calling Printf(). Otherwise SERVER_RCON_Print will clear your buffer.
 
 		// To prevent mass password flooding, ignore the IP for a few seconds.
@@ -428,19 +428,19 @@ static void server_rcon_HandleLogin( int iCandidateIndex, const char *pszHash )
 		g_AuthedClients.Push( Client );
 
 		g_MessageBuffer.Clear();
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, SVRC_LOGGEDIN );
+		g_MessageBuffer.ByteStream.WriteByte( SVRC_LOGGEDIN );
 
 		// Tell him some info about the server.
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, PROTOCOL_VERSION );
+		g_MessageBuffer.ByteStream.WriteByte( PROTOCOL_VERSION );
 		NETWORK_WriteString( &g_MessageBuffer.ByteStream, sv_hostname.GetGenericRep( CVAR_String ).String );
 		
 		// Send updates.
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, NUM_RCON_UPDATES );
+		g_MessageBuffer.ByteStream.WriteByte( NUM_RCON_UPDATES );
 		for ( int i = 0; i < NUM_RCON_UPDATES; i++ )
 			server_WriteUpdateInfo( &g_MessageBuffer.ByteStream, i );
 
 		// Send the console history.
-		NETWORK_WriteByte( &g_MessageBuffer.ByteStream, g_RecentConsoleLines.size() );
+		g_MessageBuffer.ByteStream.WriteByte( g_RecentConsoleLines.size() );
 		for( std::list<FString>::iterator i = g_RecentConsoleLines.begin(); i != g_RecentConsoleLines.end(); ++i )
 			NETWORK_WriteString( &g_MessageBuffer.ByteStream, *i );
 

@@ -840,12 +840,12 @@ void CLIENT_AttemptConnection( void )
 	CLIENT_SetLatestServerGametic( 0 );
 
 	 // Send connection signal to the server.
-	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, CLCC_ATTEMPTCONNECTION );
+	g_LocalBuffer.ByteStream.WriteByte( CLCC_ATTEMPTCONNECTION );
 	NETWORK_WriteString( &g_LocalBuffer.ByteStream, DOTVERSIONSTR );
 	NETWORK_WriteString( &g_LocalBuffer.ByteStream, cl_password );
-	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, cl_connect_flags );
-	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, cl_hideaccount );
-	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, NETGAMEVERSION );
+	g_LocalBuffer.ByteStream.WriteByte( cl_connect_flags );
+	g_LocalBuffer.ByteStream.WriteByte( cl_hideaccount );
+	g_LocalBuffer.ByteStream.WriteByte( NETGAMEVERSION );
 	NETWORK_WriteString( &g_LocalBuffer.ByteStream, g_lumpsAuthenticationChecksum.GetChars() );
 }
 
@@ -865,7 +865,7 @@ void CLIENT_AttemptAuthentication( char *pszMapName )
 	memset( g_lPacketSequence, -1, sizeof(g_lPacketSequence) );
 	g_bPacketNum = 0;
 
-	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, CLCC_ATTEMPTAUTHENTICATION );
+	g_LocalBuffer.ByteStream.WriteByte( CLCC_ATTEMPTAUTHENTICATION );
 
 	// Send a checksum of our verticies, linedefs, sidedefs, and sectors.
 	CLIENT_AuthenticateLevel( pszMapName );
@@ -891,7 +891,7 @@ void CLIENT_RequestSnapshot( void )
 	g_bPacketNum = 0;
 
 	// Send them a message to get data from the server, along with our userinfo.
-	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, CLCC_REQUESTSNAPSHOT );
+	g_LocalBuffer.ByteStream.WriteByte( CLCC_REQUESTSNAPSHOT );
 	CLIENTCOMMANDS_SendAllUserInfo();
 
 	// [TP] Send video resolution for ACS scripting support.
@@ -1124,7 +1124,7 @@ void CLIENT_CheckForMissingPackets( void )
 			return;
 		}
 
-		NETWORK_WriteByte( &g_LocalBuffer.ByteStream, CLC_MISSINGPACKET );
+		g_LocalBuffer.ByteStream.WriteByte( CLC_MISSINGPACKET );
 
 		// Now, go through and figure out what packets we're missing. Request these from the server.
 		for ( lIdx = g_lLastParsedSequence + 1; lIdx <= g_lHighestReceivedSequence - 1; lIdx++ )
@@ -2272,7 +2272,7 @@ void CLIENT_QuitNetworkGame( const char *pszString )
 	// [BB] But only if we are actually a client. Otherwise we can't send the signal anywhere.
 	if ( ( g_ConnectionState != CTS_DISCONNECTED ) && ( NETWORK_GetState() == NETSTATE_CLIENT ) )
 	{
-		NETWORK_WriteByte( &g_LocalBuffer.ByteStream, CLC_QUIT );
+		g_LocalBuffer.ByteStream.WriteByte( CLC_QUIT );
 
 		// Send the server our packet.
 		CLIENT_SendServerPacket( );
@@ -6843,7 +6843,7 @@ void ServerCommands::MapAuthenticate::Execute()
 	if ( CLIENTDEMO_IsPlaying( ))
 		return;
 
-	NETWORK_WriteByte( &g_LocalBuffer.ByteStream, CLC_AUTHENTICATELEVEL );
+	g_LocalBuffer.ByteStream.WriteByte( CLC_AUTHENTICATELEVEL );
 
 	// [BB] Send the name of the map we are authenticating, this allows the
 	// server to check whether we try to authenticate the correct map.

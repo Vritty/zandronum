@@ -182,18 +182,18 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 	NETWORK_WriteLong( &g_ByteStream, g_demoSignature );
 
 	// Write the length of the demo. Of course, we can't complete this quite yet!
-	NETWORK_WriteByte( &g_ByteStream, CLD_DEMOLENGTH );
+	g_ByteStream.WriteByte( CLD_DEMOLENGTH );
 	g_ByteStream.pbStream += 4;
 
 	// Write version information helpful for this demo.
-	NETWORK_WriteByte( &g_ByteStream, CLD_DEMOVERSION );
+	g_ByteStream.WriteByte( CLD_DEMOVERSION );
 	NETWORK_WriteShort( &g_ByteStream, DEMOGAMEVERSION );
 	NETWORK_WriteString( &g_ByteStream, GetVersionStringRev() );
-	NETWORK_WriteByte( &g_ByteStream, BUILD_ID );
+	g_ByteStream.WriteByte( BUILD_ID );
 	NETWORK_WriteLong( &g_ByteStream, rngseed );
 
 	// [Dusk] Write the amount of WADs and their names, incl. IWAD
-	NETWORK_WriteByte( &g_ByteStream, CLD_DEMOWADS );
+	g_ByteStream.WriteByte( CLD_DEMOWADS );
 	ULONG ulWADCount = 1 + NETWORK_GetPWADList().Size( ); // 1 for IWAD
 	NETWORK_WriteShort( &g_ByteStream, ulWADCount );
 	NETWORK_WriteString( &g_ByteStream, NETWORK_GetIWAD ( ) );
@@ -221,7 +221,7 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 
 	// Indicate that we're done with header information, and are ready
 	// to move onto the body of the demo.
-	NETWORK_WriteByte( &g_ByteStream, CLD_BODYSTART );
+	g_ByteStream.WriteByte( CLD_BODYSTART );
 
 	CLIENT_SetServerLagging( false );
 }
@@ -332,19 +332,19 @@ void CLIENTDEMO_WriteUserInfo( void )
 		(ULONG)strlen( PlayerClasses[players[consoleplayer].CurrentPlayerClass].Type->Meta.GetMetaString( APMETA_DisplayName )));
 
 	// Write the header.
-	NETWORK_WriteByte( &g_ByteStream, CLD_USERINFO );
+	g_ByteStream.WriteByte( CLD_USERINFO );
 
 	// Write the player's userinfo.
 	NETWORK_WriteString( &g_ByteStream, players[consoleplayer].userinfo.GetName() );
-	NETWORK_WriteByte( &g_ByteStream, players[consoleplayer].userinfo.GetGender() );
+	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetGender() );
 	NETWORK_WriteLong( &g_ByteStream, players[consoleplayer].userinfo.GetColor() );
 	NETWORK_WriteLong( &g_ByteStream, players[consoleplayer].userinfo.GetAimDist() );
 	NETWORK_WriteString( &g_ByteStream, skins[players[consoleplayer].userinfo.GetSkin()].name );
 	NETWORK_WriteLong( &g_ByteStream, players[consoleplayer].userinfo.GetRailColor() );
-	NETWORK_WriteByte( &g_ByteStream, players[consoleplayer].userinfo.GetHandicap() );
-	NETWORK_WriteByte( &g_ByteStream, players[consoleplayer].userinfo.GetTicsPerUpdate() );
-	NETWORK_WriteByte( &g_ByteStream, players[consoleplayer].userinfo.GetConnectionType() );
-	NETWORK_WriteByte( &g_ByteStream, players[consoleplayer].userinfo.GetClientFlags() ); // [CK] List of booleans
+	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetHandicap() );
+	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetTicsPerUpdate() );
+	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetConnectionType() );
+	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetClientFlags() ); // [CK] List of booleans
 	NETWORK_WriteString( &g_ByteStream, PlayerClasses[players[consoleplayer].CurrentPlayerClass].Type->Meta.GetMetaString( APMETA_DisplayName ));
 }
 
@@ -393,13 +393,13 @@ void CLIENTDEMO_WriteTiccmd( ticcmd_t *pCmd )
 	clientdemo_CheckDemoBuffer( 14 );
 
 	// Write the header.
-	NETWORK_WriteByte( &g_ByteStream, CLD_TICCMD );
+	g_ByteStream.WriteByte( CLD_TICCMD );
 
 	// Write the contents of the ticcmd.
 	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.yaw );
 	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.roll );
 	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.pitch );
-	NETWORK_WriteByte( &g_ByteStream, pCmd->ucmd.buttons );
+	g_ByteStream.WriteByte( pCmd->ucmd.buttons );
 	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.upmove );
 	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.forwardmove );
 	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.sidemove );
@@ -587,7 +587,7 @@ void CLIENTDEMO_FinishRecording( void )
 	BYTESTREAM_s	ByteStream;
 
 	// Write our header.
-	NETWORK_WriteByte( &g_ByteStream, CLD_DEMOEND );
+	g_ByteStream.WriteByte( CLD_DEMOEND );
 
 	// Go back real quick and write the length of this demo.
 	lDemoLength = g_ByteStream.pbStream - g_pbDemoBuffer;
@@ -720,8 +720,8 @@ void CLIENTDEMO_WriteLocalCommand( ClientDemoLocalCommand command, const char* p
 	else
 		clientdemo_CheckDemoBuffer( 2 );
 
-	NETWORK_WriteByte( &g_ByteStream, CLD_LOCALCOMMAND );
-	NETWORK_WriteByte( &g_ByteStream, command );
+	g_ByteStream.WriteByte( CLD_LOCALCOMMAND );
+	g_ByteStream.WriteByte( command );
 
 	if ( pszArg != NULL )
 		NETWORK_WriteString( &g_ByteStream, pszArg );
@@ -734,9 +734,9 @@ void CLIENTDEMO_WriteLocalCommand( ClientDemoLocalCommand command, const char* p
 void CLIENTDEMO_WriteCheat ( ECheatCommand cheat )
 {
 	clientdemo_CheckDemoBuffer( 3 );
-	NETWORK_WriteByte( &g_ByteStream, CLD_LOCALCOMMAND );
-	NETWORK_WriteByte( &g_ByteStream, CLD_LCMD_CHEAT );
-	NETWORK_WriteByte( &g_ByteStream, cheat );
+	g_ByteStream.WriteByte( CLD_LOCALCOMMAND );
+	g_ByteStream.WriteByte( CLD_LCMD_CHEAT );
+	g_ByteStream.WriteByte( cheat );
 }
 
 //*****************************************************************************
@@ -744,8 +744,8 @@ void CLIENTDEMO_WriteCheat ( ECheatCommand cheat )
 void CLIENTDEMO_WriteWarpCheat ( fixed_t x, fixed_t y )
 {
 	clientdemo_CheckDemoBuffer( 10 );
-	NETWORK_WriteByte( &g_ByteStream, CLD_LOCALCOMMAND );
-	NETWORK_WriteByte( &g_ByteStream, CLD_LCMD_WARPCHEAT );
+	g_ByteStream.WriteByte( CLD_LOCALCOMMAND );
+	g_ByteStream.WriteByte( CLD_LCMD_WARPCHEAT );
 	NETWORK_WriteLong( &g_ByteStream, x );
 	NETWORK_WriteLong( &g_ByteStream, y );
 }

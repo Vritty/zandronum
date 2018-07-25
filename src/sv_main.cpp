@@ -811,7 +811,7 @@ void SERVER_SendClientPacket( ULONG ulClient, bool bReliable )
 	TempBuffer.ByteStream.pbStreamEnd = TempBuffer.ByteStream.pbStream + TempBuffer.ulMaxSize;
 
 	// Write the header to our temporary buffer.
-	NETWORK_WriteByte( &TempBuffer.ByteStream, SVC_UNRELIABLEPACKET );
+	TempBuffer.ByteStream.WriteByte( SVC_UNRELIABLEPACKET );
 
 	// Write the body of the message to our temporary buffer.
 	pClient->UnreliablePacketBuffer.WriteTo ( TempBuffer.ByteStream );
@@ -1144,7 +1144,7 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 void SERVER_RequestClientToAuthenticate( ULONG ulClient )
 {
 	g_aClients[ulClient].PacketBuffer.Clear();
-	NETWORK_WriteByte( &g_aClients[ulClient].PacketBuffer.ByteStream, SVCC_AUTHENTICATE );
+	g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( SVCC_AUTHENTICATE );
 	NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, level.mapname );
 	// [CK] This lets the client start off with a reasonable gametic. In case
 	// the client would like to do any kind of prediction from gametics in the
@@ -1177,9 +1177,9 @@ void SERVER_AuthenticateClientLevel( BYTESTREAM_s *pByteStream )
 
 	// Tell the client his level was authenticated.
 	g_aClients[g_lCurrentClient].PacketBuffer.Clear();
-	NETWORK_WriteByte( &g_aClients[g_lCurrentClient].PacketBuffer.ByteStream, SVCC_MAPLOAD );
+	g_aClients[g_lCurrentClient].PacketBuffer.ByteStream.WriteByte( SVCC_MAPLOAD );
 	// [BB] Also tell him the game mode, otherwise the client can't decide whether 3D floors should be spawned or not.
-	NETWORK_WriteByte( &g_aClients[g_lCurrentClient].PacketBuffer.ByteStream, GAMEMODE_GetCurrentMode( ) );
+	g_aClients[g_lCurrentClient].PacketBuffer.ByteStream.WriteByte( GAMEMODE_GetCurrentMode( ) );
 	
 	// Send the packet off.
 	SERVER_SendClientPacket( g_lCurrentClient, true );
@@ -2137,8 +2137,8 @@ void SERVER_ConnectionError( NETADDRESS_s Address, const char *pszMessage, ULONG
 	NETWORK_WriteHeader( &TempBuffer.ByteStream, SVC_HEADER );
 	NETWORK_WriteLong( &TempBuffer.ByteStream, 0 );
 
-	NETWORK_WriteByte( &TempBuffer.ByteStream, SVCC_ERROR );
-	NETWORK_WriteByte( &TempBuffer.ByteStream, ulErrorCode );
+	TempBuffer.ByteStream.WriteByte( SVCC_ERROR );
+	TempBuffer.ByteStream.WriteByte( ulErrorCode );
 
 //	NETWORK_LaunchPacket( TempBuffer, Address, true );
 	NETWORK_LaunchPacket( &TempBuffer, Address );
@@ -2149,8 +2149,8 @@ void SERVER_ConnectionError( NETADDRESS_s Address, const char *pszMessage, ULONG
 //
 void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 {
-	NETWORK_WriteByte( &g_aClients[ulClient].PacketBuffer.ByteStream, SVCC_ERROR );
-	NETWORK_WriteByte( &g_aClients[ulClient].PacketBuffer.ByteStream, ulErrorCode );
+	g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( SVCC_ERROR );
+	g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( ulErrorCode );
 
 	// Display error message locally in the console.
 	switch ( ulErrorCode )
@@ -2182,7 +2182,7 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 				Printf( "Client banned.\n" );
 
 			bool masterban = SERVERBAN_IsIPMasterBanned( g_aClients[ulClient].Address );
-			NETWORK_WriteByte( &g_aClients[ulClient].PacketBuffer.ByteStream, masterban );
+			g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( masterban );
 
 			if ( masterban == false )
 			{
@@ -2196,7 +2196,7 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 	case NETWORK_ERRORCODE_AUTHENTICATIONFAILED:
 	case NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED:
 
-		NETWORK_WriteByte( &g_aClients[ulClient].PacketBuffer.ByteStream, NETWORK_GetPWADList().Size() );
+		g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( NETWORK_GetPWADList().Size() );
 		for ( unsigned int i = 0; i < NETWORK_GetPWADList().Size(); ++i )
 		{
 			const NetworkPWAD& pwad = NETWORK_GetPWADList()[i];
@@ -7062,9 +7062,9 @@ CCMD( trytocrashclient )
 				continue;
 
 			SERVER_CheckClientBuffer( ulIdx, 256, true );
-			NETWORK_WriteByte( &g_aClients[ulIdx].PacketBuffer.ByteStream, M_Random( ) % NUM_SERVER_COMMANDS );
+			g_aClients[ulIdx].PacketBuffer.ByteStream.WriteByte( M_Random( ) % NUM_SERVER_COMMANDS );
 			for ( ulIdx2 = 0; ulIdx2 < 512; ulIdx2++ )
-				NETWORK_WriteByte( &g_aClients[ulIdx].PacketBuffer.ByteStream, M_Random( ));
+				g_aClients[ulIdx].PacketBuffer.ByteStream.WriteByte( M_Random( ));
 
 		}
 	}

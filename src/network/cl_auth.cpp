@@ -137,7 +137,7 @@ bool client_RetrieveCredentials ( const FString &Username, FString &Password )
 void client_RequestLogin ( const char* Username, const char* Password )
 {
 	g_password = Password;
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SRP_USER_REQUEST_LOGIN );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SRP_USER_REQUEST_LOGIN );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, Username );
 }
 
@@ -156,10 +156,10 @@ void client_SRPStartAuthentication ( const char *Username )
 	if ( strcmp( authUsername, Username ) != 0 )
 		Printf ( "Username problem when calling srp_user_start_authentication.\n" );
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SRP_USER_START_AUTHENTICATION );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SRP_USER_START_AUTHENTICATION );
 	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, lenA );
 	for ( int i = 0; i < lenA; ++i )
-		NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, bytesA[i] );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bytesA[i] );
 }
 
 //*****************************************************************************
@@ -174,10 +174,10 @@ void client_SRPUserProcessChallenge ( TArray<unsigned char> &Salt, TArray<unsign
 		Printf ( "User SRP-6a safety check violation!\n" );
 	else
 	{
-		NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SRP_USER_PROCESS_CHALLENGE );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SRP_USER_PROCESS_CHALLENGE );
 		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, lenM );
 		for ( int i = 0; i < lenM; ++i )
-			NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, bytesM[i] );
+			CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bytesM[i] );
 	}
 }
 

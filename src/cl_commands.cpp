@@ -172,7 +172,7 @@ static void clientcommands_WriteCVarToUserinfo( FName name, FBaseCVar *cvar )
 		// [BB] Terminate the current CLC_USERINFO command.
 		NETWORK_WriteName( &CLIENT_GetLocalBuffer( )->ByteStream, NAME_None );
 		CLIENT_SendServerPacket();
-		NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_USERINFO );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_USERINFO );
 	}
 
 	NETWORK_WriteName( &CLIENT_GetLocalBuffer( )->ByteStream, name );
@@ -226,7 +226,7 @@ void CLIENTCOMMANDS_UserInfo( const UserInfoChanges &cvars )
 	if ( sendUserinfo == false )
 		return;
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_USERINFO );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_USERINFO );
 
 	for ( UserInfoChanges::const_iterator iterator = cvars.begin(); iterator != cvars.end(); ++iterator )
 	{
@@ -243,28 +243,28 @@ void CLIENTCOMMANDS_UserInfo( const UserInfoChanges &cvars )
 //
 void CLIENTCOMMANDS_StartChat( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_STARTCHAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_STARTCHAT );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_EndChat( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_ENDCHAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_ENDCHAT );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_EnterConsole( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_ENTERCONSOLE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_ENTERCONSOLE );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_ExitConsole( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_EXITCONSOLE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_EXITCONSOLE );
 }
 
 //*****************************************************************************
@@ -277,8 +277,8 @@ void CLIENTCOMMANDS_Say( ULONG ulMode, const char *pszString )
 	if ( chatstring.Len() > MAX_CHATBUFFER_LENGTH )
 		chatstring = chatstring.Left( MAX_CHATBUFFER_LENGTH );
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SAY );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, ulMode );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SAY );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( ulMode );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, chatstring );
 }
 
@@ -286,9 +286,9 @@ void CLIENTCOMMANDS_Say( ULONG ulMode, const char *pszString )
 //
 void CLIENTCOMMANDS_Ignore( ULONG ulPlayer, bool bIgnore, LONG lTicks )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_IGNORE );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, ulPlayer );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, bIgnore );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_IGNORE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( ulPlayer );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bIgnore );
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, lTicks );
 }
 
@@ -299,7 +299,7 @@ void CLIENTCOMMANDS_ClientMove( void )
 	ticcmd_t	*pCmd;
 	ULONG		ulBits;
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_CLIENTMOVE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, gametic );
 	// [CK] Send the server the latest known server-gametic
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, CLIENT_GetLatestServerGametic( ) + CLIENT_GetServerGameticOffset( ) );
@@ -337,7 +337,7 @@ void CLIENTCOMMANDS_ClientMove( void )
 		ulBits |= CLIENT_UPDATE_UPMOVE;
 
 	// Tell the server what information we'll be sending.
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, ulBits );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( ulBits );
 
 	// Send the necessary movement/steering information.
 	if ( ulBits & CLIENT_UPDATE_YAW )
@@ -351,7 +351,7 @@ void CLIENTCOMMANDS_ClientMove( void )
 		if ( ulBits & CLIENT_UPDATE_BUTTONS_LONG )
 			NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.buttons );
 		else
-			NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.buttons );
+			CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( pCmd->ucmd.buttons );
 	}
 	if ( ulBits & CLIENT_UPDATE_FORWARDMOVE )
 		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.forwardmove );
@@ -397,7 +397,7 @@ void CLIENTCOMMANDS_Pong( ULONG ulTime )
 	NETBUFFER_s	TempBuffer;
 	TempBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
 	TempBuffer.Clear();
-	NETWORK_WriteByte( &TempBuffer.ByteStream, CLC_PONG );
+	TempBuffer.ByteStream.WriteByte( CLC_PONG );
 	NETWORK_WriteLong( &TempBuffer.ByteStream, ulTime );
 	NETWORK_LaunchPacket( &TempBuffer, NETWORK_GetFromAddress( ) );
 	TempBuffer.Free();
@@ -410,7 +410,7 @@ void CLIENTCOMMANDS_WeaponSelect( const PClass *pType )
 	if ( ( pType == NULL ) || g_bIgnoreWeaponSelect )
 		return;
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_WEAPONSELECT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WEAPONSELECT );
 	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pType->getActorNetworkIndex() );
 }
 
@@ -418,14 +418,14 @@ void CLIENTCOMMANDS_WeaponSelect( const PClass *pType )
 //
 void CLIENTCOMMANDS_Taunt( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_TAUNT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_TAUNT );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_Spectate( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SPECTATE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SPECTATE );
 }
 
 //*****************************************************************************
@@ -439,7 +439,7 @@ void CLIENTCOMMANDS_RequestJoin( const char *pszJoinPassword )
 	}
 
 	g_ulLastJoinTime = gametic;
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_REQUESTJOIN );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_REQUESTJOIN );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszJoinPassword );
 
 	// [BB/Spleen] Send the gametic so that the client doesn't think it's lagging.
@@ -450,7 +450,7 @@ void CLIENTCOMMANDS_RequestJoin( const char *pszJoinPassword )
 //
 void CLIENTCOMMANDS_RequestRCON( const char *pszRCONPassword )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_REQUESTRCON );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_REQUESTRCON );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszRCONPassword );
 }
 
@@ -458,7 +458,7 @@ void CLIENTCOMMANDS_RequestRCON( const char *pszRCONPassword )
 //
 void CLIENTCOMMANDS_RCONCommand( const char *pszCommand )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_RCONCOMMAND );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_RCONCOMMAND );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszCommand );
 }
 
@@ -473,7 +473,7 @@ void CLIENTCOMMANDS_Suicide( void )
 	}
 
 	g_ulLastSuicideTime = gametic;
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SUICIDE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SUICIDE );
 }
 
 //*****************************************************************************
@@ -487,16 +487,16 @@ void CLIENTCOMMANDS_ChangeTeam( const char *pszJoinPassword, LONG lDesiredTeam )
 	}
 
 	g_ulLastChangeTeamTime = gametic;
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_CHANGETEAM );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CHANGETEAM );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszJoinPassword );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, lDesiredTeam );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lDesiredTeam );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_SpectateInfo( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SPECTATEINFO );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SPECTATEINFO );
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, gametic );
 }
 
@@ -504,26 +504,26 @@ void CLIENTCOMMANDS_SpectateInfo( void )
 //
 void CLIENTCOMMANDS_GenericCheat( LONG lCheat )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_GENERICCHEAT );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, lCheat );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_GENERICCHEAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lCheat );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_GiveCheat( char *pszItem, LONG lAmount )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_GIVECHEAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_GIVECHEAT );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszItem );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, lAmount );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lAmount );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_TakeCheat( const char *item, LONG amount )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_TAKECHEAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_TAKECHEAT );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, item );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, amount );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( amount );
 }
 
 //*****************************************************************************
@@ -540,9 +540,9 @@ void CLIENTCOMMANDS_SummonCheat( const char *pszItem, LONG lType, const bool bSe
 	default: return;
 	}
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, commandtype );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( commandtype );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszItem );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, bSetAngle );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bSetAngle );
 	if ( bSetAngle )
 		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, sAngle );
 }
@@ -551,15 +551,15 @@ void CLIENTCOMMANDS_SummonCheat( const char *pszItem, LONG lType, const bool bSe
 //
 void CLIENTCOMMANDS_ReadyToGoOn( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_READYTOGOON );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_READYTOGOON );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_ChangeDisplayPlayer( LONG lDisplayPlayer )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_CHANGEDISPLAYPLAYER );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, lDisplayPlayer );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CHANGEDISPLAYPLAYER );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lDisplayPlayer );
 }
 
 //*****************************************************************************
@@ -572,8 +572,8 @@ void CLIENTCOMMANDS_AuthenticateLevel( void )
 //
 void CLIENTCOMMANDS_CallVote( LONG lVoteCommand, const char *pszArgument, const char *pszReason )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_CALLVOTE );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, lVoteCommand );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CALLVOTE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lVoteCommand );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszArgument );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszReason );
 }
@@ -582,21 +582,21 @@ void CLIENTCOMMANDS_CallVote( LONG lVoteCommand, const char *pszArgument, const 
 //
 void CLIENTCOMMANDS_VoteYes( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_VOTEYES );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_VOTEYES );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_VoteNo( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_VOTENO );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_VOTENO );
 }
 
 //*****************************************************************************
 //
 void CLIENTCOMMANDS_RequestInventoryUseAll( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_INVENTORYUSEALL );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INVENTORYUSEALL );
 }
 
 //*****************************************************************************
@@ -608,7 +608,7 @@ void CLIENTCOMMANDS_RequestInventoryUse( AInventory *item )
 
 	const USHORT usActorNetworkIndex = item->GetClass( )->getActorNetworkIndex();
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_INVENTORYUSE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INVENTORYUSE );
 	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, usActorNetworkIndex );
 }
 
@@ -636,7 +636,7 @@ void CLIENTCOMMANDS_RequestInventoryDrop( AInventory *pItem )
 
 	g_ulLastDropTime = gametic;
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_INVENTORYDROP );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INVENTORYDROP );
 	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, usActorNetworkIndex );
 }
 
@@ -655,19 +655,19 @@ void CLIENTCOMMANDS_Puke ( int scriptNum, int args[4], bool always )
 
 	const int scriptNetID = NETWORK_ACSScriptToNetID( scriptNum );
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_PUKE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_PUKE );
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, scriptNetID );
 
 	// [TP/BB] If we don't have a netID on file for this script, we send the name as a string.
 	if ( scriptNetID == NO_SCRIPT_NETID )
 		NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, FName( ENamedName( -scriptNum )));
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, argn );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( argn );
 
 	for ( int i = 0; i < argn; ++i )
 		NETWORK_WriteLong ( &CLIENT_GetLocalBuffer( )->ByteStream, args[i] );
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, always );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( always );
 }
 
 //*****************************************************************************
@@ -683,7 +683,7 @@ void CLIENTCOMMANDS_MorphCheat ( const char *pszMorphClass )
 		return;
 	}
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_MORPHEX );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_MORPHEX );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszMorphClass );
 }
 
@@ -691,7 +691,7 @@ void CLIENTCOMMANDS_MorphCheat ( const char *pszMorphClass )
 //
 void CLIENTCOMMANDS_FullUpdateReceived ( void )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_FULLUPDATE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_FULLUPDATE );
 }
 
 //*****************************************************************************
@@ -701,16 +701,16 @@ void CLIENTCOMMANDS_InfoCheat( AActor* mobj, bool extended )
 	if ( mobj == NULL || mobj->lNetID == -1 )
 		return;
 
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_INFOCHEAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INFOCHEAT );
 	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, mobj->lNetID );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, extended );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( extended );
 }
 
 //*****************************************************************************
 // [TP]
 void CLIENTCOMMANDS_WarpCheat( fixed_t x, fixed_t y )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_WARPCHEAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WARPCHEAT );
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, x );
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, y );
 }
@@ -719,7 +719,7 @@ void CLIENTCOMMANDS_WarpCheat( fixed_t x, fixed_t y )
 // [TP]
 void CLIENTCOMMANDS_KillCheat( const char* what )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_KILLCHEAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_KILLCHEAT );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, what );
 }
 
@@ -727,9 +727,9 @@ void CLIENTCOMMANDS_KillCheat( const char* what )
 // [TP]
 void CLIENTCOMMANDS_SpecialCheat( int special, const TArray<int> &args )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SPECIALCHEAT );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, special );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, args.Size() );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SPECIALCHEAT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( special );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( args.Size() );
 
 	for ( unsigned int i = 0; i < args.Size(); ++i )
 		NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, args[i] );
@@ -739,15 +739,15 @@ void CLIENTCOMMANDS_SpecialCheat( int special, const TArray<int> &args )
 // [TP]
 void CLIENTCOMMANDS_SetWantHideAccount( bool wantHideAccount )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SETWANTHIDEACCOUNT );
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, wantHideAccount );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SETWANTHIDEACCOUNT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( wantHideAccount );
 }
 
 //*****************************************************************************
 // [TP]
 void CLIENTCOMMANDS_SetVideoResolution()
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_SETVIDEORESOLUTION );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SETVIDEORESOLUTION );
 	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, SCREENWIDTH );
 	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, SCREENHEIGHT );
 }
@@ -756,7 +756,7 @@ void CLIENTCOMMANDS_SetVideoResolution()
 // [TP]
 void CLIENTCOMMANDS_RCONSetCVar( const char *cvarName, const char *cvarValue )
 {
-	NETWORK_WriteByte( &CLIENT_GetLocalBuffer( )->ByteStream, CLC_RCONSETCVAR );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_RCONSETCVAR );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, cvarName );
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, cvarValue );
 }

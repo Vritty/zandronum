@@ -1592,7 +1592,7 @@ void NETWORK_FillBufferWithShit( BYTESTREAM_s *pByteStream, ULONG ulSize )
 	ULONG	ulIdx;
 
 	for ( ulIdx = 0; ulIdx < ulSize; ulIdx++ )
-		NETWORK_WriteByte( pByteStream, M_Random( ));
+		pByteStream->WriteByte( M_Random( ));
 
 //	g_NetworkMessage.Clear();
 }
