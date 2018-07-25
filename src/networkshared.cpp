@@ -151,7 +151,7 @@ LONG NETBUFFER_s::WriteTo( BYTESTREAM_s &ByteStream ) const
 {
 	LONG bufferSize = CalcSize();
 	if ( bufferSize > 0 )
-		NETWORK_WriteBuffer( &ByteStream, this->pbData, bufferSize );
+		ByteStream.WriteBuffer( this->pbData, bufferSize );
 	return bufferSize;
 }
 
@@ -467,15 +467,15 @@ void BYTESTREAM_s::WriteString( const char *pszString )
 
 #ifdef	WIN32
 	if ( pszString == NULL )
-		NETWORK_WriteBuffer( this, "", 1 );
+		this->WriteBuffer( "", 1 );
 	else
-		NETWORK_WriteBuffer( this, pszString, (int)( strlen( pszString )) + 1 );
+		this->WriteBuffer( pszString, (int)( strlen( pszString )) + 1 );
 #else
 	if ( pszString == NULL )
 		this->WriteByte( 0 );
 	else
 	{
-		NETWORK_WriteBuffer( pByteStream, pszString, strlen( pszString ));
+		this->WriteBuffer( pszString, strlen( pszString ));
 		this->WriteByte( 0 );
 	}
 #endif
@@ -483,18 +483,18 @@ void BYTESTREAM_s::WriteString( const char *pszString )
 
 //*****************************************************************************
 //
-void NETWORK_WriteBuffer( BYTESTREAM_s *pByteStream, const void *pvBuffer, int nLength )
+void BYTESTREAM_s::WriteBuffer( const void *pvBuffer, int nLength )
 {
-	if (( pByteStream->pbStream + nLength ) > pByteStream->pbStreamEnd )
+	if (( this->pbStream + nLength ) > this->pbStreamEnd )
 	{
 		Printf( "NETWORK_WriteLBuffer: Overflow!\n" );
 		return;
 	}
 
-	memcpy( pByteStream->pbStream, pvBuffer, nLength );
+	memcpy( this->pbStream, pvBuffer, nLength );
 
 	// Advance the pointer.
-	pByteStream->AdvancePointer ( nLength, true );
+	this->AdvancePointer ( nLength, true );
 }
 
 //*****************************************************************************

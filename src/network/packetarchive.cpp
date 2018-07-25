@@ -229,7 +229,7 @@ bool OutgoingPacketBuffer::SendPacket( unsigned int packetNumber, const NETADDRE
 	TempBuffer.ByteStream.WriteHeader( SVC_HEADER );
 	TempBuffer.ByteStream.WriteLong( packetNumber );
 	if ( packetSize > 0 )
-		NETWORK_WriteBuffer( &TempBuffer.ByteStream, packetData, packetSize );
+		TempBuffer.ByteStream.WriteBuffer( packetData, packetSize );
 	NETWORK_LaunchPacket( &TempBuffer, Address );
 	TempBuffer.Free();
 	return true;

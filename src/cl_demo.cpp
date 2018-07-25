@@ -427,7 +427,7 @@ void CLIENTDEMO_WritePacket( BYTESTREAM_s *pByteStream )
 	// more space.
 	clientdemo_CheckDemoBuffer( pByteStream->pbStreamEnd - pByteStream->pbStream );
 
-	NETWORK_WriteBuffer( &g_ByteStream, pByteStream->pbStream, pByteStream->pbStreamEnd - pByteStream->pbStream );
+	g_ByteStream.WriteBuffer( pByteStream->pbStream, pByteStream->pbStreamEnd - pByteStream->pbStream );
 }
 
 //*****************************************************************************

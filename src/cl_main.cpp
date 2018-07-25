@@ -2394,7 +2394,7 @@ void CLIENT_AuthenticateLevel( const char *pszMapName )
 	{
 		BYTE checksum[16];
 		map->GetChecksum( checksum );
-		NETWORK_WriteBuffer( &g_LocalBuffer.ByteStream, checksum, sizeof checksum );
+		g_LocalBuffer.ByteStream.WriteBuffer( checksum, sizeof checksum );
 		delete map;
 	}
 	else
