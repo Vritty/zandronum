@@ -1158,11 +1158,11 @@ void NETWORK_WriteName( BYTESTREAM_s* bytestream, FName name )
 	// So, use this if most of the time the name is predefined.
 	if ( name.IsPredefined() )
 	{
-		NETWORK_WriteShort( bytestream, name );
+		bytestream->WriteShort( name );
 	}
 	else
 	{
-		NETWORK_WriteShort( bytestream, -1 );
+		bytestream->WriteShort( -1 );
 		NETWORK_WriteString( bytestream, name );
 	}
 }

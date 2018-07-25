@@ -157,7 +157,7 @@ void client_SRPStartAuthentication ( const char *Username )
 		Printf ( "Username problem when calling srp_user_start_authentication.\n" );
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SRP_USER_START_AUTHENTICATION );
-	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, lenA );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( lenA );
 	for ( int i = 0; i < lenA; ++i )
 		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bytesA[i] );
 }
@@ -175,7 +175,7 @@ void client_SRPUserProcessChallenge ( TArray<unsigned char> &Salt, TArray<unsign
 	else
 	{
 		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SRP_USER_PROCESS_CHALLENGE );
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, lenM );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( lenM );
 		for ( int i = 0; i < lenM; ++i )
 			CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bytesM[i] );
 	}

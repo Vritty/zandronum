@@ -254,7 +254,7 @@ void SERVER_AUTH_SRPMessage ( const int MagicNumber, const int SessionID, const 
 	g_AuthServerBuffer.Clear();
 	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, MagicNumber );
 	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, SessionID );
-	NETWORK_WriteShort( &g_AuthServerBuffer.ByteStream, Bytes.Size() );
+	g_AuthServerBuffer.ByteStream.WriteShort( Bytes.Size() );
 	for ( unsigned int i = 0; i < Bytes.Size(); ++i )
 		g_AuthServerBuffer.ByteStream.WriteByte( Bytes[i] );
 	NETWORK_LaunchPacket( &g_AuthServerBuffer, g_AuthServerAddress );

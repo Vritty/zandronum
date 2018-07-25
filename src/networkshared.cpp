@@ -406,19 +406,19 @@ void BYTESTREAM_s::WriteByte( int Byte )
 
 //*****************************************************************************
 //
-void NETWORK_WriteShort( BYTESTREAM_s *pByteStream, int Short )
+void BYTESTREAM_s::WriteShort( int Short )
 {
-	if (( pByteStream->pbStream + 2 ) > pByteStream->pbStreamEnd )
+	if (( this->pbStream + 2 ) > this->pbStreamEnd )
 	{
 		Printf( "NETWORK_WriteShort: Overflow!\n" );
 		return;
 	}
 
-	pByteStream->pbStream[0] = Short & 0xff;
-	pByteStream->pbStream[1] = Short >> 8;
+	this->pbStream[0] = Short & 0xff;
+	this->pbStream[1] = Short >> 8;
 
 	// Advance the pointer.
-	pByteStream->AdvancePointer ( 2, true );
+	this->AdvancePointer ( 2, true );
 }
 
 //*****************************************************************************
@@ -541,7 +541,7 @@ void NETWORK_WriteVariable( BYTESTREAM_s *byteStream, int value )
 	switch ( length )
 	{
 	case 1: byteStream->WriteByte( value ); break;
-	case 2: NETWORK_WriteShort( byteStream, value ); break;
+	case 2: byteStream->WriteShort( value ); break;
 	case 3: NETWORK_WriteLong( byteStream, value ); break;
 	}
 }
@@ -712,7 +712,7 @@ void NETADDRESS_s::WriteToStream ( BYTESTREAM_s *pByteStream, bool IncludePort )
 	for ( int i = 0; i < 4; ++i )
 		pByteStream->WriteByte( abIP[i] );
 	if ( IncludePort )
-		NETWORK_WriteShort( pByteStream, ntohs( usPort ));
+		pByteStream->WriteShort( ntohs( usPort ));
 }
 
 //*****************************************************************************

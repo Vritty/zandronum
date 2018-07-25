@@ -327,6 +327,7 @@ struct BYTESTREAM_s
 	int ReadShortByte( int bits );
 
 	void WriteByte( int Byte );
+	void WriteShort( int Short );
 
 	// Pointer to our stream of data.
 	BYTE		*pbStream;
@@ -388,7 +389,6 @@ void			NETWORK_ReadBuffer( BYTESTREAM_s *byteStream, void* buffer, size_t length
 void			NETWORK_StartTrafficMeasurement ( );
 int				NETWORK_StopTrafficMeasurement ( );
 
-void			NETWORK_WriteShort( BYTESTREAM_s *pByteStream, int Short );
 void			NETWORK_WriteLong( BYTESTREAM_s *pByteStream, int Long );
 void			NETWORK_WriteFloat( BYTESTREAM_s *pByteStream, float Float );
 void			NETWORK_WriteString( BYTESTREAM_s *pByteStream, const char *pszString );

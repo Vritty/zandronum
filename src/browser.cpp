@@ -748,7 +748,7 @@ void BROWSER_QueryMasterServer( void )
 	// Clear out the buffer, and write out launcher challenge.
 	g_MasterServerBuffer.Clear();
 	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, LAUNCHER_MASTER_CHALLENGE );
-	NETWORK_WriteShort( &g_MasterServerBuffer.ByteStream, MASTER_SERVER_VERSION );
+	g_MasterServerBuffer.ByteStream.WriteShort( MASTER_SERVER_VERSION );
 
 	// Send the master server our packet.
 //	NETWORK_LaunchPacket( &g_MasterServerBuffer, g_AddressMasterServer, true );

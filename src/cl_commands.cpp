@@ -341,11 +341,11 @@ void CLIENTCOMMANDS_ClientMove( void )
 
 	// Send the necessary movement/steering information.
 	if ( ulBits & CLIENT_UPDATE_YAW )
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.yaw );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pCmd->ucmd.yaw );
 	if ( ulBits & CLIENT_UPDATE_PITCH )
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.pitch );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pCmd->ucmd.pitch );
 	if ( ulBits & CLIENT_UPDATE_ROLL )
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.roll );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pCmd->ucmd.roll );
 	if ( ulBits & CLIENT_UPDATE_BUTTONS )
 	{
 		if ( ulBits & CLIENT_UPDATE_BUTTONS_LONG )
@@ -354,11 +354,11 @@ void CLIENTCOMMANDS_ClientMove( void )
 			CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( pCmd->ucmd.buttons );
 	}
 	if ( ulBits & CLIENT_UPDATE_FORWARDMOVE )
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.forwardmove );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pCmd->ucmd.forwardmove );
 	if ( ulBits & CLIENT_UPDATE_SIDEMOVE )
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.sidemove );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pCmd->ucmd.sidemove );
 	if ( ulBits & CLIENT_UPDATE_UPMOVE )
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.upmove );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pCmd->ucmd.upmove );
 
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, players[consoleplayer].mo->angle );
 	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, players[consoleplayer].mo->pitch );
@@ -369,9 +369,9 @@ void CLIENTCOMMANDS_ClientMove( void )
 	if ( pCmd->ucmd.buttons & BT_ATTACK )
 	{
 		if ( players[consoleplayer].ReadyWeapon == NULL )
-			NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, 0 );
+			CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( 0 );
 		else
-			NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, players[consoleplayer].ReadyWeapon->GetClass( )->getActorNetworkIndex() );
+			CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( players[consoleplayer].ReadyWeapon->GetClass( )->getActorNetworkIndex() );
 	}
 }
 
@@ -411,7 +411,7 @@ void CLIENTCOMMANDS_WeaponSelect( const PClass *pType )
 		return;
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WEAPONSELECT );
-	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, pType->getActorNetworkIndex() );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pType->getActorNetworkIndex() );
 }
 
 //*****************************************************************************
@@ -544,7 +544,7 @@ void CLIENTCOMMANDS_SummonCheat( const char *pszItem, LONG lType, const bool bSe
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszItem );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bSetAngle );
 	if ( bSetAngle )
-		NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, sAngle );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( sAngle );
 }
 
 //*****************************************************************************
@@ -609,7 +609,7 @@ void CLIENTCOMMANDS_RequestInventoryUse( AInventory *item )
 	const USHORT usActorNetworkIndex = item->GetClass( )->getActorNetworkIndex();
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INVENTORYUSE );
-	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, usActorNetworkIndex );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( usActorNetworkIndex );
 }
 
 //*****************************************************************************
@@ -637,7 +637,7 @@ void CLIENTCOMMANDS_RequestInventoryDrop( AInventory *pItem )
 	g_ulLastDropTime = gametic;
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INVENTORYDROP );
-	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, usActorNetworkIndex );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( usActorNetworkIndex );
 }
 
 //*****************************************************************************
@@ -702,7 +702,7 @@ void CLIENTCOMMANDS_InfoCheat( AActor* mobj, bool extended )
 		return;
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INFOCHEAT );
-	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, mobj->lNetID );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( mobj->lNetID );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( extended );
 }
 
@@ -748,8 +748,8 @@ void CLIENTCOMMANDS_SetWantHideAccount( bool wantHideAccount )
 void CLIENTCOMMANDS_SetVideoResolution()
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SETVIDEORESOLUTION );
-	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, SCREENWIDTH );
-	NETWORK_WriteShort( &CLIENT_GetLocalBuffer( )->ByteStream, SCREENHEIGHT );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( SCREENWIDTH );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( SCREENHEIGHT );
 }
 
 //*****************************************************************************

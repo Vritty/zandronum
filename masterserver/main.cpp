@@ -305,7 +305,7 @@ void MASTERSERVER_SendServerIPBlockToLauncher( const NETADDRESS_s &Address, cons
 	pByteStream->WriteByte( PortList.size() );
 	Address.WriteToStream ( pByteStream, false );
 	for ( unsigned int i = 0; i < PortList.size(); ++i )
-		NETWORK_WriteShort( pByteStream, ntohs( PortList[i] ) );
+		pByteStream->WriteShort( ntohs( PortList[i] ) );
 }
 
 //*****************************************************************************

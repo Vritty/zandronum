@@ -218,7 +218,7 @@ void SERVER_RCON_ParseMessage( NETADDRESS_s Address, LONG lMessage, BYTESTREAM_s
 			else
 			{
 				g_MessageBuffer.ByteStream.WriteByte( SVRC_TOOMANYTABCOMPLETES );
-				NETWORK_WriteShort( &g_MessageBuffer.ByteStream, list.Size() );
+				g_MessageBuffer.ByteStream.WriteShort( list.Size() );
 			}
 
 			NETWORK_LaunchPacket( &g_MessageBuffer, g_AuthedClients[iIndex].Address );

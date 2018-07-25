@@ -187,7 +187,7 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 
 	// Write version information helpful for this demo.
 	g_ByteStream.WriteByte( CLD_DEMOVERSION );
-	NETWORK_WriteShort( &g_ByteStream, DEMOGAMEVERSION );
+	g_ByteStream.WriteShort( DEMOGAMEVERSION );
 	NETWORK_WriteString( &g_ByteStream, GetVersionStringRev() );
 	g_ByteStream.WriteByte( BUILD_ID );
 	NETWORK_WriteLong( &g_ByteStream, rngseed );
@@ -195,7 +195,7 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 	// [Dusk] Write the amount of WADs and their names, incl. IWAD
 	g_ByteStream.WriteByte( CLD_DEMOWADS );
 	ULONG ulWADCount = 1 + NETWORK_GetPWADList().Size( ); // 1 for IWAD
-	NETWORK_WriteShort( &g_ByteStream, ulWADCount );
+	g_ByteStream.WriteShort( ulWADCount );
 	NETWORK_WriteString( &g_ByteStream, NETWORK_GetIWAD ( ) );
 
 	for ( unsigned int i = 0; i < NETWORK_GetPWADList().Size(); ++i )
@@ -396,13 +396,13 @@ void CLIENTDEMO_WriteTiccmd( ticcmd_t *pCmd )
 	g_ByteStream.WriteByte( CLD_TICCMD );
 
 	// Write the contents of the ticcmd.
-	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.yaw );
-	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.roll );
-	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.pitch );
+	g_ByteStream.WriteShort( pCmd->ucmd.yaw );
+	g_ByteStream.WriteShort( pCmd->ucmd.roll );
+	g_ByteStream.WriteShort( pCmd->ucmd.pitch );
 	g_ByteStream.WriteByte( pCmd->ucmd.buttons );
-	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.upmove );
-	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.forwardmove );
-	NETWORK_WriteShort( &g_ByteStream, pCmd->ucmd.sidemove );
+	g_ByteStream.WriteShort( pCmd->ucmd.upmove );
+	g_ByteStream.WriteShort( pCmd->ucmd.forwardmove );
+	g_ByteStream.WriteShort( pCmd->ucmd.sidemove );
 }
 
 //*****************************************************************************
