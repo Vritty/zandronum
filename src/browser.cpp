@@ -747,7 +747,7 @@ void BROWSER_QueryMasterServer( void )
 
 	// Clear out the buffer, and write out launcher challenge.
 	g_MasterServerBuffer.Clear();
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, LAUNCHER_MASTER_CHALLENGE );
+	g_MasterServerBuffer.ByteStream.WriteLong( LAUNCHER_MASTER_CHALLENGE );
 	g_MasterServerBuffer.ByteStream.WriteShort( MASTER_SERVER_VERSION );
 
 	// Send the master server our packet.
@@ -836,9 +836,9 @@ static void browser_QueryServer( ULONG ulServer )
 
 	// Clear out the buffer, and write out launcher challenge.
 	g_ServerBuffer.Clear();
-	NETWORK_WriteLong( &g_ServerBuffer.ByteStream, LAUNCHER_SERVER_CHALLENGE );
-	NETWORK_WriteLong( &g_ServerBuffer.ByteStream, SQF_NAME|SQF_URL|SQF_EMAIL|SQF_MAPNAME|SQF_MAXCLIENTS|SQF_PWADS|SQF_GAMETYPE|SQF_IWAD|SQF_NUMPLAYERS|SQF_PLAYERDATA );
-	NETWORK_WriteLong( &g_ServerBuffer.ByteStream, I_MSTime( ));
+	g_ServerBuffer.ByteStream.WriteLong( LAUNCHER_SERVER_CHALLENGE );
+	g_ServerBuffer.ByteStream.WriteLong( SQF_NAME|SQF_URL|SQF_EMAIL|SQF_MAPNAME|SQF_MAXCLIENTS|SQF_PWADS|SQF_GAMETYPE|SQF_IWAD|SQF_NUMPLAYERS|SQF_PLAYERDATA );
+	g_ServerBuffer.ByteStream.WriteLong( I_MSTime( ));
 
 	// Send the server our packet.
 	NETWORK_LaunchPacket( &g_ServerBuffer, g_BrowserServerList[ulServer].Address );

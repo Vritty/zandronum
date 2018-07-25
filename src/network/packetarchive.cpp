@@ -227,7 +227,7 @@ bool OutgoingPacketBuffer::SendPacket( unsigned int packetNumber, const NETADDRE
 	TempBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
 	TempBuffer.Clear();
 	NETWORK_WriteHeader( &TempBuffer.ByteStream, SVC_HEADER );
-	NETWORK_WriteLong( &TempBuffer.ByteStream, packetNumber );
+	TempBuffer.ByteStream.WriteLong( packetNumber );
 	if ( packetSize > 0 )
 		NETWORK_WriteBuffer( &TempBuffer.ByteStream, packetData, packetSize );
 	NETWORK_LaunchPacket( &TempBuffer, Address );

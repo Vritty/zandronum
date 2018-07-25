@@ -289,7 +289,7 @@ void CLIENTCOMMANDS_Ignore( ULONG ulPlayer, bool bIgnore, LONG lTicks )
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_IGNORE );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( ulPlayer );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bIgnore );
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, lTicks );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( lTicks );
 }
 
 //*****************************************************************************
@@ -300,9 +300,9 @@ void CLIENTCOMMANDS_ClientMove( void )
 	ULONG		ulBits;
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, gametic );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( gametic );
 	// [CK] Send the server the latest known server-gametic
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, CLIENT_GetLatestServerGametic( ) + CLIENT_GetServerGameticOffset( ) );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( CLIENT_GetLatestServerGametic( ) + CLIENT_GetServerGameticOffset( ) );
 
 	// Decide what additional information needs to be sent.
 	ulBits = 0;
@@ -349,7 +349,7 @@ void CLIENTCOMMANDS_ClientMove( void )
 	if ( ulBits & CLIENT_UPDATE_BUTTONS )
 	{
 		if ( ulBits & CLIENT_UPDATE_BUTTONS_LONG )
-			NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, pCmd->ucmd.buttons );
+			CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( pCmd->ucmd.buttons );
 		else
 			CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( pCmd->ucmd.buttons );
 	}
@@ -360,10 +360,10 @@ void CLIENTCOMMANDS_ClientMove( void )
 	if ( ulBits & CLIENT_UPDATE_UPMOVE )
 		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pCmd->ucmd.upmove );
 
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, players[consoleplayer].mo->angle );
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, players[consoleplayer].mo->pitch );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( players[consoleplayer].mo->angle );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( players[consoleplayer].mo->pitch );
 	// [BB] Send the checksum of our ticcmd we calculated when we originally generated the ticcmd from the user input.
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, g_sdwCheckCmd );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( g_sdwCheckCmd );
 
 	// Attack button.
 	if ( pCmd->ucmd.buttons & BT_ATTACK )
@@ -398,7 +398,7 @@ void CLIENTCOMMANDS_Pong( ULONG ulTime )
 	TempBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
 	TempBuffer.Clear();
 	TempBuffer.ByteStream.WriteByte( CLC_PONG );
-	NETWORK_WriteLong( &TempBuffer.ByteStream, ulTime );
+	TempBuffer.ByteStream.WriteLong( ulTime );
 	NETWORK_LaunchPacket( &TempBuffer, NETWORK_GetFromAddress( ) );
 	TempBuffer.Free();
 }
@@ -443,7 +443,7 @@ void CLIENTCOMMANDS_RequestJoin( const char *pszJoinPassword )
 	NETWORK_WriteString( &CLIENT_GetLocalBuffer( )->ByteStream, pszJoinPassword );
 
 	// [BB/Spleen] Send the gametic so that the client doesn't think it's lagging.
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, gametic );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( gametic );
 }
 
 //*****************************************************************************
@@ -497,7 +497,7 @@ void CLIENTCOMMANDS_ChangeTeam( const char *pszJoinPassword, LONG lDesiredTeam )
 void CLIENTCOMMANDS_SpectateInfo( void )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_SPECTATEINFO );
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, gametic );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( gametic );
 }
 
 //*****************************************************************************
@@ -656,7 +656,7 @@ void CLIENTCOMMANDS_Puke ( int scriptNum, int args[4], bool always )
 	const int scriptNetID = NETWORK_ACSScriptToNetID( scriptNum );
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_PUKE );
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, scriptNetID );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( scriptNetID );
 
 	// [TP/BB] If we don't have a netID on file for this script, we send the name as a string.
 	if ( scriptNetID == NO_SCRIPT_NETID )
@@ -665,7 +665,7 @@ void CLIENTCOMMANDS_Puke ( int scriptNum, int args[4], bool always )
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( argn );
 
 	for ( int i = 0; i < argn; ++i )
-		NETWORK_WriteLong ( &CLIENT_GetLocalBuffer( )->ByteStream, args[i] );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( args[i] );
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( always );
 }
@@ -711,8 +711,8 @@ void CLIENTCOMMANDS_InfoCheat( AActor* mobj, bool extended )
 void CLIENTCOMMANDS_WarpCheat( fixed_t x, fixed_t y )
 {
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WARPCHEAT );
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, x );
-	NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, y );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( x );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( y );
 }
 
 //*****************************************************************************
@@ -732,7 +732,7 @@ void CLIENTCOMMANDS_SpecialCheat( int special, const TArray<int> &args )
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( args.Size() );
 
 	for ( unsigned int i = 0; i < args.Size(); ++i )
-		NETWORK_WriteLong( &CLIENT_GetLocalBuffer( )->ByteStream, args[i] );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( args[i] );
 }
 
 //*****************************************************************************

@@ -1147,13 +1147,13 @@ void CLIENT_CheckForMissingPackets( void )
 				if ( debugfile )
 					fprintf( debugfile, "Missing packet %d.\n", static_cast<int> (lIdx) );
 
-				NETWORK_WriteLong( &g_LocalBuffer.ByteStream, lIdx );
+				g_LocalBuffer.ByteStream.WriteLong( lIdx );
 				CLIENTSTATISTICS_AddToMissingPacketsRequested ( 1 );
 			}
 		}
 
 		// When we're done, write -1 to indicate that we're finished.
-		NETWORK_WriteLong( &g_LocalBuffer.ByteStream, -1 );
+		g_LocalBuffer.ByteStream.WriteLong( -1 );
 	}
 
 	// Don't send out a request for the missing packets for another 1/4 second.

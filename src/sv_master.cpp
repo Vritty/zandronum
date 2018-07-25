@@ -184,13 +184,13 @@ void SERVER_MASTER_Tick( void )
 	g_AddressMasterServer.SetPort( g_usMasterPort );
 
 	// Write to our packet a challenge to the master server.
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, SERVER_MASTER_CHALLENGE );
+	g_MasterServerBuffer.ByteStream.WriteLong( SERVER_MASTER_CHALLENGE );
 	// [BB] Also send a string that will allow us to verify that a master banlist was actually sent from the master.
 	NETWORK_WriteString( &g_MasterServerBuffer.ByteStream, SERVER_GetMasterBanlistVerificationString().GetChars() );
 	// [BB] Also tell the master whether we are enforcing its ban list.
 	g_MasterServerBuffer.ByteStream.WriteByte( sv_enforcemasterbanlist );
 	// [BB] And tell which code revision number the server was built with.
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, GetRevisionNumber() );
+	g_MasterServerBuffer.ByteStream.WriteLong( GetRevisionNumber() );
 
 	// Send the master server our packet.
 //	NETWORK_LaunchPacket( &g_MasterServerBuffer, g_AddressMasterServer, true );
@@ -280,10 +280,10 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 				if ( Address.CompareNoPort( g_StoredQueryIPs[ulIdx].Address ))
 				{
 					// Write our header.
-					NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, SERVER_LAUNCHER_IGNORING );
+					g_MasterServerBuffer.ByteStream.WriteLong( SERVER_LAUNCHER_IGNORING );
 
 					// Send the time the launcher sent to us.
-					NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, ulTime );
+					g_MasterServerBuffer.ByteStream.WriteLong( ulTime );
 
 					// Send the packet.
 	//				NETWORK_LaunchPacket( &g_MasterServerBuffer, Address, true );
@@ -306,10 +306,10 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 		if ( SERVERBAN_IsIPBanned( szAddress ))
 		{
 			// Write our header.
-			NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, SERVER_LAUNCHER_BANNED );
+			g_MasterServerBuffer.ByteStream.WriteLong( SERVER_LAUNCHER_BANNED );
 
 			// Send the time the launcher sent to us.
-			NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, ulTime );
+			g_MasterServerBuffer.ByteStream.WriteLong( ulTime );
 
 			// Send the packet.
 			NETWORK_LaunchPacket( &g_MasterServerBuffer, Address );
@@ -333,10 +333,10 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	}
 
 	// Write our header.
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, SERVER_LAUNCHER_CHALLENGE );
+	g_MasterServerBuffer.ByteStream.WriteLong( SERVER_LAUNCHER_CHALLENGE );
 
 	// Send the time the launcher sent to us.
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, ulTime );
+	g_MasterServerBuffer.ByteStream.WriteLong( ulTime );
 
 	// Send our version. [K6] ...with OS
 	NETWORK_WriteString( &g_MasterServerBuffer.ByteStream, g_VersionWithOS.GetChars() );
@@ -373,7 +373,7 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	if ( D_GetDehFileNames().Size() == 0 )
 		ulBits &= ~SQF_DEH;
 
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, ulBits );
+	g_MasterServerBuffer.ByteStream.WriteLong( ulBits );
 
 	// Send the server name.
 	if ( ulBits & SQF_NAME )
@@ -432,9 +432,9 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 
 	if ( ulBits & SQF_DMFLAGS )
 	{
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, dmflags );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, dmflags2 );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, compatflags );
+		g_MasterServerBuffer.ByteStream.WriteLong( dmflags );
+		g_MasterServerBuffer.ByteStream.WriteLong( dmflags2 );
+		g_MasterServerBuffer.ByteStream.WriteLong( compatflags );
 	}
 
 	if ( ulBits & SQF_LIMITS )
@@ -529,7 +529,7 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 
 		if ( ulBits & SQF_TEAMINFO_COLOR )
 			for ( ulIdx = 0; ulIdx < TEAM_GetNumAvailableTeams( ); ulIdx++ )
-				NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, TEAM_GetColor( ulIdx ));
+				g_MasterServerBuffer.ByteStream.WriteLong( TEAM_GetColor( ulIdx ));
 
 		if ( ulBits & SQF_TEAMINFO_SCORE )
 		{
@@ -568,12 +568,12 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	if ( ulBits & SQF_ALL_DMFLAGS )
 	{
 		g_MasterServerBuffer.ByteStream.WriteByte( 6 );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, dmflags );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, dmflags2 );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, zadmflags );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, compatflags );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, zacompatflags );
-		NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, compatflags2 );
+		g_MasterServerBuffer.ByteStream.WriteLong( dmflags );
+		g_MasterServerBuffer.ByteStream.WriteLong( dmflags2 );
+		g_MasterServerBuffer.ByteStream.WriteLong( zadmflags );
+		g_MasterServerBuffer.ByteStream.WriteLong( compatflags );
+		g_MasterServerBuffer.ByteStream.WriteLong( zacompatflags );
+		g_MasterServerBuffer.ByteStream.WriteLong( compatflags2 );
 	}
 
 	// [BB] Send special security settings like sv_enforcemasterbanlist.
@@ -645,9 +645,9 @@ void SERVER_MASTER_HandleVerificationRequest( BYTESTREAM_s *pByteStream  )
 	LONG lVerificationNumber = pByteStream->ReadLong();
 
 	g_MasterServerBuffer.Clear();
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, SERVER_MASTER_VERIFICATION );
+	g_MasterServerBuffer.ByteStream.WriteLong( SERVER_MASTER_VERIFICATION );
 	NETWORK_WriteString( &g_MasterServerBuffer.ByteStream, SERVER_GetMasterBanlistVerificationString().GetChars() );
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, lVerificationNumber );
+	g_MasterServerBuffer.ByteStream.WriteLong( lVerificationNumber );
 
 	// [BB] Send the master server our packet.
 	NETWORK_LaunchPacket( &g_MasterServerBuffer, SERVER_MASTER_GetMasterAddress () );
@@ -658,7 +658,7 @@ void SERVER_MASTER_HandleVerificationRequest( BYTESTREAM_s *pByteStream  )
 void SERVER_MASTER_SendBanlistReceipt ( void )
 {
 	g_MasterServerBuffer.Clear();
-	NETWORK_WriteLong( &g_MasterServerBuffer.ByteStream, SERVER_MASTER_BANLIST_RECEIPT );
+	g_MasterServerBuffer.ByteStream.WriteLong( SERVER_MASTER_BANLIST_RECEIPT );
 	NETWORK_WriteString( &g_MasterServerBuffer.ByteStream, SERVER_GetMasterBanlistVerificationString().GetChars() );
 
 	// [BB] Send the master server our packet.

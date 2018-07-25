@@ -1150,7 +1150,7 @@ void SERVER_RequestClientToAuthenticate( ULONG ulClient )
 	// the client would like to do any kind of prediction from gametics in the
 	// future, we can use the current gametic as the base. This also prevents
 	// the client from relying on a gametic of 0 or some unset number.
-	NETWORK_WriteLong( &g_aClients[ulClient].PacketBuffer.ByteStream, gametic );
+	g_aClients[ulClient].PacketBuffer.ByteStream.WriteLong( gametic );
 
 	// Send the packet off.
 	SERVER_SendClientPacket( ulClient, true );
@@ -2135,7 +2135,7 @@ void SERVER_ConnectionError( NETADDRESS_s Address, const char *pszMessage, ULONG
 
 	// Make sure the packet has a packet header. The client is expecting this!
 	NETWORK_WriteHeader( &TempBuffer.ByteStream, SVC_HEADER );
-	NETWORK_WriteLong( &TempBuffer.ByteStream, 0 );
+	TempBuffer.ByteStream.WriteLong( 0 );
 
 	TempBuffer.ByteStream.WriteByte( SVCC_ERROR );
 	TempBuffer.ByteStream.WriteByte( ulErrorCode );
@@ -2188,7 +2188,7 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 			{
 				// Tell the client why he was banned, and when his ban expires.
 				NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, banReason );
-				NETWORK_WriteLong( &g_aClients[ulClient].PacketBuffer.ByteStream, (LONG) SERVERBAN_GetBanList( )->getEntryExpiration( g_aClients[ulClient].Address ));
+				g_aClients[ulClient].PacketBuffer.ByteStream.WriteLong( (LONG) SERVERBAN_GetBanList( )->getEntryExpiration( g_aClients[ulClient].Address ));
 				NETWORK_WriteString( &g_aClients[ulClient].PacketBuffer.ByteStream, sv_hostemail );
 			}
 		}

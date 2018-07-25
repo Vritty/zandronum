@@ -179,7 +179,7 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 	// Write our header.
 	// [Dusk] Write a static "ZCLD" which is consistent between
 	// different Zandronum versions.
-	NETWORK_WriteLong( &g_ByteStream, g_demoSignature );
+	g_ByteStream.WriteLong( g_demoSignature );
 
 	// Write the length of the demo. Of course, we can't complete this quite yet!
 	g_ByteStream.WriteByte( CLD_DEMOLENGTH );
@@ -190,7 +190,7 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 	g_ByteStream.WriteShort( DEMOGAMEVERSION );
 	NETWORK_WriteString( &g_ByteStream, GetVersionStringRev() );
 	g_ByteStream.WriteByte( BUILD_ID );
-	NETWORK_WriteLong( &g_ByteStream, rngseed );
+	g_ByteStream.WriteLong( rngseed );
 
 	// [Dusk] Write the amount of WADs and their names, incl. IWAD
 	g_ByteStream.WriteByte( CLD_DEMOWADS );
@@ -337,10 +337,10 @@ void CLIENTDEMO_WriteUserInfo( void )
 	// Write the player's userinfo.
 	NETWORK_WriteString( &g_ByteStream, players[consoleplayer].userinfo.GetName() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetGender() );
-	NETWORK_WriteLong( &g_ByteStream, players[consoleplayer].userinfo.GetColor() );
-	NETWORK_WriteLong( &g_ByteStream, players[consoleplayer].userinfo.GetAimDist() );
+	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetColor() );
+	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetAimDist() );
 	NETWORK_WriteString( &g_ByteStream, skins[players[consoleplayer].userinfo.GetSkin()].name );
-	NETWORK_WriteLong( &g_ByteStream, players[consoleplayer].userinfo.GetRailColor() );
+	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetRailColor() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetHandicap() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetTicsPerUpdate() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetConnectionType() );
@@ -593,7 +593,7 @@ void CLIENTDEMO_FinishRecording( void )
 	lDemoLength = g_ByteStream.pbStream - g_pbDemoBuffer;
 	ByteStream.pbStream = g_pbDemoBuffer + 5;
 	ByteStream.pbStreamEnd = g_ByteStream.pbStreamEnd;
-	NETWORK_WriteLong( &ByteStream, lDemoLength );
+	ByteStream.WriteLong( lDemoLength );
 
 	// Write the contents of the buffer to the file, and free the memory we
 	// allocated for the demo.
@@ -746,8 +746,8 @@ void CLIENTDEMO_WriteWarpCheat ( fixed_t x, fixed_t y )
 	clientdemo_CheckDemoBuffer( 10 );
 	g_ByteStream.WriteByte( CLD_LOCALCOMMAND );
 	g_ByteStream.WriteByte( CLD_LCMD_WARPCHEAT );
-	NETWORK_WriteLong( &g_ByteStream, x );
-	NETWORK_WriteLong( &g_ByteStream, y );
+	g_ByteStream.WriteLong( x );
+	g_ByteStream.WriteLong( y );
 }
 
 //*****************************************************************************

@@ -249,12 +249,12 @@ void MASTERSERVER_SendBanlistToServer( const SERVER_s &Server )
 			NETWORK_WriteString( &g_MessageBuffer.ByteStream, Server.MasterBanlistVerificationString.c_str() );
 
 		// Write all the bans.
-		NETWORK_WriteLong( &g_MessageBuffer.ByteStream, g_BannedIPs.size( ));
+		g_MessageBuffer.ByteStream.WriteLong( g_BannedIPs.size( ));
 		for ( ULONG i = 0; i < g_BannedIPs.size( ); i++ )
 			NETWORK_WriteString( &g_MessageBuffer.ByteStream, g_BannedIPs.getEntryAsString( i, false, false, false ).c_str( ));
 
 		// Write all the exceptions.
-		NETWORK_WriteLong( &g_MessageBuffer.ByteStream, g_BannedIPExemptions.size( ));
+		g_MessageBuffer.ByteStream.WriteLong( g_BannedIPExemptions.size( ));
 		for ( ULONG i = 0; i < g_BannedIPExemptions.size( ); i++ )
 			NETWORK_WriteString( &g_MessageBuffer.ByteStream, g_BannedIPExemptions.getEntryAsString( i, false, false, false ).c_str( ));
 
@@ -272,7 +272,7 @@ void MASTERSERVER_RequestServerVerification( const SERVER_s &Server )
 	g_MessageBuffer.Clear();
 	g_MessageBuffer.ByteStream.WriteByte( MASTER_SERVER_VERIFICATION );
 	NETWORK_WriteString( &g_MessageBuffer.ByteStream, Server.MasterBanlistVerificationString.c_str() );
-	NETWORK_WriteLong( &g_MessageBuffer.ByteStream, Server.ServerVerificationInt );
+	g_MessageBuffer.ByteStream.WriteLong( Server.ServerVerificationInt );
 	NETWORK_LaunchPacket( &g_MessageBuffer, Server.Address );
 }
 //*****************************************************************************
@@ -417,7 +417,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 	if ( !g_BannedIPExemptions.isIPInList( AddressFrom ) && g_BannedIPs.isIPInList( AddressFrom ))
 	{
 		g_MessageBuffer.Clear();
-		NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_IPISBANNED );
+		g_MessageBuffer.ByteStream.WriteLong( MSC_IPISBANNED );
 		NETWORK_LaunchPacket( &g_MessageBuffer, AddressFrom );
 
 		printf( "* Received challenge from banned IP (%s). Ignoring for 10 seconds.\n", AddressFrom.ToString() );
@@ -436,7 +436,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			if ( !g_BannedIPExemptions.isIPInList( AddressFrom ) && g_BlockedIPs.isIPInList( AddressFrom ))
 			{
 				g_MessageBuffer.Clear();
-				NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_IPISBANNED );
+				g_MessageBuffer.ByteStream.WriteLong( MSC_IPISBANNED );
 				NETWORK_LaunchPacket( &g_MessageBuffer, AddressFrom );
 
 				printf( "* Received server challenge from blocked IP (%s). Ignoring for 10 seconds.\n", AddressFrom.ToString() );
@@ -564,7 +564,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			// Did this IP query us recently? If so, send it an explanation, and ignore it completely for 3 seconds.
 			if ( g_queryIPQueue.addressInQueue( AddressFrom ))
 			{
-				NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_REQUESTIGNORED );
+				g_MessageBuffer.ByteStream.WriteLong( MSC_REQUESTIGNORED );
 				NETWORK_LaunchPacket( &g_MessageBuffer, AddressFrom );
 
 				printf( "* Extra launcher challenge from %s. Ignoring for 3 seconds.\n", AddressFrom.ToString() );
@@ -580,7 +580,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 
 				if ( usVersion != MASTER_SERVER_VERSION )
 				{
-					NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_WRONGVERSION );
+					g_MessageBuffer.ByteStream.WriteLong( MSC_WRONGVERSION );
 					NETWORK_LaunchPacket( &g_MessageBuffer, AddressFrom );
 					return;
 				}
@@ -595,7 +595,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 			{
 			case LAUNCHER_SERVER_CHALLENGE:
 				// Send the list of servers.
-				NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_BEGINSERVERLIST );
+				g_MessageBuffer.ByteStream.WriteLong( MSC_BEGINSERVERLIST );
 				for( std::set<SERVER_s, SERVERCompFunc>::const_iterator it = g_Servers.begin(); it != g_Servers.end(); ++it )
 				{
 					// [BB] Possibly omit servers that don't enforce our ban list.
@@ -617,7 +617,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 
 				std::set<SERVER_s, SERVERCompFunc>::const_iterator it = g_Servers.begin();
 
-				NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_BEGINSERVERLISTPART );
+				g_MessageBuffer.ByteStream.WriteLong( MSC_BEGINSERVERLISTPART );
 				g_MessageBuffer.ByteStream.WriteByte( ulPacketNum );
 				g_MessageBuffer.ByteStream.WriteByte( MSC_SERVERBLOCK );
 				unsigned long ulSizeOfPacket = 6; // 4 (MSC_BEGINSERVERLISTPART) + 1 (0) + 1 (MSC_SERVERBLOCK)
@@ -651,7 +651,7 @@ void MASTERSERVER_ParseCommands( BYTESTREAM_s *pByteStream )
 						g_MessageBuffer.Clear();
 						++ulPacketNum;
 						ulSizeOfPacket = 5;
-						NETWORK_WriteLong( &g_MessageBuffer.ByteStream, MSC_BEGINSERVERLISTPART );
+						g_MessageBuffer.ByteStream.WriteLong( MSC_BEGINSERVERLISTPART );
 						g_MessageBuffer.ByteStream.WriteByte( ulPacketNum );
 						g_MessageBuffer.ByteStream.WriteByte( MSC_SERVERBLOCK );
 					}

@@ -240,9 +240,9 @@ void SERVER_InitClientSRPData ( const ULONG ulClient )
 void SERVER_AUTH_Negotiate ( const char *Username, const unsigned int ClientSessionID )
 {
 	g_AuthServerBuffer.Clear();
-	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, SERVER_AUTH_NEGOTIATE );
+	g_AuthServerBuffer.ByteStream.WriteLong( SERVER_AUTH_NEGOTIATE );
 	g_AuthServerBuffer.ByteStream.WriteByte( AUTH_PROTOCOL_VERSION );
-	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, ClientSessionID);
+	g_AuthServerBuffer.ByteStream.WriteLong( ClientSessionID);
 	NETWORK_WriteString( &g_AuthServerBuffer.ByteStream, Username );
 	NETWORK_LaunchPacket( &g_AuthServerBuffer, g_AuthServerAddress );
 }
@@ -252,8 +252,8 @@ void SERVER_AUTH_Negotiate ( const char *Username, const unsigned int ClientSess
 void SERVER_AUTH_SRPMessage ( const int MagicNumber, const int SessionID, const TArray<unsigned char> &Bytes )
 {
 	g_AuthServerBuffer.Clear();
-	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, MagicNumber );
-	NETWORK_WriteLong( &g_AuthServerBuffer.ByteStream, SessionID );
+	g_AuthServerBuffer.ByteStream.WriteLong( MagicNumber );
+	g_AuthServerBuffer.ByteStream.WriteLong( SessionID );
 	g_AuthServerBuffer.ByteStream.WriteShort( Bytes.Size() );
 	for ( unsigned int i = 0; i < Bytes.Size(); ++i )
 		g_AuthServerBuffer.ByteStream.WriteByte( Bytes[i] );

@@ -423,21 +423,21 @@ void BYTESTREAM_s::WriteShort( int Short )
 
 //*****************************************************************************
 //
-void NETWORK_WriteLong( BYTESTREAM_s *pByteStream, int Long )
+void BYTESTREAM_s::WriteLong( int Long )
 {
-	if (( pByteStream->pbStream + 4 ) > pByteStream->pbStreamEnd )
+	if (( this->pbStream + 4 ) > this->pbStreamEnd )
 	{
 		Printf( "NETWORK_WriteLong: Overflow!\n" );
 		return;
 	}
 
-	pByteStream->pbStream[0] = Long & 0xff;
-	pByteStream->pbStream[1] = ( Long >> 8 ) & 0xff;
-	pByteStream->pbStream[2] = ( Long >> 16 ) & 0xff;
-	pByteStream->pbStream[3] = ( Long >> 24 );
+	this->pbStream[0] = Long & 0xff;
+	this->pbStream[1] = ( Long >> 8 ) & 0xff;
+	this->pbStream[2] = ( Long >> 16 ) & 0xff;
+	this->pbStream[3] = ( Long >> 24 );
 
 	// Advance the pointer.
-	pByteStream->AdvancePointer ( 4, true );
+	this->AdvancePointer ( 4, true );
 }
 
 //*****************************************************************************
@@ -452,7 +452,7 @@ void NETWORK_WriteFloat( BYTESTREAM_s *pByteStream, float Float )
 
 	dat.f = Float;
 
-	NETWORK_WriteLong( pByteStream, dat.l );
+	pByteStream->WriteLong( dat.l );
 }
 
 //*****************************************************************************
@@ -542,7 +542,7 @@ void NETWORK_WriteVariable( BYTESTREAM_s *byteStream, int value )
 	{
 	case 1: byteStream->WriteByte( value ); break;
 	case 2: byteStream->WriteShort( value ); break;
-	case 3: NETWORK_WriteLong( byteStream, value ); break;
+	case 3: byteStream->WriteLong( value ); break;
 	}
 }
 
