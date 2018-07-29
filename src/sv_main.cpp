@@ -6016,6 +6016,9 @@ static bool server_AuthenticateLevel( BYTESTREAM_s *pByteStream )
 	if ( SERVER_GetClient( g_lCurrentClient )->State == CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION )
 		SERVER_GetClient( g_lCurrentClient )->State = CLS_SPAWNED;
 
+	// Reset the movement buffer regulator.
+	SERVER_GetClient( g_lCurrentClient )->MoveCMDRegulator.reset( );
+
 	// Now that the level has been authenticated, send all the level data for the client.
 
 	// Send skill level.
@@ -6626,7 +6629,8 @@ bool ClientCommandRegulator::parseBufferedCommand( BYTESTREAM_s *pByteStream )
 {
 	ClientCommand *cmd = new CommandType( pByteStream );
 
-	if ( sv_useticbuffer )
+	// Don't bother if the client is receiving a full update.
+	if ( sv_useticbuffer && g_aClients[g_lCurrentClient].bFullUpdateIncomplete == false )
 	{
 		// Check if a gap occured in the movement processing.
 		if ( cmd->isMoveCmd( ) && gametic - g_aClients[g_lCurrentClient].lLastMoveTick > 1 )
