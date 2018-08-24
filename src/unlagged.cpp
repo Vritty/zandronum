@@ -68,6 +68,9 @@ CVAR( Bool, sv_unlagged_debugactors, false, 0 )
 bool reconciledGame = false;
 int reconciliationBlockers = 0;
 
+// To keep track of the shooter's height adjustement.
+fixed_t reconcilledZ;
+
 void UNLAGGED_Tick( void )
 {
 	// [BB] Only the server has to do anything here.
@@ -226,6 +229,9 @@ void UNLAGGED_Reconcile( AActor *actor )
 				}
 
 				//todo: more correction for client misprediction
+
+				// Keep track of our adjustements.
+				reconcilledZ = actor->z;
 			}
 		}
 	}	
@@ -261,11 +267,30 @@ void UNLAGGED_Restore( AActor *actor )
 		sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
 	}
 
+	const int unlaggedIndex = UNLAGGED_Gametic( actor->player ) % UNLAGGEDTICS;
+
 	//restore the players
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
 		if (playeringame[i] && players[i].mo && !players[i].bSpectating)
 		{
+			// Do not restore this player's position if the shot resulted in his direct teleportation.
+			if ( players + i != actor->player )
+			{
+				if ( players[i].mo->x != players[i].unlaggedX[unlaggedIndex] ||
+					players[i].mo->y != players[i].unlaggedY[unlaggedIndex] ||
+					players[i].mo->z != players[i].unlaggedZ[unlaggedIndex] )
+				{
+					continue;
+				}
+			}
+			else if ( actor->x != players[i].restoreX ||
+				actor->y != players[i].restoreY ||
+				actor->z != reconcilledZ )
+			{
+				continue;
+			}
+
 			players[i].mo->SetOrigin( players[i].restoreX, players[i].restoreY, players[i].restoreZ );
 			players[i].mo->floorz = players[i].restoreFloorZ;
 			players[i].mo->ceilingz = players[i].restoreCeilingZ;
