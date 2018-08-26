@@ -251,18 +251,19 @@ void SERVER_MASTER_Broadcast( void )
 #endif
 
 	// Broadcast our packet.
-	SERVER_MASTER_SendServerInfo( AddressBroadcast, SQF_ALL, 0, true );
+	SERVER_MASTER_SendServerInfo( AddressBroadcast, SQF_ALL, 0, SQF2_ALL, true );
 //	NETWORK_WriteLong( &g_MasterServerBuffer, MASTER_CHALLENGE );
 //	NETWORK_LaunchPacket( g_MasterServerBuffer, AddressBroadcast, true );
 }
 
 //*****************************************************************************
 //
-void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ulTime, bool bBroadcasting )
+void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ulTime, ULONG ulFlags2, bool bBroadcasting )
 {
 	IPStringArray szAddress;
 	ULONG		ulIdx;
 	ULONG		ulBits;
+	ULONG 		ulBits2;
 
 	// Let's just use the master server buffer! It gets cleared again when we need it anyway!
 	g_MasterServerBuffer.Clear();
@@ -372,6 +373,10 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	// [TP] Don't send deh files if there aren't any.
 	if ( D_GetDehFileNames().Size() == 0 )
 		ulBits &= ~SQF_DEH;
+
+	// [SB] If the client didn't send any extended flags, don't send any extended info
+	if ( ulFlags2 == 0 )
+		ulBits &= ~SQF_EXTENDED_INFO;
 
 	g_MasterServerBuffer.ByteStream.WriteLong( ulBits );
 
@@ -597,6 +602,24 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 
 		for ( unsigned i = 0; i < names.Size(); ++i )
 			g_MasterServerBuffer.ByteStream.WriteString( names[i] );
+	}
+
+	// [SB] handle extended flags
+	if ( ulBits & SQF_EXTENDED_INFO ) 
+	{
+		ulBits2 = ulFlags2;
+		ulBits2 &= SQF2_ALL;
+
+		g_MasterServerBuffer.ByteStream.WriteLong( ulBits2 );
+
+		// [SB] send MD5 hashes of PWADs
+		if ( ulBits2 & SQF2_PWAD_HASHES )
+		{
+			g_MasterServerBuffer.ByteStream.WriteByte( NETWORK_GetPWADList().Size( ) );
+
+			for ( unsigned i = 0; i < NETWORK_GetPWADList().Size(); ++i )
+				g_MasterServerBuffer.ByteStream.WriteString( NETWORK_GetPWADList()[i].checksum );
+		}
 	}
 
 //	NETWORK_LaunchPacket( &g_MasterServerBuffer, Address, true );

@@ -450,6 +450,7 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	ULONG		ulIdx;
 	LONG		lServer;
 	ULONG		ulFlags;
+	ULONG 		ulFlags2;
 	bool		bResortList = true;
 
 	lServer = browser_GetListIDByAddress( NETWORK_GetFromAddress( ));
@@ -727,6 +728,19 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	{
 		for ( int i = pByteStream->ReadByte(); i > 0; --i )
 			pByteStream->ReadString();
+	}
+
+	// [SB] Extended server info
+	if ( ulFlags & SQF_EXTENDED_INFO )
+	{
+		ulFlags2 = pByteStream->ReadLong();
+
+		// [SB] PWAD hashes
+		if ( ulFlags2 & SQF2_PWAD_HASHES )
+		{
+			for ( int i = pByteStream->ReadByte(); i > 0; --i )
+				pByteStream->ReadString();
+		}
 	}
 
 	// Now that this server has been read in, resort the servers in the menu.

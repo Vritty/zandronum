@@ -1558,6 +1558,7 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 	ULONG	ulFlags;
 	ULONG	ulTime;
 	LONG	lCommand;
+	ULONG   ulFlags2 = 0; // [SB] extended flags
 
 	// If either this IP is in our flood protection queue, or the queue is full (DOS), ignore the request.
 	if ( g_floodProtectionIPQueue.isFull( ) || g_floodProtectionIPQueue.addressInQueue( NETWORK_GetFromAddress( )))
@@ -1614,11 +1615,15 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 			// Read in the time the launcher sent us.
 			ulTime = pByteStream->ReadLong();
 
+			// [SB] read extended flags
+			if ( ulFlags & SQF_EXTENDED_INFO )
+				ulFlags2 = pByteStream->ReadLong();
+
 			// Received launcher query!
 			if ( sv_showlauncherqueries )
 				Printf( "Launcher challenge from: %s\n", NETWORK_GetFromAddress().ToString() );
 
-			SERVER_MASTER_SendServerInfo( NETWORK_GetFromAddress( ), ulFlags, ulTime, false );
+			SERVER_MASTER_SendServerInfo( NETWORK_GetFromAddress( ), ulFlags, ulTime, ulFlags2, false );
 			return;
 		// [RC] Master server is sending us the holy banlist.
 		case MASTER_SERVER_BANLIST:
