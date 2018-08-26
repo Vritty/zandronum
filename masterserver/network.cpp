@@ -285,11 +285,12 @@ void NETWORK_LaunchPacket( NETBUFFER_s *pBuffer, NETADDRESS_s Address )
 		return;
 
 	// Convert the IP address to a socket address.
-	struct sockaddr SocketAddress = Address.ToSocketAddress();
+	struct sockaddr_in SocketAddress;
+	Address.ToSocketAddress( reinterpret_cast<sockaddr&>(SocketAddress) );
 
 	HUFFMAN_Encode( (unsigned char *)pBuffer->pbData, g_ucHuffmanBuffer, pBuffer->ulCurrentSize, &iNumBytesOut );
 
-	lNumBytes = sendto( g_NetworkSocket, (const char*)g_ucHuffmanBuffer, iNumBytesOut, 0, &SocketAddress, sizeof( SocketAddress ));
+	lNumBytes = sendto( g_NetworkSocket, (const char*)g_ucHuffmanBuffer, iNumBytesOut, 0, reinterpret_cast<sockaddr*>(&SocketAddress), sizeof( SocketAddress ));
 
 	// If sendto returns -1, there was an error.
 	if ( lNumBytes == -1 )
