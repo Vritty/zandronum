@@ -27,6 +27,11 @@
 #include <fnmatch.h>
 #include <unistd.h>
 
+// [EP] Compiling hack for OSX, purge this after code upgrade.
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #include <stdarg.h>
 #include <sys/types.h>
 #include <sys/time.h>
