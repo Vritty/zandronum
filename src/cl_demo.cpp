@@ -145,6 +145,8 @@ static	player_t			g_demoCameraPlayer;
 // [Dusk] ZCLD magic number signature
 static	const DWORD			g_demoSignature = MAKE_ID( 'Z', 'C', 'L', 'D' );
 
+static	unsigned int		g_TicsPlayedBack = 0;
+
 // [Dusk] Should we perform demo authentication?
 CUSTOM_CVAR( Bool, demo_pure, true, CVAR_ARCHIVE | CVAR_GLOBALCONFIG )
 {
@@ -504,6 +506,7 @@ void CLIENTDEMO_ReadPacket( void )
 		case CLD_TICCMD:
 
 			CLIENTDEMO_ReadTiccmd( &players[consoleplayer].cmd );
+			++g_TicsPlayedBack;
 
 			// After we write our ticcmd, we're done for this tic.
 			if ( CLIENTDEMO_IsSkipping() == false )
@@ -635,6 +638,7 @@ void CLIENTDEMO_DoPlayDemo( const char *pszDemoName )
 
 	g_ByteStream.pbStream = g_pbDemoBuffer;
 	g_ByteStream.pbStreamEnd = g_pbDemoBuffer + lDemoLength;
+	g_TicsPlayedBack = 0;
 
 	if ( CLIENTDEMO_ProcessDemoHeader( ))
 	{
@@ -996,6 +1000,17 @@ CCMD( demo_skiptics )
 		else
 			Printf ( "You can't skip a negative amount of tics!\n" );
 	}
+}
+
+CCMD( demo_ticsplayed )
+{
+	// This command shouldn't do anything if a demo isn't playing.
+	if ( CLIENTDEMO_IsPlaying( ) == false )
+		return;
+
+	const unsigned int minutes = (g_TicsPlayedBack / TICRATE) / 60;
+	const unsigned int seconds = (g_TicsPlayedBack / TICRATE) % 60;
+	Printf( "Tics played back so far: %u (%02u:%02u)\n", g_TicsPlayedBack, minutes, seconds );
 }
 
 CCMD( demo_spectatefreely )
