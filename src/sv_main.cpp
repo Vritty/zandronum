@@ -280,6 +280,7 @@ CVAR( Int, sv_maxclientsperip, 2, CVAR_ARCHIVE | CVAR_SERVERINFO )
 CVAR( Int, sv_afk2spec, 0, CVAR_ARCHIVE | CVAR_SERVERINFO ) // [K6]
 CVAR( Bool, sv_forcelogintojoin, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Bool, sv_useticbuffer, true, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_DEBUGONLY )
+CVAR( Int, sv_showcommands, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY )
 
 CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_SENSITIVESERVERSETTING|CVAR_NOSETBYACS )
 {
@@ -4222,6 +4223,38 @@ LONG SERVER_STATISTIC_GetCurrentInboundDataTransfer( void )
 }
 
 //*****************************************************************************
+//
+void SERVER_PrintCommand( LONG lCommand )
+{
+	const char	*pszString;
+
+	if ( lCommand < 0 )
+		return;
+
+	if ( lCommand < NUM_CLIENTCONNECT_COMMANDS )
+		pszString = GetStringCLCC ( static_cast<CLCC> ( lCommand ) );
+	else
+	{
+		if (( sv_showcommands >= 2 ) && ( lCommand == CLC_CLIENTMOVE ))
+			return;
+		if (( sv_showcommands >= 3 ) && ( lCommand == CLC_PONG ))
+			return;
+		if (( sv_showcommands >= 4 ) && ( lCommand == CLC_SPECTATEINFO ))
+			return;
+
+		if ( ( lCommand - NUM_CLIENTCONNECT_COMMANDS ) < 0 )
+			return;
+
+		pszString = GetStringCLC ( static_cast<CLC> ( lCommand ) );
+	}
+
+	Printf( "%s\n", pszString );
+
+	if ( debugfile )
+		fprintf( debugfile, "%s\n", pszString );
+}
+
+//*****************************************************************************
 //*****************************************************************************
 //
 void SERVER_ParsePacket( BYTESTREAM_s *pByteStream )
@@ -4236,6 +4269,10 @@ void SERVER_ParsePacket( BYTESTREAM_s *pByteStream )
 		// End of message.
 		if ( lCommand == -1 )
 			break;
+
+		// [BB] Option to print commands for debugging purposes.
+		if ( sv_showcommands )
+			SERVER_PrintCommand( lCommand );
 
 		bPlayerKicked = false;
 		switch ( lCommand )
