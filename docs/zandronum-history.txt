@@ -18,6 +18,7 @@
 *+	- Added a new server administration menu, from which server settings can be changed without needing to use the console. The menu will ask for the RCON password if necessary. Gameplay and compatibility settings are now grayed out unless the user has RCON access and work online properly. Added various Zandronum-specific gameplay settings to the menu. [Dusk]
 +	- "stat nettraffic" now also shows information on the number of many missing packets the client requests from the servers. [Torr Samaho]
 +	- The server can now broadcast the MD5 hashes of loaded PWADs to launchers. [Sean]
++	- Added new console commands "demo_ticsplayed" to show the current position in demo playback and "demo_skipto" to skip to such a position.
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]
 -	- Fixed: The 'Color Setter' and the 'Fade Setter' things weren't handled properly on map resets. [Edward-san]

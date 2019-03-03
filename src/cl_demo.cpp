@@ -1002,6 +1002,36 @@ CCMD( demo_skiptics )
 	}
 }
 
+// Skips tics to a certain point in the demo.
+CCMD( demo_skipto )
+{
+	// This command shouldn't do anything if a demo isn't playing.
+	if ( CLIENTDEMO_IsPlaying( ) == false )
+		return;
+
+	if ( argv.argc() > 1 )
+	{
+		const int ticPositionSigned = atoi( argv[1] );
+
+		if ( ticPositionSigned >= 0 )
+		{
+			const unsigned int ticPosition = static_cast<unsigned int>( ticPositionSigned );
+			if ( ticPosition >= g_TicsPlayedBack )
+			{
+				g_ulTicsToSkip = ticPosition - g_TicsPlayedBack;
+			}
+			else
+			{
+				Printf( "That position is in the past. You cannot rewind demos.\n" );
+			}
+		}
+		else
+		{
+			Printf( "You can't skip to a negative position!\n" );
+		}
+	}
+}
+
 CCMD( demo_ticsplayed )
 {
 	// This command shouldn't do anything if a demo isn't playing.
@@ -1011,6 +1041,7 @@ CCMD( demo_ticsplayed )
 	const unsigned int minutes = (g_TicsPlayedBack / TICRATE) / 60;
 	const unsigned int seconds = (g_TicsPlayedBack / TICRATE) % 60;
 	Printf( "Tics played back so far: %u (%02u:%02u)\n", g_TicsPlayedBack, minutes, seconds );
+	Printf( "Use 'demo_skipto %u' to skip to this point when playing back another time.\n", g_TicsPlayedBack );
 }
 
 CCMD( demo_spectatefreely )
