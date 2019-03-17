@@ -27,6 +27,7 @@
 -	- Fixed: A_CheckLOF wasn't handled properly online. [Edward-san]
 -	- Fixed the DROPPED flag not being removed from level-spawned things when not needed. [Edward-san]
 -	- Fixed an ACS related server and client crash. [Torr Samaho]
+-	- Fixed: loading from a savegame lost the extra player statuses, like the spread rune mode. [Edward-san]
 !	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
 

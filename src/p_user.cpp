@@ -481,6 +481,7 @@ player_t &player_t::operator=(const player_t &p)
 	ConversationFaceTalker = p.ConversationFaceTalker;
 
 	// [BB] Zandronum additions
+	cheats2 = p.cheats2;
 	bOnTeam = p.bOnTeam;
 	ulTeam = p.ulTeam;
 	lPointCount = p.lPointCount;
