@@ -30,6 +30,7 @@
 -	- Fixed: loading from a savegame lost the extra player statuses, like the spread rune mode. [Edward-san]
 !	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
+!	- When the wad authentication fails for a connecting client, the client only reports the missing and incompatible PWADS instead of all of them. [Pol Marcet]
 
 
 3.0

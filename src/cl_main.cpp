@@ -119,6 +119,7 @@
 #include "network/servercommands.h"
 #include "am_map.h"
 #include "menu/menu.h"
+#include "v_text.h"
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
@@ -1440,28 +1441,74 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case NETWORK_ERRORCODE_AUTHENTICATIONFAILED:
 			case NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED:
 				{
-					std::list<std::pair<FString, FString> > serverPWADs;
+					struct Wad
+					{
+						FString name;
+						FString checksum;
+					};
+					struct WadDiff : public Wad
+					{
+						FString checksumClient;
+					};
+
+					// Server PWADs
+					TArray<Wad> serverPWADs;
 					const int numServerPWADs = pByteStream->ReadByte();
 					for ( int i = 0; i < numServerPWADs; ++i )
 					{
-						std::pair<FString, FString> pwad;
-						pwad.first = pByteStream->ReadString();
-						pwad.second = pByteStream->ReadString();
-						serverPWADs.push_back ( pwad );
+						Wad pwad;
+						pwad.name = pByteStream->ReadString();
+						pwad.checksum = pByteStream->ReadString();
+						serverPWADs.Push( pwad );
+					}
+					// missing, incompatible and unused client PWADs
+					TArray<Wad> missingPWADs;
+					TArray<WadDiff> incompatiblePWADs;
+					TArray<NetworkPWAD> unusedClientPWADs = *&NETWORK_GetPWADList( );
+					for ( unsigned int serverI = 0; serverI < serverPWADs.Size( ); ++serverI )
+					{
+						bool found = false;
+						for ( unsigned int clientI = 0; clientI < unusedClientPWADs.Size( ); ++clientI )
+						{
+							if ( unusedClientPWADs[clientI].name.Compare( serverPWADs[serverI].name ) == 0 )
+							{
+								if ( unusedClientPWADs[clientI].checksum.Compare( serverPWADs[serverI].checksum ) != 0 )
+								{
+									WadDiff wadDiff;
+									wadDiff.name = unusedClientPWADs[clientI].name;
+									wadDiff.checksumClient = unusedClientPWADs[clientI].checksum;
+									wadDiff.checksum = serverPWADs[serverI].checksum;
+									incompatiblePWADs.Push( wadDiff );
+								}
+								unusedClientPWADs.Delete( clientI );
+								found = true;
+								break;
+							}
+						}
+						if ( !found )
+							missingPWADs.Push ( serverPWADs[serverI] );
 					}
 
 					szErrorString.Format( "%s authentication failed.\nPlease make sure you are using the exact same WAD(s) as the server, and try again.", ( ulErrorCode == NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED ) ? "Protected lump" : "Level" );
-
-					Printf ( "The server reports %d pwad(s):\n", numServerPWADs );
-					for( std::list<std::pair<FString, FString> >::iterator i = serverPWADs.begin( ); i != serverPWADs.end( ); ++i )
-						Printf( "PWAD: %s - %s\n", i->first.GetChars(), i->second.GetChars() );
-					Printf ( "You have loaded %d pwad(s):\n", NETWORK_GetPWADList().Size() );
-					for ( unsigned int i = 0; i < NETWORK_GetPWADList().Size(); ++i )
+					Printf( "The server reports %d PWAD(s), and you have %d\n", numServerPWADs, NETWORK_GetPWADList().Size() );
+					if ( incompatiblePWADs.Size( ) != 0 )
 					{
-						const NetworkPWAD& pwad = NETWORK_GetPWADList()[i];
-						Printf( "PWAD: %s - %s\n", pwad.name.GetChars(), pwad.checksum.GetChars() );
+						Printf( "Incompatible PWAD(s) (PWAD name - server | client):\n" );
+						for ( unsigned int i = 0; i < incompatiblePWADs.Size( ); ++i )
+							Printf ( TEXTCOLOR_RED"%s - %s | %s\n", incompatiblePWADs[i].name.GetChars( ), incompatiblePWADs[i].checksum.GetChars( ), incompatiblePWADs[i].checksumClient.GetChars( ) );
 					}
-
+					if ( missingPWADs.Size( ) != 0 )
+					{
+						Printf( "Missing PWAD(s):\n" );
+						for ( unsigned int i = 0; i < missingPWADs.Size( ); ++i )
+							Printf( TEXTCOLOR_RED"%s - %s\n", missingPWADs[i].name.GetChars( ), missingPWADs[i].checksum.GetChars( ) );
+					}
+					if ( unusedClientPWADs.Size( ) != 0 )
+					{
+						Printf( "Extra PWAD(s) not loaded by the server:\n" );
+						for ( unsigned int i = 0; i < unusedClientPWADs.Size( ); ++i )
+							Printf( TEXTCOLOR_RED"%s - %s\n", unusedClientPWADs[i].name.GetChars( ), unusedClientPWADs[i].checksum.GetChars( ) );
+					}
 					break;
 				}
 			case NETWORK_ERRORCODE_TOOMANYCONNECTIONSFROMIP:
