@@ -1,9 +1,9 @@
 cmake_minimum_required( VERSION 2.4 )
 
 # [BB/EP] Download SQLite archive and extract the sources if necessary.
-set( ZAN_SQLITE_VERSION 3240000 ) # SQL version 3.24.0
-set( ZAN_SQLITE_YEAR 2018 )
-set( ZAN_SQLITE_SHA1 "da68915e3563b5244cbcdb6c7e20fb35559bcfc6" )
+set( ZAN_SQLITE_VERSION 3280000 ) # SQL version 3.28.0
+set( ZAN_SQLITE_YEAR 2019 )
+set( ZAN_SQLITE_SHA1 "01b9d8fc77085e144dddc87456c9783e53d09a53" )
 set( ZAN_SQLITE_DOWNLOAD_NAME "sqlite-autoconf-${ZAN_SQLITE_VERSION}" )
 set( ZAN_SQLITE_TEMP_ARCHIVE "${CMAKE_CURRENT_SOURCE_DIR}/${ZAN_SQLITE_DOWNLOAD_NAME}.tar.gz" )
 set( ZAN_SQLITE_HASHED_ARCHIVE "${CMAKE_CURRENT_SOURCE_DIR}/sqlite-${ZAN_SQLITE_SHA1}.tar.gz" )
