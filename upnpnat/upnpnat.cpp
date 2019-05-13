@@ -3,6 +3,7 @@
 #else
 // [BB] Some platform specific includes and defines to make the Windows code compile under Linux.
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
