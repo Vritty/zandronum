@@ -62,7 +62,7 @@ EXTERN_CVAR(Int, r_3dfloors);
 
 // [TP] Override r_3dfloors in the same way as gl_fogmode
 #define OVERRIDE_R_3DFLOORS_IF_NECESSARY \
-	const bool r_3dfloors_CVAR_value = r_3dfloors; \
+	const bool r_3dfloors_CVAR_value = !!r_3dfloors; \
 	const bool r_3dfloors = ( zadmflags & ZADF_FORCE_VIDEO_DEFAULTS ) || r_3dfloors_CVAR_value;
 
 // functions
