@@ -253,7 +253,7 @@ FILE *Logfile = NULL;
 char g_szDesiredLogFilename[256];
 
 // [RC] The actual name of the logfile (most likely g_szLogFilename with a timestamp).
-char g_szActualLogFilename[256];
+char g_szActualLogFilename[512];
 
 void C_AddNotifyString (int printlevel, const char *source);
 

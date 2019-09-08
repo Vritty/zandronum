@@ -8743,13 +8743,13 @@ void ServerCommands::DoScroller::Execute()
 	{
 		if (( affectee < 0 ) || ( affectee >= numsides ))
 		{
-			CLIENT_PrintWarning( "client_DoScroller: Invalid side ID: %ld!\n", affectee );
+			CLIENT_PrintWarning( "client_DoScroller: Invalid side ID: %d!\n", affectee );
 			return;
 		}
 	}
 	else if (( affectee < 0 ) || ( affectee >= numsectors ))
 	{
-		CLIENT_PrintWarning( "client_DoScroller: Invalid sector ID: %ld!\n", affectee );
+		CLIENT_PrintWarning( "client_DoScroller: Invalid sector ID: %d!\n", affectee );
 		return;
 	}
 
