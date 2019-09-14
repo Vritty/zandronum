@@ -430,6 +430,8 @@ static NextToken GetNextToken(XML *pXML, int *pcbToken, enum TokenTypeTag *pType
             // text process
 
         // Other characters
+        // [BB] Silence GCC
+        // fall through
         default:
             nIsText = TRUE;
         }
@@ -713,7 +715,8 @@ int XMLNode::ParseXMLElement(void *pa)
     int cbToken;
     enum TokenTypeTag type;
     NextToken token;
-    LPCTSTR lpszTemp;
+    // [BB] Initialize to silence GCC
+    LPCTSTR lpszTemp = NULL;
     int cbTemp;
     int nDeclaration;
     LPCTSTR lpszText = NULL;
