@@ -5659,6 +5659,10 @@ static bool server_RCONCommand( BYTESTREAM_s *pByteStream )
 //
 static bool server_Suicide( BYTESTREAM_s *pByteStream )
 {
+	// [SB] Suicide client command is now flood checked.
+	if ( server_CheckForClientMinorCommandFlood( g_lCurrentClient ) == true )
+		return ( true );
+
 	// Spectators cannot suicide.
 	if ( players[g_lCurrentClient].bSpectating || playeringame[g_lCurrentClient] == false )
 		return ( false );
@@ -5690,6 +5694,10 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	LONG		lDesiredTeam;
 	bool		bOnTeam, bAutoSelectTeam = false;
 	FString		clientJoinPassword;
+	
+	// [SB] Change team client command is now flood checked.
+	if ( server_CheckForClientCommandFlood( g_lCurrentClient ) == true )
+		return ( true );
 
 	// Read in the join password.
 	clientJoinPassword = pByteStream->ReadString();
@@ -6414,6 +6422,10 @@ static bool server_InventoryDrop( BYTESTREAM_s *pByteStream )
 {
 	USHORT		usActorNetworkIndex = 0;
 	AInventory	*pItem;
+	
+	// [SB] Drop inventory client command is now flood checked.
+	if ( server_CheckForClientMinorCommandFlood( g_lCurrentClient ) == true )
+		return ( true );
 
 	usActorNetworkIndex = pByteStream->ReadShort();
 
