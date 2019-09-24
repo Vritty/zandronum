@@ -1962,6 +1962,14 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 
 	while (( name = NETWORK_ReadName( pByteStream ) ) != NAME_None )
 	{
+		// [SB] Kick the player if we run out of data.
+		if ( pByteStream->pbStream >= pByteStream->pbStreamEnd )
+		{
+			bKickPlayer = true;
+			kickReason = "Client sent malformed data.";
+			break;
+		}
+
 		names.insert( name );
 		value = pByteStream->ReadString();
 
@@ -2082,7 +2090,8 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 	}
 
 	// [BB] Make sure that the joining client sends the full user info (sending player class is not mandatory though).
-	if ( bEnforceRequired )
+	// [SB] This check is not done if bKickPlayer is true, allowing any decisions to kick a player to just fall through.
+	if ( bEnforceRequired && !bKickPlayer )
 	{
 		static const std::set<FName> required = {
 			NAME_Name, NAME_Autoaim, NAME_Gender, NAME_Skin, NAME_RailColor,
