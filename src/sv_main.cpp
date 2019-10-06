@@ -5491,6 +5491,10 @@ static bool server_Spectate( BYTESTREAM_s *pByteStream )
 {
 	ULONG	ulIdx;
 
+	// [SB] The spectate and request join commands are now ratelimited
+	if ( server_CheckForClientCommandFlood( g_lCurrentClient ) == true )
+		return ( true );
+
 	// Already a spectator!
 	if ( PLAYER_IsTrueSpectator( &players[g_lCurrentClient] ))
 	{
@@ -5530,6 +5534,10 @@ static bool server_RequestJoin( BYTESTREAM_s *pByteStream )
 {
 	FString		clientJoinPassword;
 	ULONG		ulGametic;
+
+	// [SB] The spectate and request join commands are now ratelimited
+	if ( server_CheckForClientCommandFlood( g_lCurrentClient ) == true )
+		return ( true );
 
 	// Read in the join password.
 	clientJoinPassword = pByteStream->ReadString();
