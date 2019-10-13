@@ -45,9 +45,9 @@ unsigned int GetRevisionNumber();
 /** Lots of different version numbers **/
 
 #define GAME_MAJOR_VERSION 3
-#define GAME_MINOR_VERSION 1
-#define GAMEVER_STRING "3.1"
-#define DOTVERSIONSTR GAMEVER_STRING "-alpha"
+#define GAME_MINOR_VERSION 0
+#define GAMEVER_STRING "3.0.1"
+#define DOTVERSIONSTR GAMEVER_STRING
 #define VERSIONSTR DOTVERSIONSTR
 
 // [BB] The version string that includes revision / compatibility data.
@@ -66,8 +66,8 @@ unsigned int GetRevisionNumber();
 #define BUILD_PRIVATE		3
 
 // [RC] Release code ID for this build.
-#define BUILD_ID			BUILD_INTERNAL
-#define BUILD_ID_STR		"Internal" // Used in the exe's metadata.
+#define BUILD_ID			BUILD_RELEASE
+#define BUILD_ID_STR		"Release" // Used in the exe's metadata.
 
 // Version identifier for network games.
 // Bump it every time you do a release unless you're certain you
@@ -80,7 +80,9 @@ unsigned int GetRevisionNumber();
 // [BB] Use the revision number to automatically make builds from
 // different revisions incompatible. Skulltag only uses one byte
 // to transfer NETGAMEVERSION, so we need to limit its value to [0,255].
-#define NETGAMEVERSION (GetRevisionNumber() % 256)
+//#define NETGAMEVERSION (GetRevisionNumber() % 256)
+// [BB] Stay network compatible with 3.0.
+#define NETGAMEVERSION (1504266050 % 256)
 
 // Version stored in the ini's [LastRun] section.
 // Bump it if you made some configuration change that you want to
