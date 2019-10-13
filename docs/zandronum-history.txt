@@ -12,25 +12,11 @@
 ===============================================================================================================
 
 
-3.1
+3.0.1
 ---
 
-*+	- Added a new server administration menu, from which server settings can be changed without needing to use the console. The menu will ask for the RCON password if necessary. Gameplay and compatibility settings are now grayed out unless the user has RCON access and work online properly. Added various Zandronum-specific gameplay settings to the menu. [Dusk]
-+	- "stat nettraffic" now also shows information on the number of many missing packets the client requests from the servers. [Torr Samaho]
-+	- The server can now broadcast the MD5 hashes of loaded PWADs to launchers. [Sean]
-+	- Added new console commands "demo_ticsplayed" to show the current position in demo playback and "demo_skipto" to skip to such a position.
--	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
--	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]
--	- Fixed: The 'Color Setter' and the 'Fade Setter' things weren't handled properly on map resets. [Edward-san]
--	- Fixed: A_JumpIfTargetInsideMeleeRange and A_JumpIfTargetOutsideMeleeRange weren't handled properly online. [Edward-san]
--	- Fixed: Same spot respawn didn't work anymore with dead spectators. [Edward-san]
--	- Fixed: A_CheckLOF wasn't handled properly online. [Edward-san]
--	- Fixed the DROPPED flag not being removed from level-spawned things when not needed. [Edward-san]
--	- Fixed an ACS related server and client crash. [Torr Samaho]
--	- Fixed: loading from a savegame lost the extra player statuses, like the spread rune mode. [Edward-san]
-!	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
-!	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
-!	- When the wad authentication fails for a connecting client, the client only reports the missing and incompatible PWADS instead of all of them. [Pol Marcet]
+-	- Fix a server hang that could be caused by malformed userinfo data. [Sean]
+-	- The spectate, join, suicide, change team, and inventory drop client commands will now trigger a client command flood. [Sean]
 
 
 3.0
