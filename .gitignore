@@ -60,6 +60,7 @@ debug
 release
 Debug
 Release
+build
 *.ncb
 *.suo
 *.user
