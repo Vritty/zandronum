@@ -2310,6 +2310,10 @@ fixed_t APlayerPawn::CalcJumpVelz()
 //===========================================================================
 fixed_t APlayerPawn::CalcJumpHeight( bool bAddStepZ )
 {
+	// [sleep] Don't calculate if jumping is not allowed.
+	if ( !level.IsJumpingAllowed( ) )
+		return 0;
+
 	// To get the jump height we simulate a jump with the player's jumpZ with
 	// the environment's gravity. The grav equation was copied from p_mobj.cpp.
 	// Should it be made a function?
