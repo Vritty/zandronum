@@ -1351,6 +1351,7 @@ OptionMenu GameplayOptions
 	Option "Spawn singleplayer actors", "sv_coop_spactorspawn", "YesNo"
 	Option "Share keys",			"sv_sharekeys", "YesNo"
 	Option "Allow coop info",		"sv_nocoopinfo", "NoYes"
+	Option "Allow closing doors",		"sv_nodoorclose", "NoYes"
 	// [TP] --
 	Class "GameplayMenu"
 }

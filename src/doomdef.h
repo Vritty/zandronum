@@ -375,6 +375,11 @@ enum
 
 	// [Proteh] Don't use backwards reconcilation for the hitscan tracers fired from the BFG9000
 	ZADF_NOUNLAGGED_BFG_TRACERS = 1 << 18,
+
+	// If set, stops doors from being manually closed.
+	// This prevents players intentionally (or unintentionally) griefing
+	// by closing doors that other players (or the same player) have opened.
+	ZADF_NODOORCLOSE = 1 << 19,
 };
 
 // [RH] Compatibility flags.

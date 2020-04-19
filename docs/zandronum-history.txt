@@ -19,6 +19,7 @@
 +	- "stat nettraffic" now also shows information on the number of many missing packets the client requests from the servers. [Torr Samaho]
 +	- The server can now broadcast the MD5 hashes of loaded PWADs to launchers. [Sean]
 +	- Added new console commands "demo_ticsplayed" to show the current position in demo playback and "demo_skipto" to skip to such a position.
++	- Added new console variable "sv_nodoorclose" to prevent manual door closing, in order to prevent large numbers of players from blocking a door by continuously opening and closing it. [DoomJoshuaBoy]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]

@@ -642,7 +642,8 @@ bool EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					{
 						// [BC] Added !thing, because sometimes thing can be NULL when this function
 						// is called by client_DoDoor.
-						if (!thing || !thing->player)
+						// [JS] Patches for the Door closing spam. 
+						if (!thing || !thing->player || zadmflags & ZADF_NODOORCLOSE)
 							return false;	// JDC: bad guys never close doors
 
 						door->m_Direction = -1;	// start going down immediately
