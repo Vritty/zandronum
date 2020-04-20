@@ -53,7 +53,8 @@ endif( CMAKE_SIZEOF_VOID_P MATCHES "8" )
 # a system-wide version.
 
 # Construct version numbers for searching for the FMOD library on Linux.
-set( MINOR_VERSIONS "61" "50" "49" "48" "47" "46" "45" "44" "43" "42" "41"
+# [BB] Added "64" to support 4.44.64.
+set( MINOR_VERSIONS "64" "61" "50" "49" "48" "47" "46" "45" "44" "43" "42" "41"
 	"40" "39" "38" "37" "36" "35" "34" "33" "32" "31" "30" "29" "28"
 	"27" "26" "25" "24" "23" "22" "21" "20" "21" "19" "18" "17" "16"
 	"15" "14" "13" "12" "11" "10" "09" "08" "07" "06" "05" "04" "03"
