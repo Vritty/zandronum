@@ -2736,7 +2736,8 @@ void CSkullBot::ParseScript( void )
 				if (( lHighestVal < 0 ) || ( lHighestVal >= MAX_SCRIPTARRAY_SIZE ))
 					I_Error( "ParseScript: Invalid array maximum index, %d, in command \"arrayset\"!", static_cast<int> (lHighestVal) );
 
-				memset( m_ScriptData.alScriptArrays[lArray], lVal, lHighestVal * sizeof( LONG ));
+				for (int i = 0; i < lHighestVal; i++)
+					m_ScriptData.alScriptArrays[lArray][i] = lVal;
 				PopStack( );
 				PopStack( );
 				PopStack( );
