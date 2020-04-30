@@ -512,8 +512,9 @@ void DBaseDecal::SpreadRight (fixed_t r, side_t *feelwall, fixed_t wallsize, F3D
 		x = v1->x;
 		y = v1->y;
 		wallsize = Length (ldx, ldy);
-		x -= Scale (r, ldx, wallsize);
-		y -= Scale (r, ldy, wallsize);
+		// [BB/eagle] Fixed integer overflow by removing inline asm.
+		x -= r * ldx / wallsize;
+		y -= r * ldy / wallsize;
 		r = DecalRight - r;
 		SpreadSource->CloneSelf (SpreadTemplate, x, y, SpreadZ, feelwall, ffloor);
 		SpreadStack.Push (feelwall);
