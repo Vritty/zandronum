@@ -5455,7 +5455,10 @@ bool ClientWeaponSelectCommand::process( const ULONG ulClient ) const
 
 	// [BB] Needs to be done after calling SERVERCOMMANDS_SetPlayerPendingWeapon because P_BringUpWeapon clears PendingWeapon to WP_NOCHANGE.
 	if ( bFirstWeaponSelect )
+	{
 		P_BringUpWeapon ( &players[ulClient] );
+		P_NewPspriteTick( &players[ulClient] );
+	}
 
 	return ( false );
 }
