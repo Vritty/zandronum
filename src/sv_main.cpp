@@ -1902,7 +1902,7 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 {
 	player_t	*pPlayer;
 	FString		szSkin;
-	char		szOldPlayerName[64];
+	char		szOldPlayerName[MAXPLAYERNAME+1];
 	ULONG		ulUserInfoInstance;
 	// [BB] We may only kick the player after completely parsing the current message,
 	// otherwise we'll get network parsing errors.
