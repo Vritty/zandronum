@@ -192,7 +192,7 @@ void CALLVOTE_BeginVote( FString Command, FString Parameters, FString Reason, UL
 
 	// [TP] If the reason contains color codes, make sure that the color codes
 	// are terminated properly.
-	if (( Reason.IndexOf( TEXTCOLOR_ESCAPE ) != -1 ) && ( Reason.Right( 2 ) != TEXTCOLOR_NORMAL ))
+	if (( Reason.IndexOf( TEXTCOLOR_ESCAPE ) != -1 ) && ( Reason.Right( 2 ).Compare( TEXTCOLOR_NORMAL ) != 0 ))
 		Reason += TEXTCOLOR_NORMAL;
 
 	// Create the vote console command.

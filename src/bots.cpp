@@ -3250,7 +3250,7 @@ void CSkullBot::PopStack( void )
 //
 void CSkullBot::PushToStringStack( char *pszString )
 {
-	sprintf( m_ScriptData.aszStringStack[m_ScriptData.lStringStackPosition++], "%s", pszString );
+	strncpy( m_ScriptData.aszStringStack[m_ScriptData.lStringStackPosition++], pszString, 256 );
 	
 	if ( botdebug_showstackpushes )
 		Printf( "PushToStringStack: %d\n", static_cast<int> (m_ScriptData.lStringStackPosition) );

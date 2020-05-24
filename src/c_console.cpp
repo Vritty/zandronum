@@ -974,7 +974,7 @@ int PrintString (int printlevel, const char *outline)
 			struct tm *lt;
 			time (&clock);
 			lt = localtime (&clock);
-			char time[26];
+			char time[75];
 			if ( sv_logfiletimestamp_usedate )
 				sprintf( time, "[%02d:%02d:%02d;%02d:%02d:%02d] ", lt->tm_year - 100, lt->tm_mon + 1, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
 			else
