@@ -87,6 +87,7 @@ static int			g_JumpTicsBase[CLIENT_PREDICTION_TICS];
 static	ticcmd_t	g_SavedTiccmd[CLIENT_PREDICTION_TICS];
 static	angle_t		g_SavedAngle[CLIENT_PREDICTION_TICS];
 static	fixed_t		g_SavedPitch[CLIENT_PREDICTION_TICS];
+static	fixed_t		g_SavedSpeed[CLIENT_PREDICTION_TICS];
 static	fixed_t		g_SavedCrouchfactor[CLIENT_PREDICTION_TICS];
 static	BYTE		g_SavedTurnTicks[CLIENT_PREDICTION_TICS];
 static	LONG		g_lSavedReactionTime[CLIENT_PREDICTION_TICS];
@@ -374,6 +375,7 @@ static void client_predict_BeginPrediction( player_t *pPlayer )
 {
 	g_SavedAngle[g_ulGameTick % CLIENT_PREDICTION_TICS] = pPlayer->mo->angle;
 	g_SavedPitch[g_ulGameTick % CLIENT_PREDICTION_TICS] = pPlayer->mo->pitch;
+	g_SavedSpeed[g_ulGameTick % CLIENT_PREDICTION_TICS] = pPlayer->mo->Speed;
 	g_SavedCrouchfactor[g_ulGameTick % CLIENT_PREDICTION_TICS] = pPlayer->crouchfactor;
 	g_SavedTurnTicks[g_ulGameTick % CLIENT_PREDICTION_TICS] = pPlayer->turnticks;
 	g_lSavedReactionTime[g_ulGameTick % CLIENT_PREDICTION_TICS] = pPlayer->mo->reactiontime;
@@ -420,6 +422,7 @@ static void client_predict_DoPrediction( player_t *pPlayer, ULONG ulTicks )
 		// Use backed up values for prediction.
 		pPlayer->mo->angle = g_SavedAngle[lTick % CLIENT_PREDICTION_TICS];
 		pPlayer->mo->pitch = g_SavedPitch[lTick % CLIENT_PREDICTION_TICS];
+		pPlayer->mo->Speed = g_SavedSpeed[lTick % CLIENT_PREDICTION_TICS];
 		// [BB] Crouch prediction seems to be very tricky. While predicting, we don't recalculate
 		// crouchfactor, but just use the value we already calculated before.
 		pPlayer->crouchfactor = g_SavedCrouchfactor[( lTick + 1 )% CLIENT_PREDICTION_TICS];
@@ -456,6 +459,7 @@ static void client_predict_EndPrediction( player_t *pPlayer )
 {
 	pPlayer->mo->angle = g_SavedAngle[g_ulGameTick % CLIENT_PREDICTION_TICS];
 	pPlayer->mo->pitch = g_SavedPitch[g_ulGameTick % CLIENT_PREDICTION_TICS];
+	pPlayer->mo->Speed = g_SavedSpeed[g_ulGameTick % CLIENT_PREDICTION_TICS];
 	pPlayer->crouchfactor = g_SavedCrouchfactor[g_ulGameTick % CLIENT_PREDICTION_TICS];
 	pPlayer->turnticks = g_SavedTurnTicks[g_ulGameTick % CLIENT_PREDICTION_TICS];
 	pPlayer->mo->reactiontime = g_lSavedReactionTime[g_ulGameTick % CLIENT_PREDICTION_TICS];
