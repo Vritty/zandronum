@@ -1806,9 +1806,9 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_CustomPunch)
 		{
 			// [BB] If we're the server, tell the client that he lost ammo.
 			if ( weapon->Ammo1 )
-				SERVERCOMMANDS_GiveInventory( weapon->Owner->player - players, weapon->Ammo1 );
+				SERVERCOMMANDS_TakeInventory( weapon->Owner->player - players, weapon->AmmoType1, weapon->Ammo1->Amount );
 			if ( weapon->Ammo2 )
-				SERVERCOMMANDS_GiveInventory( weapon->Owner->player - players, weapon->Ammo2 );
+				SERVERCOMMANDS_TakeInventory( weapon->Owner->player - players, weapon->AmmoType2, weapon->Ammo2->Amount );
 		}
 	}
 
