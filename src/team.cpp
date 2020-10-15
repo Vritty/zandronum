@@ -479,6 +479,7 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 	bool				bAssisted;
 	bool				bSelfAssisted = false;
 	ULONG				ulTeamIdx = 0;
+	int playerAssistNumber = GAMEEVENT_CAPTURE_NOASSIST; // [AK] Need this for game event.
 
 	// Determine who assisted.
 	bAssisted = ( TEAM_GetAssistPlayer( pPlayer->ulTeam ) != MAXPLAYERS );
@@ -642,6 +643,9 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 	// If someone just recently returned the skull, award him with an "Assist!" medal.
 	if ( TEAM_GetAssistPlayer( pPlayer->ulTeam ) != MAXPLAYERS )
 	{
+		// [AK] Mark the assisting player.
+		playerAssistNumber = TEAM_GetAssistPlayer( pPlayer->ulTeam );
+
 		MEDAL_GiveMedal( TEAM_GetAssistPlayer( pPlayer->ulTeam ), MEDAL_ASSIST );
 
 		// Tell clients about the medal that been given.
@@ -650,6 +654,9 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 
 		TEAM_SetAssistPlayer( pPlayer->ulTeam, MAXPLAYERS );
 	}
+
+	// [AK] Trigger an event script (activator is the capturer, assister is the first arg, and points earned is second arg).
+	GAMEMODE_HandleEvent( GAMEEVENT_CAPTURES, pPlayer->mo, playerAssistNumber, ulNumPoints );
 
 	FString Name;
 	

@@ -539,7 +539,8 @@ bool AFlag::HandlePickup( AInventory *pItem )
 
 			// [CK] Now we have the information to trigger an event script (Activator is the capturer, assister is the second arg)
 			// PlayerAssistNumber will be GAMEEVENT_CAPTURE_NOASSIST (-1) if there was no assister
-			GAMEMODE_HandleEvent ( GAMEEVENT_CAPTURES, Owner, playerAssistNumber );
+			// [AK] Also pass the number of points earned.
+			GAMEMODE_HandleEvent ( GAMEEVENT_CAPTURES, Owner, playerAssistNumber, 1 );
 
 			// Take the flag away.
 			pInventory = Owner->FindInventory( this->GetClass( ));
@@ -854,6 +855,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 	DHUDMessageFadeOut	*pMsg;
 	AInventory			*pInventory;
 	ULONG				ulTeam;
+	int playerAssistNumber = GAMEEVENT_CAPTURE_NOASSIST; // [AK] Need this for game event.
 
 	// If this object being given isn't a flag, then we don't really care.
 	if ( pItem->GetClass( )->IsDescendantOf( RUNTIME_CLASS( AFlag )) == false )
@@ -890,6 +892,8 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 		// If someone just recently returned the flag, award him with an "Assist!" medal.
 		if ( TEAM_GetAssistPlayer( Owner->player->ulTeam ) != MAXPLAYERS )
 		{
+			// [AK] Mark the assisting player.
+			playerAssistNumber = TEAM_GetAssistPlayer( Owner->player->ulTeam );
 			MEDAL_GiveMedal( TEAM_GetAssistPlayer( Owner->player->ulTeam ), MEDAL_ASSIST );
 
 			// Tell clients about the medal that been given.
@@ -942,6 +946,9 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 		// If necessary, send it to clients.
 		else
 			SERVERCOMMANDS_PrintHUDMessageFadeOut( szString, 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, CR_UNTRANSLATED, 3.0f, 0.5f, "SmallFont", false, MAKE_ID( 'S','U','B','S' ));
+
+		// [AK] Trigger an event script when the white flag is captured.
+		GAMEMODE_HandleEvent( GAMEEVENT_CAPTURES, Owner, playerAssistNumber, 1 );
 
 		// Take the flag away.
 		pInventory = Owner->FindInventory( this->GetClass( ));
@@ -1135,6 +1142,9 @@ void AWhiteFlag::ReturnFlag( AActor *pReturner )
 
 	// Mark the white flag as no longer being taken.
 	TEAM_SetWhiteFlagTaken( false );
+
+	// [AK] Trigger an event script. Since the white flag doesn't belong to any team, don't pass any team's ID.
+	GAMEMODE_HandleEvent( GAMEEVENT_RETURNS, NULL, teams.Size() );
 }
 
 //===========================================================================
@@ -1362,11 +1372,17 @@ void ASkull::ReturnFlag( AActor *pReturner )
 		// [RC] Create the "returned by" message for this team.
 		ULONG playerIndex = ULONG( pReturner->player - players );
 		sprintf( szString, "\\c%cReturned by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].ulTeam )), players[playerIndex].userinfo.GetName() );
+
+		// [AK] Trigger an event script indicating that a player returned the skull.
+		GAMEMODE_HandleEvent( GAMEEVENT_RETURNS, pReturner, static_cast<int> ( ulItemTeam ), GAMEEVENT_RETURN_PLAYERRETURN );
 	}
 	else
 	{
 		// [RC] Create the "returned automatically" message for this team.
 		sprintf( szString, "\\c%cReturned automatically.", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))));
+
+		// [AK] Trigger an event script indicating that the skull was returned after a timeout.
+		GAMEMODE_HandleEvent( GAMEEVENT_RETURNS, NULL, static_cast<int> ( ulItemTeam ), GAMEEVENT_RETURN_TIMEOUTRETURN );
 	}
 
 	V_ColorizeString( szString );
