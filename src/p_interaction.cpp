@@ -325,7 +325,10 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker, int dmgf
 
 			if (message == NULL)
 			{
-				if (inflictor != NULL)
+				// [AK] We must also check if the actor inflicting the damage isn't also
+				// the attacker. This ensures obituaries for the BFG9000's tracer or railgun
+				// attacks are used first instead of the one defined in the player's class.
+				if (inflictor != NULL && inflictor != attacker)
 				{
 					message = inflictor->GetClass()->Meta.GetMetaString (AMETA_Obituary);
 				}
