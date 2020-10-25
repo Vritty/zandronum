@@ -1276,6 +1276,7 @@ OptionMenu GameplayOptions
 	// [TP] Zandronum has this CVar under a different name
 	// Option "Allow BFG aiming",		"sv_nobfgaim", "NoYes"
 	Option "Allow BFG aiming",		"sv_bfgfreeaim", "YesNo"
+	Option "Allow Unlagged BFG tracers",	"sv_nounlaggedbfgtracers", "NoYes"
 	Option "Allow automap",			"sv_noautomap", "NoYes"
 	Option "Automap allies",		"sv_noautomapallies", "NoYes"
 	Option "Allow spying",			"sv_disallowspying", "NoYes"
@@ -1349,6 +1350,8 @@ OptionMenu GameplayOptions
 	Option "Start with shotgun",	"sv_shotgunstart", "YesNo"
 	Option "Spawn singleplayer actors", "sv_coop_spactorspawn", "YesNo"
 	Option "Share keys",			"sv_sharekeys", "YesNo"
+	Option "Reset map upon death in survival",	"sv_survival_nomapresetondeath", "NoYes"
+	Option "Dead players can keep inventory",	"sv_deadplayerscankeepinventory", "YesNo"
 	Option "Allow coop info",		"sv_nocoopinfo", "NoYes"
 	Option "Allow closing doors",		"sv_nodoorclose", "NoYes"
 	// [TP] --
@@ -1443,6 +1446,7 @@ OptionMenu "CompatibilityOptions"
 	Option "Weapons must be lowered fully",				"compat_fullweaponlower", "YesNo"
 	Option "Auto-aiming has vertical holes",			"compat_autoaim", "YesNo"
 	Option "West facing spawns are silent",				"compat_silentwestspawns", "YesNo"
+	Option "Use old Skulltag jumping behavior",			"compat_skulltagjumping", "YesNo"
 	
 	Class "CompatibilityMenu"
 }
@@ -1503,7 +1507,8 @@ OptionString SoundOutputsWindows
 	"WASAPI",		"Vista WASAPI"
 	"ASIO",			"ASIO"
 	"WaveOut",		"WaveOut"
-	"OpenAL",		"OpenAL (very beta)"
+	// [AK] OpenAL was removed in the FMOD version used in Zandronum 3.1 and over.
+	// "OpenAL",		"OpenAL (very beta)"
 	"No sound",		"No sound"
 }
 
