@@ -380,6 +380,9 @@ enum
 	// This prevents players intentionally (or unintentionally) griefing
 	// by closing doors that other players (or the same player) have opened.
 	ZADF_NODOORCLOSE = 1 << 19,
+
+	// [AK] Prevent obituary messages from being printed onto the server console when a player dies.
+	ZADF_NO_OBITUARIES = 1 << 20,
 };
 
 // [RH] Compatibility flags.

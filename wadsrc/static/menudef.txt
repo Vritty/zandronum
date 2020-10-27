@@ -1280,6 +1280,7 @@ OptionMenu GameplayOptions
 	Option "Allow automap",			"sv_noautomap", "NoYes"
 	Option "Automap allies",		"sv_noautomapallies", "NoYes"
 	Option "Allow spying",			"sv_disallowspying", "NoYes"
+	Option "Allow obituaries",		"sv_noobituaries", "NoYes"
 	Option "Chasecam cheat",		"sv_chasecam", "YesNo"
 	Option "Check ammo for weapon switch",	"sv_dontcheckammo", "NoYes"
 	Option "Icon's death kills its spawns",	"sv_killbossmonst", "YesNo"

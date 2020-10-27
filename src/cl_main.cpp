@@ -3766,7 +3766,9 @@ void ServerCommands::KillPlayer::Execute()
 	}
 
 	// Finally, print the obituary string.
-	ClientObituary( player->mo, inflictor, source, ( ulSourcePlayer < MAXPLAYERS ) ? DMG_PLAYERATTACK : 0, MOD );
+	// [AK] Check if we shouldn't print the obituary due to ZADF_NO_OBITUARIES.
+	if (( zadmflags & ZADF_NO_OBITUARIES ) == false )
+		ClientObituary( player->mo, inflictor, source, ( ulSourcePlayer < MAXPLAYERS ) ? DMG_PLAYERATTACK : 0, MOD );
 
 	// [BB] Restore the weapon the player actually is using now.
 	if ( ( ulSourcePlayer < MAXPLAYERS ) && ( players[ulSourcePlayer].ReadyWeapon != pSavedReadyWeapon ) )

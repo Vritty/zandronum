@@ -627,6 +627,7 @@ CVAR (Flag, sv_survival_nomapresetondeath, zadmflags, ZADF_SURVIVAL_NO_MAP_RESET
 CVAR (Flag, sv_deadplayerscankeepinventory, zadmflags, ZADF_DEAD_PLAYERS_CAN_KEEP_INVENTORY);
 CVAR (Flag, sv_nounlaggedbfgtracers, zadmflags, ZADF_NOUNLAGGED_BFG_TRACERS);
 CVAR (Flag, sv_nodoorclose, zadmflags, ZADF_NODOORCLOSE);
+CVAR (Flag, sv_noobituaries, zadmflags, ZADF_NO_OBITUARIES);
 
 // Old name kept for compatibility
 CVAR (Flag, sv_forcegldefaults,		zadmflags, ZADF_FORCE_VIDEO_DEFAULTS);
