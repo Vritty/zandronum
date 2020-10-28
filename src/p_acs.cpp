@@ -5139,6 +5139,7 @@ enum EACSFunctions
 	ACSF_SetCurrentGamemode,
 	ACSF_GetCurrentGamemode,
 	ACSF_SetGamemodeLimit,
+	ACSF_SetPlayerClass,
 
 	// ZDaemon
 	ACSF_GetTeamScore = 19620,	// (int team)
@@ -7138,6 +7139,57 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				else
 					GAMEMODE_SetLimit( limit, args[1] );
 				break;
+			}
+
+		case ACSF_SetPlayerClass:
+			{
+				player_t *player = &players[args[0]];
+				const bool bRespawn = !!args[2];
+
+				// [AK] Don't allow the clients to change the player's class.
+				if ( NETWORK_InClientMode() )
+					return 0;
+
+				// [AK] Don't bother changing the player's class if they're actually spectating.
+				if ( PLAYER_IsTrueSpectator( player ) )
+					return 0;
+
+				const char *classname = FBehavior::StaticLookupString( args[1] );
+				const PClass *playerclass = PClass::FindClass( classname );
+
+				// [AK] Stop if the class provided doesn't exist or isn't a descendant of PlayerPawn.
+				// Also check if the player isn't already playing as the same class.
+				if ( playerclass == NULL || !playerclass->IsDescendantOf( RUNTIME_CLASS( APlayerPawn )) || player->cls == playerclass )
+					return 0;
+
+				// [AK] Don't change the player's class if it's not allowed.
+				if ( !TEAM_IsActorAllowedForPlayer( GetDefaultByType( playerclass ), player ) )
+					return 0;
+
+				player->userinfo.PlayerClassChanged( playerclass->Meta.GetMetaString( APMETA_DisplayName ));
+				// [AK] In a singleplayer game, we must also change the class the player would start as.
+				if ( NETWORK_GetState() != NETSTATE_SERVER )
+					SinglePlayerClass[args[0]] = player->userinfo.GetPlayerClassNum();
+
+				if ( bRespawn && PLAYER_IsValidPlayerWithMo( args[0] ) )
+				{
+					APlayerPawn *pmo = player->mo;
+					player->playerstate = PST_REBORNNOINVENTORY;
+
+					// [AK] Unmorph the player before respawning them with a new class.
+					if ( player->morphTics )
+						P_UndoPlayerMorph( player, player );
+
+					// [AK] If we're the server, tell the clients to destroy the body.
+					if ( NETWORK_GetState() == NETSTATE_SERVER )
+						SERVERCOMMANDS_DestroyThing( pmo );
+
+					pmo->Destroy();
+					pmo = NULL;
+					GAMEMODE_SpawnPlayer( player - players );
+				}
+
+				return 1;
 			}
 
 		case ACSF_GetActorFloorTexture:
