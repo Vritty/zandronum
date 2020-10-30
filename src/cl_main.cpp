@@ -5202,6 +5202,13 @@ void ServerCommands::SetThingScale::Execute()
 
 //*****************************************************************************
 //
+void ServerCommands::SetThingSpecies::Execute()
+{
+	actor->Species = species;
+}
+
+//*****************************************************************************
+//
 void ServerCommands::SetWeaponAmmoGive::Execute()
 {
 	weapon->AmmoGive1 = ammoGive1;

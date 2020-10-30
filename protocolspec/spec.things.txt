@@ -290,6 +290,12 @@ Command SetThingScale
 	EndIf
 EndCommand
 
+Command SetThingSpecies
+	ExtendedCommand
+	Actor actor
+	String species
+EndCommand
+
 Command ThingIsCorpse
 	Actor actor
 	# [TP] TODO: Does this really need to be sent? The client should be able to deduce this.

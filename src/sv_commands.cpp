@@ -3643,6 +3643,19 @@ void SERVERCOMMANDS_SetThingScale( AActor* mobj, unsigned int scaleFlags, ULONG 
 
 //*****************************************************************************
 //
+void SERVERCOMMANDS_SetThingSpecies( AActor* mobj, ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	if ( !EnsureActorHasNetID (mobj) )
+		return;
+
+	NetCommand command( SVC2_SETTHINGSPECIES );
+	command.addShort( mobj->lNetID );
+	command.addString( mobj->Species );
+	command.sendCommandToClients( ulPlayerExtra, flags );
+}
+
+//*****************************************************************************
+//
 void SERVERCOMMANDS_UpdateThingScaleNotAtDefault( AActor* pActor, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	// [BB] Sanity check.

@@ -3363,6 +3363,10 @@ void SERVER_UpdateActorProperties( AActor *pActor, ULONG ulClient )
 
 	// [EP] Update the actor's scale if it's changed.
 	SERVERCOMMANDS_UpdateThingScaleNotAtDefault ( pActor, ulClient, SVCF_ONLYTHISCLIENT );
+
+	// [AK] Update the actor's species if it's changed.
+	if ( strcmp( pActor->Species, pActor->GetDefault()->Species ) != 0 )
+		SERVERCOMMANDS_SetThingSpecies( pActor, ulClient, SVCF_ONLYTHISCLIENT );
 }
 
 //*****************************************************************************

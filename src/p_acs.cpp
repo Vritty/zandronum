@@ -4484,6 +4484,10 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 
 	case APROP_Species:
 		actor->Species = FBehavior::StaticLookupString(value);
+
+		// [AK] If we're the server, tell clients to update this actor property.
+		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+			SERVERCOMMANDS_SetThingSpecies( actor );
 		break;
 
 	case APROP_Score:
