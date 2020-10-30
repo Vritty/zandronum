@@ -814,6 +814,7 @@ CVAR (Flag, compat_fullweaponlower,		zacompatflags, ZACOMPATF_FULL_WEAPON_LOWER)
 CVAR (Flag, compat_autoaim,		zacompatflags, ZACOMPATF_AUTOAIM);
 CVAR (Flag, compat_silentwestspawns,	zacompatflags, ZACOMPATF_SILENT_WEST_SPAWNS);
 CVAR (Flag, compat_skulltagjumping,	zacompatflags, ZACOMPATF_SKULLTAG_JUMPING);
+CVAR (Flag, compat_resetglobalvarsonmapreset, zacompatflags, ZACOMPATF_RESET_GLOBALVARS_ON_MAPRESET);
 
 //==========================================================================
 //

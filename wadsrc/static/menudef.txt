@@ -1448,6 +1448,7 @@ OptionMenu "CompatibilityOptions"
 	Option "Auto-aiming has vertical holes",			"compat_autoaim", "YesNo"
 	Option "West facing spawns are silent",				"compat_silentwestspawns", "YesNo"
 	Option "Use old Skulltag jumping behavior",			"compat_skulltagjumping", "YesNo"
+	Option "Reset global ACS variables upon map reset",		"compat_resetglobalvarsonmapreset", "YesNo"
 	
 	Class "CompatibilityMenu"
 }

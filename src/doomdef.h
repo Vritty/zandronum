@@ -466,6 +466,8 @@ enum
 	ZACOMPATF_SILENT_WEST_SPAWNS = 1 << 11,
 	// [BB] Restore the jumping behavior known from Skulltag. This reverts the jumping change from ZDoom SVN revision 2970.
 	ZACOMPATF_SKULLTAG_JUMPING		= 1 << 12,
+	// [AK] World and global-scope ACS variables/arrays will be reset upon resetting the map like in survival.
+	ZACOMPATF_RESET_GLOBALVARS_ON_MAPRESET = 1 << 13,
 
 	// Limited movement in the air.
 	ZACOMPATF_LIMITED_AIRMOVEMENT	= 1 << 17,
