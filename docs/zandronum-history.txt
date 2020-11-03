@@ -22,6 +22,7 @@
 +	- Added new console variable "sv_nodoorclose" to prevent manual door closing, in order to prevent large numbers of players from blocking a door by continuously opening and closing it. [DoomJoshuaBoy]
 +	- Added new console variable "sv_noobituaries" to prevent obituaries from being printed to the server console when a player dies. [Kaminsky]
 +	- Added new compatibility flag "compat_resetglobalvarsonmapreset" to reset all global ACS variables upon resetting the map like in survival. [Kaminsky]
++	- Added new ACS functions: SetGamemodeLimits(int limit, int value) to change gamemode limits, SetCurrentGamemode(str gamemode, bool reset) to switch gamemodes during a game, and GetCurrentGamemode() to get the gamemode being played. [Kaminsky]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]

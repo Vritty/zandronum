@@ -5136,6 +5136,9 @@ enum EACSFunctions
 	ACSF_Strftime,
 	ACSF_SetDeadSpectator,
 	ACSF_SetActivatorToPlayer,
+	ACSF_SetCurrentGamemode,
+	ACSF_GetCurrentGamemode,
+	ACSF_SetGamemodeLimit,
 
 	// ZDaemon
 	ACSF_GetTeamScore = 19620,	// (int team)
@@ -7024,6 +7027,118 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				return 1;
 			}
 			break;
+
+		case ACSF_SetCurrentGamemode:
+			{
+				const char *name = FBehavior::StaticLookupString( args[0] );
+				const GAMEMODE_e oldmode = GAMEMODE_GetCurrentMode();
+				const GAMESTATE_e state = GAMEMODE_GetState();
+				GAMEMODE_e newmode;
+				ULONG ulCountdownTicks;
+
+				// [AK] Only the server should change the gamemode, but not during the result sequence.
+				if ( NETWORK_InClientMode() || state == GAMESTATE_INRESULTSEQUENCE )
+					return 0;
+
+				// [AK] No need to change the gamemode if we're already playing it.
+				if ( stricmp( name, GAMEMODE_GetName( oldmode )) == 0 )
+					return 0;
+
+				for ( int i = 0; i < NUM_GAMEMODES; i++ )
+				{
+					newmode = static_cast<GAMEMODE_e> ( i );
+					if ( stricmp( name, GAMEMODE_GetName( newmode )) != 0 )
+						continue;
+
+					// [AK] Don't change to any team game if there's no team starts on the map!
+					if (( GAMEMODE_GetFlags( newmode ) & GMF_TEAMGAME ) && TEAM_GetNumTeamsWithStarts() < 1 )
+						return 0;
+					// [AK] Don't change to deathmatch if there's no deathmatch starts on the map!
+					if ( GAMEMODE_GetFlags( newmode ) & GMF_DEATHMATCH )
+					{
+						if ( deathmatchstarts.Size() < 1 )
+							return 0;
+
+						// [AK] If we're changing to duel, don't change if there's too many active players.
+						if ( newmode == GAMEMODE_DUEL && GAME_CountActivePlayers() > 2 )
+							return 0;
+					}
+					// [AK] Don't change to cooperative if there's no cooperative starts on the map!
+					else if ( GAMEMODE_GetFlags( newmode ) & GMF_COOPERATIVE )
+					{
+						ULONG ulNumSpawns = 0;
+						for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+						{
+							if ( playerstarts[ulIdx].type != 0 )
+							{
+								ulNumSpawns++;
+								break;
+							}
+						}
+
+						if ( ulNumSpawns < 1 )
+							return 0;
+					}
+
+					// [AK] Get the ticks left in the countdown and reset the gamemode, if necessary.
+					ulCountdownTicks = GAMEMODE_GetCountdownTicks();
+					GAMEMODE_SetState( GAMESTATE_WAITFORPLAYERS ); 
+
+					// [AK] If everything's okay now, change the gamemode.
+					GAMEMODE_ResetSpecalGamemodeStates();
+					GAMEMODE_SetCurrentMode( newmode );
+
+					// [AK] If we're the server, tell the clients to change the gamemode too.
+					if ( NETWORK_GetState() == NETSTATE_SERVER )
+						SERVERCOMMANDS_SetGameMode();
+
+					// [AK] Remove players from any teams if the new gamemode doesn't support them.
+					if (( GAMEMODE_GetFlags( oldmode ) & GMF_PLAYERSONTEAMS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) == false )
+					{
+						for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+							PLAYER_SetTeam( &players[ulIdx], teams.Size(), true );
+					}
+					// [AK] If we need to move players into teams instead, assign them automatically.
+					else if (( GAMEMODE_GetFlags( oldmode ) & GMF_PLAYERSONTEAMS ) == false && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ))
+					{
+						for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+						{
+							if ( playeringame[ulIdx] && players[ulIdx].bSpectating == false && players[ulIdx].bOnTeam == false )
+								PLAYER_SetTeam( &players[ulIdx], TEAM_ChooseBestTeamForPlayer(), true );
+						}
+					}
+
+					// [AK] If necessary, transfer the countdown time and state to the new gamemode.
+					if ( state > GAMESTATE_WAITFORPLAYERS )
+					{
+						GAMEMODE_SetCountdownTicks( ulCountdownTicks );
+						GAMEMODE_SetState( state );
+					}
+
+					GAMEMODE_SpawnSpecialGamemodeThings();
+					return 1;
+				}
+				return 0;
+			}
+
+		case ACSF_GetCurrentGamemode:
+			{
+				return GlobalACSStrings.AddString( GAMEMODE_GetName( GAMEMODE_GetCurrentMode() ));
+			}
+
+		case ACSF_SetGamemodeLimit:
+			{
+				GAMELIMIT_e limit = static_cast<GAMELIMIT_e> ( args[0] );
+				if ( limit == GAMELIMIT_TIME )
+				{
+					UCVarValue Val;
+					Val.Float = FIXED2FLOAT( args[1] );
+					timelimit.ForceSet( Val, CVAR_Float );
+				}
+				else
+					GAMEMODE_SetLimit( limit, args[1] );
+				break;
+			}
 
 		case ACSF_GetActorFloorTexture:
 		{
