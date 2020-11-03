@@ -407,7 +407,13 @@ struct EDITEDTRANSLATION_s
 	ULONG			ulG2;
 	ULONG			ulB2;
 
-
+	// [AK] translations like PCD_TRANSLATIONRANGE3
+	float			fR1;
+	float			fG1;
+	float			fB1;
+	float			fR2;
+	float			fG2;
+	float			fB2;
 };
 
 //*****************************************************************************
@@ -492,6 +498,7 @@ void		SERVER_SetMapMusic( const char *pszMusic, int order );
 void		SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon = true );
 void		SERVER_AddEditedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, ULONG ulPal1, ULONG ulPal2 );
 void		SERVER_AddEditedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, ULONG ulR1, ULONG ulG1, ULONG ulB1, ULONG ulR2, ULONG ulG2, ULONG ulB2 );
+void		SERVER_AddEditedDesaturatedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, float fR1, float fG1, float fB1, float fR2, float fG2, float fB2 );
 void		SERVER_RemoveEditedTranslation( ULONG ulTranslation );
 bool		SERVER_IsTranslationEdited( ULONG ulTranslation );
 void		SERVER_ClearEditedTranslations( void );

@@ -10327,6 +10327,24 @@ scriptwait:
 					translation->AddDesaturation(start, end,
 						FIXED2DBL(r1), FIXED2DBL(g1), FIXED2DBL(b1),
 						FIXED2DBL(r2), FIXED2DBL(g2), FIXED2DBL(b2));
+
+				// [AK] If we're the server, send the new translation off to clients, and
+				// store it in our list so we can tell new clients who connect about the
+				// translation.
+				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				{
+					// [AK] Obtain the index of the translation.
+					const int translationindex = ACS_GetTranslationIndex( translation );
+					float fR1 = FIXED2FLOAT( r1 );
+					float fG1 = FIXED2FLOAT( g1 );
+					float fB1 = FIXED2FLOAT( b1 );
+					float fR2 = FIXED2FLOAT( r2 );
+					float fG2 = FIXED2FLOAT( g2 );
+					float fB2 = FIXED2FLOAT( b2 );
+
+					SERVERCOMMANDS_CreateDesaturatedTranslation( translationindex, start, end, fR1, fG1, fB1, fR2, fG2, fB2 );
+					SERVER_AddEditedDesaturatedTranslation( translationindex, start, end, fR1, fG1, fB1, fR2, fG2, fB2 );
+				}
 			}
 			break;
 

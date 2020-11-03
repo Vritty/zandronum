@@ -4470,18 +4470,44 @@ void SERVERCOMMANDS_CreateTranslation( ULONG ulTranslation, ULONG ulStart, ULONG
 void SERVERCOMMANDS_CreateTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, ULONG ulR1, ULONG ulG1, ULONG ulB1, ULONG ulR2, ULONG ulG2, ULONG ulB2, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	const bool bIsEdited = SERVER_IsTranslationEdited ( ulTranslation );
+	// [AK] We need some reliable way of indicating if this is a desaturated translation or not.
+	const bool bIsDesaturated = false;
 
 	NetCommand command ( SVC_CREATETRANSLATION2 );
 	command.addShort ( ulTranslation );
 	command.addByte ( bIsEdited );
 	command.addByte ( ulStart );
 	command.addByte ( ulEnd );
+	command.addByte ( bIsDesaturated );
 	command.addByte ( ulR1 );
 	command.addByte ( ulG1 );
 	command.addByte ( ulB1 );
 	command.addByte ( ulR2 );
 	command.addByte ( ulG2 );
 	command.addByte ( ulB2 );
+	command.sendCommandToClients ( ulPlayerExtra, flags );
+}
+
+//*****************************************************************************
+//
+void SERVERCOMMANDS_CreateDesaturatedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, float fR1, float fG1, float fB1, float fR2, float fG2, float fB2, ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	const bool bIsEdited = SERVER_IsTranslationEdited ( ulTranslation );
+	// [AK] We need some reliable way of indicating if this is a desaturated translation or not.
+	const bool bIsDesaturated = true;
+
+	NetCommand command ( SVC_CREATETRANSLATION2 );
+	command.addShort ( ulTranslation );
+	command.addByte ( bIsEdited );
+	command.addByte ( ulStart );
+	command.addByte ( ulEnd );
+	command.addByte ( bIsDesaturated );
+	command.addFloat ( fR1 );
+	command.addFloat ( fG1 );
+	command.addFloat ( fB1 );
+	command.addFloat ( fR2 );
+	command.addFloat ( fG2 );
+	command.addFloat ( fB2 );
 	command.sendCommandToClients ( ulPlayerExtra, flags );
 }
 

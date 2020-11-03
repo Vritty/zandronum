@@ -2624,7 +2624,13 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		if ( g_EditedTranslationList[ulIdx].ulType == DLevelScript::PCD_TRANSLATIONRANGE1 )
 			SERVERCOMMANDS_CreateTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].ulPal1, g_EditedTranslationList[ulIdx].ulPal2 );
 		else
-			SERVERCOMMANDS_CreateTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].ulR1, g_EditedTranslationList[ulIdx].ulG1, g_EditedTranslationList[ulIdx].ulB1, g_EditedTranslationList[ulIdx].ulR2, g_EditedTranslationList[ulIdx].ulG2, g_EditedTranslationList[ulIdx].ulB2 );
+		{
+			// [AK] We also need to check if this is a desaturated translation.
+			if( g_EditedTranslationList[ulIdx].ulType == DLevelScript::PCD_TRANSLATIONRANGE2 )
+				SERVERCOMMANDS_CreateTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].ulR1, g_EditedTranslationList[ulIdx].ulG1, g_EditedTranslationList[ulIdx].ulB1, g_EditedTranslationList[ulIdx].ulR2, g_EditedTranslationList[ulIdx].ulG2, g_EditedTranslationList[ulIdx].ulB2 );
+			else
+				SERVERCOMMANDS_CreateDesaturatedTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].fR1, g_EditedTranslationList[ulIdx].fG1, g_EditedTranslationList[ulIdx].fB1, g_EditedTranslationList[ulIdx].fR2, g_EditedTranslationList[ulIdx].fG2, g_EditedTranslationList[ulIdx].fB2 );
+		}
 	}
 
 	// [BB] If the sky differs from the standard sky, let the client know about it.
@@ -3910,6 +3916,26 @@ void SERVER_AddEditedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEn
 	Translation.ulG2 = ulG2;
 	Translation.ulB2 = ulB2;
 	Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE2;
+
+	g_EditedTranslationList.Push( Translation );
+}
+
+//*****************************************************************************
+//
+void SERVER_AddEditedDesaturatedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, float fR1, float fG1, float fB1, float fR2, float fG2, float fB2 )
+{
+	EDITEDTRANSLATION_s	Translation;
+
+	Translation.ulIdx = ulTranslation;
+	Translation.ulStart = ulStart;
+	Translation.ulEnd = ulEnd;
+	Translation.fR1 = fR1;
+	Translation.fG1 = fG1;
+	Translation.fB1 = fB1;
+	Translation.fR2 = fR2;
+	Translation.fG2 = fG2;
+	Translation.fB2 = fB2;
+	Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE3;
 
 	g_EditedTranslationList.Push( Translation );
 }
