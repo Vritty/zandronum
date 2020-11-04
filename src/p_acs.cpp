@@ -5140,6 +5140,8 @@ enum EACSFunctions
 	ACSF_GetCurrentGamemode,
 	ACSF_SetGamemodeLimit,
 	ACSF_SetPlayerClass,
+	ACSF_SetPlayerChasecam,
+	ACSF_GetPlayerChasecam,
 
 	// ZDaemon
 	ACSF_GetTeamScore = 19620,	// (int team)
@@ -7190,6 +7192,38 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				}
 
 				return 1;
+			}
+
+		case ACSF_SetPlayerChasecam:
+			{
+				const ULONG ulPlayer = static_cast<ULONG> ( args[0] );
+				const bool bEnableChasecam = !!args[1];
+
+				if ( PLAYER_IsValidPlayer( ulPlayer ) )
+				{
+					// [AK] Keep the old value of the player's cheats for comparison later.
+					int oldvalue = players[ulPlayer].cheats;
+					if ( bEnableChasecam )
+						players[ulPlayer].cheats |= CF_CHASECAM;
+					else
+						players[ulPlayer].cheats &= ~CF_CHASECAM;
+
+					// [AK] If we're the server, only notify the client if their cheats was actually changed.
+					if ( NETWORK_GetState() == NETSTATE_SERVER && players[ulPlayer].cheats != oldvalue )
+						SERVERCOMMANDS_SetPlayerCheats( ulPlayer, ulPlayer, SVCF_ONLYTHISCLIENT );
+					return 1;
+				}
+				else
+					return 0;
+			}
+
+		case ACSF_GetPlayerChasecam:
+			{
+				const ULONG ulPlayer = static_cast<ULONG> ( args[0] );
+				if ( PLAYER_IsValidPlayer( ulPlayer ) )
+					return !!( players[ulPlayer].cheats & CF_CHASECAM );
+				else
+					return 0;
 			}
 
 		case ACSF_GetActorFloorTexture:
