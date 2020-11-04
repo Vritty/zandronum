@@ -120,6 +120,9 @@ FDynLightData lightdata;
 
 void GLWall::SetupLights()
 {
+	// [AK] Take care of gl_lights_size and ZADF_FORCE_VIDEO_DEFAULTS.
+	OVERRIDE_LIGHTS_SIZE_IF_NECESSARY
+
 	float vtx[]={glseg.x1,zbottom[0],glseg.y1, glseg.x1,ztop[0],glseg.y1, glseg.x2,ztop[1],glseg.y2, glseg.x2,zbottom[1],glseg.y2};
 	Plane p;
 

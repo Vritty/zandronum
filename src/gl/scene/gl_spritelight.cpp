@@ -65,6 +65,9 @@
 
 bool gl_GetSpriteLight(AActor *self, fixed_t x, fixed_t y, fixed_t z, subsector_t * subsec, int desaturation, float * out, line_t *line, int side)
 {
+	// [AK] Take care of gl_lights_size and ZADF_FORCE_VIDEO_DEFAULTS.
+	OVERRIDE_LIGHTS_SIZE_IF_NECESSARY
+
 	ADynamicLight *light;
 	float frac, lr, lg, lb;
 	float radius;

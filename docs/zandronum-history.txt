@@ -45,6 +45,7 @@
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
 !	- When the wad authentication fails for a connecting client, the client only reports the missing and incompatible PWADS instead of all of them. [Pol Marcet]
 !	- GAMEEVENT_CAPTURES scripts now pass the number of points earned as 'arg2'. [Kaminsky]
+!	- gl_lights_size is now forced to its default value when sv_forcevideodefaults is true. [Kaminsky]
 
 
 3.0.1

@@ -126,6 +126,9 @@ void FLightBuffer::CollectLightSources()
 {
 	if (gl_dynlight_shader && gl_lights && GLRenderer->mLightCount && gl_fixedcolormap == CM_DEFAULT)
 	{
+		// [AK] Take care of gl_lights_size and ZADF_FORCE_VIDEO_DEFAULTS.
+		OVERRIDE_LIGHTS_SIZE_IF_NECESSARY
+
 		TArray<FLightRGB> pLights(100);
 		TArray<FLightPosition> pPos(100);
 		TThinkerIterator<ADynamicLight> it(STAT_DLIGHT);

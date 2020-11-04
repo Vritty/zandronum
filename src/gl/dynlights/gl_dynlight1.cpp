@@ -93,6 +93,9 @@ CUSTOM_CVAR (Bool, gl_lights_additive, false,  CVAR_ARCHIVE | CVAR_GLOBALCONFIG 
 bool gl_GetLight(Plane & p, ADynamicLight * light,
 				 int desaturation, bool checkside, bool forceadditive, FDynLightData &ldata)
 {
+	// [AK] Take care of gl_lights_size and ZADF_FORCE_VIDEO_DEFAULTS.
+	OVERRIDE_LIGHTS_SIZE_IF_NECESSARY
+
 	Vector fn, pos;
 	int i = 0;
 
@@ -168,6 +171,9 @@ bool gl_GetLight(Plane & p, ADynamicLight * light,
 bool gl_SetupLight(Plane & p, ADynamicLight * light, Vector & nearPt, Vector & up, Vector & right, 
 				   float & scale, int desaturation, bool checkside, bool forceadditive)
 {
+	// [AK] Take care of gl_lights_size and ZADF_FORCE_VIDEO_DEFAULTS.
+	OVERRIDE_LIGHTS_SIZE_IF_NECESSARY
+
 	Vector fn, pos;
 
     float x = FIXED2FLOAT(light->x);

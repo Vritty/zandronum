@@ -180,7 +180,10 @@ struct FDynLightData
 	}
 };
 
-
+// [AK] Override gl_lights_size in the same way as gl_fogmode.
+#define OVERRIDE_LIGHTS_SIZE_IF_NECESSARY \
+	const float gl_lights_size_CVAR_value = gl_lights_size; \
+	const float gl_lights_size = ( zadmflags & ZADF_FORCE_VIDEO_DEFAULTS ) ? 1.0f : gl_lights_size_CVAR_value;
 
 bool gl_GetLight(Plane & p, ADynamicLight * light, int desaturation, bool checkside, bool forceadditive, FDynLightData &data);
 bool gl_SetupLight(Plane & p, ADynamicLight * light, Vector & nearPt, Vector & up, Vector & right, float & scale, int desaturation, bool checkside=true, bool forceadditive=true);

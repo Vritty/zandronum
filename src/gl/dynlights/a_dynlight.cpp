@@ -371,6 +371,10 @@ void ADynamicLight::UpdateLocation()
 		{
 			intensity = m_currentIntensity;
 		}
+
+		// [AK] Take care of gl_lights_size and ZADF_FORCE_VIDEO_DEFAULTS.
+		OVERRIDE_LIGHTS_SIZE_IF_NECESSARY
+
 		radius = FLOAT2FIXED(intensity * 2.0f * gl_lights_size);
 
 		if (x!=oldx || y!=oldy || radius!=oldradius) 
