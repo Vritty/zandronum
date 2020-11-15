@@ -1291,11 +1291,12 @@ void FMaskCVar::DoSet (UCVarValue value, ECVarType type)
 	// exec scripts because all flags will base their changes off of the value of
 	// the "master" cvar at the time the script was run, overriding any changes
 	// another flag might have made to the same cvar earlier in the script.
-	if ((ValueVar.GetFlags() & CVAR_SERVERINFO) && gamestate != GS_STARTUP && !demoplayback)
+	if (( NETWORK_GetState() != NETSTATE_SERVER ) && ( ValueVar.GetFlags() & CVAR_SERVERINFO ) && gamestate != GS_STARTUP && !demoplayback )
 	{
 		// [BB] netgame && !players[consoleplayer].settings_controller -> NETWORK_InClientMode( )
 		// [TP] Let RCON clients set this CVar.
-		if ( NETWORK_InClientMode() && ( CLIENT_HasRCONAccess() == false ) )
+		// [AK] RCON clients that still need to reset any server setting CVars should be allowed to set this CVar.
+		if ( NETWORK_InClientMode() && ( CLIENT_HasRCONAccess() == false ) && ( CLIENT_GainingRCONAccess() == false ) )
 		{
 			Printf ("Only setting controllers can change %s\n", Name);
 			return;

@@ -377,6 +377,9 @@ static FString				g_PlayerAccountNames[MAXPLAYERS];
 // [TP] Do we have RCON access to the server?
 static	bool				g_HasRCONAccess = false;
 
+// [AK] We are in the process of gaining RCON access to the server.
+static  bool				g_GainingRCONAccess = false;
+
 //*****************************************************************************
 //	FUNCTIONS
 
@@ -2204,8 +2207,10 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			case SVC2_RCONACCESS:
 				if ( pByteStream->ReadByte() )
 				{
-					if ( CLIENT_HasRCONAccess() == false )
+					if ( CLIENT_HasRCONAccess() == false && CLIENT_GainingRCONAccess() == false )
 					{
+						g_GainingRCONAccess = true;
+
 						// The server will send all server setting CVars that are not at default value. So, to ensure
 						// the rest are correct, we reset them now.
 						// NOTE: This is done before g_HasRCONAccess is set or the client would instead tell the server
@@ -2215,6 +2220,8 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 							if ( cvar->IsServerCVar() )
 								cvar->ResetToDefault();
 						}
+
+						g_GainingRCONAccess = false;
 					}
 
 					g_HasRCONAccess = true;
@@ -2343,6 +2350,9 @@ void CLIENT_QuitNetworkGame( const char *pszString )
 	g_lHighestReceivedSequence = -1;
 
 	g_lMissingPacketTicks = 0;
+
+	// [AK] Since we disconnected, we don't have RCON access anymore.
+	g_HasRCONAccess = false;
 
 	// Set the network state back to single player.
 	NETWORK_SetState( NETSTATE_SINGLE );
@@ -2680,6 +2690,12 @@ bool CLIENT_CanClipMovement( AActor *pActor )
 bool CLIENT_HasRCONAccess()
 {
 	return g_HasRCONAccess;
+}
+
+//*****************************************************************************
+bool CLIENT_GainingRCONAccess()
+{
+	return g_GainingRCONAccess;
 }
 
 //*****************************************************************************

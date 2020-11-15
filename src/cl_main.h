@@ -188,6 +188,7 @@ bool				CLIENT_ReadActorFromNetID( int netid, const PClass *subclass, bool allow
 											   const char *commandName = "CLIENT_ReadActorFromNetID",
 											   const char *parameterName = "actor" );
 bool				CLIENT_HasRCONAccess();
+bool				CLIENT_GainingRCONAccess();
 void				CLIENT_PREDICT_Construct( void );
 void				CLIENT_PREDICT_SetPosition( fixed_t X, fixed_t Y, fixed_t Z );
 void				CLIENT_PREDICT_SetVelocity( fixed_t X, fixed_t Y, fixed_t Z );
