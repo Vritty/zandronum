@@ -4300,11 +4300,15 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		actor->health = value;
 		if (actor->player != NULL)
 		{
+			// [AK] Save the original value.
+			oldValue = actor->health;
+
 			actor->player->health = value;
 
 			// [BC/BB] If we're the server, tell all clients about the new health value.
+			// [AK] Only bother the clients if the health has actually changed.
 			if (( NETWORK_GetState( ) == NETSTATE_SERVER ) &&
-				( SERVER_IsValidClient( actor->player - players )))
+				( SERVER_IsValidClient( actor->player - players )) && ( oldValue != actor->health ))
 			{
 				SERVERCOMMANDS_SetPlayerHealth( static_cast<ULONG>( actor->player - players ) );
 			}
@@ -4333,14 +4337,21 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		break;
 
 	case APROP_Alpha:
+		// [AK] Save the original value.
+		oldValue = actor->alpha;
+
 		actor->alpha = value;
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the alpha has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->alpha ) )
 			SERVERCOMMANDS_SetThingProperty( actor, APROP_Alpha );
 		break;
 
 	case APROP_RenderStyle:
+		// [AK] Save the original render style.
+		FRenderStyle oldRenderStyle = actor->RenderStyle;
+
 		for(int i=0; LegacyRenderStyleIndices[i] >= 0; i++)
 		{
 			if (LegacyRenderStyleIndices[i] == value)
@@ -4351,7 +4362,8 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		}
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the rendering has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && !( oldRenderStyle == actor->RenderStyle ) )
 			SERVERCOMMANDS_SetThingProperty( actor, APROP_RenderStyle );
 
 		break;
@@ -4365,10 +4377,14 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		break;
 
 	case APROP_Invulnerable:
+		// [AK] Save the original value.
+		oldValue = actor->flags2;
+
 		if (value) actor->flags2 |= MF2_INVULNERABLE; else actor->flags2 &= ~MF2_INVULNERABLE;
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the flags were actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->flags2 ) )
 			SERVERCOMMANDS_SetThingFlags( actor, FLAGSET_FLAGS2 );
 		break;
 
@@ -4382,11 +4398,18 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 
 	case APROP_JumpZ:
 		if (actor->IsKindOf (RUNTIME_CLASS (APlayerPawn)))
-			static_cast<APlayerPawn *>(actor)->JumpZ = value;
+		{ 
+			// [AK] Save the original value.
+			APlayerPawn *playerActor = static_cast<APlayerPawn *>(actor);
+			oldValue = playerActor->JumpZ;
 
-		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-			SERVERCOMMANDS_SetThingProperty( actor, APROP_JumpZ );
+			playerActor->JumpZ = value;
+
+			// [BC] If we're the server, tell clients to update this actor property.
+			// [AK] Only bother the clients if the JumpZ has actually changed.
+			if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != playerActor->JumpZ ) )
+				SERVERCOMMANDS_SetThingProperty( actor, APROP_JumpZ );
+		}
 		break; 	// [GRB]
 
 	case APROP_ChaseGoal:
@@ -4420,12 +4443,18 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 	case APROP_SpawnHealth:
 		if (actor->IsKindOf (RUNTIME_CLASS (APlayerPawn)))
 		{
-			static_cast<APlayerPawn *>(actor)->MaxHealth = value;
+			// [AK] Save the original value.
+			APlayerPawn *playerActor = static_cast<APlayerPawn *>(actor);
+			oldValue = playerActor->MaxHealth;
+
+			playerActor->MaxHealth = value;
 
 			// [BB] If we're the server, tell clients to update this actor property.
 			// Note: Don't do this if the actor is a voodoo doll, the client would
 			// alter the value of the real player body in this case.
-			if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && actor->player && ( actor->player->mo == actor ) )
+			// [AK] Only bother the clients if the max health has actually changed.
+			if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && actor->player && 
+				 ( actor->player->mo == actor ) && ( oldValue != playerActor->MaxHealth ) )
 				SERVERCOMMANDS_SetPlayerMaxHealth( static_cast<ULONG>( actor->player - players ) );
 		}
 		break;
@@ -4443,50 +4472,74 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		break;
 
 	case APROP_SeeSound:
+		// [AK] Save the original sound.
+		oldValue = actor->SeeSound;
+
 		actor->SeeSound = FBehavior::StaticLookupString(value);
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the sound has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->SeeSound ) )
 			SERVERCOMMANDS_SetThingSound( actor, ACTORSOUND_SEESOUND, FBehavior::StaticLookupString( value ));
 		break;
 
 	case APROP_AttackSound:
+		// [AK] Save the original sound.
+		oldValue = actor->AttackSound;
+
 		actor->AttackSound = FBehavior::StaticLookupString(value);
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the sound has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->AttackSound ) )
 			SERVERCOMMANDS_SetThingSound( actor, ACTORSOUND_ATTACKSOUND, FBehavior::StaticLookupString( value ));
 		break;
 
 	case APROP_PainSound:
+		// [AK] Save the original sound.
+		oldValue = actor->PainSound;
+
 		actor->PainSound = FBehavior::StaticLookupString(value);
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the sound has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->PainSound ) )
 			SERVERCOMMANDS_SetThingSound( actor, ACTORSOUND_PAINSOUND, FBehavior::StaticLookupString( value ));
 		break;
 
 	case APROP_DeathSound:
+		// [AK] Save the original sound.
+		oldValue = actor->DeathSound;
+
 		actor->DeathSound = FBehavior::StaticLookupString(value);
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the sound has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->DeathSound ) )
 			SERVERCOMMANDS_SetThingSound( actor, ACTORSOUND_DEATHSOUND, FBehavior::StaticLookupString( value ));
 		break;
 
 	case APROP_ActiveSound:
+		// [AK] Save the original sound.
+		oldValue = actor->ActiveSound;
+
 		actor->ActiveSound = FBehavior::StaticLookupString(value);
 
 		// [BC] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the sound has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->ActiveSound ) )
 			SERVERCOMMANDS_SetThingSound( actor, ACTORSOUND_ACTIVESOUND, FBehavior::StaticLookupString( value ));
 		break;
 
 	case APROP_Species:
+		// [AK] Save the original species.
+		oldValue = actor->Species;
+
 		actor->Species = FBehavior::StaticLookupString(value);
 
 		// [AK] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// Only bother the clients if the species has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->Species ) )
 			SERVERCOMMANDS_SetThingSpecies( actor );
 		break;
 
@@ -4509,18 +4562,26 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		break;
 
 	case APROP_ScaleX:
+		// [AK] Save the original value.
+		oldValue = actor->scaleX;
+
 		actor->scaleX = value;
 
 		// [TP] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the scale has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->scaleX ) )
 			SERVERCOMMANDS_SetThingScale( actor, ACTORSCALE_X );
 		break;
 
 	case APROP_ScaleY:
+		// [AK] Save the original value.
+		oldValue = actor->scaleY;
+
 		actor->scaleY = value;
 
 		// [TP] If we're the server, tell clients to update this actor property.
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		// [AK] Only bother the clients if the scale has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->scaleY ) )
 			SERVERCOMMANDS_SetThingScale( actor, ACTORSCALE_Y );
 		break;
 
@@ -4543,13 +4604,18 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 	case APROP_ViewHeight:
 		if (actor->IsKindOf (RUNTIME_CLASS (APlayerPawn)))
 		{
-			static_cast<APlayerPawn *>(actor)->ViewHeight = value;
+			// [AK] Save the original value.
+			APlayerPawn *playerActor = static_cast<APlayerPawn *>(actor);
+			oldValue = playerActor->ViewHeight;
+
+			playerActor->ViewHeight = value;
 			if (actor->player != NULL)
 			{
 				actor->player->viewheight = value;
 
 				// [BB] Tell the clients about the changed view height.
-				if( NETWORK_GetState() == NETSTATE_SERVER )
+				// [AK] Only bother the clients if the view height has actually changed.
+				if( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != playerActor->ViewHeight ) )
 					SERVERCOMMANDS_SetPlayerViewHeight ( actor->player - players );
 			}
 		}
