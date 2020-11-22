@@ -2680,7 +2680,8 @@ bool CLIENT_CanClipMovement( AActor *pActor )
 		return true;
 
 	// [WS] Non-bouncing client missiles do not get their movement clipped.
-	if ( pActor->flags & MF_MISSILE && !pActor->BounceFlags )
+	// [AK] Don't clip the missile's movement if it also can't climb up steps.
+	if ( pActor->flags & MF_MISSILE && !pActor->BounceFlags && ( pActor->flags6 & MF6_STEPMISSILE ) == false )
 		return false;
 
 	return true;
