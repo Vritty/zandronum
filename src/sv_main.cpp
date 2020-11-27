@@ -2622,14 +2622,14 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 	for ( ulIdx = 0; ulIdx < g_EditedTranslationList.Size( ); ulIdx++ )
 	{
 		if ( g_EditedTranslationList[ulIdx].ulType == DLevelScript::PCD_TRANSLATIONRANGE1 )
-			SERVERCOMMANDS_CreateTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].ulPal1, g_EditedTranslationList[ulIdx].ulPal2 );
+			SERVERCOMMANDS_CreateTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].ulPal1, g_EditedTranslationList[ulIdx].ulPal2, ulClient, SVCF_ONLYTHISCLIENT );
 		else
 		{
 			// [AK] We also need to check if this is a desaturated translation.
 			if( g_EditedTranslationList[ulIdx].ulType == DLevelScript::PCD_TRANSLATIONRANGE2 )
-				SERVERCOMMANDS_CreateTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].ulR1, g_EditedTranslationList[ulIdx].ulG1, g_EditedTranslationList[ulIdx].ulB1, g_EditedTranslationList[ulIdx].ulR2, g_EditedTranslationList[ulIdx].ulG2, g_EditedTranslationList[ulIdx].ulB2 );
+				SERVERCOMMANDS_CreateTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].ulR1, g_EditedTranslationList[ulIdx].ulG1, g_EditedTranslationList[ulIdx].ulB1, g_EditedTranslationList[ulIdx].ulR2, g_EditedTranslationList[ulIdx].ulG2, g_EditedTranslationList[ulIdx].ulB2, ulClient, SVCF_ONLYTHISCLIENT );
 			else
-				SERVERCOMMANDS_CreateDesaturatedTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].fR1, g_EditedTranslationList[ulIdx].fG1, g_EditedTranslationList[ulIdx].fB1, g_EditedTranslationList[ulIdx].fR2, g_EditedTranslationList[ulIdx].fG2, g_EditedTranslationList[ulIdx].fB2 );
+				SERVERCOMMANDS_CreateDesaturatedTranslation( g_EditedTranslationList[ulIdx].ulIdx, g_EditedTranslationList[ulIdx].ulStart, g_EditedTranslationList[ulIdx].ulEnd, g_EditedTranslationList[ulIdx].fR1, g_EditedTranslationList[ulIdx].fG1, g_EditedTranslationList[ulIdx].fB1, g_EditedTranslationList[ulIdx].fR2, g_EditedTranslationList[ulIdx].fG2, g_EditedTranslationList[ulIdx].fB2, ulClient, SVCF_ONLYTHISCLIENT );
 		}
 	}
 
