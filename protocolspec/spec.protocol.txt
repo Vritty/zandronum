@@ -4,7 +4,7 @@ EndCommand
 
 Command Ping
 	UnreliableCommand
-	Long time
+	ULong time
 EndCommand
 
 Command BeginSnapshot
