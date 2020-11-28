@@ -221,7 +221,8 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker, int dmgf
 	char	szVictim[MAXPLAYERNAME+1+4];
 
 	// No obituaries for non-players, voodoo dolls or when not wanted
-	if (self->player == NULL || self->player->mo != self || !show_obituaries)
+	// [AK] Added a check if the player was forced as a dead spectator through ACS.
+	if (self->player == NULL || self->player->mo != self || !show_obituaries || MeansOfDeath == NAME_DeadSpectate)
 		return;
 
 	gender = self->player->userinfo.GetGender();

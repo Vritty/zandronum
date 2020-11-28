@@ -275,6 +275,7 @@ xx(Grenade)
 xx(BFG10k)
 xx(SpawnTelefrag)
 xx(Reflection)
+xx(DeadSpectate)
 
 // Special names for thingdef_exp.cpp
 xx(Random)
