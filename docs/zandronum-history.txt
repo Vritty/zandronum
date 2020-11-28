@@ -48,6 +48,7 @@
 !	- When the wad authentication fails for a connecting client, the client only reports the missing and incompatible PWADS instead of all of them. [Pol Marcet]
 !	- GAMEEVENT_CAPTURES scripts now pass the number of points earned as 'arg2'. [Kaminsky]
 !	- gl_lights_size is now forced to its default value when sv_forcevideodefaults is true. [Kaminsky]
+!	- The Player_SetTeam line special now accepts a second parameter to enable/disable the broadcast message. By default, the message is still printed. [Kaminsky]
 
 
 3.0.1

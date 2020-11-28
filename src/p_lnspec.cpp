@@ -2078,7 +2078,7 @@ FUNC(LS_Sector_ChangeFlags)
 // [BC] Start of new Skulltag linespecials.
 
 FUNC( LS_Player_SetTeam )
-// Player_SetTeam( team id )
+// Player_SetTeam( int teamid, bool nobroadcast )
 {
 	// Don't set teams on the client end.
 	if ( NETWORK_InClientMode() )
@@ -2093,7 +2093,7 @@ FUNC( LS_Player_SetTeam )
 		I_Error( "Tried to set player to bad team, %d\n", arg0 );
 
 	// Set the player's team.
-	PLAYER_SetTeam( it->player, arg0, false );
+	PLAYER_SetTeam( it->player, arg0, !!arg1 );
 	return ( true );
 }
 
