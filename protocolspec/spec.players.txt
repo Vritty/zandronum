@@ -43,8 +43,8 @@ EndCommand
 
 Command DamagePlayer
 	Player player with MoTest
-	Short health
-	Short armor
+	Variable health
+	Variable armor
 	Actor attacker with NullAllowed
 EndCommand
 
@@ -60,12 +60,12 @@ EndCommand
 
 Command SetPlayerHealth
 	Player player
-	Short health
+	Variable health
 EndCommand
 
 Command SetPlayerArmor
 	Player player with MoTest
-	Short armorAmount
+	Variable armorAmount
 	String armorIcon
 EndCommand
 
