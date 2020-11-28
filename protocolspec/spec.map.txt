@@ -20,28 +20,28 @@ Command SetMapTime
 EndCommand
 
 Command SetMapNumKilledMonsters
-	Short killedMonsters
+	Variable killedMonsters
 EndCommand
 
 Command SetMapNumFoundItems
-	Short foundItems
+	Variable foundItems
 EndCommand
 
 Command SetMapNumFoundSecrets
-	Short foundSecrets
+	Variable foundSecrets
 EndCommand
 
 Command SetMapNumTotalMonsters
-	Short totalMonsters
+	Variable totalMonsters
 EndCommand
 
 Command SetMapNumTotalItems
-	Short totalItems
+	Variable totalItems
 EndCommand
 
 Command SetMapNumTotalSecrets
 	ExtendedCommand
-	Short totalSecrets
+	Variable totalSecrets
 EndCommand
 
 Command SetMapMusic
