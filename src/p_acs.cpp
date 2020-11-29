@@ -249,6 +249,18 @@ enum
 	WARPF_USEPTR           = 0x2000,
 };
 
+// [AK] SetPlayerScore and GetPlayerScore
+enum
+{
+	SCORE_FRAGS,
+	SCORE_POINTS,
+	SCORE_WINS,
+	SCORE_DEATHS,
+	SCORE_KILLS,
+	SCORE_ITEMS,
+	SCORE_SECRETS,
+};
+
 struct CallReturn
 {
 	CallReturn(int pc, ScriptFunction *func, FBehavior *module, const ACSLocalVariables &locals, ACSLocalArrays *arrays, bool discard, unsigned int runaway)
@@ -5208,6 +5220,8 @@ enum EACSFunctions
 	ACSF_SetPlayerClass,
 	ACSF_SetPlayerChasecam,
 	ACSF_GetPlayerChasecam,
+	ACSF_SetPlayerScore,
+	ACSF_GetPlayerScore,
 
 	// ZDaemon
 	ACSF_GetTeamScore = 19620,	// (int team)
@@ -7290,6 +7304,113 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 					return !!( players[ulPlayer].cheats & CF_CHASECAM );
 				else
 					return 0;
+			}
+
+		case ACSF_SetPlayerScore:
+			{
+				const ULONG ulPlayer = static_cast<ULONG> ( args[0] );
+				int oldvalue;
+
+				if ( PLAYER_IsValidPlayer( ulPlayer ) )
+				{
+					switch ( args[1] )
+					{
+						case SCORE_FRAGS:
+						{
+							// [AK] Keep the original value of the player's frags.
+							oldvalue = players[ulPlayer].fragcount;
+							players[ulPlayer].fragcount = args[2];
+
+							// [AK] If we're the server, tell the clients the player's new frag count.
+							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].fragcount ))
+								SERVERCOMMANDS_SetPlayerFrags( ulPlayer );
+							return 1;
+						}
+
+						case SCORE_POINTS:
+						{
+							// [AK] Keep the original value of the player's points.
+							oldvalue = players[ulPlayer].lPointCount;
+							players[ulPlayer].lPointCount = args[2];
+
+							// [AK] If we're the server, tell the clients the player's new point count.
+							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].lPointCount ))
+								SERVERCOMMANDS_SetPlayerPoints( ulPlayer );
+							return 1;
+						}
+
+						case SCORE_WINS:
+						{
+							// [AK] Keep the original value of the player's wins.
+							oldvalue = players[ulPlayer].ulWins;
+							players[ulPlayer].ulWins = args[2] >= 0 ? args[2] : 0;
+
+							// [AK] If we're the server, tell the clients the player's new win count.
+							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].ulWins ))
+								SERVERCOMMANDS_SetPlayerWins( ulPlayer );
+							return 1;
+						}
+
+						case SCORE_DEATHS:
+						{
+							// [AK] Keep the original value of the player's deaths.
+							oldvalue = players[ulPlayer].ulDeathCount;
+							players[ulPlayer].ulDeathCount = args[2] >= 0 ? args[2] : 0;
+
+							// [AK] If we're the server, tell the clients the player's new death count.
+							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].ulDeathCount ))
+								SERVERCOMMANDS_SetPlayerDeaths( ulPlayer );
+							return 1;
+						}
+
+						case SCORE_KILLS:
+						{
+							// [AK] Keep the original value of the player's kills.
+							oldvalue = players[ulPlayer].killcount;
+							players[ulPlayer].killcount = args[2];
+
+							// [AK] If we're the server, tell the clients the player's new kill count.
+							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].killcount ))
+								SERVERCOMMANDS_SetPlayerKillCount( ulPlayer );
+							return 1;
+						}
+
+						case SCORE_ITEMS:
+						{
+							players[ulPlayer].itemcount = args[2];
+							return 1;
+						}
+
+						case SCORE_SECRETS:
+						{
+							players[ulPlayer].secretcount = args[2];
+							return 1;
+						}
+					}
+				}
+
+				return 0;
+			}
+
+		case ACSF_GetPlayerScore:
+			{
+				const ULONG ulPlayer = static_cast<ULONG> ( args[0] );
+
+				if ( PLAYER_IsValidPlayer( ulPlayer ) )
+				{
+					switch ( args[1] )
+					{
+						case SCORE_FRAGS:	return players[ulPlayer].fragcount;
+						case SCORE_POINTS:	return players[ulPlayer].lPointCount;
+						case SCORE_WINS:	return players[ulPlayer].ulWins;
+						case SCORE_DEATHS:	return players[ulPlayer].ulDeathCount;
+						case SCORE_KILLS:	return players[ulPlayer].killcount;
+						case SCORE_ITEMS:	return players[ulPlayer].itemcount;
+						case SCORE_SECRETS:	return players[ulPlayer].secretcount;
+					}
+				}
+
+				return 0;
 			}
 
 		case ACSF_GetActorFloorTexture:
