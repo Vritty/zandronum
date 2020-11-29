@@ -93,22 +93,22 @@ EndCommand
 
 Command SetPlayerFrags
 	Player player
-	Short fragCount
+	Variable fragCount
 EndCommand
 
 Command SetPlayerPoints
 	Player player
-	Short pointCount
+	Variable pointCount
 EndCommand
 
 Command SetPlayerWins
 	Player player
-	Byte wins
+	Variable wins
 EndCommand
 
 Command SetPlayerKillCount
 	Player player
-	Short killCount
+	Variable killCount
 EndCommand
 
 Command SetPlayerChatStatus
