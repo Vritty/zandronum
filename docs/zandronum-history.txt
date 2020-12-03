@@ -44,6 +44,7 @@
 -	- Fixed the obituary for the BFG tracer not being used if a player was killed by them. [Kaminsky]
 -	- Fixed desaturated translations created with CreateTranslation() not syncing with clients in an online game. [Kaminsky]
 -	- Fixed missiles with the STEPMISSILE flag disappearing in online games. [Kaminsky]
+-	- Fixed faulty armor behaviour that occurred when the player's inventory was cleared. [Kaminsky]
 !	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
 !	- When the wad authentication fails for a connecting client, the client only reports the missing and incompatible PWADS instead of all of them. [Pol Marcet]

@@ -248,54 +248,51 @@ AInventory *ABasicArmorPickup::CreateCopy (AActor *other)
 bool ABasicArmorPickup::Use (bool pickup)
 {
 	ABasicArmor *armor = Owner->FindInventory<ABasicArmor> ();
-	LONG	lMaxAmount;
+	LONG lMaxAmount = SaveAmount;
 
 	if (armor == NULL)
 	{
 		armor = Spawn<ABasicArmor> (0,0,0, NO_REPLACE);
 		armor->BecomeItem ();
-		armor->SavePercent = SavePercent;
-		armor->Amount = armor->MaxAmount = SaveAmount;
-		armor->Icon = Icon;
 		Owner->AddInventory (armor);
-		return true;
 	}
-
-	// [BC] Handle max. armor bonuses, and the prosperity rune.
-	lMaxAmount = SaveAmount;
-	if ( Owner->player )
+	else
 	{
-		if ( Owner->player->cheats & CF_PROSPERITY )
-			lMaxAmount = ( deh.BlueAC * 100 ) + 50;
-		else
-			lMaxAmount += armor->BonusCount;
-	}
+		// [BC] Handle max. armor bonuses, and the prosperity rune.
+		if ( Owner->player )
+		{
+			if ( Owner->player->cheats & CF_PROSPERITY )
+				lMaxAmount = ( deh.BlueAC * 100 ) + 50;
+			else
+				lMaxAmount += armor->BonusCount;
+		}
 
-	// [BC] Changed ">=" to ">" so we can do a check below to potentially pick up armor
-	// that offers the same amount of armor, but a better SavePercent.
+		// [BC] Changed ">=" to ">" so we can do a check below to potentially pick up armor
+		// that offers the same amount of armor, but a better SavePercent.
 
-	// If you already have more armor than this item gives you, you can't
-	// use it.
-	if (armor->Amount > lMaxAmount)
-	{
-		return false;
-	}
+		// If you already have more armor than this item gives you, you can't
+		// use it.
+		if (armor->Amount > lMaxAmount)
+		{
+			return false;
+		}
 
-	// [BC] If we have the same amount of the armor we're trying to use, but our armor offers
-	// better protection, don't pick it up.
-	if (( armor->Amount == lMaxAmount ) && ( armor->SavePercent >= SavePercent ))
-		return ( false );
+		// [BC] If we have the same amount of the armor we're trying to use, but our armor offers
+		// better protection, don't pick it up.
+		if (( armor->Amount == lMaxAmount ) && ( armor->SavePercent >= SavePercent ))
+			return ( false );
 
-	// Don't use it if you're picking it up and already have some.
-	if (pickup && armor->Amount > 0 && MaxAmount > 0)
-	{
-		return false;
+		// Don't use it if you're picking it up and already have some.
+		if (pickup && armor->Amount > 0 && MaxAmount > 0)
+		{
+			return false;
+		}
 	}
 	armor->SavePercent = SavePercent;
-	armor->MaxAmount = SaveAmount;
-	armor->Amount += SaveAmount;
+	armor->Amount += SaveAmount; // [BC]
 	if ( armor->Amount > lMaxAmount )
 		armor->Amount = lMaxAmount;
+	armor->MaxAmount = SaveAmount;
 	armor->Icon = Icon;
 	armor->MaxAbsorb = MaxAbsorb;
 	armor->MaxFullAbsorb = MaxFullAbsorb;
