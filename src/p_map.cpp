@@ -6031,7 +6031,7 @@ void P_DoCrunch(AActor *thing, FChangePosition *cpos)
 		}
 
 		// [BC] Do the same thing, except for the white flag.
-		if ( thing->GetClass( ) == PClass::FindClass( "WhiteFlag" ))
+		if ( thing->IsKindOf( PClass::FindClass( "WhiteFlag" ) ))
 		{
 			if ( thing->flags & MF_DROPPED )
 				TEAM_ExecuteReturnRoutine( teams.Size( ), NULL );

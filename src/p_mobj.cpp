@@ -5058,7 +5058,7 @@ AActor *AActor::StaticSpawn (const PClass *type, fixed_t ix, fixed_t iy, fixed_t
 				TEAM_ExecuteReturnRoutine( i, NULL );
 		}
 
-		if (( oneflagctf ) && ( actor->GetClass( ) == PClass::FindClass( "WhiteFlag" )))
+		if (( oneflagctf ) && ( actor->IsKindOf( PClass::FindClass( "WhiteFlag" ) )))
 			TEAM_ExecuteReturnRoutine( teams.Size( ), NULL );
 	}
 

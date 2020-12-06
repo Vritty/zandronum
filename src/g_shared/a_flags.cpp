@@ -138,7 +138,7 @@ bool ATeamItem::TryPickup( AActor *&pToucher )
 		// Execute the return scripts.
 		if ( NETWORK_InClientMode() == false )
 		{
-			if ( this->GetClass( ) == PClass::FindClass( "WhiteFlag" ))
+			if ( this->IsKindOf( PClass::FindClass( "WhiteFlag" ) ))
 			{
 				FBehavior::StaticStartTypedScripts( SCRIPT_WhiteReturn, NULL, true );
 			}
@@ -979,7 +979,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 LONG AWhiteFlag::AllowFlagPickup( AActor *pToucher )
 {
 	// [BB] Carrying more than one WhiteFlag is not allowed.
-	if (( pToucher == NULL ) || ( pToucher->FindInventory( PClass::FindClass( "WhiteFlag" ) ) == NULL ) )
+	if (( pToucher == NULL ) || ( pToucher->FindInventory( PClass::FindClass( "WhiteFlag" ), true ) == NULL ) )
 		return ( ALLOW_PICKUP );
 	else
 		return ( DENY_PICKUP );

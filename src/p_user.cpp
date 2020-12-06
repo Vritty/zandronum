@@ -2121,19 +2121,19 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 		}
 
 		// Check if the player is carrying the white flag.
-		pInventory = this->FindInventory( PClass::FindClass( "WhiteFlag" ));
+		pInventory = this->FindInventory( PClass::FindClass( "WhiteFlag" ), true );
 		if (( oneflagctf ) && ( pInventory ))
 		{
 			this->RemoveInventory( pInventory );
 
 			// Tell the clients that this player no longer possesses a flag.
 			if (( bLeavingGame == false ) && ( NETWORK_GetState( ) == NETSTATE_SERVER ))
-				SERVERCOMMANDS_TakeInventory( player - players, PClass::FindClass( "WhiteFlag" ), 0 );
+				SERVERCOMMANDS_TakeInventory( player - players, pInventory->GetClass( ), 0 );
 			if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 				SCOREBOARD_RefreshHUD( );
 
 			// Spawn a new flag.
-			pTeamItem = Spawn( PClass::FindClass( "WhiteFlag" ), x, y, z, NO_REPLACE );
+			pTeamItem = Spawn( PClass::FindClass( "WhiteFlag" ), x, y, z, ALLOW_REPLACE );
 			if ( pTeamItem )
 			{
 				pTeamItem->flags |= MF_DROPPED;

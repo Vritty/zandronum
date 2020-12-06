@@ -910,7 +910,7 @@ bool medal_PlayerHasCarrierIcon ( ULONG ulPlayer )
 				}
 
 				// Delete the white flag if the player no longer has it.
-				pInventory = pPlayer->mo->FindInventory( PClass::FindClass( "WhiteFlag" ));
+				pInventory = pPlayer->mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true );
 				if ( pInventory == NULL )
 				{
 					bInvalid = true;
@@ -1060,7 +1060,7 @@ ULONG medal_GetDesiredIcon( player_t *pPlayer, AInventory *&pTeamItem )
 		{
 			if ( oneflagctf )
 			{
-				AInventory *pInventory = pPlayer->mo->FindInventory( PClass::FindClass( "WhiteFlag" ));
+				AInventory *pInventory = pPlayer->mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true );
 				if ( pInventory )
 					ulDesiredSprite = SPRITE_WHITEFLAG;
 			}
@@ -1179,7 +1179,7 @@ void medal_SelectIcon( ULONG ulPlayer )
 				}
 
 				// Delete the white flag if the player no longer has it.
-				pInventory = pPlayer->mo->FindInventory( PClass::FindClass( "WhiteFlag" ));
+				pInventory = pPlayer->mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true );
 				if (( oneflagctf ) && ( pInventory == NULL ))
 					bDelete = true;
 

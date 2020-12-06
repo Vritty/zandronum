@@ -1479,7 +1479,7 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 				SERVERCOMMANDS_GiveInventory( ulIdx, pInventory, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 			// See if the player is carrying the white flag in OFCTF.
-			pInventory = players[ulIdx].mo->FindInventory( PClass::FindClass( "WhiteFlag" ));
+			pInventory = players[ulIdx].mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true );
 			if (( oneflagctf ) && ( pInventory ))
 				SERVERCOMMANDS_GiveInventory( ulIdx, pInventory, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 		}
