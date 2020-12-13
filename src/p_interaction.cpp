@@ -380,6 +380,9 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker, int dmgf
 	SexMessage (message, gendermessage, gender,
 		szVictim[0] ? szVictim : self->player->userinfo.GetName(),
 		szAttacker[0] ? szAttacker : attacker->player->userinfo.GetName());
+
+	// [AK] Format our message so color codes can appear.
+	V_ColorizeString( gendermessage );
 	Printf (PRINT_MEDIUM, "%s\n", gendermessage);
 }
 
