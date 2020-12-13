@@ -243,6 +243,9 @@ static	TArray<EDITEDTRANSLATION_s>		g_EditedTranslationList;
 // [BB] List of all sector links created by calls to Sector_SetLink.
 static	TArray<SECTORLINK_s>		g_SectorLinkList;
 
+// [AK] List of all actor sound channels containing looping sounds.
+static	TArray<FSoundChan>		g_LoopingChannelList;
+
 // [RC] File to log packets to.
 #ifdef CREATE_PACKET_LOG
 static	FILE		*PacketLogFile = NULL;
@@ -2633,6 +2636,10 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		}
 	}
 
+	// [AK] Send out any looping sounds that might be playing on an actor's sound channels.
+	for ( ulIdx = 0; ulIdx < g_LoopingChannelList.Size(); ulIdx++ )
+		SERVERCOMMANDS_SoundActor( g_LoopingChannelList[ulIdx].Actor, g_LoopingChannelList[ulIdx].EntChannel | g_LoopingChannelList[ulIdx].ChanFlags | CHAN_LOOP, S_GetName( g_LoopingChannelList[ulIdx].SoundID ), g_LoopingChannelList[ulIdx].Volume, g_LoopingChannelList[ulIdx].DistanceScale, ulClient, SVCF_ONLYTHISCLIENT, true );
+
 	// [BB] If the sky differs from the standard sky, let the client know about it.
 	if ( level.info 
 	     && ( ( stricmp( level.skypic1, level.info->skypic1 ) != 0 )
@@ -3993,6 +4000,71 @@ void SERVER_AddSectorLink( ULONG ulSector, int iArg1, int iArg2, int iArg3 )
 void SERVER_ClearSectorLinks( void )
 {
 	g_SectorLinkList.Clear( );
+}
+
+//*****************************************************************************
+//
+void SERVER_UpdateLoopingChannels( AActor *pActor, int channel, FSoundID soundid, float fVolume, float fAttenuation, bool bRemove )
+{
+	FSoundChan chan;
+
+	chan.Actor = pActor;
+	chan.EntChannel = channel & 7;
+	chan.ChanFlags = channel & ~7;
+	chan.SoundID = soundid;
+	chan.Volume = fVolume;
+	chan.DistanceScale = fAttenuation;
+
+	for ( unsigned int i = 0; i < g_LoopingChannelList.Size(); i++ )
+	{
+		if (( g_LoopingChannelList[i].Actor == pActor ) && ( g_LoopingChannelList[i].EntChannel == ( channel & 7 ) ))
+		{
+			if (( bRemove ) || ( channel & CHAN_LOOP ) == false )
+				g_LoopingChannelList.Delete( i );
+			else
+				g_LoopingChannelList[i] = chan;
+
+			return;
+		}
+	}
+
+	g_LoopingChannelList.Push( chan );
+}
+
+//*****************************************************************************
+//
+bool SERVER_IsChannelLooping( AActor *pActor, int channel, int soundid )
+{
+	for ( unsigned int i = 0; i < g_LoopingChannelList.Size(); i++ )
+	{
+		if (( g_LoopingChannelList[i].Actor == pActor ) &&
+			( g_LoopingChannelList[i].EntChannel == channel ) && ( g_LoopingChannelList[i].SoundID == soundid ))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//*****************************************************************************
+//
+void SERVER_ClearLoopingChannels( AActor *pActor )
+{
+	unsigned int i = 0;
+
+	if ( pActor != NULL )
+	{
+		for ( unsigned int i = 0; i < g_LoopingChannelList.Size(); i++ )
+		{
+			if ( g_LoopingChannelList[i].Actor == pActor )
+				g_LoopingChannelList.Delete( i-- );
+		}
+
+		return;
+	}
+
+	g_LoopingChannelList.Clear( );
 }
 
 //*****************************************************************************

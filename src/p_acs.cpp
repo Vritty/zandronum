@@ -6170,10 +6170,38 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 						{
 							if (!looping)
 							{
+								// [AK] If we're the server, we have to update the list of looping sound channels.
+								if ( NETWORK_GetState() == NETSTATE_SERVER )
+								{
+									// [AK] Don't loop this sound if it's already looping on this channel.
+									if (( chan & CHAN_LOOP ) && ( SERVER_IsChannelLooping( spot, chan & 7, sid ) ))
+									{
+										if ( args[0] == 0 ) return 0;
+
+										continue;
+									}
+
+									SERVER_UpdateLoopingChannels( spot, chan, sid, vol, atten, false );
+								}
+
 								S_Sound(spot, chan, sid, vol, atten, true);	// [EP] Inform the clients.
 							}
 							else if (!S_IsActorPlayingSomething(spot, chan & 7, sid))
 							{
+								// [AK] If we're the server, we have to update the list of looping sound channels.
+								if ( NETWORK_GetState() == NETSTATE_SERVER )
+								{
+									// [AK] Don't loop this sound if it's already looping on this channel.
+									if ( SERVER_IsChannelLooping( spot, chan & 7, sid ))
+									{
+										if ( args[0] == 0 ) return 0;
+
+										continue;
+									}
+									
+									SERVER_UpdateLoopingChannels( spot, chan, sid, vol, atten, false );
+								}
+
 								S_Sound(spot, chan | CHAN_LOOP, sid, vol, atten, true);	// [EP] Inform the clients.
 							}
 						}
@@ -6189,6 +6217,10 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				if (args[0] == 0)
 				{
 					S_StopSound(activator, chan);
+
+					// [AK] If we're the server, remove this channel from the list of looping channels.
+					if ( NETWORK_GetState() == NETSTATE_SERVER )
+						SERVER_UpdateLoopingChannels( activator, chan, 0, 0, 0, true );
 				}
 				else
 				{
@@ -6198,6 +6230,10 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 					while ((spot = it.Next()) != NULL)
 					{
 						S_StopSound(spot, chan);
+
+						// [AK] If we're the server, remove this channel from the list of looping channels.
+						if ( NETWORK_GetState() == NETSTATE_SERVER )
+							SERVER_UpdateLoopingChannels( spot, chan, 0, 0, 0, true );
 					}
 				}
 			}

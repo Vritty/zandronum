@@ -5286,6 +5286,10 @@ void AActor::Destroy ()
 	// Transform any playing sound into positioned, non-actor sounds.
 	S_RelinkSound (this, NULL);
 
+	// [AK] If we're the server, clear all looping channels belonging to this actor.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		SERVER_ClearLoopingChannels ( this );
+
 	Super::Destroy ();
 }
 

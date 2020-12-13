@@ -3967,6 +3967,8 @@ void P_SetupLevel (char *lumpname, int position)
 		SERVER_ClearEditedTranslations( );
 		// [BB] And the stored sector links.
 		SERVER_ClearSectorLinks( );
+		// [AK] And the looping sound channels of any actors.
+		SERVER_ClearLoopingChannels( NULL );
 	}
 
 	// Initial height of PointOfView will be set by player think.

@@ -453,18 +453,36 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PlaySound)
 
 	if (!looping)
 	{
+		// [AK] If we're the server, we have to update the list of looping sound channels.
+		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		{
+			// [AK] Don't loop this sound if it's already looping on this channel.
+			if (( channel & CHAN_LOOP ) && ( SERVER_IsChannelLooping( self, channel&7, soundid ) ))
+				return;
+
+			SERVER_UpdateLoopingChannels( self, channel, soundid, volume, attenuation, false );
+		}
+
 		S_Sound (self, channel, soundid, volume, attenuation, true );	// [BC] Inform the clients.
 	}
 	else
 	{
 		if (!S_IsActorPlayingSomething (self, channel&7, soundid))
 		{
+			// [AK] Don't play the sound if it's already looping on this channel on the server.
+			if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( SERVER_IsChannelLooping( self, channel&7, soundid ) ))
+				return;
+
 			S_Sound (self, channel | CHAN_LOOP, soundid, volume, attenuation);
 
 			// [BC] If we're the server, tell clients to play the sound.
 			// [Dusk] We need to respect existing sound play since this is a looped sound.
+			// [AK] Add this channel to the list of looping channels.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+			{
 				SERVERCOMMANDS_SoundActor( self, channel | CHAN_LOOP, S_GetName( soundid ), volume, attenuation, MAXPLAYERS, 0, true );
+				SERVER_UpdateLoopingChannels( self, channel, soundid, volume, attenuation, false );
+			}
 		}
 	}
 }
@@ -475,6 +493,10 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_StopSound)
 	ACTION_PARAM_INT(slot, 0);
 
 	S_StopSound(self, slot);
+
+	// [AK] If we're the server, remove this channel from the list of looping channels.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		SERVER_UpdateLoopingChannels( self, slot, 0, 0, 0, true );
 }
 
 //==========================================================================
@@ -526,17 +548,35 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PlaySoundEx)
 
 	if (!looping)
 	{
+		// [AK] If we're the server, we have to update the list of looping sound channels.
+		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		{
+			// [AK] Don't loop this sound if it's already looping on this channel.
+			if (( channel & CHAN_LOOP ) && ( SERVER_IsChannelLooping( self, ( int(channel) - NAME_Auto ) & 7, soundid ) ))
+				return;
+
+			SERVER_UpdateLoopingChannels( self, channel, soundid, 1, attenuation, false );
+		}
+
 		S_Sound (self, int(channel) - NAME_Auto, soundid, 1, attenuation, true );	// [BB] Inform the clients.
 	}
 	else
 	{
 		if (!S_IsActorPlayingSomething (self, int(channel) - NAME_Auto, soundid))
 		{
+			// [AK] If we're the server, check if this sound isn't already looping on the same channel.
+			if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( SERVER_IsChannelLooping( self, ( int(channel) - NAME_Auto ) & 7, soundid ) ) )
+				return;
+
 			S_Sound (self, (int(channel) - NAME_Auto) | CHAN_LOOP, soundid, 1, attenuation);
 
 			// [BB] If we're the server, tell clients to play the sound, but only if they are not already playing something for this actor.
+			// [AK] Add this channel to the list of looping channels.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+			{
 				SERVERCOMMANDS_SoundActor( self, (int(channel) - NAME_Auto) | CHAN_LOOP, S_GetName( soundid ), 1, attenuation, MAXPLAYERS, 0, true );
+				SERVER_UpdateLoopingChannels( self, int(channel) - NAME_Auto, soundid, 1, attenuation, false );
+			}
 		}
 	}
 }
@@ -549,6 +589,10 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_StopSoundEx)
 	if (channel > NAME_Auto && channel <= NAME_SoundSlot7)
 	{
 		S_StopSound (self, int(channel) - NAME_Auto);
+
+		// [AK] If we're the server, remove this channel from the list of looping channels.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVER_UpdateLoopingChannels( self, int(channel) - NAME_Auto, 0, 0, 0, true );
 	}
 }
 
