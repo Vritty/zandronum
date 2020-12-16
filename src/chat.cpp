@@ -1265,6 +1265,17 @@ CCMD( unignore_idx )
 // [TP]
 CCMD( messagemode )
 {
+	// [AK] Mods are not allowed to say anything in the player's name.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
+	// [AK] No chatting while playing a demo.
+	if ( CLIENTDEMO_IsPlaying( ) == true )
+	{
+		Printf ( "You can't chat during demo playback.\n" );
+		return;
+	}
+
 	if ( NETWORK_GetState() != NETSTATE_SERVER )
 	{
 		chat_SetChatMode( CHATMODE_GLOBAL );
@@ -1276,6 +1287,17 @@ CCMD( messagemode )
 // [TP]
 CCMD( messagemode2 )
 {
+	// [AK] Mods are not allowed to say anything in the player's name.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
+	// [AK] No chatting while playing a demo.
+	if ( CLIENTDEMO_IsPlaying( ) == true )
+	{
+		Printf ( "You can't chat during demo playback.\n" );
+		return;
+	}
+
 	if ( NETWORK_GetState() != NETSTATE_SERVER )
 	{
 		chat_SetChatMode( CHATMODE_TEAM );
