@@ -1106,10 +1106,6 @@ CCMD( say_team )
 	else
 		return;
 
-	// [BB] Don't allow dead spectators to team chat.
-	if ( players[consoleplayer].bDeadSpectator )
-		return;
-
 	// The server never should have a team!
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
