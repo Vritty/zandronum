@@ -842,6 +842,16 @@ void AddToConsole (int printlevel, const char *text)
 				}
 				else if (*work_p != '\0')
 				{
+					// [AK] A clear color code is used, so change the code
+					// back to the corresponding message level's color.
+					if (*work_p == '-')
+					{
+						*work_p = 'A' + (printlevel == PRINT_HIGH ? CR_TAN :
+							printlevel == 200 ? CR_GREEN :
+							printlevel < 0 ? CR_TAN : 
+							printlevel < PRINTLEVELS ? PrintColors[printlevel] :
+							CR_TAN);
+					}
 					cc = *work_p++;
 				}
 				continue;
