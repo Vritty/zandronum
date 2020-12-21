@@ -38,3 +38,9 @@ EndCommand
 Command AnnouncerSound
 	String sound
 EndCommand
+
+Command StopSound
+	ExtendedCommand
+	Actor actor
+	Short channel
+EndCommand

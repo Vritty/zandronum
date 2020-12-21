@@ -6769,6 +6769,13 @@ void ServerCommands::AnnouncerSound::Execute()
 
 //*****************************************************************************
 //
+void ServerCommands::StopSound::Execute()
+{
+	S_StopSound( actor, channel );
+}
+
+//*****************************************************************************
+//
 void ServerCommands::StartSectorSequence::Execute()
 {
 	SN_StartSequence( sector, channel, sequence.GetChars(), modeNum );

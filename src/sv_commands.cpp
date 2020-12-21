@@ -3185,6 +3185,20 @@ void SERVERCOMMANDS_AnnouncerSound( const char *pszSound, ULONG ulPlayerExtra, S
 }
 
 //*****************************************************************************
+//
+void SERVERCOMMANDS_StopSound( AActor *pActor, LONG lChannel, ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	// [AK] The actor must have a NetID so we can tell clients to stop the sound on their channel.
+	if ( EnsureActorHasNetID( pActor ) == false )
+		return;
+
+	ServerCommands::StopSound command;
+	command.SetActor( pActor );
+	command.SetChannel( lChannel );
+	command.sendCommandToClients( ulPlayerExtra, flags );
+}
+
+//*****************************************************************************
 //*****************************************************************************
 //
 void SERVERCOMMANDS_StartSectorSequence( sector_t *pSector, const int Channel, const char *pszSequence, const int Modenum, ULONG ulPlayerExtra, ServerCommandFlags flags )
