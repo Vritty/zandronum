@@ -28,6 +28,7 @@
 +	- Added a new scoreboard icon that displays if a player is lagging to the server. [Kaminsky]
 +	- Added ACS functions: SetPlayerScore(int player, int type, int value) and GetPlayerScore(int player, int type) to get or set the player's score. The type can be either frags, points, wins, deaths, kills, or the item and secret counts. [Kaminsky]
 +	- Added an ACS special to check whether the game is in demo or not [DoomJoshuaBoy/geNia]
++	- Added a new SBARINFO command: IfSpectator [not] [dead] that executes a sub block if the local player is (not) a (dead) spectator. [Kaminsky]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]

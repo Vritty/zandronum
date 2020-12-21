@@ -3625,6 +3625,65 @@ class CommandAlpha : public SBarInfoMainBlock
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// [AK] Zandronum-exclusive
+
+class CommandIfSpectator : public SBarInfoCommandFlowControl
+{
+	public:
+		CommandIfSpectator(SBarInfo *script) : SBarInfoCommandFlowControl(script),
+			negate(false), deadspectator(false)
+		{
+		}
+
+		void	Parse(FScanner &sc, bool fullScreenOffsets)
+		{
+			if (sc.CheckToken(TK_Identifier))
+			{
+				if (sc.Compare("not"))
+				{
+					negate = true;
+					if (sc.CheckToken(TK_Identifier))
+					{
+						if (sc.Compare("dead"))
+							deadspectator = true;
+						else
+							sc.ScriptError("Unknown identifier '%s'.", sc.String);
+					}
+				}
+				else if (sc.Compare("dead"))
+				{
+					deadspectator = true;
+					if (sc.CheckToken(TK_Identifier))
+					{
+						if (sc.Compare("not"))
+							sc.ScriptError("The 'not' identifier must come first before 'dead'.");
+						else
+							sc.ScriptError("Unknown identifier '%s'.", sc.String);
+					}
+				}
+				else
+					sc.ScriptError("Unknown identifier '%s'.", sc.String);
+			}
+			SBarInfoCommandFlowControl::Parse(sc, fullScreenOffsets);
+		}
+
+		void	Tick(const SBarInfoMainBlock *block, const DSBarInfo *statusBar, bool hudChanged)
+		{
+			SBarInfoCommandFlowControl::Tick(block, statusBar, hudChanged);
+
+			// [AK] Check if the local player is (not) also a dead spectator.
+			if(deadspectator)
+				SetTruth((players[consoleplayer].bDeadSpectator) ^ negate, block, statusBar);
+			// [AK] Otherwise, just check if they're (not) a spectator.
+			else
+				SetTruth((players[consoleplayer].bSpectating) ^ negate, block, statusBar);
+		}
+	protected:
+		bool negate;
+		bool deadspectator;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 
 static const char *SBarInfoCommandNames[] =
 {
@@ -3636,6 +3695,9 @@ static const char *SBarInfoCommandNames[] =
 	"isselected", "usesammo", "usessecondaryammo",
 	"hasweaponpiece", "inventorybarnotvisible",
 	"weaponammo", "ininventory", "alpha",
+
+	// [AK] Zandronum-exclusive "IfSpectator" command.
+	"ifspectator",
 	NULL
 };
 
@@ -3649,6 +3711,9 @@ enum SBarInfoCommands
 	SBARINFO_ISSELECTED, SBARINFO_USESAMMO, SBARINFO_USESSECONDARYAMMO,
 	SBARINFO_HASWEAPONPIECE, SBARINFO_INVENTORYBARNOTVISIBLE,
 	SBARINFO_WEAPONAMMO, SBARINFO_ININVENTORY, SBARINFO_ALPHA,
+
+	// [AK] Zandronum-exclusive "IfSpectator" command.
+	SBARINFO_IFSPECTATOR,
 };
 
 SBarInfoCommand *SBarInfoCommandFlowControl::NextCommand(FScanner &sc)
@@ -3681,6 +3746,9 @@ SBarInfoCommand *SBarInfoCommandFlowControl::NextCommand(FScanner &sc)
 			case SBARINFO_WEAPONAMMO: return new CommandWeaponAmmo(script);
 			case SBARINFO_ININVENTORY: return new CommandInInventory(script);
 			case SBARINFO_ALPHA: return new CommandAlpha(script);
+
+			// [AK] Zandronum-exclusive "IfSpectator" command.
+			case SBARINFO_IFSPECTATOR: return new CommandIfSpectator(script);
 		}
 
 		sc.ScriptError("Unknown command '%s'.\n", sc.String);
