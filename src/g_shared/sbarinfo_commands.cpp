@@ -3625,7 +3625,7 @@ class CommandAlpha : public SBarInfoMainBlock
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// [AK] Zandronum-exclusive
+// [AK] Zandronum-exclusive commands.
 
 class CommandIfSpectator : public SBarInfoCommandFlowControl
 {
@@ -3685,6 +3685,38 @@ class CommandIfSpectator : public SBarInfoCommandFlowControl
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class CommandIfSpying : public SBarInfoCommandFlowControl
+{
+	public:
+		CommandIfSpying(SBarInfo *script) : SBarInfoCommandFlowControl(script),
+			negate(false)
+		{
+		}
+
+		void	Parse(FScanner &sc, bool fullScreenOffsets)
+		{
+			if (sc.CheckToken(TK_Identifier))
+			{
+				if (sc.Compare("not"))
+					negate = true;
+				else
+					sc.ScriptError("Expected 'not', but got '%s' instead.", sc.String);
+			}
+
+			SBarInfoCommandFlowControl::Parse(sc, fullScreenOffsets);
+		}
+
+		void	Tick(const SBarInfoMainBlock *block, const DSBarInfo *statusBar, bool hudChanged)
+		{
+			SBarInfoCommandFlowControl::Tick(block, statusBar, hudChanged);
+			SetTruth((statusBar->CPlayer != &players[consoleplayer]) ^ negate, block, statusBar);
+		}
+	protected:
+		bool negate;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 static const char *SBarInfoCommandNames[] =
 {
 	"drawimage", "drawnumber", "drawswitchableimage",
@@ -3696,8 +3728,8 @@ static const char *SBarInfoCommandNames[] =
 	"hasweaponpiece", "inventorybarnotvisible",
 	"weaponammo", "ininventory", "alpha",
 
-	// [AK] Zandronum-exclusive "IfSpectator" command.
-	"ifspectator",
+	// [AK] Zandronum-exclusive commands.
+	"ifspectator", "ifspying",
 	NULL
 };
 
@@ -3712,8 +3744,8 @@ enum SBarInfoCommands
 	SBARINFO_HASWEAPONPIECE, SBARINFO_INVENTORYBARNOTVISIBLE,
 	SBARINFO_WEAPONAMMO, SBARINFO_ININVENTORY, SBARINFO_ALPHA,
 
-	// [AK] Zandronum-exclusive "IfSpectator" command.
-	SBARINFO_IFSPECTATOR,
+	// [AK] Zandronum-exclusive commands.
+	SBARINFO_IFSPECTATOR, SBARINFO_IFSPYING,
 };
 
 SBarInfoCommand *SBarInfoCommandFlowControl::NextCommand(FScanner &sc)
@@ -3747,8 +3779,9 @@ SBarInfoCommand *SBarInfoCommandFlowControl::NextCommand(FScanner &sc)
 			case SBARINFO_ININVENTORY: return new CommandInInventory(script);
 			case SBARINFO_ALPHA: return new CommandAlpha(script);
 
-			// [AK] Zandronum-exclusive "IfSpectator" command.
+			// [AK] Zandronum-exclusive commands.
 			case SBARINFO_IFSPECTATOR: return new CommandIfSpectator(script);
+			case SBARINFO_IFSPYING: return new CommandIfSpying(script);
 		}
 
 		sc.ScriptError("Unknown command '%s'.\n", sc.String);
