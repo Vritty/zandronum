@@ -207,7 +207,7 @@ Command SetLineTexture
 EndCommand
 
 Command SetLineTextureByID
-	Short lineID
+	UShort lineID
 	String textureName
 	Bool side
 	Byte position
