@@ -170,6 +170,7 @@ static	bool	server_InventoryUseAll( BYTESTREAM_s *pByteStream );
 static	bool	server_InventoryUse( BYTESTREAM_s *pByteStream );
 static	bool	server_InventoryDrop( BYTESTREAM_s *pByteStream );
 static	bool	server_Puke( BYTESTREAM_s *pByteStream );
+static	bool	server_ReceiveACSString( BYTESTREAM_s *pByteStream );
 static	bool	server_MorphCheat( BYTESTREAM_s *pByteStream );
 static	bool	server_CheckForClientCommandFlood( ULONG ulClient );
 static	bool	server_CheckForClientMinorCommandFlood( ULONG ulClient );
@@ -4640,6 +4641,10 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 		// [BB] Client wishes to puke a scipt.
 		return ( server_Puke( pByteStream ));
+	case CLC_ACSSENDSTRING:
+
+		// [AK] Client sent us a string through an ACS script.
+		return ( server_ReceiveACSString( pByteStream ));
 	case CLC_MORPHEX:
 
 		// [BB] Client wishes to morph to a certain class.
@@ -6589,6 +6594,36 @@ static bool server_Puke( BYTESTREAM_s *pByteStream )
 	// [BB] Execute the script as if it was invoked by the puke command.
 	P_StartScript (players[g_lCurrentClient].mo, NULL, scriptNum, level.mapname,
 		arg, 4, ( bAlways ? ACS_ALWAYS : 0 ) | ACS_NET );
+
+	return ( false );
+}
+
+//*****************************************************************************
+//
+static bool server_ReceiveACSString( BYTESTREAM_s *pByteStream )
+{
+	const int scriptNetID = pByteStream->ReadLong();
+
+	// [AK] Resolve the script netid into a script number.
+	const int scriptNum = ( scriptNetID != NO_SCRIPT_NETID )
+		? NETWORK_ACSScriptFromNetID ( scriptNetID )
+		: -FName( pByteStream->ReadString() );
+
+	const char *string = pByteStream->ReadString();
+
+	// [AK] A normal client checks if the script is pukeable and only requests to puke pukeable scripts.
+	// Thus if the requested script is not pukeable, the client was tampered with.
+	if ( ACS_IsScriptPukeable ( scriptNum ) == false )
+	{
+		// [AK] Trying to puke a non-pukeable script is treated as possible command flooding.
+		if ( server_CheckForClientCommandFlood ( g_lCurrentClient ) == true )
+			return ( true );
+
+		return ( false );
+	}
+
+	int arg[4] = { GlobalACSStrings.AddString ( string ), 0, 0, 0 };
+	P_StartScript( players[g_lCurrentClient].mo, NULL, scriptNum, NULL, arg, 4, ACS_ALWAYS | ACS_NET );
 
 	return ( false );
 }

@@ -107,6 +107,7 @@ void	CLIENTCOMMANDS_RequestInventoryDrop( AInventory *pItem );
 void	CLIENTCOMMANDS_EnterConsole( void );
 void	CLIENTCOMMANDS_ExitConsole( void );
 void	CLIENTCOMMANDS_Puke ( int script, int args[4], bool always );
+void	CLIENTCOMMANDS_ACSSendString( int script, const char* pszString );
 void	CLIENTCOMMANDS_MorphCheat ( const char *pszMorphClass );
 void	CLIENTCOMMANDS_FullUpdateReceived ( void );
 void	CLIENTCOMMANDS_InfoCheat( AActor* mobj, bool extended );
