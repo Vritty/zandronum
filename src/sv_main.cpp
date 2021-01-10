@@ -3106,62 +3106,65 @@ void SERVER_UpdateSectors( ULONG ulClient )
 			SERVERCOMMANDS_SetSectorCeilingPlane( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// Update the panning.
-		if (( pSector->GetXOffset(sector_t::ceiling) != 0 ) ||
-			( pSector->GetYOffset(sector_t::ceiling,false) != 0 ) ||
-			( pSector->GetXOffset(sector_t::floor) != 0 ) ||
-			( pSector->GetYOffset(sector_t::floor,false) != 0 ))
+		if (( pSector->SavedCeilingXOffset != pSector->GetXOffset(sector_t::ceiling) ) ||
+			( pSector->SavedCeilingYOffset != pSector->GetYOffset(sector_t::ceiling,false) ) ||
+			( pSector->SavedFloorXOffset != pSector->GetXOffset(sector_t::floor) ) ||
+			( pSector->SavedFloorYOffset != pSector->GetYOffset(sector_t::floor,false) ))
 		{
 			SERVERCOMMANDS_SetSectorPanning( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 		}
 
 		// Update the sector color.
-		if (( pSector->ColorMap->Color.r != 255 ) ||
-			( pSector->ColorMap->Color.g != 255 ) ||
-			( pSector->ColorMap->Color.b != 255 ) ||
-			( pSector->ColorMap->Desaturate != 0 ))
+		if (( pSector->SavedColorMap->Color.r != pSector->ColorMap->Color.r ) ||
+			( pSector->SavedColorMap->Color.g != pSector->ColorMap->Color.g ) ||
+			( pSector->SavedColorMap->Color.b != pSector->ColorMap->Color.b ) ||
+			( pSector->SavedColorMap->Desaturate != pSector->ColorMap->Desaturate ))
 		{
 			SERVERCOMMANDS_SetSectorColor( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 		}
 
 		// Update the sector fade.
-		if (( pSector->ColorMap->Fade.r != 0 ) ||
-			( pSector->ColorMap->Fade.g != 0 ) ||
-			( pSector->ColorMap->Fade.b != 0 ))
+		if (( pSector->SavedColorMap->Fade.r != pSector->ColorMap->Fade.r ) ||
+			( pSector->SavedColorMap->Fade.g != pSector->ColorMap->Fade.g ) ||
+			( pSector->SavedColorMap->Fade.b != pSector->ColorMap->Fade.b ))
 		{
 			SERVERCOMMANDS_SetSectorFade( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 		}
 
 		// Update the sector's ceiling/floor rotation.
-		if (( pSector->GetAngle(sector_t::ceiling,false) != 0 ) || ( pSector->GetAngle(sector_t::floor,false) != 0 ))
+		if (( pSector->SavedCeilingAngle != pSector->GetAngle(sector_t::ceiling,false) ) ||
+			( pSector->SavedFloorAngle != pSector->GetAngle(sector_t::floor,false) ))
+		{
 			SERVERCOMMANDS_SetSectorRotation( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
+		}
 
 		// Update the sector's ceiling/floor scale.
-		if (( pSector->GetXScale(sector_t::ceiling) != FRACUNIT ) ||
-			( pSector->GetYScale(sector_t::ceiling) != FRACUNIT ) ||
-			( pSector->GetXScale(sector_t::floor) != FRACUNIT ) ||
-			( pSector->GetYScale(sector_t::floor) != FRACUNIT ))
+		if (( pSector->SavedCeilingXScale != pSector->GetXScale(sector_t::ceiling) ) ||
+			( pSector->SavedCeilingYScale != pSector->GetYScale(sector_t::ceiling) ) ||
+			( pSector->SavedFloorXScale != pSector->GetXScale(sector_t::floor) ) ||
+			( pSector->SavedFloorYScale != pSector->GetYScale(sector_t::floor) ))
 		{
 			SERVERCOMMANDS_SetSectorScale( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 		}
 
 		// Update the sector's friction.
-		if (( pSector->friction != ORIG_FRICTION || pSector->movefactor != ORIG_FRICTION_FACTOR ) &&
+		if (( pSector->SavedFriction != pSector->friction || pSector->SavedMoveFactor != pSector->movefactor ) &&
 			( pSector->special & FRICTION_MASK ))
 		{
 			SERVERCOMMANDS_SetSectorFriction( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 		}
 
 		// Update the sector's angle/y-offset.
-		if (( pSector->planes[sector_t::ceiling].xform.base_angle != 0 ) ||
-			( pSector->planes[sector_t::ceiling].xform.base_yoffs != 0 ) ||
-			( pSector->planes[sector_t::floor].xform.base_angle != 0 ) ||
-			( pSector->planes[sector_t::floor].xform.base_yoffs != 0 ))
+		if (( pSector->SavedBaseCeilingAngle != pSector->planes[sector_t::ceiling].xform.base_angle ) ||
+			( pSector->SavedBaseCeilingYOffset != pSector->planes[sector_t::ceiling].xform.base_yoffs ) ||
+			( pSector->SavedBaseFloorAngle != pSector->planes[sector_t::floor].xform.base_angle ) ||
+			( pSector->SavedBaseFloorYOffset != pSector->planes[sector_t::floor].xform.base_yoffs ))
 		{
 			SERVERCOMMANDS_SetSectorAngleYOffset( ulIdx );
 		}
 
 		// Update the sector's gravity.
-		if ( pSector->gravity != 1.0f )
+		if ( pSector->SavedGravity != pSector->gravity )
 			SERVERCOMMANDS_SetSectorGravity( ulIdx );
 
 		// Update the sector's light level.
@@ -3169,8 +3172,8 @@ void SERVER_UpdateSectors( ULONG ulClient )
 			SERVERCOMMANDS_SetSectorLightLevel( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// Update the sector's reflection.
-		if (( pSector->reflect[sector_t::ceiling] != 0.0f ) ||
-			( pSector->reflect[sector_t::floor] != 0.0f ))
+		if (( pSector->SavedCeilingReflect != pSector->reflect[sector_t::ceiling] ) ||
+			( pSector->SavedFloorReflect != pSector->reflect[sector_t::floor] ))
 		{
 			SERVERCOMMANDS_SetSectorReflection( ulIdx );
 		}

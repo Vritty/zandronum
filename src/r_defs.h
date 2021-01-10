@@ -839,8 +839,8 @@ struct sector_t
 	fixed_t				SavedFloorYScale;
 	fixed_t				SavedCeilingXScale;
 	fixed_t				SavedCeilingYScale;
-	fixed_t				SavedFloorAngle;
-	fixed_t				SavedCeilingAngle;
+	angle_t				SavedFloorAngle;
+	angle_t				SavedCeilingAngle;
 	fixed_t				SavedBaseFloorAngle;
 	fixed_t				SavedBaseFloorYOffset;
 	fixed_t				SavedBaseCeilingAngle;
