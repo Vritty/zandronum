@@ -402,6 +402,71 @@ void D_RemoveNextCharEvent()
 
 //==========================================================================
 //
+// [AK] D_CompareFlagset
+//
+// Lists all flag-type CVars belonging to a particular flagset which have
+// been changed through modification of the flagset, then prints them to the
+// console. If too many flags were changed, then the total number of flags
+// is printed to the console instead, thereby shortening the length of the
+// message. The name of the flagset and its new value are printed too.
+// 
+//==========================================================================
+
+void D_CompareFlagset( FIntCVar& flagset, int maxflags = 2 )
+{
+	int value = static_cast<int>( flagset );
+	int oldValue = flagset.GetPastValue( );
+
+	// [AK] Only continue if we're the server, and the value actually changed from before.
+	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( gamestate == GS_STARTUP ) || ( value == oldValue ))
+		return;
+
+	FString result;
+	int flagsChanged = 0;
+
+	for ( int i = 0; i < 32; i++ )
+	{
+		unsigned int bit = ( 1 << i );
+
+		// [AK] Don't continue if this bit hasn't changed.
+		if ((( value ^ oldValue ) & bit ) == 0 )
+			continue;
+
+		// [AK] Print the name of the CVar and its new value while we still can.
+		if ( ++flagsChanged <= maxflags )
+		{
+			for ( FBaseCVar* cvar = CVars; cvar; cvar = cvar->GetNext( ) )
+			{
+				// [AK] Make sure that this CVar is a flag.
+				if ( cvar->IsFlagCVar( ) == false )
+					continue;
+
+				FFlagCVar* flagCVar = static_cast<FFlagCVar*>( cvar );
+
+				// [AK] Check if this CVar belongs to the flagset and matches the corresponding bit.
+				if (( flagCVar->GetValueVar( ) == &flagset ) && ( flagCVar->GetBitVal( ) == bit ))
+				{
+					if ( flagsChanged > 1 )
+						result += ", ";
+
+					result.AppendFormat( "%s %s", flagCVar->GetName( ), ( value & bit ) ? "ON" : "OFF" );
+					break;
+				}
+			}
+		}
+	}
+
+	// [AK] If too many flags changed, just print how many flags were changed instead.
+	// This way, we don't print an excessively long message to the console.
+	if ( flagsChanged > maxflags )
+		result.Format( "%d flags changed", flagsChanged );
+
+	SERVER_Printf( "%s changed to: %d (%s)\n", flagset.GetName( ), value, result );
+	SERVERCOMMANDS_SetGameDMFlags( );
+}
+
+//==========================================================================
+//
 // CVAR dmflags
 //
 //==========================================================================
@@ -443,11 +508,8 @@ CUSTOM_CVAR (Int, dmflags, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK)
 	}
 
 	// [BC] If we're the server, tell clients that the dmflags changed.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		SERVERCOMMANDS_SetGameDMFlags( );
-	}
+	// [AK] Moved everything into a separate function to avoid code duplication.
+	D_CompareFlagset( self );
 }
 
 CVAR (Flag, sv_nohealth,		dmflags, DF_NO_HEALTH);
@@ -498,11 +560,8 @@ CVAR (Mask, sv_fallingdamage,	dmflags, DF_FORCE_FALLINGHX|DF_FORCE_FALLINGZD);
 CUSTOM_CVAR (Int, dmflags2, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK)
 {
 	// [BC] If we're the server, tell clients that the dmflags changed.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		SERVERCOMMANDS_SetGameDMFlags( );
-	}
+	// [AK] Moved everything into a separate function to avoid code duplication.
+	D_CompareFlagset( self );
 
 	// Stop the automap if we aren't allowed to use it.
 	if ((self & DF2_NO_AUTOMAP) && automapactive)
@@ -591,11 +650,8 @@ CUSTOM_CVAR (Int, zadmflags, 0, CVAR_SERVERINFO)
 		SERVER_SyncSharedKeys( MAXPLAYERS, true );
 
 	// [BB] If we're the server, tell clients that the dmflags changed.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		SERVERCOMMANDS_SetGameDMFlags( );
-	}
+	// [AK] Moved everything into a separate function to avoid code duplication.
+	D_CompareFlagset( self );
 
 #ifndef NO_GL
 	// [BB/EP] This makes gl_lightmode and gl_distfog handle ZADF_FORCE_VIDEO_DEFAULTS.
@@ -666,11 +722,8 @@ CUSTOM_CVAR (Int, compatflags, 0, CVAR_SERVERINFO)
 	}
 
 	// [BC] If we're the server, tell clients that the dmflags changed.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		SERVERCOMMANDS_SetGameDMFlags( );
-	}
+	// [AK] Moved everything into a separate function to avoid code duplication.
+	D_CompareFlagset( self );
 }
 
 // [BB] Removed the CVAR_ARCHIVE flag.
@@ -679,11 +732,8 @@ CUSTOM_CVAR (Int, compatflags2, 0, CVAR_SERVERINFO)
 	i_compatflags2 = GetCompatibility2(self) | ii_compatflags2;
 
 	// [BB] If we're the server, tell clients that compatflags2 changed.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		SERVERCOMMANDS_SetGameDMFlags( );
-	}
+	// [AK] Moved everything into a separate function to avoid code duplication.
+	D_CompareFlagset( self );
 }
 
 //==========================================================================
@@ -695,11 +745,8 @@ CUSTOM_CVAR (Int, compatflags2, 0, CVAR_SERVERINFO)
 CUSTOM_CVAR (Int, zacompatflags, 0, CVAR_SERVERINFO)
 {
 	// [BC] If we're the server, tell clients that the dmflags changed.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		SERVERCOMMANDS_SetGameDMFlags( );
-	}
+	// [AK] Moved everything into a separate function to avoid code duplication.
+	D_CompareFlagset( self );
 }
 
 // [TP] Added CVAR_SERVERINFO
