@@ -402,7 +402,7 @@ void D_RemoveNextCharEvent()
 
 //==========================================================================
 //
-// [AK] D_CompareFlagset
+// [AK] SERVER_FlagsetChanged
 //
 // Lists all flag-type CVars belonging to a particular flagset which have
 // been changed through modification of the flagset, then prints them to the
@@ -412,7 +412,7 @@ void D_RemoveNextCharEvent()
 // 
 //==========================================================================
 
-void D_CompareFlagset( FIntCVar& flagset, int maxflags = 2 )
+void SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 )
 {
 	int value = static_cast<int>( flagset );
 	int oldValue = flagset.GetPastValue( );
@@ -509,7 +509,7 @@ CUSTOM_CVAR (Int, dmflags, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK)
 
 	// [BC] If we're the server, tell clients that the dmflags changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
-	D_CompareFlagset( self );
+	SERVER_FlagsetChanged( self );
 }
 
 CVAR (Flag, sv_nohealth,		dmflags, DF_NO_HEALTH);
@@ -561,7 +561,7 @@ CUSTOM_CVAR (Int, dmflags2, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK)
 {
 	// [BC] If we're the server, tell clients that the dmflags changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
-	D_CompareFlagset( self );
+	SERVER_FlagsetChanged( self );
 
 	// Stop the automap if we aren't allowed to use it.
 	if ((self & DF2_NO_AUTOMAP) && automapactive)
@@ -651,7 +651,7 @@ CUSTOM_CVAR (Int, zadmflags, 0, CVAR_SERVERINFO)
 
 	// [BB] If we're the server, tell clients that the dmflags changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
-	D_CompareFlagset( self );
+	SERVER_FlagsetChanged( self );
 
 #ifndef NO_GL
 	// [BB/EP] This makes gl_lightmode and gl_distfog handle ZADF_FORCE_VIDEO_DEFAULTS.
@@ -723,7 +723,7 @@ CUSTOM_CVAR (Int, compatflags, 0, CVAR_SERVERINFO)
 
 	// [BC] If we're the server, tell clients that the dmflags changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
-	D_CompareFlagset( self );
+	SERVER_FlagsetChanged( self );
 }
 
 // [BB] Removed the CVAR_ARCHIVE flag.
@@ -733,7 +733,7 @@ CUSTOM_CVAR (Int, compatflags2, 0, CVAR_SERVERINFO)
 
 	// [BB] If we're the server, tell clients that compatflags2 changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
-	D_CompareFlagset( self );
+	SERVER_FlagsetChanged( self );
 }
 
 //==========================================================================
@@ -746,7 +746,7 @@ CUSTOM_CVAR (Int, zacompatflags, 0, CVAR_SERVERINFO)
 {
 	// [BC] If we're the server, tell clients that the dmflags changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
-	D_CompareFlagset( self );
+	SERVER_FlagsetChanged( self );
 }
 
 // [TP] Added CVAR_SERVERINFO
