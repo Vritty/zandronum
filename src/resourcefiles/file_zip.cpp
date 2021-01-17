@@ -205,6 +205,7 @@ bool FZipFile::Open(bool quiet)
 	Reader->Seek(LittleLong(info.DirectoryOffset), SEEK_SET);
 	Reader->Read(directory, dirsize);
 
+	FString oldName; // [AK] Store the name of the last lump we scanned.
 	char *dirptr = (char*)directory;
 	FZipLump *lump_p = Lumps;
 	for (DWORD i = 0; i < NumLumps; i++)
@@ -230,6 +231,14 @@ bool FZipFile::Open(bool quiet)
 		{
 			skipped++;
 			continue;
+		}
+
+		// [AK] Check for any duplicate lumps in the file. If we find any, then throw an error. We
+		// shouldn't be loading any malformed zip files, as this can lead to authentication issues.
+		if ((oldName.IsNotEmpty()) && (oldName.CompareNoCase(name) == 0))
+		{
+			I_Error("Couldn't load file %s: duplicate lump '%s' detected.\n", Filename, name.GetChars());
+			return false;
 		}
 
 		// Ignore unknown compression formats
@@ -274,6 +283,7 @@ bool FZipFile::Open(bool quiet)
 			memset(lump_p->Name, 0, sizeof(lump_p->Name));
 		}
 
+		oldName = name; // [AK]
 		lump_p++;
 	}
 	// Resize the lump record array to its actual size
