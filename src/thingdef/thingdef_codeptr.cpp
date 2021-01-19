@@ -5856,7 +5856,8 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_RadiusGive)
 			continue;
 		}
 		// Players, monsters, and other shootable objects
-		if (thing->player)
+		// [AK] Don't give items to spectators.
+		if ((thing->player) && (thing->player->bSpectating == false))
 		{
 			if ((thing->player->mo == thing) && !(flags & RGF_PLAYERS))
 			{
