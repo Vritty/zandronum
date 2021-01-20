@@ -1789,6 +1789,7 @@ void P_SpawnSpecials (void)
 		sectors[i].SavedBaseCeilingYOffset = sectors[i].planes[sector_t::ceiling].xform.base_yoffs;
 		sectors[i].SavedFriction = sectors[i].friction;
 		sectors[i].SavedMoveFactor = sectors[i].movefactor;
+		sectors[i].SavedGravity = sectors[i].gravity;
 		sectors[i].SavedSpecial = sectors[i].special;
 		sectors[i].SavedDamage = sectors[i].damage;
 		sectors[i].SavedMOD = sectors[i].mod;

@@ -3652,6 +3652,14 @@ void GAME_ResetMap( bool bRunEnterScripts )
 				SERVERCOMMANDS_SetSectorFriction( ulIdx );
 		}
 
+		if ( sectors[ulIdx].SavedGravity != sectors[ulIdx].gravity )
+		{
+			sectors[ulIdx].gravity = sectors[ulIdx].SavedGravity;
+
+			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				SERVERCOMMANDS_SetSectorGravity( ulIdx );
+		}
+
 		if ( sectors[ulIdx].SavedSpecial != sectors[ulIdx].special )
 		{
 			sectors[ulIdx].special = sectors[ulIdx].SavedSpecial;
