@@ -93,6 +93,9 @@ static void PrintLastError ();
 
 FWadCollection Wads;
 
+// [AK] A list of all duplicate lumps found during startup.
+TArray<FString> DuplicateLumps;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------

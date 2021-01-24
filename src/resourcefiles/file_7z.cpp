@@ -263,7 +263,6 @@ bool F7ZFile::Open(bool quiet)
 
 	Lumps = new F7ZLump[NumLumps];
 
-	FString oldName; // [AK] Store the name of the last lump we scanned.
 	F7ZLump *lump_p = Lumps;
 	TArray<UInt16> nameUTF16;
 	TArray<char> nameASCII;
@@ -298,22 +297,12 @@ bool F7ZFile::Open(bool quiet)
 		FString name = &nameASCII[0];
 		name.ToLower();
 
-		// [AK] Check for any duplicate lumps in the file. If we find any, then throw an error. We
-		// shouldn't be loading any malformed 7z files, as this can lead to authentication issues.
-		if ((oldName.IsNotEmpty()) && (oldName.CompareNoCase(name) == 0))
-		{
-			I_Error("Couldn't load file %s: duplicate lump '%s' detected.\n", Filename, name.GetChars());
-			return false;
-		}
-
 		lump_p->LumpNameSetup(name);
 		lump_p->LumpSize = int(file->Size);
 		lump_p->Owner = this;
 		lump_p->Flags = LUMPF_ZIPFILE;
 		lump_p->Position = i;
 		lump_p->CheckEmbedded();
-
-		oldName = name; // [AK]
 		lump_p++;
 	}
 	// Resize the lump record array to its actual size

@@ -359,6 +359,20 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 
 	for ( unsigned int i = 0; i < lumpsToAuthenticate.size(); i++ )
 	{
+		// [AK] Check if we're authenticating any duplicate lumps on the server.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+		{
+			for ( unsigned int j = 0; j < DuplicateLumps.Size(); j++ )
+			{
+				// [AK] If there's a match, throw a fatal error instead.
+				if ( stricmp( DuplicateLumps[j], lumpsToAuthenticate[i].c_str() ) == 0 )
+				{
+					I_Error( "Attempt to authenticate duplicate protected lump '%s'.\n", lumpsToAuthenticate[i].c_str() );
+					return;
+				}
+			}
+		}
+
 		switch ( lumpsToAuthenticateMode[i] ){
 			case LAST_LUMP:
 				int lump;
@@ -987,6 +1001,24 @@ void NETWORK_AddLumpForAuthentication( const LONG LumpNumber )
 {
 	if ( LumpNumber == -1 )
 		return;
+
+	// [AK] Check if we're trying to authenticate a duplicate lump on the server.
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
+	{
+		const char *lumpName = Wads.GetLumpFullName( LumpNumber );
+		for ( unsigned int i = 0; i < DuplicateLumps.Size(); i++ )
+		{
+			// [AK] If there's a match, throw a fatal error instead.
+			if ( DuplicateLumps[i].CompareNoCase( lumpName ) == 0 )
+			{
+				FString fullPath = Wads.GetLumpFullPath( LumpNumber );
+				const char *fileName = fullPath.Left( fullPath.Len() - strlen( lumpName ) - 1 );
+
+				I_Error( "Attempt to authenticate duplicate lump '%s' found in '%s'.\n", lumpName, fileName );
+				return;
+			}
+		}
+	}
 
 	g_LumpNumsToAuthenticate.Push ( LumpNumber );
 }

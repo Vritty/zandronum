@@ -205,7 +205,10 @@ bool FZipFile::Open(bool quiet)
 	Reader->Seek(LittleLong(info.DirectoryOffset), SEEK_SET);
 	Reader->Read(directory, dirsize);
 
-	FString oldName; // [AK] Store the name of the last lump we scanned.
+	// [AK] Store the names of all the lumps in the current directory.
+	TArray<FString> oldNames;
+	FString currentDirectory;
+
 	char *dirptr = (char*)directory;
 	FZipLump *lump_p = Lumps;
 	for (DWORD i = 0; i < NumLumps; i++)
@@ -231,14 +234,6 @@ bool FZipFile::Open(bool quiet)
 		{
 			skipped++;
 			continue;
-		}
-
-		// [AK] Check for any duplicate lumps in the file. If we find any, then throw an error. We
-		// shouldn't be loading any malformed zip files, as this can lead to authentication issues.
-		if ((oldName.IsNotEmpty()) && (oldName.CompareNoCase(name) == 0))
-		{
-			I_Error("Couldn't load file %s: duplicate lump '%s' detected.\n", Filename, name.GetChars());
-			return false;
 		}
 
 		// Ignore unknown compression formats
@@ -283,7 +278,60 @@ bool FZipFile::Open(bool quiet)
 			memset(lump_p->Name, 0, sizeof(lump_p->Name));
 		}
 
-		oldName = name; // [AK]
+		// [AK] Get the full name of the directory that the lump is located in.
+		const char *directory = strrchr(name, '/');
+		FString directoryName = "/";
+
+		if (directory != NULL)
+		{
+			directoryName = name.Left(ULONG(directory - name.GetChars()));
+		}
+
+		// [AK] Check if we're in the same directory. If not, clear the list of old lump names.
+		if ((currentDirectory.IsEmpty()) || (currentDirectory.CompareNoCase(directoryName) != 0))
+		{
+			oldNames.Clear();
+			currentDirectory = directoryName;
+		}
+
+		// [AK] Check for any duplicate lumps in the current directory.
+		for (int i = oldNames.Size() - 1; i > -1; i--)
+		{
+			if (oldNames[i].CompareNoCase(name) == 0)
+			{
+				if (!quiet) Printf(TEXTCOLOR_YELLOW "\n%s: duplicate lump '%s' detected.\n", Filename, name.GetChars());
+
+				// [AK] We only want to keep track of duplicate lumps that may cause authentication
+				// failures if the file is loaded. Therefore, ignore any lumps that aren't part of
+				// the global or ACS namespaces.
+				if ((lump_p->Namespace != -1 ) && (lump_p->Namespace != ns_global) && (lump_p->Namespace != ns_acslibrary))
+					break;
+
+				bool addDuplicate = true;
+
+				// [AK] To keep the list of duplicate lumps as small as possible, first check if the
+				// name of the lump isn't already in the list. If nothing was found, then add the
+				// full name of the lump to it.
+				for (unsigned int j = 0; j < DuplicateLumps.Size(); j++)
+				{
+					if (DuplicateLumps[j].CompareNoCase(lump_p->FullName) == 0)
+					{
+						addDuplicate = false;
+						break;
+					}
+				}
+
+				if (addDuplicate)
+				{
+					DuplicateLumps.Push(lump_p->FullName);
+				}
+
+				break;
+			}
+		}
+
+		// [AK] Add this lump name to the list.
+		oldNames.Push(name);
 		lump_p++;
 	}
 	// Resize the lump record array to its actual size
