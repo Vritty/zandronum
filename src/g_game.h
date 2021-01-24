@@ -133,6 +133,9 @@ void G_AddViewPitch (int look, bool mouse = false);
 // Adds to consoleplayer's viewangle if allowed
 void G_AddViewAngle (int yaw, bool mouse = false);
 
+// [AK] Finishing changing the consoleplayer's view to another player.
+void G_FinishChangeSpy ( ULONG ulPlayer );
+
 #define BODYQUESIZE 	32
 class AActor;
 extern AActor *bodyque[BODYQUESIZE]; 

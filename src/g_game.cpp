@@ -981,8 +981,6 @@ enum {
 
 // [RH] Spy mode has been separated into two console commands.
 //		One goes forward; the other goes backward.
-// [BC] Prototype for new function.
-static void FinishChangeSpy( int pnum );
 static void ChangeSpy (int changespy)
 {
 	// If you're not in a level, then you can't spy.
@@ -1049,7 +1047,7 @@ static void ChangeSpy (int changespy)
 				if ( PLAYER_IsTrueSpectator( &players[consoleplayer] ))
 				{
 					players[consoleplayer].camera = players[consoleplayer].mo;
-					FinishChangeSpy( consoleplayer );
+					G_FinishChangeSpy( consoleplayer );
 					return;
 				}
 
@@ -1057,7 +1055,7 @@ static void ChangeSpy (int changespy)
 				if ( players[consoleplayer].bOnTeam == false )
 				{
 					players[consoleplayer].camera = players[consoleplayer].mo;
-					FinishChangeSpy( consoleplayer );
+					G_FinishChangeSpy( consoleplayer );
 					return;
 				}
 
@@ -1083,14 +1081,14 @@ static void ChangeSpy (int changespy)
 				} while ( pnum != consoleplayer );
 
 				players[consoleplayer].camera = players[pnum].mo;
-				FinishChangeSpy( pnum );
+				G_FinishChangeSpy( pnum );
 				return;
 			}
 			// [BC] Don't allow spynext in LMS when the spectator settings forbid it.
 			if (( lastmanstanding ) && (( lmsspectatorsettings & LMS_SPF_VIEW ) == false ))
 			{
 				players[consoleplayer].camera = players[consoleplayer].mo;
-				FinishChangeSpy( consoleplayer );
+				G_FinishChangeSpy( consoleplayer );
 				return;
 			}
 		}
@@ -1114,7 +1112,7 @@ static void ChangeSpy (int changespy)
 				break;
 			} while ( pnum != consoleplayer );
 
-			FinishChangeSpy( pnum );
+			G_FinishChangeSpy( pnum );
 			return;
 		}
 
@@ -1166,15 +1164,16 @@ static void ChangeSpy (int changespy)
 	}
 
 	// [BC] When we're all done, put the camera in the display player's body, etc.
-	FinishChangeSpy( pnum );
+	G_FinishChangeSpy( pnum );
 }
 
 // [BC] Split this out of ChangeSpy() so it can be called from within that function.
-static void FinishChangeSpy( int pnum )
+// [AK] Made this function accessible outside of g_game.cpp for LS_ChangeCamera.
+void G_FinishChangeSpy( ULONG ulPlayer )
 {
-	players[consoleplayer].camera = players[pnum].mo;
+	players[consoleplayer].camera = players[ulPlayer].mo;
 	S_UpdateSounds(players[consoleplayer].camera);
-	StatusBar->AttachToPlayer (&players[pnum]);
+	StatusBar->AttachToPlayer (&players[ulPlayer]);
 
 	// [TP] Rebuild translations if we're overriding player colors, they
 	// may very likely have changed by now.
@@ -1192,7 +1191,7 @@ static void FinishChangeSpy( int pnum )
 
 	// [BC] If we're a client, tell the server that we're switching our displayplayer.
 	if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
-		CLIENTCOMMANDS_ChangeDisplayPlayer( pnum );
+		CLIENTCOMMANDS_ChangeDisplayPlayer( ulPlayer );
 
 	// [BC] Also, refresh the HUD since the display player is changing.
 	SCOREBOARD_RefreshHUD( );

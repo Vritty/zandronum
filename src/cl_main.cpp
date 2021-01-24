@@ -4150,6 +4150,9 @@ void ServerCommands::SetPlayerCamera::Execute()
 		players[consoleplayer].cheats &= ~CF_REVERTPLEASE;
 		if (oldcamera != players[consoleplayer].camera)
 			R_ClearPastViewer (players[consoleplayer].camera);
+
+		// [AK] Change to our HUD if we've switched back to our view.
+		G_FinishChangeSpy( consoleplayer );
 		return;
 	}
 
@@ -4162,6 +4165,10 @@ void ServerCommands::SetPlayerCamera::Execute()
 
 	if (oldcamera != players[consoleplayer].camera)
 		R_ClearPastViewer (players[consoleplayer].camera);
+
+	// [AK] Change the HUD to match the player that we're looking through.
+	if ( players[consoleplayer].camera->player )
+		G_FinishChangeSpy( ULONG( players[consoleplayer].camera->player - players ));
 }
 
 //*****************************************************************************

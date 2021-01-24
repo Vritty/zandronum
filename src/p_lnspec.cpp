@@ -67,6 +67,7 @@
 #include "invasion.h"
 #include "cl_demo.h"
 #include "p_acs.h"
+#include "g_game.h"
 
 #define FUNC(a) static int a (line_t *ln, AActor *it, bool backSide, \
 	int arg0, int arg1, int arg2, int arg3, int arg4)
@@ -2935,6 +2936,10 @@ FUNC(LS_ChangeCamera)
 			R_ClearPastViewer (it->player->camera);
 		}
 	}
+
+	// [AK] Reset the local player's HUD if we change to another player's view.
+	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) && ( players[consoleplayer].camera->player ))
+		G_FinishChangeSpy( ULONG( players[consoleplayer].camera->player - players ));
 
 	return true;
 }
