@@ -242,8 +242,9 @@ static int NotifyTop, NotifyTopGoal;
 static	ULONG	g_ulRCONPlayer = MAXPLAYERS;
 
 // [BC] Add a new print level for OpenGL messages.
-#define PRINTLEVELS 6
-int PrintColors[PRINTLEVELS+2] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_BRICK, CR_GOLD, CR_ORANGE };
+// [AK] Added a new print level for private chat messages.
+#define PRINTLEVELS 7
+int PrintColors[PRINTLEVELS+2] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_BRICK, CR_CYAN, CR_GOLD, CR_ORANGE };
 
 static void setmsgcolor (int index, int color);
 
@@ -283,6 +284,12 @@ CUSTOM_CVAR (Int, msg3color, 3, CVAR_ARCHIVE)
 CUSTOM_CVAR (Int, msg4color, 0, CVAR_ARCHIVE)
 {
 	setmsgcolor (4, self);
+}
+
+// [AK] Private chat message color.
+CUSTOM_CVAR (Int, msg5color, 21, CVAR_ARCHIVE)
+{
+	setmsgcolor (5, self);
 }
 
 CUSTOM_CVAR (Int, msgmidcolor, 5, CVAR_ARCHIVE)
@@ -2503,4 +2510,12 @@ const char* C_EndCapture()
 bool C_IsCapturing()
 {
 	return g_IsCapturing;
+}
+
+//
+// [AK] Gets the minimum message level.
+//
+unsigned int C_GetMessageLevel()
+{
+	return msglevel;
 }

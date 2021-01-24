@@ -1063,6 +1063,40 @@ void SERVERCOMMANDS_PlayerSay( ULONG ulPlayer, const char *pszString, ULONG ulMo
 
 //*****************************************************************************
 //
+void SERVERCOMMANDS_PrivateSay( ULONG ulSender, ULONG ulReceiver, const char *pszString, bool bForbidChatToPlayers, ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	if ( ulSender != MAXPLAYERS && PLAYER_IsValidPlayer( ulSender ) == false )
+		return;
+
+	ServerCommands::PlayerSay command;
+	command.SetMessage( pszString );
+
+	// [AK] First send the command to the player receiving the message.
+	if ( ulReceiver != MAXPLAYERS )
+	{
+		if (( bForbidChatToPlayers ) && ( players[ulReceiver].bSpectating == false ))
+		{
+			SERVER_PrintfPlayer( ulSender, "You can't send any private messages to %s right now.\n",
+				players[ulReceiver].userinfo.GetName() );
+			return;
+		}
+
+		command.SetPlayerNumber( ulSender );
+		command.SetMode( CHATMODE_PRIVATE_RECEIVE );
+		command.sendCommandToClients( ulReceiver, SVCF_ONLYTHISCLIENT );
+	}
+
+	// [AK] Next, send the command back to the player who sent the message.
+	if ( ulSender != MAXPLAYERS )
+	{
+		command.SetPlayerNumber( ulReceiver );
+		command.SetMode( CHATMODE_PRIVATE_SEND );
+		command.sendCommandToClients( ulSender, SVCF_ONLYTHISCLIENT );
+	}
+}
+
+//*****************************************************************************
+//
 void SERVERCOMMANDS_PlayerTaunt( ULONG ulPlayer, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
