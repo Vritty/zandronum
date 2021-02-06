@@ -6664,6 +6664,42 @@ void ServerCommands::SetLineTextureByID::Execute()
 
 //*****************************************************************************
 //
+void ServerCommands::SetLineTextureOffset::Execute()
+{
+	if ( line->sidedef[side] == NULL )
+		return;
+
+	line->sidedef[side]->textures[position].xoffset = XOffset;
+	line->sidedef[side]->textures[position].yoffset = YOffset;
+}
+
+//*****************************************************************************
+//
+void ServerCommands::SetLineTextureOffsetByID::Execute()
+{
+	P_ExecuteSpecial( Line_SetTextureOffset, NULL, NULL, false, lineID, XOffset, YOffset, side, flags );
+}
+
+//*****************************************************************************
+//
+void ServerCommands::SetLineTextureScale::Execute()
+{
+	if ( line->sidedef[side] == NULL )
+		return;
+
+	line->sidedef[side]->textures[position].xscale = XScale;
+	line->sidedef[side]->textures[position].yscale = YScale;
+}
+
+//*****************************************************************************
+//
+void ServerCommands::SetLineTextureScaleByID::Execute()
+{
+	P_ExecuteSpecial( Line_SetTextureScale, NULL, NULL, false, lineID, XScale, YScale, side, flags );
+}
+
+//*****************************************************************************
+//
 void ServerCommands::SetSomeLineFlags::Execute()
 {
 	line->flags &= ~(ML_BLOCKING|ML_BLOCK_PLAYERS|ML_BLOCKEVERYTHING|ML_RAILING|ML_ADDTRANS);
