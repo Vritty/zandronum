@@ -2070,78 +2070,106 @@ void SERVERCOMMANDS_PrintMOTD( const char *pszString, ULONG ulPlayerExtra, Serve
 
 //*****************************************************************************
 //
-void SERVERCOMMANDS_PrintHUDMessage( const char *pszString, float fX, float fY, LONG lHUDWidth, LONG lHUDHeight, LONG lColor, float fHoldTime, const char *pszFont, bool bLog, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags )
+void SERVERCOMMANDS_PrintHUDMessage( const char *pszString, float fX, float fY, LONG lHUDWidth, LONG lHUDHeight, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, const char *pszFont, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	ServerCommands::PrintHUDMessage command;
 	command.SetMessage( pszString );
 	command.SetX( fX );
 	command.SetY( fY );
-	command.SetHudWidth( lHUDWidth );
-	command.SetHudHeight( lHUDHeight );
 	command.SetColor( lColor );
 	command.SetHoldTime( fHoldTime );
-	command.SetFontName( pszFont );
-	command.SetLog( bLog );
 	command.SetId( lID );
+
+	// [AK] We'll send the in and out times if they're needed.
+	command.SetInTime( fInTime );
+	command.SetOutTime( fOutTime );
+
+	// [AK] Send the HUD size if it's non-zero.
+	if (( lHUDWidth != 0 ) || ( lHUDHeight != 0 ))
+		lType |= HUDMESSAGE_SEND_HUDSIZE;
+	command.SetHudWidth( lHUDWidth );
+	command.SetHudHeight( lHUDHeight );
+
+	// [AK] Send the name of the font if it isn't SMALLFONT.
+	if ( stricmp( pszFont, "SmallFont" ) != 0 )
+		lType |= HUDMESSAGE_SEND_FONT;
+	command.SetFontName( pszFont );
+
+	// [AK] Initialize all unused members.
+	command.SetClipRectLeft( 0 );
+	command.SetClipRectTop( 0 );
+	command.SetClipRectWidth( 0 );
+	command.SetClipRectHeight( 0 );
+	command.SetWrapWidth( 0 );
+	command.SetAlpha( 0 );
+
+	command.SetType( lType );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 
 //*****************************************************************************
 //
-void SERVERCOMMANDS_PrintHUDMessageFadeOut( const char *pszString, float fX, float fY, LONG lHUDWidth, LONG lHUDHeight, LONG lColor, float fHoldTime, float fFadeOutTime, const char *pszFont, bool bLog, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags )
+void SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
-	ServerCommands::PrintHUDMessageFadeOut command;
+	ServerCommands::PrintHUDMessage command;
 	command.SetMessage( pszString );
 	command.SetX( fX );
 	command.SetY( fY );
-	command.SetHudWidth( lHUDWidth );
-	command.SetHudHeight( lHUDHeight );
 	command.SetColor( lColor );
 	command.SetHoldTime( fHoldTime );
-	command.SetFadeOutTime( fFadeOutTime );
-	command.SetFontName( pszFont );
-	command.SetLog( bLog );
 	command.SetId( lID );
-	command.sendCommandToClients( ulPlayerExtra, flags );
-}
 
-//*****************************************************************************
-//
-void SERVERCOMMANDS_PrintHUDMessageFadeInOut( const char *pszString, float fX, float fY, LONG lHUDWidth, LONG lHUDHeight, LONG lColor, float fHoldTime, float fFadeInTime, float fFadeOutTime, const char *pszFont, bool bLog, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags )
-{
-	ServerCommands::PrintHUDMessageFadeInOut command;
-	command.SetMessage( pszString );
-	command.SetX( fX );
-	command.SetY( fY );
-	command.SetHudWidth( lHUDWidth );
-	command.SetHudHeight( lHUDHeight );
-	command.SetColor( lColor );
-	command.SetHoldTime( fHoldTime );
-	command.SetFadeInTime( fFadeInTime );
-	command.SetFadeOutTime( fFadeOutTime );
-	command.SetFontName( pszFont );
-	command.SetLog( bLog );
-	command.SetId( lID );
-	command.sendCommandToClients( ulPlayerExtra, flags );
-}
+	// [AK] Send the HUD message type and also indicate that it's from ACS.
+	LONG lNewType = (( lType & HUDMESSAGETYPE_MASK ) | HUDMESSAGE_ACS );
 
-//*****************************************************************************
-//
-void SERVERCOMMANDS_PrintHUDMessageTypeOnFadeOut( const char *pszString, float fX, float fY, LONG lHUDWidth, LONG lHUDHeight, LONG lColor, float fTypeTime, float fHoldTime, float fFadeOutTime, const char *pszFont, bool bLog, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags )
-{
-	ServerCommands::PrintHUDMessageTypeOnFadeOut command;
-	command.SetMessage( pszString );
-	command.SetX( fX );
-	command.SetY( fY );
-	command.SetHudWidth( lHUDWidth );
-	command.SetHudHeight( lHUDHeight );
-	command.SetColor( lColor );
-	command.SetTypeOnTime( fTypeTime );
-	command.SetHoldTime( fHoldTime );
-	command.SetFadeOutTime( fFadeOutTime );
-	command.SetFontName( pszFont );
-	command.SetLog( bLog );
-	command.SetId( lID );
+	// [AK] We'll send the in and out times if they're needed.
+	command.SetInTime( fInTime );
+	command.SetOutTime( fOutTime );
+
+	// [AK] Send the HUD size if it's non-zero.
+	if (( pScript->hudwidth != 0 ) || ( pScript->hudheight != 0 ))
+		lNewType |= HUDMESSAGE_SEND_HUDSIZE;
+	command.SetHudWidth( pScript->hudwidth );
+	command.SetHudHeight( pScript->hudheight );
+
+	// [AK] Send the clipping rectangle and wrap width if necessary.
+	if (( pScript->ClipRectWidth != 0 ) || ( pScript->ClipRectHeight != 0 ))
+		lNewType |= HUDMESSAGE_SEND_CLIPRECT;
+	command.SetClipRectLeft( pScript->ClipRectLeft );
+	command.SetClipRectTop( pScript->ClipRectTop );
+	command.SetClipRectWidth( pScript->ClipRectWidth );
+	command.SetClipRectHeight( pScript->ClipRectHeight );
+
+	// [AK] Send the wrap width if it's non-zero.
+	if ( pScript->WrapWidth != 0 )
+		lNewType |= HUDMESSAGE_SEND_WRAPWIDTH;
+	command.SetWrapWidth( pScript->WrapWidth );
+
+	// [AK] Send the name of the font if it isn't SMALLFONT.
+	if ( pScript->activefont != SmallFont )
+		lNewType |= HUDMESSAGE_SEND_FONT;
+	command.SetFontName( pScript->activefontname.GetChars( ));
+
+	// [AK] Send the alpha only if we need to.
+	if (( lType & HUDMSG_ALPHA ) && ( Alpha < 65536 ))
+		lNewType |= HUDMESSAGE_NET_ALPHA;
+	command.SetAlpha( Alpha );
+
+	// [AK] Shift the bits of the layer and visibility flags so they match the
+	// HUDMESSAGE_NET_LAYERMASK and HUDMESSAGE_NET_VISIBLEMASK bit masks.
+	lNewType |= (( lType & HUDMSG_LAYER_MASK ) >> 1 );
+	lNewType |= (( lType & HUDMSG_VISIBILITY_MASK ) >> 3 );
+
+	// [AK] Convert any remaining ACS HUD message flags that may be used, so
+	// all of the flags can fit into a single short which we'll send.
+	if ( lType & HUDMSG_LOG )
+		lNewType |= HUDMESSAGE_NET_LOG;
+	if ( lType & HUDMSG_ADDBLEND )
+		lNewType |= HUDMESSAGE_NET_ADDBLEND;
+	if ( lType & HUDMSG_NOWRAP )
+		lNewType |= HUDMESSAGE_NET_NOWRAP;
+
+	command.SetType( lNewType );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 

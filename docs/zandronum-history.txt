@@ -54,6 +54,7 @@
 -	- Fixed the StopSound ACS function not working in online games. [Kaminsky]
 -	- Fixed the ChangeCamera line special not reverting the HUD to match the player that the client is looking through. [Kaminsky]
 -	- Fixed Line_SetTextureOffset and Line_SetTextureScale not working in online games. [Kaminsky]
+-	- Fixed ACS HudMessage alpha, visibility, and layer flags not working online. Also fixed SetHudClipRect and SetHudWrapWidth not working online. [Kaminsky]
 !	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
 !	- When the wad authentication fails for a connecting client, the client only reports the missing and incompatible PWADS instead of all of them. [Pol Marcet]
