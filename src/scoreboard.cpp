@@ -951,7 +951,7 @@ void SCOREBOARD_RenderInVoteClassic( void )
 
 	// Render the command being voted on.
 	ulCurYPos += 16;
-	sprintf( szString, "%s", CALLVOTE_GetCommand( ));
+	sprintf( szString, "%s", CALLVOTE_GetVoteMessage( ));
 	screen->DrawText( SmallFont, CR_WHITE,
 		160 - ( SmallFont->StringWidth( szString ) / 2 ),
 		ulCurYPos,
@@ -1100,7 +1100,7 @@ void SCOREBOARD_RenderInVote( void )
 	}						
 	// Render the command being voted on.
 	ulCurYPos += 14;
-	sprintf( szString, "%s", CALLVOTE_GetCommand( ));
+	sprintf( szString, "%s", CALLVOTE_GetVoteMessage( ));
 	if(g_bScale)
 	{
 		screen->DrawText( SmallFont, CR_WHITE,

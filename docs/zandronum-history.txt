@@ -62,6 +62,7 @@
 !	- gl_lights_size is now forced to its default value when sv_forcevideodefaults is true. [Kaminsky]
 !	- The Player_SetTeam line special now accepts a second parameter to enable/disable the broadcast message. By default, the message is still printed. [Kaminsky]
 !	- ZIP/PK3 files containing duplicate lumps will now print warning messages in the console when they're found, and a fatal error will occur if any of these duplicate lumps need to be authenticated on the server. [Kaminsky]
+!	- The "map" and "changemap" votes now show the full name of the level in addition to the lump name. [Kaminsky]
 
 
 3.0.1

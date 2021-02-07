@@ -471,9 +471,23 @@ void CALLVOTE_EndVote( bool bPassed )
 
 //*****************************************************************************
 //
-const char *CALLVOTE_GetCommand( void )
+// [AK] Changed this function from CALLVOTE_GetCommand to CALLVOTE_GetVoteMessage.
+const char *CALLVOTE_GetVoteMessage( void )
 {
-	return ( g_VoteCommand.GetChars( ));
+	FString command = g_VoteCommand.GetChars();
+	level_info_t *pLevel = NULL;
+
+	// [AK] If this is a map or changemap vote, get the level we're changing to.
+	if ( strncmp( command.GetChars(), "map", 3 ) == 0 )
+		pLevel = FindLevelByName( command.GetChars() + 4 );
+	else if ( strncmp( command.GetChars(), "changemap", 9 ) == 0 )
+		pLevel = FindLevelByName( command.GetChars() + 10 );
+
+	// [AK] Append the full name of the map if valid.
+	if ( pLevel != NULL )
+		command.AppendFormat( " - %s", pLevel->LookupLevelName().GetChars() );
+
+	return ( command.GetChars( ));
 }
 
 //*****************************************************************************

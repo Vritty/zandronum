@@ -123,7 +123,7 @@ bool			CALLVOTE_VoteNo( ULONG ulPlayer );
 ULONG			CALLVOTE_CountNumEligibleVoters( void );
 void			CALLVOTE_EndVote( bool bPassed );
 
-const char		*CALLVOTE_GetCommand( void );
+const char		*CALLVOTE_GetVoteMessage( void );
 const char		*CALLVOTE_GetReason( void );
 void			CALLVOTE_DisconnectedVoter( ULONG ulPlayer );
 void			CALLVOTE_TallyVotes( void );
