@@ -2395,6 +2395,7 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		// [BB] Also tell this player's chat / console status to the new client.
 		SERVERCOMMANDS_SetPlayerChatStatus( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 		SERVERCOMMANDS_SetPlayerConsoleStatus( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_SetPlayerMenuStatus( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [BB] If this player has any cheats, also inform the new client.
 		if( players[ulIdx].cheats )
@@ -4524,6 +4525,8 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 	case CLC_ENDCHAT:
 	case CLC_ENTERCONSOLE:
 	case CLC_EXITCONSOLE:
+	case CLC_ENTERMENU:
+	case CLC_EXITMENU:
 
 		// [BB] If the client is flooding the server with commands, the client is
 		// kicked and we don't need to handle the command.
@@ -4559,7 +4562,19 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			players[g_lCurrentClient].bInConsole = false;
 			SERVERCOMMANDS_SetPlayerConsoleStatus( g_lCurrentClient );
 		}
+		else if ( lCommand == CLC_ENTERMENU )
+		{
 
+			// Player has entered the console - give him an icon.
+			players[g_lCurrentClient].bInMenu = true;
+			SERVERCOMMANDS_SetPlayerMenuStatus( g_lCurrentClient );
+		}
+		else if ( lCommand == CLC_EXITMENU )
+		{
+			// Player has left the console - remove his icon.
+			players[g_lCurrentClient].bInMenu = false;
+			SERVERCOMMANDS_SetPlayerMenuStatus( g_lCurrentClient );
+		}
 		return false;
 	case CLC_IGNORE:
 
@@ -5458,6 +5473,12 @@ bool ClientMoveCommand::process( const ULONG ulClient ) const
 		{
 			pPlayer->bInConsole = false;
 			SERVERCOMMANDS_SetPlayerConsoleStatus( ulClient );
+		}
+
+		if ( pPlayer->bInMenu )
+		{
+			pPlayer->bInMenu = false;
+			SERVERCOMMANDS_SetPlayerMenuStatus( ulClient );
 		}
 	}
 

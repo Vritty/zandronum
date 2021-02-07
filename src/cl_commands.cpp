@@ -269,6 +269,20 @@ void CLIENTCOMMANDS_ExitConsole( void )
 
 //*****************************************************************************
 //
+void CLIENTCOMMANDS_EnterMenu(void)
+{
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_ENTERMENU );
+}
+
+//*****************************************************************************
+//
+void CLIENTCOMMANDS_ExitMenu(void)
+{
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_EXITMENU );
+}
+
+//*****************************************************************************
+//
 void CLIENTCOMMANDS_Say( ULONG ulMode, const char *pszString, ULONG ulPlayer )
 {
 	// [TP] Limit messages to certain length.

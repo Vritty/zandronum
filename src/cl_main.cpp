@@ -2990,6 +2990,7 @@ void PLAYER_ResetPlayerData( player_t *pPlayer )
 	PLAYER_ResetSpecialCounters ( pPlayer );
 	pPlayer->bChatting = 0;
 	pPlayer->bInConsole = 0;
+	pPlayer->bInMenu = 0;
 	pPlayer->bSpectating = 0;
 	pPlayer->bIgnoreChat = 0;
 	pPlayer->lIgnoreChatTicks = -1;
@@ -4121,6 +4122,13 @@ void ServerCommands::SetPlayerChatStatus::Execute()
 void ServerCommands::SetPlayerConsoleStatus::Execute()
 {
 	player->bInConsole = inConsole;
+}
+
+//*****************************************************************************
+//
+void ServerCommands::SetPlayerMenuStatus::Execute()
+{
+	player->bInMenu = inMenu;
 }
 
 //*****************************************************************************
