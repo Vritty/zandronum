@@ -68,6 +68,7 @@
 #include "cl_demo.h"
 #include "p_acs.h"
 #include "g_game.h"
+#include "gamemode.h"
 
 #define FUNC(a) static int a (line_t *ln, AActor *it, bool backSide, \
 	int arg0, int arg1, int arg2, int arg3, int arg4)
@@ -2107,8 +2108,8 @@ FUNC( LS_Team_Score )
 	if ( NETWORK_InClientMode() )
 		return ( false );
 
-	// Nothing to do if we're not in teamgame mode.
-	if ( teamgame == false )
+	// [AK] Nothing to do if the current gamemode doesn't support teams and give points.
+	if (( GAMEMODE_GetCurrentFlags() & ( GMF_PLAYERSONTEAMS | GMF_PLAYERSEARNPOINTS )) != ( GMF_PLAYERSONTEAMS | GMF_PLAYERSEARNPOINTS ))
 		return ( false );
 
 	// Make sure a valid player is doing the scoring.
@@ -2128,8 +2129,8 @@ FUNC( LS_Team_GivePoints )
 	if ( NETWORK_InClientMode() )
 		return ( false );
 
-	// Nothing to do if we're not in teamgame mode.
-	if ( teamgame == false )
+	// [AK] Nothing to do if the current gamemode doesn't support teams and give points.
+	if (( GAMEMODE_GetCurrentFlags() & ( GMF_PLAYERSONTEAMS | GMF_PLAYERSEARNPOINTS )) != ( GMF_PLAYERSONTEAMS | GMF_PLAYERSEARNPOINTS ))
 		return ( false );
 
 	// Make sure this is a valid team.
