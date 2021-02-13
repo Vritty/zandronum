@@ -61,6 +61,8 @@
 
 #include "tflags.h"
 
+class DLevelScript;
+
 //*****************************************************************************
 //	DEFINES
 
@@ -220,8 +222,7 @@ void	SERVERCOMMANDS_Print( const char *pszString, ULONG ulPrintLevel, ULONG ulPl
 void	SERVERCOMMANDS_PrintMid( const char *pszString, bool bBold, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 void	SERVERCOMMANDS_PrintMOTD( const char *pszString, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 void	SERVERCOMMANDS_PrintHUDMessage( const char *pszString, float fX, float fY, LONG lHUDWidth, LONG lHUDHeight, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, const char *pszFont, LONG lID, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
-// [AK] This is declared as a friendly function inside DLevelScript in "p_acs.h".
-// void SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
+void	SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 
 // Game commands. These manipulate some aspect of the gameplay.
 void	SERVERCOMMANDS_SetGameMode( ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );

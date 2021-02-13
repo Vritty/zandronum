@@ -1104,7 +1104,7 @@ private:
 	// [BB/TP] The client needs to call DLevelScript::ReplaceTextures.
 	friend class ServerCommands::ReplaceTextures;
 	// [AK] We need to access protected variables from this class when we tell the clients to print a HUD message.
-	friend void SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
+	friend void SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags );
 };
 
 class DACSThinker : public DThinker
