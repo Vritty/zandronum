@@ -4415,6 +4415,7 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 
 	// [BB]
 	int oldValue = 0;
+	FRenderStyle oldRenderStyle;
 
 	switch (property)
 	{
@@ -4477,7 +4478,7 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 
 	case APROP_RenderStyle:
 		// [AK] Save the original render style.
-		FRenderStyle oldRenderStyle = actor->RenderStyle;
+		oldRenderStyle = actor->RenderStyle;
 
 		for(int i=0; LegacyRenderStyleIndices[i] >= 0; i++)
 		{
