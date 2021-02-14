@@ -538,6 +538,33 @@ size_t DObject::StaticPointerSubstitution (DObject *old, DObject *notOld)
 	return changed;
 }
 
+// [AK]
+void DObject::ResetUserVars()
+{
+	PSymbolTable *symt = &GetClass()->Symbols;
+	DWORD count;
+
+	for (; symt != NULL; symt = symt->ParentSymbolTable)
+	{
+		for (unsigned i = 0; i < symt->Symbols.Size(); i++)
+		{
+			PSymbol *sym = symt->Symbols[i];
+			if (sym->SymbolType == SYM_Variable)
+			{
+				PSymbolVariable *var = static_cast<PSymbolVariable *>(sym);
+				if (var->bUserVar)
+				{
+					count = var->ValueType.Type == VAL_Array ? var->ValueType.size : 1;
+					for (DWORD j = 0; j < count; j++)
+					{
+						((int *)(reinterpret_cast<BYTE *>(this) + var->offset))[j] = 0;
+					}
+				}
+			}
+		}
+	}
+}
+
 void DObject::SerializeUserVars(FArchive &arc)
 {
 	PSymbolTable *symt;

@@ -459,6 +459,7 @@ public:
 	inline bool IsKindOf (const PClass *base) const;
 	inline bool IsA (const PClass *type) const;
 
+	void ResetUserVars (); // [AK]
 	void SerializeUserVars(FArchive &arc);
 	virtual void Serialize (FArchive &arc);
 

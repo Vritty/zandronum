@@ -3934,6 +3934,9 @@ void GAME_ResetMap( bool bRunEnterScripts )
 				if ( pActor->args[i] != pActor->SavedArgs[i] )
 					pActor->args[i] = pActor->SavedArgs[i];
 
+			// [AK] User variables must be reset too.
+			pActor->ResetUserVars();
+
 			// [BB] This is a valid monster on the map, count it.
 			if ( pActor->CountsAsKill( ) && !(pActor->flags & MF_FRIENDLY) )
 				level.total_monsters++;
