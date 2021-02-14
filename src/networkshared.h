@@ -549,17 +549,26 @@ public:
 template<typename DataType, int Length>
 class RingBuffer
 {
-	DataType _data[Length];
+	DataType* _data;
 	// Position of the entry that will be overwritten next AKA the oldest entry.
 	unsigned int _position;
 public:
-	RingBuffer ( )
+	RingBuffer ( ) : _data ( NULL )
 	{
 		clear();
 	}
+	~RingBuffer ( )
+	{
+		if ( _data != NULL )
+			delete[] _data;
+	}
 	void clear ( )
 	{
-		memset( _data, 0, sizeof( _data ));
+		if ( _data != NULL )
+			delete[] _data;
+
+		// Make sure to initialize also built-in types by appending "()".
+		_data = new DataType[Length]();
 		_position = 0;
 	}
 	void put ( DataType Entry )
