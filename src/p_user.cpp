@@ -2443,7 +2443,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_SkullPop)
 
 	self->flags &= ~MF_SOLID;
 	mo = (APlayerPawn *)Spawn (spawntype, self->x, self->y, self->z + 48*FRACUNIT, NO_REPLACE);
-	//mo->target = self;
+	mo->target = self; // [AK] We need some way to retrieve the original body, so make it the target.
 	mo->velx = pr_skullpop.Random2() << 9;
 	mo->vely = pr_skullpop.Random2() << 9;
 	mo->velz = 2*FRACUNIT + (pr_skullpop() << 6);
