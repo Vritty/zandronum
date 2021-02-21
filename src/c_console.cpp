@@ -117,6 +117,7 @@ static FString g_CaptureBuffer;
 
 static char ConsoleBuffer[CONSOLESIZE];
 static char *Lines[CONSOLELINES];
+static char *TimeStamps[CONSOLELINES]; // [Leo]
 static bool LineJoins[CONSOLELINES];
 
 static int TopLine, InsertLine;
@@ -200,6 +201,9 @@ CUSTOM_CVAR( Int, con_virtualheight, 480, CVAR_ARCHIVE )
 // [BC] Allow text colors?
 // [RC] Now a three-level setting. No/Yes/Not in chat.
 CVAR( Int, con_colorinmessages, 1, CVAR_ARCHIVE )
+
+// [AK] Add a timestamp to every line printed to the console.
+CVAR (Bool, con_showtimestamps, false, CVAR_ARCHIVE)
 
 // [BB] Add a timestamp to every string printed to the logfile.
 CVAR (Bool, sv_logfiletimestamp, true, CVAR_ARCHIVE)
@@ -379,6 +383,9 @@ void C_InitConback()
 	// [BC] The server has no use for a console.
 	if ( Args->CheckParm( "-host" ))
 		return;
+
+	// [AK] Initialize the timestamps string array;
+	memset(TimeStamps, 0, sizeof(TimeStamps));
 
 	conback = TexMan.CheckForTexture ("CONBACK", FTexture::TEX_MiscPatch);
 
@@ -604,6 +611,17 @@ static void ClearConsole ()
 	BufferRover = ConsoleBuffer;
 	memset (ConsoleBuffer, 0, CONSOLESIZE);
 	memset (Lines, 0, sizeof(Lines));
+
+	// [AK] Delete all the timestamps.
+	for (int i = 0; i < CONSOLELINES; i++)
+	{
+		if (TimeStamps[i] != NULL)
+		{
+			delete[] TimeStamps[i];
+		}
+	}
+
+	memset (TimeStamps, 0, sizeof(TimeStamps));
 	memset (LineJoins, 0, sizeof(LineJoins));
 }
 
@@ -708,6 +726,13 @@ static int FlushLines (const char *start, const char *stop)
 		if (Lines[i] < stop && Lines[i] + strlen (Lines[i]) > start)
 		{
 			Lines[i] = NULL;
+
+			// [AK] Delete this timestamp if used.
+			if (TimeStamps[i] != NULL)
+			{
+				delete[] TimeStamps[i];
+				TimeStamps[i] = NULL;
+			}
 		}
 		else
 		{
@@ -717,7 +742,8 @@ static int FlushLines (const char *start, const char *stop)
 	return i;
 }
 
-static void AddLine (const char *text, bool more, size_t len)
+// [Leo] Added an argument for adding timestamps to line entries.
+static void AddLine (const char *text, bool more, size_t len, char *timestamp)
 {
 	if (BufferRover + len + 1 - ConsoleBuffer > CONSOLESIZE)
 	{
@@ -735,6 +761,14 @@ static void AddLine (const char *text, bool more, size_t len)
 	Lines[InsertLine] = BufferRover;
 	BufferRover += len + 1;
 	LineJoins[InsertLine] = more;
+
+	// [AK] Delete the old timestamp if used, then add the new one if it exists.
+	if (TimeStamps[InsertLine] != NULL)
+	{
+		delete[] TimeStamps[InsertLine];
+	}
+
+	TimeStamps[InsertLine] = (timestamp == NULL) ? NULL : copystring(timestamp);
 	InsertLine = (InsertLine + 1) & LINEMASK;
 	if (InsertLine == TopLine)
 	{
@@ -753,6 +787,7 @@ void AddToConsole (int printlevel, const char *text)
 
 	char *work_p;
 	char *linestart;
+	char *timestamp = NULL; // [Leo]
 	FString cc('A' + char(CR_TAN));
 	int size, len;
 	int x;
@@ -762,6 +797,17 @@ void AddToConsole (int printlevel, const char *text)
 	{
 		EnqueueConsoleText (false, printlevel, text);
 		return;
+	}
+
+	// [AK] Generate the timestamp "[HH:MM:SS] " if we want to show it in the console.
+	if (con_showtimestamps)
+	{
+		time_t clock;
+		time(&clock);
+		struct tm *lt = localtime (&clock);
+		char timestring[14];
+		sprintf(timestring, "\034i[%02d:%02d:%02d] ", lt->tm_hour, lt->tm_min, lt->tm_sec);
+		timestamp = timestring;
 	}
 
 	len = (int)strlen (text);
@@ -864,9 +910,10 @@ void AddToConsole (int printlevel, const char *text)
 				continue;
 			}
 			int w = ConFont->GetCharWidth (*work_p);
-			if (*work_p == '\n' || x + w > maxwidth)
+			// [AK] Also take into account the width of the timestamp string, if there is one.
+			if (*work_p == '\n' || x + w + (timestamp != NULL ? ConFont->StringWidth(timestamp) : 0) > maxwidth)
 			{
-				AddLine (linestart, *work_p != '\n', work_p - linestart);
+				AddLine (linestart, *work_p != '\n', work_p - linestart, timestamp); // [Leo]
 				if (*work_p == '\n')
 				{
 					x = 0;
@@ -905,7 +952,7 @@ void AddToConsole (int printlevel, const char *text)
 
 		if (*linestart)
 		{
-			AddLine (linestart, true, work_p - linestart);
+			AddLine (linestart, true, work_p - linestart, timestamp); // [Leo]
 		}
 	}
 	else
@@ -914,13 +961,13 @@ void AddToConsole (int printlevel, const char *text)
 		{
 			if (*work_p++ == '\n')
 			{
-				AddLine (linestart, false, work_p - linestart - 1);
+				AddLine (linestart, false, work_p - linestart - 1, timestamp); // [Leo]
 				linestart = work_p;
 			}
 		}
 		if (*linestart)
 		{
-			AddLine (linestart, true, work_p - linestart);
+			AddLine (linestart, true, work_p - linestart, timestamp); // [Leo]
 		}
 	}
 
@@ -1486,7 +1533,18 @@ void C_DrawConsole (bool hw2d)
 			pos = (pos - 1) & LINEMASK;
 			if (Lines[pos] != NULL)
 			{
-				screen->DrawText (ConFont, CR_TAN, LEFTMARGIN, offset + lines * ConFont->GetHeight(),
+				// [AK] Add the timestamp to the beginning of this line, if there is one.
+				int lineoffset = LEFTMARGIN;
+				if (TimeStamps[pos] != NULL)
+				{
+					screen->DrawText (ConFont, CR_TAN, lineoffset, offset + lines * ConFont->GetHeight(),
+						TimeStamps[pos], TAG_DONE);
+
+					lineoffset += ConFont->StringWidth(TimeStamps[pos]);
+				}
+
+				// [AK] Offset the rest of the line by on the width of the timestamp.
+				screen->DrawText (ConFont, CR_TAN, lineoffset, offset + lines * ConFont->GetHeight(),
 					Lines[pos], TAG_DONE);
 			}
 			lines--;

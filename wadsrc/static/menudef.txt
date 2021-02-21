@@ -1187,6 +1187,7 @@ OptionMenu MessageOptions
 	StaticText " "
 	Option "Screenshot messages",		"screenshot_quiet",	"OffOn"
 	Option "Detailed save messages",	"longsavemessages",	"OnOff"
+	Option "Display Console Timestamps",	"con_showtimestamps", 	"YesNo" // [AK]
 }
 
 //-------------------------------------------------------------------------------------------
