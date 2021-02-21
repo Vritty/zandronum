@@ -1467,6 +1467,10 @@ CCMD( sayto_idx )
 //
 void chat_IgnorePlayer( FCommandLine &argv, const ULONG ulPlayer )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	// Print the explanation message.
 	if ( argv.argc( ) < 2 )
 	{
@@ -1538,6 +1542,10 @@ CCMD( ignore_idx )
 //
 void chat_UnignorePlayer( FCommandLine &argv, const ULONG ulPlayer )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	// Print the explanation message.
 	if ( argv.argc( ) < 2 )
 	{

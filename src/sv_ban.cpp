@@ -56,6 +56,7 @@
 #include "sv_ban.h"
 #include "version.h"
 #include "v_text.h"
+#include "p_acs.h"
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- VARIABLES -------------------------------------------------------------------------------------------------------------------------------------
@@ -556,6 +557,10 @@ CCMD( getIP_idx )
 //
 CCMD( ban_idx )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	// Only the server can ban players!
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 		return;
@@ -579,6 +584,10 @@ CCMD( ban_idx )
 CCMD( ban )
 {
 	ULONG	ulIdx;
+
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
 
 	// Only the server can ban players!
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
@@ -615,6 +624,10 @@ CCMD( ban )
 //
 CCMD( addban )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	if ( argv.argc( ) < 3 )
 	{
 		Printf( "Usage: addban <IP address> <duration> [comment]\nDescription: bans the given IP address.\n" );
@@ -640,6 +653,10 @@ CCMD( addban )
 //
 CCMD( delban )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	if ( argv.argc( ) < 2 )
 	{
 		Printf( "Usage: delban <IP address>\n" );
@@ -655,6 +672,10 @@ CCMD( delban )
 //
 CCMD( addbanexemption )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	if ( argv.argc( ) < 2 )
 	{
 		Printf( "Usage: addbanexemption <IP address> [comment]\n" );
@@ -670,6 +691,10 @@ CCMD( addbanexemption )
 //
 CCMD( delbanexemption )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	if ( argv.argc( ) < 2 )
 	{
 		Printf( "Usage: delbanexemption <IP address>\n" );
@@ -717,6 +742,10 @@ CCMD( viewmasterexemptionbanlist )
 //
 CCMD( clearbans )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	SERVERBAN_ClearBans( );
 }
 
@@ -724,5 +753,9 @@ CCMD( clearbans )
 //
 CCMD( reloadbans )
 {
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
 	serverban_LoadBansAndBanExemptions( );
 }
