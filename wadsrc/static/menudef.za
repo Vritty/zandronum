@@ -513,6 +513,8 @@ OptionMenu ZA_VotingSetupMenu
 	StaticText	" "
 	Option	"Voting enabled",				"sv_nocallvote",			"ZA_AllowVoting"
 	Option	"Allow unlimited voting",		"sv_limitnumvotes",			"NoYes"
+	NumberField "Cooldown time (minutes)",		"sv_votecooldown",			0, 15
+	NumberField "Connect wait time (seconds)",	"sv_voteconnectwait",			0, 120
 	StaticText	" "
 	StaticText "Specific votes", 1
 	Option	"Kick votes",					"sv_nokickvote",			"NoYes"
@@ -521,6 +523,7 @@ OptionMenu ZA_VotingSetupMenu
 	Option	"Changemap votes",				"sv_nochangemapvote",		"NoYes"
 	Option	"Frag limit votes",				"sv_nofraglimitvote",		"NoYes"
 	Option	"Time limit votes",				"sv_notimelimitvote",		"NoYes"
+	Option	"Win limit votes",				"sv_nowinlimitvote",		"NoYes"
 	Option	"Duel limit votes",				"sv_noduellimitvote",		"NoYes"
 	Option	"Point limit votes",			"sv_nopointlimitvote",		"NoYes"
 
