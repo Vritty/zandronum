@@ -803,6 +803,12 @@ static bool callvote_CheckValidity( FString &Command, FString &Parameters )
 						SERVER_PrintfPlayer( SERVER_GetCurrentClient( ), "This player is a server admin and thus can't be kicked or forced to spectate!\n" );
   						return ( false );
 					}
+					// [AK] Don't force a player to spectate if they're already a true spectator.
+					if (( ulVoteCmd == VOTECMD_FORCETOSPECTATE ) && ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
+					{
+						SERVER_PrintfPlayer( SERVER_GetCurrentClient( ), "You cannot force a player to spectate if they're already spectating!\n" );
+						return ( false );
+					}
 					g_KickVoteVictimAddress = SERVER_GetClient( ulIdx )->Address;
 					return ( true );
 				}
