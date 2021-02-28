@@ -4293,6 +4293,69 @@ void STACK_ARGS SERVER_PrintWarning( const char* format, ... )
 }
 
 //*****************************************************************************
+//
+// [AK] Lists all flag-type CVars belonging to the passed flagset which have
+// been changed, then prints them to the console.
+//
+void SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags )
+{
+	int value = static_cast<int>( flagset );
+	int oldValue = flagset.GetPastValue( );
+
+	// [AK] Only continue if we're the server, and the value actually changed from before.
+	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( gamestate == GS_STARTUP ) || ( value == oldValue ))
+		return;
+
+	FString result;
+	int flagsChanged = 0;
+
+	for ( int i = 0; i < 32; i++ )
+	{
+		unsigned int bit = ( 1 << i );
+
+		// [AK] Don't continue if this bit hasn't changed.
+		if ((( value ^ oldValue ) & bit ) == 0 )
+			continue;
+
+		// [AK] Print the name of the CVar and its new value while we still can.
+		if ( ++flagsChanged <= maxflags )
+		{
+			for ( FBaseCVar* cvar = CVars; cvar; cvar = cvar->GetNext( ) )
+			{
+				// [AK] Make sure that this CVar is a flag.
+				if ( cvar->IsFlagCVar( ) == false )
+					continue;
+
+				FFlagCVar* flagCVar = static_cast<FFlagCVar*>( cvar );
+
+				// [AK] Check if this CVar belongs to the flagset and matches the corresponding bit.
+				if (( flagCVar->GetValueVar( ) == &flagset ) && ( flagCVar->GetBitVal( ) == bit ))
+				{
+					if ( flagsChanged > 1 )
+						result += ", ";
+
+					result.AppendFormat( "%s %s", flagCVar->GetName( ), ( value & bit ) ? "ON" : "OFF" );
+					break;
+				}
+			}
+		}
+	}
+
+	// [AK] If too many flags changed, just print how many flags were changed instead.
+	// This way, we don't print an excessively long message to the console.
+	if ( flagsChanged > maxflags )
+		result.Format( "%d flags changed", flagsChanged );
+
+	SERVER_Printf( "%s changed to: %d (%s)\n", flagset.GetName( ), value, result );
+
+	// [AK] We also need to tell the clients to update the changed flagset.
+	if ( flagset == *lmsspectatorsettings )
+		SERVERCOMMANDS_SetLMSSpectatorSettings( );
+	else
+		SERVERCOMMANDS_SetGameDMFlags( );
+}
+
+//*****************************************************************************
 //*****************************************************************************
 //
 LONG SERVER_STATISTIC_GetTotalSecondsElapsed( void )

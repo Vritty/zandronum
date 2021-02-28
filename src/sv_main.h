@@ -521,6 +521,7 @@ void		SERVER_SyncSharedKeys( int playerToSync, bool withmessage );
 void		SERVER_SyncServerModCVars ( const int PlayerToSync );
 void		SERVER_KillCheat( const char* what );
 void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
+void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
 
 // From sv_master.cpp
 void		SERVER_MASTER_Construct( void );

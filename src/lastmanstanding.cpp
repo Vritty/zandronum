@@ -803,12 +803,7 @@ CVAR( Flag, lms_allowchainsaw, lmsallowedweapons, LMS_AWF_CHAINSAW );
 
 CUSTOM_CVAR( Int, lmsspectatorsettings, LMS_SPF_VIEW, CVAR_SERVERINFO )
 {
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		// [BB] Due to ZADF_ALWAYS_APPLY_LMS_SPECTATORSETTINGS, this is necessary in all game modes.
-		SERVERCOMMANDS_SetLMSSpectatorSettings( );
-	}
+	SERVER_FlagsetChanged( self );
 }
 CVAR( Flag, lms_spectatorchat, lmsspectatorsettings, LMS_SPF_CHAT );
 CVAR( Flag, lms_spectatorview, lmsspectatorsettings, LMS_SPF_VIEW );
