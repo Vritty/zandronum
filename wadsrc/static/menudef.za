@@ -90,6 +90,7 @@ OptionMenu ZA_NetworkOptions
 	Option		"Update Rate",				"cl_ticsperupdate",			"ZA_UpdateRate"
 	Option		"Hitscan decals",			"cl_hitscandecalhack",		"OnOff"
 	Option		"Clientside puffs",			"cl_clientsidepuffs",		"OnOff"
+	Option		"Display packet loss",			"cl_showpacketloss",		"YesNo"
 }
 
 // =================================================================================================

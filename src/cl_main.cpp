@@ -160,6 +160,9 @@ CVAR( Bool, cl_emulatepacketloss, false, 0 )
 CVAR( Bool, cl_connectsound, true, CVAR_ARCHIVE )
 CVAR( Bool, cl_showwarnings, false, CVAR_ARCHIVE )
 
+// [Leo] Show how many packets we missed when we experience packet loss.
+CVAR( Bool, cl_showpacketloss, false, CVAR_ARCHIVE )
+
 //*****************************************************************************
 //	PROTOTYPES
 
@@ -1159,6 +1162,25 @@ void CLIENT_CheckForMissingPackets( void )
 
 				g_LocalBuffer.ByteStream.WriteLong( lIdx );
 				CLIENTSTATISTICS_AddToMissingPacketsRequested ( 1 );
+
+				// [Leo] Print how many packets we missed.
+				if ( cl_showpacketloss )
+				{
+					char szString[64];
+					DHUDMessageFadeOut *pMsg;
+					sprintf( szString, "Client missed %d packets.", ( g_lHighestReceivedSequence - g_lLastParsedSequence ) );
+
+					pMsg = new DHUDMessageFadeOut( SmallFont, szString,
+						1.5f,
+						0.9f,
+						0,
+						0,
+						(EColorRange)CR_GREEN,
+						2.f,
+						0.35f );
+
+					StatusBar->AttachMessage( pMsg, MAKE_ID('P','C','K','T') );
+				}
 			}
 		}
 
