@@ -4854,7 +4854,7 @@ DEFINE_ACTION_FUNCTION_PARAMS (AActor, A_FaceConsolePlayer) {
 	Angle = R_PointToAngle2( self->x, self->y, pConsolePlayer->x, pConsolePlayer->y );
 	DeltaAngle = Angle - self->angle;
 
-	if (( MaxTurnAngle == 0 ) || ( DeltaAngle < MaxTurnAngle ) || ( DeltaAngle > (unsigned)-MaxTurnAngle ))
+	if (( MaxTurnAngle == 0 ) || ( DeltaAngle < MaxTurnAngle ) || ( DeltaAngle > ( ANGLE_MAX - MaxTurnAngle + 1 )))
 		self->angle = Angle;
 	else if ( DeltaAngle < ANG180 )
 		self->angle += MaxTurnAngle;
