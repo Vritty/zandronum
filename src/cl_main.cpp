@@ -7388,7 +7388,10 @@ static void client_DoInventoryPickup( BYTESTREAM_s *pByteStream )
 
 	// Play the inventory pickup sound and blend the screen.
 	pInventory->PlayPickupSound( players[ulPlayer].mo );
-	players[ulPlayer].bonuscount = BONUSADD;
+	if (( pInventory->ItemFlags & IF_NOSCREENFLASH ) == false )
+	{
+		players[ulPlayer].bonuscount = BONUSADD;
+	}
 
 	// Play the announcer pickup entry as well.
 	if ( players[ulPlayer].mo->CheckLocalView( consoleplayer ) && cl_announcepickups )
