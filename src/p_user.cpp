@@ -2500,6 +2500,10 @@ void P_CheckPlayerSprite(AActor *actor, int &spritenum, fixed_t &scalex, fixed_t
 
 	int crouchspriteno;
 
+	// [AK] Don't set the player's sprite if their current body doesn't match their class due to A_SkullPop.
+	if ( actor->IsKindOf( RUNTIME_CLASS( APlayerChunk )))
+		return;
+
 	// [BC] Because of cl_skins, we might not necessarily use the player's
 	// desired skin.
 	lSkin = player->userinfo.GetSkin();
