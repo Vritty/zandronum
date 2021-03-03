@@ -1276,18 +1276,14 @@ bool chat_IsPlayerValidReceiver( ULONG ulPlayer )
 //
 // [AK] Finds a valid player whom we can send private messages to.
 //
-void chat_FindValidReceiver( void )
+bool chat_FindValidReceiver( void )
 {
-	bool nobodyFound = true;
+	// [AK] We can always send private messages to the server.
+	if ( g_ulChatPlayer == MAXPLAYERS )
+		return true;
 
 	if ( SERVER_CountPlayers( false ) >= 2 )
 	{
-		// [AK] We can always send private messages to the server.
-		if ( g_ulChatPlayer == MAXPLAYERS )
-			return;
-
-		nobodyFound = false;
-
 		// [AK] If we're trying to send a message to an invalid player, find another one.
 		if ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false )
 		{
@@ -1302,21 +1298,15 @@ void chat_FindValidReceiver( void )
 				// [AK] If we're back to the old value for some reason, then there's no other
 				// players to send a message to, so set the receiver to the server instead.
 				if ( g_ulChatPlayer == oldPlayer )
-				{
-					nobodyFound = true;
-					break;
-				}
+					return false;
 			}
 			while ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false );
 		}
+
+		return true;
 	}
 
-	if ( nobodyFound )
-	{
-		Printf( "There's no other clients to send private messages to. "
-			"The server will be selected instead.\n" );
-		g_ulChatPlayer = MAXPLAYERS;
-	}
+	return false;
 }
 
 //*****************************************************************************
@@ -1394,7 +1384,11 @@ void chat_PrivateMessage( FCommandLine &argv, const ULONG ulReceiver )
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 	{
 		// [AK] Find a valid receiver, if necessary.
-		if ( !bServerSelected ) chat_FindValidReceiver( );
+		if (( bServerSelected == false ) && ( chat_FindValidReceiver( ) == false ))
+		{
+			Printf( "There's nobody to send private messages to. Use \"sayto server\" or \"sayto_idx -1\" to message the host instead.\n" );
+			return;
+		}
 
 		// The message we send will only be for the player who we wish to chat with.
 		chat_SetChatMode( CHATMODE_PRIVATE_SEND );
@@ -1664,7 +1658,11 @@ CCMD( messagemode3 )
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 	{
 		// [AK] Find a valid receiver, if necessary.
-		chat_FindValidReceiver( );
+		if ( chat_FindValidReceiver( ) == false )
+		{
+			Printf( "There's nobody to send private messages to. Use \"sayto server\" or \"sayto_idx -1\" to message the host instead.\n" );
+			return;
+		}
 
 		chat_SetChatMode( CHATMODE_PRIVATE_SEND );
 		C_HideConsole( );
