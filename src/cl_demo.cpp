@@ -232,9 +232,10 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 //
 bool CLIENTDEMO_ProcessDemoHeader( void )
 {
-	bool	bBodyStart;
-	LONG	lDemoVersion;
-	LONG	lCommand;
+	bool		bBodyStart;
+	LONG		lDemoVersion;
+	LONG		lCommand;
+	const char	*szVersionString;
 
 	// [Dusk] Check ZCLD instead of CLD_DEMOSTART
 	if ( g_ByteStream.ReadLong() != g_demoSignature )
@@ -281,7 +282,13 @@ bool CLIENTDEMO_ProcessDemoHeader( void )
 				I_Error( "Demo requires an older version of " GAMENAME "!\n" );
 
 			// Read in the DOTVERSIONSTR the demo was recorded with.
-			Printf( "Version %s demo\n", g_ByteStream.ReadString());
+			// [AK] If the version string stored in the demo doesn't match the
+			// current version we're using, don't play the demo.
+			szVersionString = g_ByteStream.ReadString();
+			if ( stricmp( szVersionString, GetVersionStringRev() ) != 0 )
+				I_Error( "Demo requires version %s. You are currently using version %s.\n", szVersionString, GetVersionStringRev() );
+
+			Printf( "Version %s demo\n", szVersionString );
 
 			// [Dusk] BUILD_ID is now stored in the demo. We don't do anything
 			// with it - it's of interest for external applications only. Just
