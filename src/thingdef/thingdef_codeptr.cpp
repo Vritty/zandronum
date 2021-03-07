@@ -492,6 +492,16 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_StopSound)
 	ACTION_PARAM_START(1);
 	ACTION_PARAM_INT(slot, 0);
 
+	// [AK] We need to handle this differently if the calling actor is a CustomInventory item
+	// being picked up. Let the server tell the clients to stop the sound.
+	if (( stateowner != NULL ) && ( stateowner != self ) && ( stateowner->IsKindOf( RUNTIME_CLASS( ACustomInventory ))))
+	{
+		if (( NETWORK_InClientMode( )) && (( stateowner->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
+			return;
+		else if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+			SERVERCOMMANDS_StopSound( self, slot );
+	}
+
 	S_StopSound(self, slot);
 
 	// [AK] If we're the server, remove this channel from the list of looping channels.
@@ -588,6 +598,16 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_StopSoundEx)
 
 	if (channel > NAME_Auto && channel <= NAME_SoundSlot7)
 	{
+		// [AK] We need to handle this differently if the calling actor is a CustomInventory item
+		// being picked up. Let the server tell the clients to stop the sound.
+		if (( stateowner != NULL ) && ( stateowner != self ) && ( stateowner->IsKindOf( RUNTIME_CLASS( ACustomInventory ))))
+		{
+			if (( NETWORK_InClientMode( )) && (( stateowner->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
+				return;
+			else if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				SERVERCOMMANDS_StopSound( self, int(channel) - NAME_Auto );
+		}
+
 		S_StopSound (self, int(channel) - NAME_Auto);
 
 		// [AK] If we're the server, remove this channel from the list of looping channels.
