@@ -1269,6 +1269,9 @@ void SERVERCOMMANDS_SpawnThingExactNoNetID( AActor *pActor, ULONG ulPlayerExtra,
 	if ( pActor == NULL )
 		return;
 
+	if ( pActor->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+		return;
+
 	ServerCommands::SpawnThingExactNoNetID command;
 	command.SetType( pActor->GetClass() );
 	command.SetX( pActor->x );
@@ -2050,6 +2053,10 @@ void SERVERCOMMANDS_SpawnPuffNoNetID( AActor *pActor, ULONG ulState, bool bSendT
 	if ( pActor == NULL )
 		return;
 
+	// [AK] If the puff is serversided only, don't tell the clients to spawn it.
+	if ( pActor->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+		return;
+
 	ServerCommands::SpawnPuffNoNetID command;
 	command.SetX( pActor->x );
 	command.SetY( pActor->y );
@@ -2503,6 +2510,10 @@ void SERVERCOMMANDS_SpawnMissile( AActor *pMissile, ULONG ulPlayerExtra, ServerC
 	if ( pMissile == NULL )
 		return;
 
+	// [AK] If the missile is serversided only, don't tell the clients to spawn it.
+	if ( pMissile->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+		return;
+
 	ServerCommands::SpawnMissile command;
 	command.SetX( pMissile->x );
 	command.SetY( pMissile->y );
@@ -2531,6 +2542,10 @@ void SERVERCOMMANDS_SpawnMissile( AActor *pMissile, ULONG ulPlayerExtra, ServerC
 void SERVERCOMMANDS_SpawnMissileExact( AActor *pMissile, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	if ( pMissile == NULL )
+		return;
+
+	// [AK] If the missile is serversided only, don't tell the clients to spawn it.
+	if ( pMissile->ulNetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::SpawnMissileExact command;
