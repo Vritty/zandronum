@@ -6222,7 +6222,17 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 		{
 			pActor = P_SpawnPlayerMissile( pSource, pType );
 			if ( pActor )
+			{
 				SERVERCOMMANDS_SpawnMissile( pActor );
+
+				// [AK] If this actor is clientsided only then remove it from our end. We only had to
+				// spawn it so we could tell the clients to spawn it, but we don't need it anymore.
+				if ( pActor->ulNetworkFlags & NETFL_CLIENTSIDEONLY )
+				{
+					pActor->Destroy();
+					pActor = NULL;
+				}
+			}
 		}
 		else
 		{
@@ -6267,6 +6277,14 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 					// [BB] If the angle is not zero, we have to inform the clients.
 					if ( pActor->angle != 0 )
 						SERVERCOMMANDS_SetThingAngle( pActor );
+				}
+
+				// [AK] If this actor is clientsided only then remove it from our end. We only had to
+				// spawn it so we could tell the clients to spawn it, but we don't need it anymore.
+				if ( pActor->ulNetworkFlags & NETFL_CLIENTSIDEONLY )
+				{
+					pActor->Destroy();
+					pActor = NULL;
 				}
 			}
 		}
