@@ -273,7 +273,7 @@ bool CALLVOTE_VoteYes( ULONG ulPlayer )
 		return ( false );
 
 	// [RC] If this is our vote, hide the vote screen soon.
-	if (( NETWORK_GetState( ) == NETSTATE_CLIENT ) && ( static_cast<LONG>(ulPlayer) == consoleplayer ) )
+	if (( NETWORK_GetState( ) == NETSTATE_CLIENT ) && ( cl_hidevotescreen && static_cast<LONG>(ulPlayer) == consoleplayer ))
 		g_ulShowVoteScreenTicks = 1 * TICRATE;
 
 	// Also, don't allow spectator votes if the server has them disabled.
@@ -354,7 +354,7 @@ bool CALLVOTE_VoteNo( ULONG ulPlayer )
 		return ( false );
 
 	// [RC] If this is our vote, hide the vote screen soon.
-	if (( NETWORK_GetState( ) == NETSTATE_CLIENT ) && ( static_cast<LONG>(ulPlayer) == consoleplayer ) )
+	if (( NETWORK_GetState( ) == NETSTATE_CLIENT ) && ( cl_hidevotescreen && static_cast<LONG>(ulPlayer) == consoleplayer ))
 		g_ulShowVoteScreenTicks = 1 * TICRATE;
 
 	// [RC] Vote callers can cancel their votes by voting "no".
@@ -942,6 +942,7 @@ CVAR( Bool, sv_nopointlimitvote, false, CVAR_ARCHIVE | CVAR_SERVERINFO );
 CVAR( Int, sv_votecooldown, 5, CVAR_ARCHIVE | CVAR_SERVERINFO );
 CVAR( Int, sv_voteconnectwait, 0, CVAR_ARCHIVE | CVAR_SERVERINFO );  // [RK] The amount of seconds after client connect to wait before voting
 CVAR( Bool, cl_showfullscreenvote, false, CVAR_ARCHIVE );
+CVAR( Bool, cl_hidevotescreen, true, CVAR_ARCHIVE ); // [AK] Hides the vote screen shortly after the client makes their vote.
 
 CCMD( callvote )
 {

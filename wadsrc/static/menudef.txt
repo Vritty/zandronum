@@ -813,6 +813,7 @@ OptionMenu "HUDOptions"
 	Option "Crosshair shows health",	"crosshairhealth", "OnOff"
 	Option "Scale crosshair",			"crosshairscale", "OnOff"
 	Option "Voting display",			"cl_showfullscreenvote", "ZA_VotingDisplay"
+	Option "Hide vote screen after vote",		"cl_hidevotescreen", "YesNo" // [AK]
 	Option "Fullscreen HUD",			"cl_stfullscreenhud", "ZA_FullscreenHUD"
 	StaticText " "
 	Option "Large frag messages",		"cl_showlargefragmessages",	"YesNo" // [TP]
