@@ -339,6 +339,7 @@ void CLIENTDEMO_WriteUserInfo( void )
 	// Write the player's userinfo.
 	g_ByteStream.WriteString( players[consoleplayer].userinfo.GetName() );
 	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetGender() );
+	g_ByteStream.WriteByte( players[consoleplayer].userinfo.GetColorSet() );
 	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetColor() );
 	g_ByteStream.WriteLong( players[consoleplayer].userinfo.GetAimDist() );
 	g_ByteStream.WriteString( skins[players[consoleplayer].userinfo.GetSkin()].name );
@@ -358,6 +359,7 @@ void CLIENTDEMO_ReadUserInfo( void )
 	*static_cast<FStringCVar *>(info[NAME_Name]) =  g_ByteStream.ReadString();
 	// [BB] Make sure that the gender is valid.
 	*static_cast<FIntCVar *>(info[NAME_Gender]) = clamp ( g_ByteStream.ReadByte(), 0, 2 );
+	*static_cast<FIntCVar *>(info[NAME_ColorSet]) = g_ByteStream.ReadByte();
 	info.ColorChanged( g_ByteStream.ReadLong() );
 	*static_cast<FFloatCVar *>(info[NAME_Autoaim]) = static_cast<float> ( g_ByteStream.ReadLong() ) / ANGLE_1 ;
 	*static_cast<FIntCVar *>(info[NAME_Skin]) = R_FindSkin( g_ByteStream.ReadString(), players[consoleplayer].CurrentPlayerClass );

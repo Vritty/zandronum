@@ -4015,6 +4015,8 @@ void ServerCommands::SetPlayerUserInfo::Execute()
 			player->userinfo.GenderNumChanged ( value.ToLong() );
 		else if ( name == NAME_Color )
 			player->userinfo.ColorChanged ( value );
+		else if ( name == NAME_ColorSet )
+			player->userinfo.ColorSetChanged ( value.ToLong() );
 		else if ( name == NAME_RailColor )
 			player->userinfo.RailColorChanged ( value.ToLong() );
 		// Make sure the skin is valid.

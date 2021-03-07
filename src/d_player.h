@@ -345,9 +345,7 @@ struct userinfo_t : TMap<FName,FBaseCVar *>
 	}
 	int GetColorSet() const
 	{
-		// [BB] For now Zandronum doesn't let the player use the color sets.
-		//return *static_cast<FIntCVar *>(*CheckKey(NAME_ColorSet));
-		return -1;
+		return *static_cast<FIntCVar *>(*CheckKey(NAME_ColorSet));
 	}
 	uint32 GetColor() const
 	{

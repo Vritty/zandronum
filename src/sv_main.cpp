@@ -2081,6 +2081,8 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 			pPlayer->userinfo.GenderNumChanged ( value.ToLong() );
 		else if ( name == NAME_Color )
 			pPlayer->userinfo.ColorChanged ( value );
+		else if ( name == NAME_ColorSet )
+			pPlayer->userinfo.ColorSetChanged ( value.ToLong() );
 		else if ( name == NAME_Autoaim )
 			*static_cast<FFloatCVar *>(pPlayer->userinfo[NAME_Autoaim]) = static_cast<float> ( value.ToDouble() );
 		else if ( name == NAME_Skin )
@@ -2142,7 +2144,7 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 		static const std::set<FName> required = {
 			NAME_Name, NAME_Autoaim, NAME_Gender, NAME_Skin, NAME_RailColor,
 			NAME_CL_ConnectionType, NAME_CL_ClientFlags,
-			NAME_Handicap, NAME_CL_TicsPerUpdate, NAME_Color
+			NAME_Handicap, NAME_CL_TicsPerUpdate, NAME_Color, NAME_ColorSet
 		};
 		std::set<FName> missing;
 		std::set_difference( required.begin(), required.end(), names.begin(), names.end(),

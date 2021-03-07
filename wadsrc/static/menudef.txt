@@ -414,8 +414,7 @@ ListMenu "PlayerMenu"
 	
 	// [TP] Zandronum does not store team in userinfo
 	// ValueText "Team", "Team"
-	// [TP] For now Zandronum doesn't support colorsets either.
-	// ValueText "Color", "Color"
+	ValueText "Color", "Color"
 	Linespacing 10
 	Slider "Red", "Red", 0, 255, 16
 	Slider "Green", "Green", 0, 255, 16
