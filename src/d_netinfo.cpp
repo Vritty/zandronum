@@ -365,11 +365,6 @@ void D_GetPlayerColor (int player, float *h, float *s, float *v, FPlayerColorSet
 		colorset = NULL;
 	}
 */
-	if (set != NULL)
-	{
-		*set = colorset;
-	}
-
 	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
 	{
 		if ( players[player].bOnTeam && ( TEAM_IsCustomPlayerColorAllowed ( players[player].ulTeam ) == false ) )
@@ -384,7 +379,7 @@ void D_GetPlayerColor (int player, float *h, float *s, float *v, FPlayerColorSet
 				h, s, v );
 
 			// [AK] Make sure we're not using the color set anymore.
-			*set = NULL;
+			colorset = NULL;
 		}
 	}
 
@@ -401,7 +396,12 @@ void D_GetPlayerColor (int player, float *h, float *s, float *v, FPlayerColorSet
 		RGBtoHSV( RPART( color ) / 255.f, GPART( color ) / 255.f, BPART( color ) / 255.f, h, s, v );
 
 		// [AK] Make sure we're not using the color set anymore.
-		*set = NULL;
+		colorset = NULL;
+	}
+
+	if (set != NULL)
+	{
+		*set = colorset;
 	}
 }
 
