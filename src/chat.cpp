@@ -157,6 +157,32 @@ CVAR (Int, chat_sound, 1, CVAR_ARCHIVE)
 // [AK] Played when a private chat message arrives.
 CVAR (Int, privatechat_sound, 2, CVAR_ARCHIVE)
 
+// [SB/Cata] Allows text to be added before a message.
+CUSTOM_CVAR (String, cl_chatprefix, "", CVAR_ARCHIVE)
+{
+	// [AK] Don't let the chat prefix be more than 16 characters.
+	if ( strlen( self ) > 16 )
+	{
+		Printf( "cl_chatprefix cannot be greater than 16 characters in length!\n" );
+
+		FString truncatedPrefix = self;
+		self = truncatedPrefix.Left( 16 );
+	}
+}
+
+// [SB/Cata] Allows text to be added after a message.
+CUSTOM_CVAR (String, cl_chatsuffix, "", CVAR_ARCHIVE)
+{
+	// [AK] Don't let the chat suffix be more than 16 characters.
+	if ( strlen( self ) > 16 )
+	{
+		Printf( "cl_chatsuffix cannot be greater than 16 characters in length!\n" );
+
+		FString truncatedSuffix = self;
+		self = truncatedSuffix.Left( 16 );
+	}
+}
+
 //*****************************************************************************
 FStringCVar	*g_ChatMacros[10] =
 {
@@ -242,8 +268,10 @@ void ChatBuffer::Insert( const char *text )
 	FString &message = GetEditableMessage();
 	message.Insert( GetPosition(), text );
 
-	if ( message.Len() > MAX_CHATBUFFER_LENGTH )
-		message.Truncate( MAX_CHATBUFFER_LENGTH );
+	// [AK] Also take into account the length of the chat prefix and suffix.
+	unsigned int maxLength = MAX_CHATBUFFER_LENGTH - (strlen( cl_chatprefix ) + strlen( cl_chatsuffix ));
+	if ( message.Len() > maxLength )
+		message.Truncate( maxLength );
 
 	MoveCursor( strlen( text ));
 }
@@ -999,6 +1027,25 @@ void chat_SetChatMode( ULONG ulMode )
 void chat_SendMessage( ULONG ulMode, const char *pszString )
 {
 	FString ChatMessage = pszString;
+
+	// [Cata] Dont place stuff if it's empty.
+	if ( ChatMessage.IsNotEmpty( ) )
+	{
+		// [SB] All commands used by Konar6's kpatch don't work with prefixes/suffixes, so don't add them.
+		if (( strnicmp( "!irc", pszString, 4 ) != 0 ) &&
+			( strnicmp( "!music", pszString, 6 ) != 0 ) &&
+			( strnicmp( "!maplist", pszString, 8 ) != 0 ))
+		{
+			// [AK] Take into account the length of prefix and suffix and truncate the chat message if necessary.
+			unsigned int maxLength = MAX_CHATBUFFER_LENGTH - (strlen( cl_chatprefix ) + strlen( cl_chatsuffix ));
+			if ( ChatMessage.Len() > maxLength )
+				ChatMessage.Truncate( maxLength );
+
+			// [SB] Add the prefix after /me, so actions works
+			ChatMessage.Insert( strnicmp( "/me", pszString, 3 ) == 0 ? 3 : 0, cl_chatprefix );
+			ChatMessage += cl_chatsuffix;
+		}
+	}
 
 	// Format our message so color codes can appear.
 	V_ColorizeString( ChatMessage );
