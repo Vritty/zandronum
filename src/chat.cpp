@@ -1093,11 +1093,13 @@ void chat_DoSubstitution( FString &Input )
 			{
 				if ( pReadyWeapon && pReadyWeapon->Ammo1 )
 				{
-					Output.AppendFormat( "%s", pReadyWeapon->Ammo1->GetClass( )->TypeName.GetChars( ) );
+					// [AK] Print the tag of this ammo class if there is one.
+					Output.AppendFormat( "%s", pReadyWeapon->Ammo1->GetTag( ));
 
 					if ( pReadyWeapon->Ammo2 )
 					{
-						Output.AppendFormat( "/%s", pReadyWeapon->Ammo2->GetClass( )->TypeName.GetChars( ));
+						// [AK] Also print the tag of this ammo class if there is one.
+						Output.AppendFormat( "/%s", pReadyWeapon->Ammo2->GetTag( ));
 					}
 				}
 				else
@@ -1128,7 +1130,8 @@ void chat_DoSubstitution( FString &Input )
 			else if ( !strncmp( pszString, "$weapon", 7 ))
 			{
 				if ( pReadyWeapon )
-					Output.AppendFormat( "%s", pReadyWeapon->GetClass( )->TypeName.GetChars( ) );
+					// [AK] Print the tag of this weapon if there is one.
+					Output.AppendFormat( "%s", pReadyWeapon->GetTag( ));
 				else
 					Output.AppendFormat( "no weapon" );
 
