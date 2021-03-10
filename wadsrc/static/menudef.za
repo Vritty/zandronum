@@ -19,6 +19,15 @@ OptionValue ZA_OverridePlayerColors
 	3.0, "Always"
 }
 
+OptionValue ZA_IdentifyTargetLevels
+{
+	0.0, "Off"
+	1.0, "Name"
+	2.0, "Health and armor"
+	3.0, "Weapon and ammo"
+	4.0, "Class or skin"
+}
+
 OptionMenu ZA_MultiplayerOptions
 {
 	Title "MULTIPLAYER OPTIONS"
@@ -46,7 +55,7 @@ OptionMenu ZA_MultiplayerOptions
 	Option		"Skins",					"cl_skins",					"ZA_AllowSkins"
 	Option		"Taunts",					"cl_taunts",				"OnOff"
 	Option		"Icons",					"cl_icons",					"OnOff"
-	Option		"Identify players",			"cl_identifytarget",		"OnOff"
+	Option		"Identify player level",			"cl_identifytarget",		"ZA_IdentifyTargetLevels"
 	Option		"Show spawn spots",			"cl_showspawns",			"YesNo"
 	Slider		"Spectator move speed",		"cl_spectatormove",			0.1, 5.0, 0.1
 	StaticText	" "
