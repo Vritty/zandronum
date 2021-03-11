@@ -1303,6 +1303,7 @@ OptionMenu GameplayOptions
 	Option "Force OpenGL defaults",	"sv_forcegldefaults", "YesNo"
 	Option "Force translucency",	"sv_forcealpha", "YesNo"
 	Option "Full blood brightness",	"sv_maxbloodscalar", "YesNo"
+	Option "Force software pitch limits",	"sv_forcesoftwarepitchlimits", "YesNo"
 	// [TP] --
 
 	StaticText " "

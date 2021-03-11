@@ -585,6 +585,10 @@ CUSTOM_CVAR (Int, zadmflags, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK)
 	if ((( self ^ self.GetPastValue() ) & ZADF_SHARE_KEYS ) & ( self & ZADF_SHARE_KEYS ))
 		SERVER_SyncSharedKeys( MAXPLAYERS, true );
 
+	// [AK] If we changed sv_forcesoftwarepitchlimits, reimpose the new pitch limits for everyone.
+	if (( self ^ self.GetPastValue() ) & ZADF_FORCE_SOFTWARE_PITCH_LIMITS )
+		P_ResetPlayerPitchLimits();
+
 	// [BB] If we're the server, tell clients that the dmflags changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
 	SERVER_FlagsetChanged( self );
@@ -620,6 +624,7 @@ CVAR (Flag, sv_deadplayerscankeepinventory, zadmflags, ZADF_DEAD_PLAYERS_CAN_KEE
 CVAR (Flag, sv_nounlaggedbfgtracers, zadmflags, ZADF_NOUNLAGGED_BFG_TRACERS);
 CVAR (Flag, sv_nodoorclose, zadmflags, ZADF_NODOORCLOSE);
 CVAR (Flag, sv_noobituaries, zadmflags, ZADF_NO_OBITUARIES);
+CVAR (Flag, sv_forcesoftwarepitchlimits, zadmflags, ZADF_FORCE_SOFTWARE_PITCH_LIMITS);
 
 // Old name kept for compatibility
 CVAR (Flag, sv_forcegldefaults,		zadmflags, ZADF_FORCE_VIDEO_DEFAULTS);

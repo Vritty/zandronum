@@ -833,5 +833,6 @@ inline bool AActor::IsNoClip2() const
 #define CROUCHSPEED (FRACUNIT/12)
 
 bool P_IsPlayerTotallyFrozen(const player_t *player);
+void P_ResetPlayerPitchLimits(void); // [AK]
 
 #endif // __D_PLAYER_H__

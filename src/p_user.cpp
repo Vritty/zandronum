@@ -4327,3 +4327,23 @@ bool P_IsPlayerTotallyFrozen(const player_t *player)
 		player->cheats & CF_TOTALLYFROZEN ||
 		((level.flags2 & LEVEL2_FROZEN) && player->timefreezer == 0 && (player->bSpectating == false));
 }
+
+// [AK] Resets the player's pitch limits anytime they need to be changed.
+void P_ResetPlayerPitchLimits(void)
+{
+	const fixed_t maxPitch = ((NETWORK_GetState() != NETSTATE_SERVER) ? Renderer->GetMaxViewPitch(true) : 56) * ANGLE_1;
+	const fixed_t minPitch = -((NETWORK_GetState() != NETSTATE_SERVER) ? Renderer->GetMaxViewPitch(false) : 32) * ANGLE_1;
+
+	// [AK] Set the pitch limits for all active players.
+	for (ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++)
+	{
+		if (playeringame[ulIdx])
+		{
+			players[ulIdx].SendPitchLimits();
+
+			// [AK] Also clamp the player's pitch within the new limits if it's outside them.
+			if (players[ulIdx].mo != NULL)
+				players[ulIdx].mo->pitch = clamp(players[ulIdx].mo->pitch, minPitch, maxPitch);
+		}
+	}
+}
