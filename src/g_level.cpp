@@ -1200,82 +1200,9 @@ void G_DoLoadLevel (int position, bool autosave)
 				zacompatflags.ForceSet( Val, CVAR_Int );
 			}
 
-			Val.Bool = false;
-			deathmatch.ForceSet( Val, CVAR_Bool );
-			teamgame.ForceSet( Val, CVAR_Bool );
-
-			Val.Bool = true;
-			switch ( pInfo->GameMode )
-			{
-			case GAMEMODE_COOPERATIVE:
-
-				cooperative.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_SURVIVAL:
-
-				survival.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_INVASION:
-
-				invasion.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_DEATHMATCH:
-
-				deathmatch.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_TEAMPLAY:
-
-				teamplay.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_DUEL:
-
-				duel.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_TERMINATOR:
-
-				terminator.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_LASTMANSTANDING:
-
-				lastmanstanding.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_TEAMLMS:
-
-				teamlms.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_POSSESSION:
-
-				possession.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_TEAMPOSSESSION:
-
-				teampossession.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_TEAMGAME:
-
-				teamgame.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_CTF:
-
-				ctf.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_ONEFLAGCTF:
-
-				oneflagctf.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_SKULLTAG:
-
-				skulltag.ForceSet( Val, CVAR_Bool );
-				break;
-			case GAMEMODE_DOMINATION:
-
-				domination.ForceSet( Val, CVAR_Bool );
-				break;	
-			default:
-
-				I_Error( "G_DoLoadLevel: Invalid campaign game type, %d!", pInfo->GameMode );
-				break;
-			}
+			// [AK] Change the game mode if we need to.
+			if ( pInfo->GameMode != GAMEMODE_GetCurrentMode( ))
+				GAMEMODE_SetCurrentMode( pInfo->GameMode );
 
 			// Set buckshot/instagib.
 			Val.Bool = pInfo->bInstagib;
