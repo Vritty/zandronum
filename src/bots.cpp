@@ -1727,28 +1727,45 @@ CSkullBot::CSkullBot( char *pszName, char *pszTeamName, ULONG ulPlayerNum )
 		skins[lSkin].bRevealed = true;
 	}
 
-	// See if the given class name matches one in the global list.
-	for ( ulIdx = 0; ulIdx < PlayerClasses.Size( ); ulIdx++ )
+	// [AK] Check if the bot should use a random player class whenever they spawn.
+	if ( stricmp( g_BotInfo[m_ulBotInfoIdx].szClassName, "Random" ) == 0 )
+		m_pPlayer->userinfo.PlayerClassNumChanged ( -1 );
+	else
 	{
-		if ( stricmp( g_BotInfo[m_ulBotInfoIdx].szClassName, PlayerClasses[ulIdx].Type->Meta.GetMetaString (APMETA_DisplayName)) == 0 )
+		bool foundClass = false;
+
+		// See if the given class name matches one in the global list.
+		for ( ulIdx = 0; ulIdx < PlayerClasses.Size( ); ulIdx++ )
 		{
-			m_pPlayer->userinfo.PlayerClassNumChanged ( ulIdx );
-			break;
+			if ( stricmp( g_BotInfo[m_ulBotInfoIdx].szClassName, PlayerClasses[ulIdx].Type->Meta.GetMetaString (APMETA_DisplayName)) == 0 )
+			{
+				m_pPlayer->userinfo.PlayerClassNumChanged ( ulIdx );
+				foundClass = true;
+				break;
+			}
 		}
+
+		// [AK] If no match was found, assign the bot a random class instead.
+		if ( foundClass == false )
+			m_pPlayer->userinfo.PlayerClassNumChanged ( -1 );
 	}
 
-	// [AK] Get all the color set indices this bot's class has.
-	FName playerclass = m_pPlayer->userinfo.GetPlayerClassType( )->TypeName;
-	TArray<int> colorsets;
-	P_EnumPlayerColorSets( playerclass, &colorsets );
 
-	// [AK] See if the given color set name matches one of the class's color sets.
-	for ( ulIdx = 0; ulIdx < colorsets.Size( ); ulIdx++ )
+	// [AK] Get all the color set indices this bot's class has.
+	if ( m_pPlayer->userinfo.GetPlayerClassNum( ) != -1 )
 	{
-		if ( stricmp( g_BotInfo[m_ulBotInfoIdx].szColorSet, P_GetPlayerColorSet( playerclass, colorsets[ulIdx] )->Name.GetChars( )) == 0 )
+		FName playerclass = m_pPlayer->userinfo.GetPlayerClassType( )->TypeName;
+		TArray<int> colorsets;
+		P_EnumPlayerColorSets( playerclass, &colorsets );
+
+		// [AK] See if the given color set name matches one of the class's color sets.
+		for ( ulIdx = 0; ulIdx < colorsets.Size( ); ulIdx++ )
 		{
-			m_pPlayer->userinfo.ColorSetChanged ( ulIdx );
-			break;
+			if ( stricmp( g_BotInfo[m_ulBotInfoIdx].szColorSet, P_GetPlayerColorSet( playerclass, colorsets[ulIdx] )->Name.GetChars( )) == 0 )
+			{
+				m_pPlayer->userinfo.ColorSetChanged ( ulIdx );
+				break;
+			}
 		}
 	}
 
