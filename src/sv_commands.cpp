@@ -3388,7 +3388,7 @@ void SERVERCOMMANDS_StopSound( AActor *pActor, LONG lChannel, ULONG ulPlayerExtr
 
 	ServerCommands::StopSound command;
 	command.SetActor( pActor );
-	command.SetChannel( lChannel );
+	command.SetChannel( lChannel & 0xFF );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 
