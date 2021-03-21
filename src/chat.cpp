@@ -1028,30 +1028,30 @@ void chat_SendMessage( ULONG ulMode, const char *pszString )
 {
 	FString ChatMessage = pszString;
 
-	// [Cata] Dont place stuff if it's empty.
-	if ( ChatMessage.IsNotEmpty( ) )
-	{
-		// [SB] All commands used by Konar6's kpatch don't work with prefixes/suffixes, so don't add them.
-		if (( strnicmp( "!irc", pszString, 4 ) != 0 ) &&
-			( strnicmp( "!music", pszString, 6 ) != 0 ) &&
-			( strnicmp( "!maplist", pszString, 8 ) != 0 ))
-		{
-			// [AK] Take into account the length of prefix and suffix and truncate the chat message if necessary.
-			unsigned int maxLength = MAX_CHATBUFFER_LENGTH - (strlen( cl_chatprefix ) + strlen( cl_chatsuffix ));
-			if ( ChatMessage.Len() > maxLength )
-				ChatMessage.Truncate( maxLength );
-
-			// [SB] Add the prefix after /me, so actions works
-			ChatMessage.Insert( strnicmp( "/me", pszString, 3 ) == 0 ? 3 : 0, cl_chatprefix );
-			ChatMessage += cl_chatsuffix;
-		}
-	}
+	// [AK] Don't process and send chat messages that are empty.
+	if ( ChatMessage.IsEmpty( ) )
+		return;
 
 	// Format our message so color codes can appear.
 	V_ColorizeString( ChatMessage );
 
 	// [CW] Substitute the message if necessary.
 	chat_DoSubstitution( ChatMessage );
+
+	// [SB] All commands used by Konar6's kpatch don't work with prefixes/suffixes, so don't add them.
+	if (( strnicmp( "!irc", pszString, 4 ) != 0 ) &&
+		( strnicmp( "!music", pszString, 6 ) != 0 ) &&
+		( strnicmp( "!maplist", pszString, 8 ) != 0 ))
+	{
+		// [AK] Take into account the length of prefix and suffix and truncate the chat message if necessary.
+		unsigned int maxLength = MAX_CHATBUFFER_LENGTH - (strlen( cl_chatprefix ) + strlen( cl_chatsuffix ));
+		if ( ChatMessage.Len() > maxLength )
+			ChatMessage.Truncate( maxLength );
+
+		// [SB] Add the prefix after /me, so actions works
+		ChatMessage.Insert( strnicmp( "/me", pszString, 3 ) == 0 ? 3 : 0, cl_chatprefix );
+		ChatMessage += cl_chatsuffix;
+	}
 
 	// If we're the client, let the server handle formatting/sending the msg to other players.
 	if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
