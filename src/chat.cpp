@@ -165,7 +165,7 @@ CUSTOM_CVAR (String, cl_chatprefix, "", CVAR_ARCHIVE)
 	{
 		Printf( "cl_chatprefix cannot be greater than 16 characters in length!\n" );
 
-		FString truncatedPrefix = self;
+		FString truncatedPrefix = self.GetGenericRep( CVAR_String ).String;
 		self = truncatedPrefix.Left( 16 );
 	}
 }
@@ -178,7 +178,7 @@ CUSTOM_CVAR (String, cl_chatsuffix, "", CVAR_ARCHIVE)
 	{
 		Printf( "cl_chatsuffix cannot be greater than 16 characters in length!\n" );
 
-		FString truncatedSuffix = self;
+		FString truncatedSuffix = self.GetGenericRep( CVAR_String ).String;
 		self = truncatedSuffix.Left( 16 );
 	}
 }
