@@ -279,6 +279,7 @@ OptionMenu ZA_CallVote
 	SubMenu		"Kick a player",		"ZA_CallKickVote"
 	SubMenu		"Change the map",		"ZA_CallMapVote"
 	SubMenu		"Change a limit",		"ZA_CallLimitVote"
+	SubMenu		"Change a flag",		"ZA_CallFlagVote"
 }
 
 OptionMenu ZA_CallKickVote
@@ -312,6 +313,17 @@ OptionMenu ZA_CallLimitVote
 	StaticText	" "
 	TextField	"Reason for change",	"menu_callvotereason"
 	Command		"Vote!",				"menu_calllimitvote"
+}
+
+OptionMenu ZA_CallFlagVote
+{
+	Title		"CHANGE FLAG"
+
+	TextField	"Flag",					"menu_callvoteflag"
+	Option		"New value",			"menu_callvotevalue",			"OnOff"
+	StaticText	" "
+	TextField	"Reason for change",	"menu_callvotereason"
+	Command		"Vote!",				"menu_callflagvote"
 }
 
 // =================================================================================================
@@ -537,6 +549,7 @@ OptionMenu ZA_VotingSetupMenu
 	Option	"Win limit votes",				"sv_nowinlimitvote",		"NoYes"
 	Option	"Duel limit votes",				"sv_noduellimitvote",		"NoYes"
 	Option	"Point limit votes",			"sv_nopointlimitvote",		"NoYes"
+	Option	"Flag votes",					"sv_noflagvote",			"NoYes"
 
 	Class VotingSetupMenu
 }

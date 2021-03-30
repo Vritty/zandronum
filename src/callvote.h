@@ -72,6 +72,7 @@ enum
 	VOTECMD_WINLIMIT,
 	VOTECMD_DUELLIMIT,
 	VOTECMD_POINTLIMIT,
+	VOTECMD_FLAG,
 
 	NUM_VOTECMDS
 };
@@ -148,6 +149,7 @@ EXTERN_CVAR( Bool, sv_notimelimitvote );
 EXTERN_CVAR( Bool, sv_nowinlimitvote );
 EXTERN_CVAR( Bool, sv_noduellimitvote );
 EXTERN_CVAR( Bool, sv_nopointlimitvote );
+EXTERN_CVAR( Bool, sv_noflagvote );
 EXTERN_CVAR( Int, sv_votecooldown );
 EXTERN_CVAR( Int, sv_voteconnectwait );
 EXTERN_CVAR( Bool, cl_showfullscreenvote )

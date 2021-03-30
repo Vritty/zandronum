@@ -6645,6 +6645,11 @@ static bool server_CallVote( BYTESTREAM_s *pByteStream )
 		bVoteAllowed = !sv_nopointlimitvote;
 		sprintf( szCommand, "pointlimit" );
 		break;
+	case VOTECMD_FLAG:
+
+		bVoteAllowed = !sv_noflagvote;
+		sprintf( szCommand, "flag" );
+		break;
 	default:
 
 		return ( false );
@@ -6652,7 +6657,17 @@ static bool server_CallVote( BYTESTREAM_s *pByteStream )
 
 	// Begin the vote, if that type is allowed.
 	if ( bVoteAllowed )
+	{
+		// [AK] If we're changing a flag, first separate the CVar name
+		// and the parameter from each other.
+		if ( ulVoteCmd == VOTECMD_FLAG )
+		{
+			sprintf( szCommand, Parameters.Left( Parameters.IndexOf( ' ')));
+			Parameters = Parameters.Right( Parameters.Len() - ( strlen( szCommand ) + 1 ));
+		}
+
 		CALLVOTE_BeginVote( szCommand, Parameters, Reason, g_lCurrentClient );
+	}
 	else
 		SERVER_PrintfPlayer( g_lCurrentClient, "%s votes are disabled on this server.\n", szCommand );
 
