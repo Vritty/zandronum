@@ -35,6 +35,7 @@
 +	- Added a new EVENT script type: GAMEEVENT_CHAT that triggers when a non-private chat message is sent. Use this in conjunction with the ACS function: GetChatMessage(int player, int offset) to get the last chat message received by the player (or the server if -1 is passed). [Kaminsky]
 +	- Added a new floating icon that shows if a player is in the menu. [DoomJoshuaBoy/geNia]
 +	- Added new parameters to the "addmap" and "insertmap" CCMDs that specify the minimum and maximum number of players required to enter a map. [Kaminsky]
++	- Added ACS functions: GetMapRotationSize and GetMapRotationInfo to get information about the server's map rotation. [Kaminsky]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]

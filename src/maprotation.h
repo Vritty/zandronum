@@ -82,8 +82,10 @@ bool			MAPROTATION_CanEnterMap( ULONG ulIdx, ULONG ulPlayerCount );
 void			MAPROTATION_AdvanceMap( bool bMarkUsed );
 level_info_t	*MAPROTATION_GetNextMap( void );
 level_info_t	*MAPROTATION_GetMap( ULONG ulIdx );
+ULONG			MAPROTATION_GetPlayerLimits( ULONG ulIdx, bool bMaxPlayers );
 void			MAPROTATION_SetPositionToMap( const char *pszMapName );
 bool			MAPROTATION_IsMapInRotation( const char *pszMapName );
+bool			MAPROTATION_IsUsed( ULONG ulIdx );
 void			MAPROTATION_AddMap( FCommandLine &argv, bool bSilent, bool bInsert = false );
 void			MAPROTATION_DelMap (char *pszMapName, bool bSilent);
 

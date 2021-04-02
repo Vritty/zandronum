@@ -283,6 +283,16 @@ level_info_t *MAPROTATION_GetMap( ULONG ulIdx )
 
 //*****************************************************************************
 //
+ULONG MAPROTATION_GetPlayerLimits( ULONG ulIdx, bool bMaxPlayers )
+{
+	if ( ulIdx >= g_MapRotationEntries.size( ))
+		return ( 0 );
+
+	return ( bMaxPlayers ? g_MapRotationEntries[ulIdx].ulMaxPlayers : g_MapRotationEntries[ulIdx].ulMinPlayers );
+}
+
+//*****************************************************************************
+//
 void MAPROTATION_SetPositionToMap( const char *pszMapName )
 {
 	for ( ULONG ulIdx = 0; ulIdx < g_MapRotationEntries.size( ); ulIdx++ )
@@ -307,6 +317,16 @@ bool MAPROTATION_IsMapInRotation( const char *pszMapName )
 			return true;
 	}
 	return false;
+}
+
+//*****************************************************************************
+//
+bool MAPROTATION_IsUsed( ULONG ulIdx )
+{
+	if ( ulIdx >= g_MapRotationEntries.size( ))
+		return ( false );
+
+	return ( g_MapRotationEntries[ulIdx].bUsed );
 }
 
 //*****************************************************************************

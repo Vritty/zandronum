@@ -90,6 +90,7 @@
 #include "cl_commands.h"
 #include "cl_main.h"
 #include "chat.h"
+#include "maprotation.h"
 
 #include "g_shared/a_pickups.h"
 
@@ -5356,6 +5357,8 @@ enum EACSFunctions
 	ACSF_SendNetworkString,
 	ACSF_NamedSendNetworkString,
 	ACSF_GetChatMessage,
+	ACSF_GetMapRotationSize,
+	ACSF_GetMapRotationInfo,
 
 	// ZDaemon
 	ACSF_GetTeamScore = 19620,	// (int team)
@@ -7601,6 +7604,38 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 					return GlobalACSStrings.AddString( CHAT_GetChatMessage( args[0], offset ) );
 
 				return GlobalACSStrings.AddString( "" );
+			}
+
+		case ACSF_GetMapRotationSize:
+			{
+				return MAPROTATION_GetNumEntries();
+			}
+
+		case ACSF_GetMapRotationInfo:
+			{
+				ULONG ulPosition = ( args[0] <= 0 ) ? MAPROTATION_GetCurrentPosition() : ( args[0] - 1 );
+
+				switch ( args[1] )
+				{
+					case MAPROTATION_Used:
+						return MAPROTATION_IsUsed( ulPosition );
+
+					case MAPROTATION_MinPlayers:
+					case MAPROTATION_MaxPlayers:
+						return MAPROTATION_GetPlayerLimits( ulPosition, args[1] == MAPROTATION_MaxPlayers );
+
+					case MAPROTATION_Name:
+					case MAPROTATION_LumpName:
+					{
+						level_info_t *level = MAPROTATION_GetMap( ulPosition );
+						if ( level == NULL )
+							return GlobalACSStrings.AddString( "" );
+
+						return GlobalACSStrings.AddString( args[1] == MAPROTATION_Name ? level->LookupLevelName().GetChars() : level->mapname );
+					}
+				}
+
+				return 0;
 			}
 
 		case ACSF_GetActorFloorTexture:
