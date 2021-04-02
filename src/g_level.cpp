@@ -701,9 +701,9 @@ void G_ChangeLevel(const char *levelname, int position, int flags, int nextSkill
 		// [BB] It's possible that the selected next map doesn't coincide with the next map
 		// in the rotation, e.g. exiting to a secret map allows to leave the rotation.
 		// In this case, we may not advance to the next map in the rotation.
-		if ( ( MAPROTATION_GetNextMap( ) != NULL )
-			&& ( stricmp ( MAPROTATION_GetNextMap( )->mapname, nextlevel.GetChars() ) == 0 ) )
-			MAPROTATION_AdvanceMap();
+		level_info_t *nextmapinrotation = MAPROTATION_GetNextMap( );
+		if (( nextmapinrotation != NULL ) && ( stricmp( nextmapinrotation->mapname, nextlevel.GetChars() ) == 0 ))
+			MAPROTATION_AdvanceMap( false );
 	}
 
 	STAT_ChangeLevel(nextlevel);
@@ -1661,6 +1661,32 @@ void G_DoWorldDone (void)
 	}
 	else
 	{
+		// [AK] Check if we're using the map rotation for the next level.
+		if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( sv_maprotation ) && (( level.flags & LEVEL_CHANGEMAPCHEAT ) == false ))
+		{
+			ULONG ulMapEntry = MAPROTATION_GetCurrentPosition();
+			if ( stricmp( MAPROTATION_GetMap( ulMapEntry )->mapname, nextlevel.GetChars()) == 0 )
+			{
+				ULONG ulPlayerCount = 0;
+
+				// [AK] Get the number of players that are still playing or in the join queue.
+				for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+				{
+					if (( playeringame[ulIdx] ) && (( !players[ulIdx].bSpectating ) || ( JOINQUEUE_GetPositionInLine( ulIdx ) != -1 )))
+						ulPlayerCount++;
+				}
+
+				// [AK] It's possible the number of players who are playing changed during the intermission
+				// screen, so we must check again if we can still enter the next level. If not, we'll need
+				// to pick another map that will accept this many players.
+				if ( MAPROTATION_CanEnterMap( ulMapEntry, ulPlayerCount ) == false )
+					nextlevel = MAPROTATION_GetNextMap()->mapname;
+
+				// [AK] We can now mark the map as being used.
+				MAPROTATION_AdvanceMap( true );
+			}
+		}
+
 		strncpy (level.mapname, nextlevel, 255);
 	}
 
