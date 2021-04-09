@@ -5192,6 +5192,11 @@ void ServerCommands::SetThingProperty::Execute()
 			static_cast<APlayerPawn *>( actor )->JumpZ = value;
 		break;
 
+	case APROP_StencilColor:
+		// [AK] We can't use DWORD as an unsigned int here, so split the value into its RGB components.
+		actor->SetShade(( value >> 16 ) & 0xFF, ( value >> 8 ) & 0xFF, value & 0xFF );
+		break;
+
 	default:
 		CLIENT_PrintWarning( "client_SetThingProperty: Unknown property, %d!\n", static_cast<unsigned int> (property) );
 		return;

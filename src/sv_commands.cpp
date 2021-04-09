@@ -1662,6 +1662,10 @@ void SERVERCOMMANDS_SetThingProperty( AActor *pActor, ULONG ulProperty, ULONG ul
 			value = static_cast<APlayerPawn *>( pActor )->JumpZ;
 		break;
 
+	case APROP_StencilColor:
+		value = pActor->fillcolor;
+		break;
+
 	default:
 		return;
 	}

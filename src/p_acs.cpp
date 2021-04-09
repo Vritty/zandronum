@@ -4756,7 +4756,15 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		break;
 
 	case APROP_StencilColor:
+		// [AK] Save the original value.
+		oldValue = actor->fillcolor;
+
 		actor->SetShade(value);
+	
+		// [AK] If we're the server, tell clients to update this actor property.
+		// Only bother the clients if the stencil color has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->fillcolor ) )
+			SERVERCOMMANDS_SetThingProperty( actor, APROP_StencilColor );
 		break;
 
 	default:
