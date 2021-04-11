@@ -498,6 +498,7 @@ ListMenu "BotSkillMenu"
 
 OptionMenu ZA_ServerSetupMenu
 {
+	RequiresRconAccess
 	Title		"SERVER SETTINGS"
 	Indent 150
 
@@ -529,6 +530,7 @@ OptionValue ZA_AllowVoting
 
 OptionMenu ZA_VotingSetupMenu
 {
+	RequiresRconAccess
 	Title	"VOTING SETUP"
 
 	Command	"Cancel current vote",			"rcon cancelvote"

@@ -2394,6 +2394,10 @@ void CLIENT_QuitNetworkGame( const char *pszString )
 	// [AK] Since we disconnected, we don't have RCON access anymore.
 	g_HasRCONAccess = false;
 
+	// [AK] Close the server setup menu if we're still in it.
+	if ( M_InServerSetupMenu( ))
+		M_ClearMenus( );
+
 	// Set the network state back to single player.
 	NETWORK_SetState( NETSTATE_SINGLE );
 
@@ -6943,6 +6947,13 @@ void ServerCommands::MapNew::Execute()
 		CLIENTDEMO_SetSkippingToNextMap ( false );
 	}
 
+	// [AK] We're reconnecting so we don't have RCON access anymore.
+	g_HasRCONAccess = false;
+
+	// [AK] Close the server setup menu if we're still in it.
+	if ( M_InServerSetupMenu( ))
+		M_ClearMenus( );
+
 	// Clear out our local buffer.
 	g_LocalBuffer.Clear();
 
@@ -9221,6 +9232,10 @@ CCMD( connect )
 	// Put the game in client mode.
 	NETWORK_SetState( NETSTATE_CLIENT );
 
+	// [AK] Make sure the server setup menu is closed if we're connecting.
+	if ( M_InServerSetupMenu( ))
+		M_SetMenu( NAME_ZA_RconLoginMenu );
+
 	// Make sure cheats are off.
 	Val.Bool = false;
 	sv_cheats.ForceSet( Val, CVAR_Bool );
@@ -9303,6 +9318,10 @@ CCMD( reconnect )
 
 	// Put the game in client mode.
 	NETWORK_SetState( NETSTATE_CLIENT );
+
+	// [AK] Make sure the server setup menu is closed if we're reconnecting.
+	if ( M_InServerSetupMenu( ))
+		M_SetMenu( NAME_ZA_RconLoginMenu );
 
 	// Make sure cheats are off.
 	Val.Bool = false;
