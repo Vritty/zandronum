@@ -448,7 +448,7 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 		}
 
 		message.AppendFormat( "These issues must be resolved if you plan on hosting these files in online games.\n" );
-		Printf( TEXTCOLOR_RED "%s", message );
+		Printf( TEXTCOLOR_RED "%s", message.GetChars() );
 	}
 
 	// [BB] Warn the user about problematic auto-loaded files.
