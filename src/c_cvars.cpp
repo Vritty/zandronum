@@ -1348,6 +1348,14 @@ void FMaskCVar::DoSet (UCVarValue value, ECVarType type)
 			Printf ("Only setting controllers can change %s\n", Name);
 			return;
 		}
+
+		// [AK] If we're a client in an online game, just change the "master" CVar's value anyways.
+		if ( NETWORK_GetState() == NETSTATE_CLIENT )
+		{
+			ValueVar = ( *ValueVar & ~BitVal ) | val;
+			return;
+		}
+
 		// Ugh...
 		for(int i = 0; i < 32; i++)
 		{
