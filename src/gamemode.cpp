@@ -1138,9 +1138,6 @@ void GAMEMODE_SetCurrentMode( GAMEMODE_e GameMode )
 	UCVarValue	 Val;
 	g_CurrentGameMode = GameMode;	
 	
-	// [AK] Set any locked flags to what they're supposed to be in the new game mode.
-	GAMEMODE_ReconfigureGameSettings();
-
 	// [RC] Set all the CVars. We can't just use "= true;" because of the latched cvars.
 	// (Hopefully Blzut's update will save us from this garbage.)
 
@@ -1261,41 +1258,6 @@ void GAMEMODE_SetModifier( MODIFIER_e Modifier )
 	default:
 		break;
 	}
-}
-
-//*****************************************************************************
-//
-ULONG GAMEMODE_GetCountdownTicks( void )
-{
-	if ( survival )
-		return ( SURVIVAL_GetCountdownTicks() );
-	else if ( invasion )
-		return ( INVASION_GetCountdownTicks() );
-	else if ( duel )
-		return ( DUEL_GetCountdownTicks() );
-	else if ( teamlms || lastmanstanding )
-		return ( LASTMANSTANDING_GetCountdownTicks() );
-	else if ( possession || teampossession )
-		return ( POSSESSION_GetCountdownTicks() );
-
-	// [AK] The other gamemodes don't have a countdown, so just return zero.
-	return 0;
-}
-
-//*****************************************************************************
-//
-void GAMEMODE_SetCountdownTicks( const ULONG Ticks )
-{
-	if ( survival )
-		SURVIVAL_SetCountdownTicks( Ticks );
-	else if ( invasion )
-		INVASION_SetCountdownTicks( Ticks );
-	else if ( duel )
-		DUEL_SetCountdownTicks( Ticks );
-	else if ( teamlms || lastmanstanding )
-		LASTMANSTANDING_SetCountdownTicks( Ticks );
-	else if ( possession || teampossession )
-		POSSESSION_SetCountdownTicks( Ticks );
 }
 
 //*****************************************************************************

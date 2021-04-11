@@ -7289,9 +7289,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 			{
 				const char *name = FBehavior::StaticLookupString( args[0] );
 				const GAMEMODE_e oldmode = GAMEMODE_GetCurrentMode();
-				const GAMESTATE_e state = GAMEMODE_GetState();
 				GAMEMODE_e newmode;
-				ULONG ulCountdownTicks;
 
 				// [AK] Only the server should change the gamemode, but not during the result sequence.
 				if ( NETWORK_InClientMode() || state == GAMESTATE_INRESULTSEQUENCE )
@@ -7337,42 +7335,13 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 							return 0;
 					}
 
-					// [AK] Get the ticks left in the countdown and reset the gamemode, if necessary.
-					ulCountdownTicks = GAMEMODE_GetCountdownTicks();
-					GAMEMODE_SetState( GAMESTATE_WAITFORPLAYERS ); 
-
 					// [AK] If everything's okay now, change the gamemode.
-					GAMEMODE_ResetSpecalGamemodeStates();
 					GAMEMODE_SetCurrentMode( newmode );
 
-					// [AK] If we're the server, tell the clients to change the gamemode too.
-					if ( NETWORK_GetState() == NETSTATE_SERVER )
-						SERVERCOMMANDS_SetGameMode();
-
-					// [AK] Remove players from any teams if the new gamemode doesn't support them.
-					if (( GAMEMODE_GetFlags( oldmode ) & GMF_PLAYERSONTEAMS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) == false )
-					{
-						for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-							PLAYER_SetTeam( &players[ulIdx], teams.Size(), true );
-					}
-					// [AK] If we need to move players into teams instead, assign them automatically.
-					else if (( GAMEMODE_GetFlags( oldmode ) & GMF_PLAYERSONTEAMS ) == false && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ))
-					{
-						for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-						{
-							if ( playeringame[ulIdx] && players[ulIdx].bSpectating == false && players[ulIdx].bOnTeam == false )
-								PLAYER_SetTeam( &players[ulIdx], TEAM_ChooseBestTeamForPlayer(), true );
-						}
-					}
-
-					// [AK] If necessary, transfer the countdown time and state to the new gamemode.
-					if ( state > GAMESTATE_WAITFORPLAYERS )
-					{
-						GAMEMODE_SetCountdownTicks( ulCountdownTicks );
-						GAMEMODE_SetState( state );
-					}
-
-					GAMEMODE_SpawnSpecialGamemodeThings();
+					// [AK] We should also start a new game, so just execute the "map" CCMD to do this.
+					FString command;
+					command.Format( "map %s", level.mapname );
+					C_DoCommand( command.GetChars());
 					return 1;
 				}
 				return 0;

@@ -211,15 +211,8 @@ CCMD (map)
 				// Turn campaign mode back on.
 				CAMPAIGN_EnableCampaign( );
 
-				// Reset the duel and LMS modules.
-				if ( duel )
-					DUEL_SetState( DS_WAITINGFORPLAYERS );
-				if ( lastmanstanding || teamlms )
-					LASTMANSTANDING_SetState( LMSS_WAITINGFORPLAYERS );
-				if ( possession || teampossession )
-					POSSESSION_SetState( PSNS_WAITINGFORPLAYERS );
-				if ( invasion )
-					INVASION_SetState( IS_WAITINGFORPLAYERS );
+				// [AK] Reset the game mode's state.
+				GAMEMODE_SetState( GAMESTATE_WAITFORPLAYERS );
 
 				G_DeferedInitNew (argv[1]);
 			}
