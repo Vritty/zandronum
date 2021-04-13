@@ -424,8 +424,8 @@ CCMD (weapnext)
 		return;
 	}
 
-	// [Zandronum] No weapnext when player is spectating.
-	if ( players[consoleplayer].bSpectating )
+	// [Zandronum] No weapnext when player is spectating or not alive.
+	if (( players[consoleplayer].bSpectating ) || ( players[consoleplayer].playerstate != PST_LIVE ))
 		return;
 
 	SendItemUse = players[consoleplayer].weapons.PickNextWeapon (&players[consoleplayer]);
@@ -446,8 +446,8 @@ CCMD (weapprev)
 		return;
 	}
 
-	// [Zandronum] No weapprev when player is spectating.
-	if ( players[consoleplayer].bSpectating )
+	// [Zandronum] No weapprev when player is spectating or not alive.
+	if (( players[consoleplayer].bSpectating ) || ( players[consoleplayer].playerstate != PST_LIVE ))
 		return;
 
 	SendItemUse = players[consoleplayer].weapons.PickPrevWeapon (&players[consoleplayer]);
