@@ -36,6 +36,7 @@
 +	- Added a new floating icon that shows if a player is in the menu. [DoomJoshuaBoy/geNia]
 +	- Added new parameters to the "addmap" and "insertmap" CCMDs that specify the minimum and maximum number of players required to enter a map. [Kaminsky]
 +	- Added ACS functions: GetMapRotationSize and GetMapRotationInfo to get information about the server's map rotation. [Kaminsky]
++	- Added new console command "weapswap" which swaps the player's weapon to the one they were using before. [Kaminsky]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]

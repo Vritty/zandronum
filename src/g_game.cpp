@@ -271,6 +271,12 @@ FString BackupSaveName;
 bool SendLand;
 const AInventory *SendItemUse, *SendItemDrop;
 
+// [AK] The weapon the consoleplayer was using last.
+PClass *LastWeaponUsed = NULL, *LastWeaponUsedRespawn = NULL;
+
+// [AK] The weapon the consoleplayer had selected upon respawning.
+PClass *LastWeaponSelected = NULL;
+
 // [BB] Shall the map be reset as soon as possible?
 static	bool	g_bResetMap = false;
 
@@ -457,6 +463,46 @@ CCMD (weapprev)
  		StatusBar->AttachMessage(new DHUDMessageFadeOut(SmallFont, SendItemUse->GetTag(),
 			1.5f, 0.90f, 0, 0, (EColorRange)*nametagcolor, 2.f, 0.35f), MAKE_ID( 'W', 'E', 'P', 'N' ));
  	}
+}
+
+// [AK] Swaps the player's weapon to the one they used before if possible.
+CCMD (weapswap)
+{
+	player_t *player = &players[consoleplayer];
+
+	// [AK] No weaplast while playing a demo.
+	if ( CLIENTDEMO_IsPlaying( ) == true )
+	{
+		Printf ( "You can't use weapswap during demo playback.\n" );
+		return;
+	}
+
+	// [Zandronum] No weapswap when player is spectating or not alive.
+	if (( player->bSpectating ) || ( player->playerstate != PST_LIVE ))
+		return;
+
+	AWeapon *swapweapon = static_cast<AWeapon *>( player->mo->FindInventory( LastWeaponUsed ));
+
+	// [AK] If the last weapon is invalid, just switch to the next weapon instead.
+	if (( swapweapon == NULL ) ||
+		( swapweapon == player->ReadyWeapon ) ||
+		(( cl_noammoswitch == false ) && ( swapweapon->CheckAmmo( AWeapon::EitherFire, false ) == false )))
+	{
+		swapweapon = player->weapons.PickNextWeapon( player );
+		LastWeaponUsed = NULL;
+	}
+
+	if ( swapweapon != player->ReadyWeapon )
+	{
+		SendItemUse = swapweapon;
+
+		// [AK] Option to display the name of the weapon being switched to.
+ 		if (( displaynametags & 2 ) && StatusBar && SmallFont )
+ 		{
+ 			StatusBar->AttachMessage( new DHUDMessageFadeOut( SmallFont, SendItemUse->GetTag( ),
+				1.5f, 0.90f, 0, 0, (EColorRange)*nametagcolor, 2.f, 0.35f ), MAKE_ID( 'W', 'E', 'P', 'N' ));
+ 		}
+	}
 }
 
 CCMD (invnext)
@@ -2142,6 +2188,15 @@ void G_PlayerReborn (int player, bool bGiveInventory)
 	timefreezer = p->timefreezer;
 	StartingWeaponName = p->StartingWeaponName;
 	const bool bLagging = p->bLagging;
+
+	// [AK] Get the weapons the player was using before they respawn.
+	if ( NETWORK_GetState() != NETSTATE_SERVER )
+	{
+		LastWeaponUsedRespawn = LastWeaponUsed;
+		if ( p->ReadyWeapon != NULL )
+			LastWeaponSelected = p->ReadyWeapon->GetClass();
+	}
+
 
 	// Reset player structure to its defaults
 	p->~player_t();

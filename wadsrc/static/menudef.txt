@@ -486,6 +486,7 @@ OptionMenu "CustomizeControls"
 	StaticText 	"Weapons", 1
 	Control 	"Next weapon",			"weapnext"
 	Control 	"Previous weapon",		"weapprev"
+	Control		"Swap weapon", 			"weapswap" // [AK]
 	Control		"Weapon Slot 1",		"slot 1"
 	Control		"Weapon Slot 2",		"slot 2"
 	Control		"Weapon Slot 3",		"slot 3"

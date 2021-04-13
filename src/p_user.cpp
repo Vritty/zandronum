@@ -1339,6 +1339,24 @@ void APlayerPawn::FilterCoopRespawnInventory (APlayerPawn *oldplayer)
 		PickNewWeapon (NULL);
 	else
 		PLAYER_ClearWeapon( player );
+
+	// [AK] The server doesn't handle a player's last used weapon.
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+	{
+		LastWeaponUsed = NULL;
+
+		// [AK] If the player's current weapon isn't the one they used
+		// before respawning, the latter then becomes the last weapon used.
+		if ( player->ReadyWeapon != NULL )
+		{
+			if ( player->ReadyWeapon->GetClass( ) != LastWeaponSelected )
+				LastWeaponUsed = LastWeaponSelected;
+			else if ( player->ReadyWeapon->GetClass( ) != LastWeaponUsedRespawn )
+				LastWeaponUsed = LastWeaponUsedRespawn;
+		}
+
+		LastWeaponUsedRespawn = LastWeaponSelected = NULL;
+	}
 }
 
 //===========================================================================
