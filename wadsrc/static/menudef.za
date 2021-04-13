@@ -57,6 +57,7 @@ OptionMenu ZA_MultiplayerOptions
 	Option		"Icons",					"cl_icons",					"OnOff"
 	Option		"Identify player level",			"cl_identifytarget",		"ZA_IdentifyTargetLevels"
 	Option		"Show spawn spots",			"cl_showspawns",			"YesNo"
+	Option		"Teleport to spied player",	"cl_telespy",				"YesNo"
 	Slider		"Spectator move speed",		"cl_spectatormove",			0.1, 5.0, 0.1
 	StaticText	" "
 	Option		"Override player colors",	"cl_overrideplayercolors",	"ZA_OverridePlayerColors"

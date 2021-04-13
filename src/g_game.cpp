@@ -247,6 +247,8 @@ CVAR (Float,	m_pitch,		1.f,	CVAR_GLOBALCONFIG|CVAR_ARCHIVE)		// Mouse speeds
 CVAR (Float,	m_yaw,			1.f,	CVAR_GLOBALCONFIG|CVAR_ARCHIVE)
 CVAR (Float,	m_forward,		1.f,	CVAR_GLOBALCONFIG|CVAR_ARCHIVE)
 CVAR (Float,	m_side,			2.f,	CVAR_GLOBALCONFIG|CVAR_ARCHIVE)
+// [AK] Added "cl_telespy", based on a feature from ZCC.
+CVAR (Bool,		cl_telespy,		false,	CVAR_GLOBALCONFIG|CVAR_ARCHIVE)
  
 int 			turnheld;								// for accelerative turning 
  
@@ -1217,6 +1219,15 @@ static void ChangeSpy (int changespy)
 // [AK] Made this function accessible outside of g_game.cpp for LS_ChangeCamera.
 void G_FinishChangeSpy( ULONG ulPlayer )
 {
+	// [AK] If we're a spectator and want to teleport ourselves to the player we just
+	// spied on, do it when we switch back to our own view.
+	if (( cl_telespy ) && ( ulPlayer == consoleplayer ) && ( players[consoleplayer].bSpectating ) && ( players[consoleplayer].camera ))
+	{
+		P_TeleportMove( players[consoleplayer].mo, players[consoleplayer].camera->x, players[consoleplayer].camera->y, players[consoleplayer].camera->z, false );
+		players[consoleplayer].mo->angle = players[consoleplayer].camera->angle;
+		players[consoleplayer].mo->pitch = players[consoleplayer].camera->pitch;
+	}
+
 	players[consoleplayer].camera = players[ulPlayer].mo;
 	S_UpdateSounds(players[consoleplayer].camera);
 	StatusBar->AttachToPlayer (&players[ulPlayer]);
