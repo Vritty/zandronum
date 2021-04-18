@@ -510,7 +510,6 @@ OptionMenu ZA_ServerSetupMenu
 	TextField	"Server name",				"sv_hostname"
 	TextField	"Website",					"sv_website"
 	TextField	"Contact address",			"sv_hostemail"
-	Option		"Enforce wads",				"sv_pure",					"YesNo"
 	StaticText	" "
 	Option		"Use connect password",		"sv_forcepassword",			"YesNo"
 	TextField	"Connect password",			"sv_password",				"sv_forcepassword"
