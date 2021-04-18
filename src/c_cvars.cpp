@@ -76,6 +76,8 @@ struct FLatchedValue
 };
 
 static TArray<FLatchedValue> LatchedValues;
+// [AK] Saved original values of CVars changed by ConsoleCommand.
+static TArray<FLatchedValue> SavedValues;
 
 bool FBaseCVar::m_DoNoSet = false;
 bool FBaseCVar::m_UseCallback = false;
@@ -83,6 +85,9 @@ bool FBaseCVar::m_UseCallback = false;
 FBaseCVar *CVars = NULL;
 
 int cvar_defflags;
+
+// [AK] Prevents CVars changed by ConsoleCommand from being written into the user's config file.
+CVAR( Bool, cl_protectcvars, true, CVAR_ARCHIVE | CVAR_NOSETBYACS );
 
 EXTERN_CVAR( Bool, sv_cheats );
 
@@ -181,10 +186,45 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 		return;
 	}
 
-	// [BB] ConsoleCommand may not mess with the cvar.
-	if (( Flags & CVAR_NOSETBYACS ) && ( ACS_IsCalledFromConsoleCommand( )))
+	// [AK] Was this CVar changed using ConsoleCommand?
+	if ( ACS_IsCalledFromConsoleCommand( ))
 	{
-		return;
+		// [BB] ConsoleCommand may not mess with the cvar.
+		if ( Flags & CVAR_NOSETBYACS )
+			return;
+
+		const char *originalValue = GetGenericRep( CVAR_String ).String;
+
+		// [AK] If the value is changed, keep a copy of the original value. This way,
+		// the CVar can be reset back to its original value upon exit.
+		if ( strcmp( originalValue, ToString( value, type )) != 0 )
+		{
+			bool bSaveValue = true;
+
+			// [AK] First check if this CVar isn't already on the list.
+			for ( unsigned int i = 0; i < SavedValues.Size( ); i++ )
+			{
+				if ( SavedValues[i].Variable == this )
+				{
+					bSaveValue = false;
+					break;
+				}
+			}
+
+			if ( bSaveValue )
+			{
+				FLatchedValue saved;
+				saved.Variable = this;
+				saved.Type = GetRealType( );
+
+				if ( saved.Type != CVAR_String )
+					saved.Value = GetGenericRep( saved.Type );
+				else
+					saved.Value.String = ncopystring( originalValue );
+
+				SavedValues.Push( saved );
+			}
+		}
 	}
 
 	if ( sv_cheats == false )
@@ -271,6 +311,22 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 	else
 	{
 		ForceSet (value, type);
+	}
+
+	// [AK] After checking everything and potentially setting the value of the CVar, check again
+	// if it was done so using ConsoleCommand. If not, then we can delete the original value.
+	if ( ACS_IsCalledFromConsoleCommand( ) == false )
+	{
+		for ( unsigned int i = 0; i < SavedValues.Size( ); i++ )
+		{
+			if ( SavedValues[i].Variable == this )
+			{
+				if (( SavedValues[i].Type == CVAR_String ) && ( SavedValues[i].Value.String != NULL ))
+					delete[] SavedValues[i].Value.String;
+				SavedValues.Delete( i );
+				break;
+			}
+		}
 	}
 
 	// [TP] Inform RCON clients about server setting changes
@@ -1653,6 +1709,22 @@ void C_ArchiveCVars (FConfigFile *f, uint32 filter)
 			(CVAR_GLOBALCONFIG|CVAR_ARCHIVE|CVAR_MOD|CVAR_AUTO|CVAR_USERINFO|CVAR_SERVERINFO|CVAR_NOSAVE))
 			== filter)
 		{
+			// [AK] Reset the CVar back to its original value if it was changed by ConsoleCommand.
+			if ( cl_protectcvars )
+			{
+				for ( unsigned int i = 0; i < SavedValues.Size( ); i++ )
+				{
+					if ( SavedValues[i].Variable == cvar )
+					{
+						cvar->ForceSet( SavedValues[i].Value, SavedValues[i].Type, true );
+						if (( SavedValues[i].Type == CVAR_String ) && ( SavedValues[i].Value.String != NULL ))
+							delete[] SavedValues[i].Value.String;
+						SavedValues.Delete( i );
+						break;
+					}
+				}
+			}
+
 			UCVarValue val;
 			val = cvar->GetGenericRep (CVAR_String);
 			// [BB] This is ancient code from Skulltag...

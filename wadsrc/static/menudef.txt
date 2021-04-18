@@ -928,6 +928,7 @@ OptionMenu "MiscOptions"
 	}
 	Option "Show IWAD selection dialog",			"queryiwad", "OnOff"
 	StaticText " "
+	Option "Protect cvars from consolecommand",		"cl_protectcvars", "OnOff" // [AK]
 	Option "Enable cheats from all games",			"allcheats", "OnOff"
 	Option "Enable autosaves",						"disableautosave", "Autosave"
 	Slider "Number of autosaves",					"autosavecount", 1, 20, 1, 0
