@@ -1801,8 +1801,14 @@ void ParseCVarInfo()
 			sc.MustGetToken(TK_Identifier);
 			if (FindCVar(sc.String, NULL) != NULL)
 			{
+				FBaseCVar *existingcvar = FindCVar(sc.String, NULL);
+				// [AK] Added a flag check so that existing "unknown" variables such as those originally
+				// created by ConsoleCommand can be replaced without throwing an error.
+				if (existingcvar->GetFlags() == (CVAR_ARCHIVE|CVAR_UNSETTABLE|CVAR_AUTO))
+					delete existingcvar;
 				// [BB] Extended error message.
-				sc.ScriptError("cvar '%s' already exists\n\nRemove '%s' and all other conflicting cvars from your ini and restart %s to continue.", sc.String, sc.String, GAMENAME);
+				else
+					sc.ScriptError("cvar '%s' already exists\n\nRemove '%s' and all other conflicting cvars from your ini and restart %s to continue.", sc.String, sc.String, GAMENAME);
 			}
 			cvarname = sc.String;
 			// A default value is optional and signalled by a '=' token.
