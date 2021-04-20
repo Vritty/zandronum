@@ -1021,8 +1021,9 @@ void G_AddViewAngle (int yaw, bool mouse)
 EXTERN_CVAR( Bool, sv_cheats );
 
 
+// [AK] Modified SPY_CANCEL in order to fit player numbers for "spyto".
 enum {
-	SPY_CANCEL = 0,
+	SPY_CANCEL = -3,
 	SPY_NEXT,
 	SPY_PREV,
 };
@@ -1094,7 +1095,8 @@ static void ChangeSpy (int changespy)
 
 		do
 		{
-			pnum += step;
+			// [AK] If we're using "spyto", switch to the player we want to spy on.
+			pnum = ( changespy >= 0 ) ? changespy : ( pnum + step );
 			pnum &= MAXPLAYERS-1;
 
 			// [AK] Only choose active players who could also be on our team.
@@ -1104,6 +1106,11 @@ static void ChangeSpy (int changespy)
 			{
 				break;
 			}
+
+			// [AK] We couldn't change the view using "spyto" so don't do anything.
+			if ( changespy >= 0 )
+				return;
+
 		} while (pnum != consoleplayer);
 	}
 
@@ -1182,6 +1189,61 @@ CCMD (spycancel)
 {
 	// allow spy mode changes even during the demo
 	ChangeSpy (SPY_CANCEL);
+}
+
+// [AK] Spy on a player by entering their name.
+CCMD (spyto)
+{
+	// [BB] The server can't use this.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+	{
+		Printf ( "CCMD spyto can't be used on the server\n" );
+		return;
+	}
+
+	if ( argv.argc( ) < 2 )
+	{
+		Printf ( "Usage: spyto <player name>\n" );
+		return;
+	}
+
+	ULONG ulPlayer = SERVER_GetPlayerIndexFromName( argv[1], true, true );
+
+	// [AK] Make sure the player exists.
+	if ( ulPlayer == MAXPLAYERS )
+	{
+		Printf( "There isn't a player named %s" TEXTCOLOR_NORMAL ".\n", argv[1] );
+		return;
+	}
+
+	// allow spy mode changes even during the demo
+	ChangeSpy ( ulPlayer != static_cast<ULONG>( consoleplayer ) ? ulPlayer : SPY_CANCEL );
+}
+
+// [AK] Spy on a player by passing their number.
+CCMD (spyto_idx)
+{
+	int playerIndex = 0;
+
+	// [BB] The server can't use this.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+	{
+		Printf ( "CCMD spyto_idx can't be used on the server\n" );
+		return;
+	}
+
+	if ( argv.argc( ) < 2 )
+	{
+		Printf ( "Usage: spyto_idx <player number>\n" );
+		return;
+	}
+
+	// allow spy mode changes even during the demo
+	if ( argv.SafeGetNumber( 1, playerIndex ))
+	{
+		playerIndex = clamp<int>( playerIndex, 0, MAXPLAYERS - 1 );
+		ChangeSpy ( playerIndex != consoleplayer ? playerIndex : SPY_CANCEL );
+	}
 }
 
 // [TP]
