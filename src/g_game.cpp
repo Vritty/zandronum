@@ -1060,15 +1060,10 @@ static void ChangeSpy (int changespy)
 		return;
 
 	// [BC] Check a wide array of conditions to see if this is legal.
-	if (( demoplayback == false ) &&
-		( CLIENTDEMO_IsPlaying( ) == false ) &&
+	if (( demoplayback == false ) && ( CLIENTDEMO_IsPlaying( ) == false ) &&
 		( players[consoleplayer].bSpectating == false ) &&
 		( NETWORK_GetState( ) == NETSTATE_CLIENT ) &&
-		( teamgame == false ) &&
-		( teamlms == false ) &&
-		( teamplay == false ) &&
-		( teampossession == false ) &&
-		((( deathmatch == false ) && ( teamgame == false )) == false ) &&
+		(( GAMEMODE_GetCurrentFlags( ) & ( GMF_COOPERATIVE | GMF_PLAYERSONTEAMS )) == false ) &&
 		( sv_cheats == false ))
 	{
 		return;
@@ -1086,129 +1081,30 @@ static void ChangeSpy (int changespy)
 
 		// [SP] Let's ignore special LMS settigns if we're playing a demo. Otherwise, we need to enforce
 		// LMS rules for spectators using spy.
-		if ( CLIENTDEMO_IsPlaying( ) == false )
+		if (( CLIENTDEMO_IsPlaying( ) == false ) && (( lmsspectatorsettings & LMS_SPF_VIEW ) == false ))
 		{
-			// [BC] Special conditions for team LMS.
-			if (( teamlms ) && (( lmsspectatorsettings & LMS_SPF_VIEW ) == false ))
-			{
-				// If this player is a true spectator (aka not on a team), don't allow him to change spy.
-				if ( PLAYER_IsTrueSpectator( &players[consoleplayer] ))
-				{
-					players[consoleplayer].camera = players[consoleplayer].mo;
-					G_FinishChangeSpy( consoleplayer );
-					return;
-				}
-
-				// Break if the player isn't on a team.
-				if ( players[consoleplayer].bOnTeam == false )
-				{
-					players[consoleplayer].camera = players[consoleplayer].mo;
-					G_FinishChangeSpy( consoleplayer );
-					return;
-				}
-
-				// Loop through all the players, and stop when we find one that's on our team.
-				do
-				{
-					pnum += step;
-					pnum &= MAXPLAYERS-1;
-
-					// Skip players not in the game.
-					if ( playeringame[pnum] == false )
-						continue;
-
-					// Skip other spectators.
-					if ( players[pnum].bSpectating )
-						continue;
-
-					// Skip players not on our team.
-					if (( players[pnum].bOnTeam == false ) || ( players[pnum].ulTeam != players[consoleplayer].ulTeam ))
-						continue;
-
-					break;
-				} while ( pnum != consoleplayer );
-
-				players[consoleplayer].camera = players[pnum].mo;
-				G_FinishChangeSpy( pnum );
-				return;
-			}
 			// [BC] Don't allow spynext in LMS when the spectator settings forbid it.
-			if (( lastmanstanding ) && (( lmsspectatorsettings & LMS_SPF_VIEW ) == false ))
+			if (( lastmanstanding ) || (( teamlms ) && (( players[consoleplayer].bOnTeam == false ) ||
+				( PLAYER_IsTrueSpectator( &players[consoleplayer] )))))
 			{
-				players[consoleplayer].camera = players[consoleplayer].mo;
 				G_FinishChangeSpy( consoleplayer );
 				return;
 			}
 		}
-		// [BC] Always allow spectator spying. [BB] Same when playing a demo.
-		if ( players[consoleplayer].bSpectating || CLIENTDEMO_IsPlaying( ) )
+
+		do
 		{
-			// Loop through all the players, and stop when we find one.
-			do
+			pnum += step;
+			pnum &= MAXPLAYERS-1;
+
+			// [AK] Only choose active players who could also be on our team.
+			if (( playeringame[pnum] ) && ( players[pnum].bSpectating == false ) &&
+				(( PLAYER_IsTrueSpectator( &players[consoleplayer] )) ||
+				(( players[pnum].mo != NULL ) && ( players[pnum].mo->IsTeammate( players[consoleplayer].mo )))))
 			{
-				pnum += step;
-				pnum &= MAXPLAYERS-1;
-
-				// Skip players not in the game.
-				if ( playeringame[pnum] == false )
-					continue;
-
-				// Skip other spectators.
-				if ( players[pnum].bSpectating )
-					continue;
-
 				break;
-			} while ( pnum != consoleplayer );
-
-			G_FinishChangeSpy( pnum );
-			return;
-		}
-
-		// [BC] Allow view switch to players on our team.
-		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-		{
-			// Break if the player isn't on a team.
-			if ( players[consoleplayer].bOnTeam == false )
-				return;
-
-			// Loop through all the players, and stop when we find one that's on our team.
-			do
-			{
-				pnum += step;
-				pnum &= MAXPLAYERS - 1;
-
-				// Skip players not in the game.
-				if ( playeringame[pnum] == false )
-					continue;
-
-				// Skip other spectators.
-				if ( players[pnum].bSpectating )
-					continue;
-
-				// Skip players not on our team.
-				if (( players[pnum].bOnTeam == false ) || ( players[pnum].ulTeam != players[consoleplayer].ulTeam ))
-					continue;
-
-				break;
-			} while ( pnum != consoleplayer );
-		}
-		// Deathmatch and co-op.
-		else
-		{
-			// Loop through all the players, and stop when we find one that's on our team.
-			while ( 1 )
-			{
-				pnum += step;
-				pnum &= MAXPLAYERS-1;
-
-				// Skip other spectators.
-				if ( players[pnum].bSpectating )
-					continue;
-
-				if ( playeringame[pnum] )
-					break;
 			}
-		}
+		} while (pnum != consoleplayer);
 	}
 
 	// [BC] When we're all done, put the camera in the display player's body, etc.
@@ -1223,7 +1119,9 @@ void G_FinishChangeSpy( ULONG ulPlayer )
 	// spied on, do it when we switch back to our own view.
 	if (( cl_telespy ) && ( ulPlayer == consoleplayer ) && ( players[consoleplayer].bSpectating ) && ( players[consoleplayer].camera ))
 	{
-		P_TeleportMove( players[consoleplayer].mo, players[consoleplayer].camera->x, players[consoleplayer].camera->y, players[consoleplayer].camera->z, false );
+		P_TeleportMove( players[consoleplayer].mo, players[consoleplayer].camera->x,
+			players[consoleplayer].camera->y, players[consoleplayer].camera->z, false );
+
 		players[consoleplayer].mo->angle = players[consoleplayer].camera->angle;
 		players[consoleplayer].mo->pitch = players[consoleplayer].camera->pitch;
 	}
