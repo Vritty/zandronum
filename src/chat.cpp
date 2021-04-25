@@ -131,6 +131,9 @@ static	ULONG	g_ulChatMode;
 // [AK] The index of the player we're sending a private chat message to.
 static	ULONG	g_ulChatPlayer = 0;
 
+// [AK] A ticker that's used for controlling the blink of the cursor.
+static	ULONG	g_ulChatTicker = 0;
+
 // [AK] A collection of previously sent chat message from each player plus the server.
 static	RingBuffer<FString, MAX_SAVED_MESSAGES> g_SavedChatMessages[MAXPLAYERS + 1];
 
@@ -367,6 +370,9 @@ void ChatBuffer::MoveCursorTo( int position )
 
 	if ( IsInTabCompletion == false )
 		ResetTabCompletion();
+
+	// [AK] Ensure that the cursor is always white while typing.
+	g_ulChatTicker = 0;
 }
 
 //*****************************************************************************
@@ -546,6 +552,10 @@ void CHAT_Tick( void )
 		}
 	}
 
+	// [AK] Reset the chat cursor's ticker if it goes too high.
+	if (( g_ulChatMode != CHATMODE_NONE ) && ( ++g_ulChatTicker >= TICRATE ))
+		g_ulChatTicker = 0;
+
 	// [AK] If we're typing a chat message to another player, we must constantly check if
 	// they're in the game. If not, cancel the message entirely.
 	if ( g_ulChatMode == CHATMODE_PRIVATE_SEND )
@@ -695,7 +705,7 @@ bool CHAT_Input( event_t *pEvent )
 void CHAT_Render( void )
 {
 	FString prompt = "Say: ";
-	static const char *cursor = gameinfo.gametype == GAME_Doom ? "_" : "[";
+	FString cursor = gameinfo.gametype == GAME_Doom ? "_" : "[";
 	bool scale = ( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 );
 	float scaleX = 1.0f;
 	float scaleY = 1.0f;
@@ -720,6 +730,13 @@ void CHAT_Render( void )
 
 	int chatWidth = static_cast<int> ( SCREENWIDTH * scaleX );
 	chatWidth -= static_cast<int> ( round( SmallFont->GetCharWidth( '_' ) * scaleX * 2 + SmallFont->StringWidth( prompt )) );
+
+	// [AK] Also blink the cursor between black and white.
+	if ( g_ulChatTicker >= C_BLINKRATE )
+	{
+		cursor.Insert( 0, TEXTCOLOR_BLACK );
+		cursor += TEXTCOLOR_GRAY;
+	}
 
 	// Build the message that we will display to clients.
 	FString displayString = g_ChatBuffer.GetMessage();
@@ -1009,6 +1026,9 @@ void chat_SetChatMode( ULONG ulMode )
 			// Tell the server we're beginning to chat.
 			if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
 				CLIENTCOMMANDS_StartChat( );
+
+			// [AK] Ensure that the cursor starts off as white.
+			g_ulChatTicker = 0;
 		}
 		else
 		{
