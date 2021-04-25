@@ -67,6 +67,8 @@
 #include "cl_main.h"
 #include "cl_commands.h"
 #include "v_text.h"
+#include "gi.h"
+#include "gameconfigfile.h"
 
 struct FLatchedValue
 {
@@ -1741,6 +1743,36 @@ FBaseCVar* C_GetRootCVar()
 	return CVars;
 }
 
+// [AK] Try to load a single mod CVar if it exists in the config file.
+bool C_FindModCVar( FBaseCVar **cvar, const char *cvarname, bool userinfo = false )
+{
+	FString section;
+	const char *key, *value;
+
+	// [AK] This should only be done if the "set" CCMD was executed using ConsoleCommand
+	// or if mod CVars in the config file haven't been loaded already.
+	if (( ACS_IsCalledFromConsoleCommand( ) == false ) || ( GameConfig->ModCVarsSetup( )))
+		return false;
+
+	section.Format( "%s.%s.Mod", gameinfo.ConfigName, userinfo ? "Player" : "LocalServerInfo" );
+	if ( GameConfig->SetSection( section.GetChars( )))
+	{
+		while ( GameConfig->NextInSection( key, value ))
+		{
+			if ( stricmp( key, cvarname ) == 0 )
+			{
+				*cvar = new FStringCVar( key, NULL, CVAR_MOD | CVAR_ARCHIVE | ( userinfo ? CVAR_USERINFO : CVAR_SERVERINFO ));
+				UCVarValue val;
+				val.String = const_cast<char *>( value );
+				(*cvar)->SetGenericRep( val, CVAR_String );
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 static bool IsUnsafe(const FBaseCVar *const var)
 {
 	const bool unsafe = UnsafeExecutionContext && !(var->GetFlags() & CVAR_MOD);
@@ -1768,6 +1800,12 @@ void FBaseCVar::CmdSet (const char *newval)
 		Printf ("%s is write protected.\n", GetName());
 	else if (GetFlags() & CVAR_LATCH)
 		Printf ("%s will be changed for next game.\n", GetName());
+
+	// [AK] If this is a dummy mod CVar that was changed using ConsoleCommand, then make it
+	// accessible to ACS. This ensures mods that created their own CVars with the "set" and
+	// "archivecvar" CCMDs can still read the value of the CVar.
+	if ((ACS_IsCalledFromConsoleCommand()) && ((Flags & (CVAR_MOD | CVAR_IGNORE)) == (CVAR_MOD | CVAR_IGNORE)))
+		Flags &= ~CVAR_IGNORE;
 }
 
 CCMD (set)
@@ -1782,7 +1820,12 @@ CCMD (set)
 
 		var = FindCVar (argv[1], NULL);
 		if (var == NULL)
-			var = new FStringCVar (argv[1], NULL, CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+		{
+			// [AK] Check if we're trying to set a mod CVar that exists in the config file
+			// but isn't loaded. If it doesn't exist, then we'll create a new CVar.
+			if ((C_FindModCVar(&var, argv[1]) == false) && (C_FindModCVar(&var, argv[1], true) == false))
+				var = new FStringCVar (argv[1], NULL, CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+		}
 
 		var->CmdSet (argv[2]);
 	}

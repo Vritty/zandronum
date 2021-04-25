@@ -55,6 +55,7 @@ public:
 	void ReadNetVars ();
 	void ReadRevealedBotsAndSkins ();
 	void ReadPWO( const char* gamename ); // [TP]
+	bool ModCVarsSetup( void ) { return bModSetup; } // [AK]
 
 protected:
 	void WriteCommentHeader (FILE *file) const;
