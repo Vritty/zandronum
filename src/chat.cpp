@@ -731,10 +731,10 @@ void CHAT_Render( void )
 	int chatWidth = static_cast<int> ( SCREENWIDTH * scaleX );
 	chatWidth -= static_cast<int> ( round( SmallFont->GetCharWidth( '_' ) * scaleX * 2 + SmallFont->StringWidth( prompt )) );
 
-	// [AK] Also blink the cursor between black and white.
+	// [AK] Also blink the cursor between dark gray and white.
 	if ( g_ulChatTicker >= C_BLINKRATE )
 	{
-		cursor.Insert( 0, TEXTCOLOR_BLACK );
+		cursor.Insert( 0, TEXTCOLOR_DARKGRAY );
 		cursor += TEXTCOLOR_GRAY;
 	}
 
