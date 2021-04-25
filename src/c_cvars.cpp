@@ -215,13 +215,7 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 			{
 				FLatchedValue saved;
 				saved.Variable = this;
-				saved.Type = GetRealType( );
-
-				if ( saved.Type != CVAR_String )
-					saved.Value = GetGenericRep( saved.Type );
-				else
-					saved.Value.String = ncopystring( originalValue );
-
+				saved.Value.String = ncopystring( originalValue );
 				SavedValues.Push( saved );
 			}
 		}
@@ -321,7 +315,7 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 		{
 			if ( SavedValues[i].Variable == this )
 			{
-				if (( SavedValues[i].Type == CVAR_String ) && ( SavedValues[i].Value.String != NULL ))
+				if ( SavedValues[i].Value.String != NULL )
 					delete[] SavedValues[i].Value.String;
 				SavedValues.Delete( i );
 				break;
@@ -1716,8 +1710,8 @@ void C_ArchiveCVars (FConfigFile *f, uint32 filter)
 				{
 					if ( SavedValues[i].Variable == cvar )
 					{
-						cvar->ForceSet( SavedValues[i].Value, SavedValues[i].Type, true );
-						if (( SavedValues[i].Type == CVAR_String ) && ( SavedValues[i].Value.String != NULL ))
+						cvar->ForceSet( SavedValues[i].Value, CVAR_String, true );
+						if ( SavedValues[i].Value.String != NULL )
 							delete[] SavedValues[i].Value.String;
 						SavedValues.Delete( i );
 						break;
