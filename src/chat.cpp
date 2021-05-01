@@ -1428,6 +1428,13 @@ void chat_PrivateMessage( FCommandLine &argv, const ULONG ulReceiver )
 				Printf( "You can't send private messages to yourself.\n" );
 				return;
 			}
+
+			// [AK] Don't let the player send privates messages to themselves via RCON.
+			if ( CONSOLE_GetRCONPlayer( ) == ulReceiver )
+			{
+				SERVER_PrintfPlayer( ulReceiver, "You can't send private messages to yourself.\n" );
+				return;
+			}
 		}
 
 		g_ulChatPlayer = ulReceiver;

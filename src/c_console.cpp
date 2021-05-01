@@ -719,6 +719,12 @@ void CONSOLE_SetRCONPlayer( ULONG ulPlayer )
 	g_ulRCONPlayer = ulPlayer;
 }
 
+// [AK] Gets the number of the player currently using RCON.
+ULONG CONSOLE_GetRCONPlayer( void )
+{
+	return g_ulRCONPlayer;
+}
+
 // [AK] Toggles whether or not a console message gets printed to the player using RCON.
 void CONSOLE_ShouldPrintToRCONPlayer( bool enable )
 {

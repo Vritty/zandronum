@@ -75,6 +75,7 @@ void C_FlushDisplay (void);
 
 // [BC] New function prototypes.
 void CONSOLE_SetRCONPlayer( ULONG ulPlayer );
+ULONG CONSOLE_GetRCONPlayer( void ); // [AK]
 void CONSOLE_ShouldPrintToRCONPlayer( bool enable ); // [AK]
 
 void C_InitTicker (const char *label, unsigned int max, bool showpercent=true);
