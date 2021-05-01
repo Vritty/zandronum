@@ -460,7 +460,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PlaySound)
 			if (( channel & CHAN_LOOP ) && ( SERVER_IsChannelLooping( self, channel&7, soundid ) ))
 				return;
 
-			SERVER_UpdateLoopingChannels( self, channel, soundid, volume, attenuation, false );
+			SERVER_UpdateLoopingChannels( self, channel, soundid, volume, attenuation, ( channel & CHAN_LOOP ) == false );
 		}
 
 		S_Sound (self, channel, soundid, volume, attenuation, true );	// [BC] Inform the clients.
@@ -565,7 +565,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PlaySoundEx)
 			if (( channel & CHAN_LOOP ) && ( SERVER_IsChannelLooping( self, ( int(channel) - NAME_Auto ) & 7, soundid ) ))
 				return;
 
-			SERVER_UpdateLoopingChannels( self, channel, soundid, 1, attenuation, false );
+			SERVER_UpdateLoopingChannels( self, channel, soundid, 1, attenuation, ( channel & CHAN_LOOP ) == false );
 		}
 
 		S_Sound (self, int(channel) - NAME_Auto, soundid, 1, attenuation, true );	// [BB] Inform the clients.

@@ -4074,7 +4074,7 @@ void SERVER_UpdateLoopingChannels( AActor *pActor, int channel, FSoundID soundid
 	{
 		if (( g_LoopingChannelList[i].Actor == pActor ) && ( g_LoopingChannelList[i].EntChannel == ( channel & 7 ) ))
 		{
-			if (( bRemove ) || ( channel & CHAN_LOOP ) == false )
+			if ( bRemove )
 				g_LoopingChannelList.Delete( i );
 			else
 				g_LoopingChannelList[i] = chan;
@@ -4083,7 +4083,8 @@ void SERVER_UpdateLoopingChannels( AActor *pActor, int channel, FSoundID soundid
 		}
 	}
 
-	g_LoopingChannelList.Push( chan );
+	if ( bRemove == false )
+		g_LoopingChannelList.Push( chan );
 }
 
 //*****************************************************************************
