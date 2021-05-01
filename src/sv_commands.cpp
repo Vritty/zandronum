@@ -1092,7 +1092,7 @@ void SERVERCOMMANDS_PrivateSay( ULONG ulSender, ULONG ulReceiver, const char *ps
 		}
 
 		// [AK] Don't send the command if the sender is supposed to be ignoring the player who receives the message.
-		if ( SERVER_GetPlayerIgnoreTic( ulSender, SERVER_GetClient( ulReceiver )->Address ) != 0 )
+		if (( ulSender != MAXPLAYERS ) && ( SERVER_GetPlayerIgnoreTic( ulSender, SERVER_GetClient( ulReceiver )->Address ) != 0 ))
 		{
 			SERVER_PrintfPlayer( ulSender, "You have ignored %s on your end, so you can't send any private messages to them.\n",
 				players[ulReceiver].userinfo.GetName() );
