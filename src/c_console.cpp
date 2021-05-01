@@ -243,7 +243,9 @@ static int NotifyTop, NotifyTopGoal;
 
 // [BC] Is there a player executing a remote control command? If so, display messages that
 // are printed in the console as a result of his actions to him as well.
+// [AK] Display a message to this player unless it was already printed to all players.
 static	ULONG	g_ulRCONPlayer = MAXPLAYERS;
+static	bool	g_bPrintToRCONPlayer = true;
 
 // [BC] Add a new print level for OpenGL messages.
 // [AK] Added a new print level for private chat messages.
@@ -717,6 +719,12 @@ void CONSOLE_SetRCONPlayer( ULONG ulPlayer )
 	g_ulRCONPlayer = ulPlayer;
 }
 
+// [AK] Toggles whether or not a console message gets printed to the player using RCON.
+void CONSOLE_ShouldPrintToRCONPlayer( bool enable )
+{
+	g_bPrintToRCONPlayer = enable;
+}
+
 static int FlushLines (const char *start, const char *stop)
 {
 	int i;
@@ -1079,10 +1087,11 @@ int PrintString (int printlevel, const char *outline)
 			// [RC] Send this to any connected RCON clients.
 			SERVER_RCON_Print( outlinecopy );
 			// [AK] We shouldn't broadcast the same message twice for the player who issued an RCON command.
-			//if ( g_ulRCONPlayer != MAXPLAYERS )
-			//	SERVER_PrintfPlayer( printlevel, g_ulRCONPlayer, "%s", outlinecopy );
+			if (( g_ulRCONPlayer != MAXPLAYERS ) && ( g_bPrintToRCONPlayer ))
+				SERVER_PrintfPlayer( printlevel, g_ulRCONPlayer, "%s", outlinecopy );
 
 			SERVERCONSOLE_Print( outlinecopy );
+			g_bPrintToRCONPlayer = true;
 		}
 		
 		const int length = static_cast<int>(strlen (outlinecopy));

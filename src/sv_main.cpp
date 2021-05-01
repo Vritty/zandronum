@@ -3094,6 +3094,9 @@ void SERVER_VPrintf( int printlevel, const char* format, va_list argptr, int pla
 	}
 	else
 	{
+		// [AK] Make sure we don't print the same message again to the RCON player.
+		CONSOLE_ShouldPrintToRCONPlayer( false );
+
 		// Print message locally in console window.
 		Printf( "%s", buffer );
 	}
