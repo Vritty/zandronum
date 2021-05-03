@@ -94,8 +94,8 @@ extern char g_szDesiredLogFilename[256];
 // [RC] The actual name of the logfile (most likely g_szDesiredLogFilename with a timestamp).
 extern char g_szActualLogFilename[512];
 
-
-CVAR (Bool, sv_cheats, false, CVAR_SERVERINFO | CVAR_LATCH)
+// [AK] Don't let ConsoleCommand change the value of sv_cheats.
+CVAR (Bool, sv_cheats, false, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOSETBYACS)
 CVAR (Bool, sv_unlimited_pickup, false, CVAR_SERVERINFO)
 CVAR (Bool, sv_logfilenametimestamp, true, CVAR_ARCHIVE)
 CVAR (Bool, sv_logfile_append, false, CVAR_ARCHIVE)
