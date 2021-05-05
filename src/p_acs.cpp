@@ -4431,7 +4431,7 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		if (actor->player != NULL)
 		{
 			// [AK] Save the original value.
-			oldValue = actor->health;
+			oldValue = actor->player->health;
 
 			actor->player->health = value;
 
