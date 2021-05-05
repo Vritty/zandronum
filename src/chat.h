@@ -83,6 +83,7 @@ void		CHAT_Tick( void );
 bool		CHAT_Input( event_t *pEvent );
 void		CHAT_Render( void );
 
+void		CHAT_SetChatMode( ULONG ulMode );
 ULONG		CHAT_GetChatMode( void );
 const char	*CHAT_GetChatMessage( ULONG ulPlayer, ULONG ulOffset ); // [AK]
 void		CHAT_AddChatMessage( ULONG ulPlayer, const char *pszString ); // [AK]

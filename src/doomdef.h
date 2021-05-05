@@ -386,6 +386,9 @@ enum
 
 	// [AK] Forces the player's pitch to be limited to what's allowed in the software renderer.
 	ZADF_FORCE_SOFTWARE_PITCH_LIMITS = 1 << 21,
+
+	// [AK] No private messaging allowed on the server.
+	ZADF_NO_PRIVATE_CHAT = 1 << 22,
 };
 
 // [RH] Compatibility flags.

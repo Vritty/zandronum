@@ -5221,7 +5221,16 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 
 	// [AK] If we're sending a private message to a player, get their index number.
 	if ( ulChatMode == CHATMODE_PRIVATE_SEND )
+	{
+		// [AK] Don't send the message if we disabled private messaging.
+		if ( zadmflags & ZADF_NO_PRIVATE_CHAT )
+		{
+			SERVER_PrintfPlayer( ulPlayer, "Private messages have been disabled by the server.\n" );
+			return ( false );
+		}
+
 		ulReceiver = pByteStream->ReadByte();
+	}
 
 	// Read in the chat string.
 	const char	*pszChatString = pByteStream->ReadString();

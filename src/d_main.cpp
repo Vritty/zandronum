@@ -591,6 +591,10 @@ CUSTOM_CVAR (Int, zadmflags, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK | CVAR_GAMEM
 	if (( self ^ self.GetPastValue() ) & ZADF_FORCE_SOFTWARE_PITCH_LIMITS )
 		P_ResetPlayerPitchLimits();
 
+	// [AK] If we disabled private messaging, make sure the client isn't still trying to send one.
+	if (( self & ZADF_NO_PRIVATE_CHAT ) && ( CHAT_GetChatMode() == CHATMODE_PRIVATE_SEND ))
+		CHAT_SetChatMode( CHATMODE_NONE );
+
 	// [BB] If we're the server, tell clients that the dmflags changed.
 	// [AK] Moved everything into a separate function to avoid code duplication.
 	SERVER_FlagsetChanged( self );
@@ -627,6 +631,7 @@ CVAR (Flag, sv_nounlaggedbfgtracers, zadmflags, ZADF_NOUNLAGGED_BFG_TRACERS);
 CVAR (Flag, sv_nodoorclose, zadmflags, ZADF_NODOORCLOSE);
 CVAR (Flag, sv_noobituaries, zadmflags, ZADF_NO_OBITUARIES);
 CVAR (Flag, sv_forcesoftwarepitchlimits, zadmflags, ZADF_FORCE_SOFTWARE_PITCH_LIMITS);
+CVAR (Flag, sv_noprivatechat, zadmflags, ZADF_NO_PRIVATE_CHAT);
 
 // Old name kept for compatibility
 CVAR (Flag, sv_forcegldefaults,		zadmflags, ZADF_FORCE_VIDEO_DEFAULTS);

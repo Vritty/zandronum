@@ -204,7 +204,6 @@ FStringCVar	*g_ChatMacros[10] =
 //*****************************************************************************
 //	PROTOTYPES
 
-void	chat_SetChatMode( ULONG ulMode );
 void	chat_SendMessage( ULONG ulMode, const char *pszString );
 void	chat_GetIgnoredPlayers( FString &Destination ); // [RC]
 void	chat_DoSubstitution( FString &Input ); // [CW]
@@ -561,7 +560,7 @@ void CHAT_Tick( void )
 	if ( g_ulChatMode == CHATMODE_PRIVATE_SEND )
 	{
 		if (( g_ulChatPlayer != MAXPLAYERS ) && ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false ))
-			chat_SetChatMode( CHATMODE_NONE );
+			CHAT_SetChatMode( CHATMODE_NONE );
 	}
 }
 
@@ -584,12 +583,12 @@ bool CHAT_Input( event_t *pEvent )
 			if ( pEvent->data1 == '\r' )
 			{
 				chat_SendMessage( g_ulChatMode, g_ChatBuffer.GetMessage() );
-				chat_SetChatMode( CHATMODE_NONE );
+				CHAT_SetChatMode( CHATMODE_NONE );
 				return ( true );
 			}
 			else if ( pEvent->data1 == GK_ESCAPE )
 			{
-				chat_SetChatMode( CHATMODE_NONE );
+				CHAT_SetChatMode( CHATMODE_NONE );
 				return ( true );
 			}
 			else if ( pEvent->data1 == '\b' )
@@ -682,7 +681,7 @@ bool CHAT_Input( event_t *pEvent )
 			if ( pEvent->data2 && (( pEvent->data1 >= '0' ) && ( pEvent->data1 <= '9' )))
 			{
 				chat_SendMessage( g_ulChatMode, *g_ChatMacros[pEvent->data1 - '0'] );
-				chat_SetChatMode( CHATMODE_NONE );
+				CHAT_SetChatMode( CHATMODE_NONE );
 			}
 			else
 				g_ChatBuffer.Insert( static_cast<char> ( pEvent->data1 ) );
@@ -817,6 +816,39 @@ void CHAT_Render( void )
 	}
 
 	BorderTopRefresh = screen->GetPageCount( );
+}
+
+//*****************************************************************************
+//
+void CHAT_SetChatMode( ULONG ulMode )
+{
+	if ( ulMode < NUM_CHATMODES )
+	{
+		player_t	*pPlayer = &players[consoleplayer];
+
+		g_ulChatMode = ulMode;
+
+		if ( ulMode != CHATMODE_NONE )
+		{
+			pPlayer->bChatting = true;
+
+			// Tell the server we're beginning to chat.
+			if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
+				CLIENTCOMMANDS_StartChat( );
+
+			// [AK] Ensure that the cursor starts off as white.
+			g_ulChatTicker = 0;
+		}
+		else
+		{
+			pPlayer->bChatting = false;
+
+			// Tell the server we're done chatting.
+			if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
+				CLIENTCOMMANDS_EndChat( );
+		}
+
+	}
 }
 
 //*****************************************************************************
@@ -1006,39 +1038,6 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 }
 
 //*****************************************************************************
-//*****************************************************************************
-//
-void chat_SetChatMode( ULONG ulMode )
-{
-	if ( ulMode < NUM_CHATMODES )
-	{
-		player_t	*pPlayer = &players[consoleplayer];
-
-		g_ulChatMode = ulMode;
-
-		if ( ulMode != CHATMODE_NONE )
-		{
-			pPlayer->bChatting = true;
-
-			// Tell the server we're beginning to chat.
-			if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
-				CLIENTCOMMANDS_StartChat( );
-
-			// [AK] Ensure that the cursor starts off as white.
-			g_ulChatTicker = 0;
-		}
-		else
-		{
-			pPlayer->bChatting = false;
-
-			// Tell the server we're done chatting.
-			if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
-				CLIENTCOMMANDS_EndChat( );
-		}
-
-	}
-}
-
 //*****************************************************************************
 //
 void chat_SendMessage( ULONG ulMode, const char *pszString )
@@ -1246,7 +1245,7 @@ CCMD( say )
 			return;
 
 		// The message we send will be a global chat message to everyone.
-		chat_SetChatMode( CHATMODE_GLOBAL );
+		CHAT_SetChatMode( CHATMODE_GLOBAL );
 		
 		// Hide the console.
 		C_HideConsole( );
@@ -1304,7 +1303,7 @@ CCMD( say_team )
 	if ( argv.argc( ) < 2 )
 	{
 		// The message we send is a message to teammates only.
-		chat_SetChatMode( CHATMODE_TEAM );
+		CHAT_SetChatMode( CHATMODE_TEAM );
 		
 		// Hide the console.
 		C_HideConsole( );
@@ -1404,6 +1403,13 @@ void chat_PrivateMessage( FCommandLine &argv, const ULONG ulReceiver )
 		return;
 	}
 
+	// [AK] No sending private messages if the server has disabled them.
+	if ( zadmflags & ZADF_NO_PRIVATE_CHAT )
+	{
+		Printf( "Private messages have been disabled by the server.\n" );
+		return;
+	}
+
 	if ( argv.argc( ) >= 2 )
 	{
 		if ( !bServerSelected )
@@ -1465,7 +1471,7 @@ void chat_PrivateMessage( FCommandLine &argv, const ULONG ulReceiver )
 		}
 
 		// The message we send will only be for the player who we wish to chat with.
-		chat_SetChatMode( CHATMODE_PRIVATE_SEND );
+		CHAT_SetChatMode( CHATMODE_PRIVATE_SEND );
 
 		// Hide the console.
 		C_HideConsole( );
@@ -1680,7 +1686,7 @@ CCMD( messagemode )
 
 	if ( NETWORK_GetState() != NETSTATE_SERVER )
 	{
-		chat_SetChatMode( CHATMODE_GLOBAL );
+		CHAT_SetChatMode( CHATMODE_GLOBAL );
 		C_HideConsole( );
 		g_ChatBuffer.Clear();
 	}
@@ -1702,7 +1708,7 @@ CCMD( messagemode2 )
 
 	if ( NETWORK_GetState() != NETSTATE_SERVER )
 	{
-		chat_SetChatMode( CHATMODE_TEAM );
+		CHAT_SetChatMode( CHATMODE_TEAM );
 		C_HideConsole( );
 		g_ChatBuffer.Clear();
 	}
@@ -1731,6 +1737,13 @@ CCMD( messagemode3 )
 
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 	{
+		// [AK] No sending private messages if the server has disabled them.
+		if ( zadmflags & ZADF_NO_PRIVATE_CHAT )
+		{
+			Printf( "Private messages have been disabled by the server.\n" );
+			return;
+		}
+
 		// [AK] Find a valid receiver, if necessary.
 		if ( chat_FindValidReceiver( ) == false )
 		{
@@ -1738,7 +1751,7 @@ CCMD( messagemode3 )
 			return;
 		}
 
-		chat_SetChatMode( CHATMODE_PRIVATE_SEND );
+		CHAT_SetChatMode( CHATMODE_PRIVATE_SEND );
 		C_HideConsole( );
 		g_ChatBuffer.Clear( );
 	}
