@@ -1023,9 +1023,10 @@ EXTERN_CVAR( Bool, sv_cheats );
 
 // [AK] Modified SPY_CANCEL in order to fit player numbers for "spyto".
 enum {
-	SPY_CANCEL = -3,
+	SPY_CANCEL = -4,
 	SPY_NEXT,
 	SPY_PREV,
+	SPY_CARRIER, // [AK]
 };
 
 // [RH] Spy mode has been separated into two console commands.
@@ -1078,7 +1079,10 @@ static void ChangeSpy (int changespy)
 		// only use the camera as starting index if it's a valid player.
 		if (player != NULL) pnum = int(players[consoleplayer].camera->player - players);
 
-		int step = (changespy == SPY_NEXT) ? 1 : -1;
+		// [AK] Also cycle to the next player if we're using SPY_CARRIER, and get the original player
+		// we're spying on when we use this CCMD.
+		int step = (( changespy == SPY_NEXT ) || ( changespy == SPY_CARRIER )) ? 1 : -1;
+		int originalplayer = player - players;
 
 		// [SP] Let's ignore special LMS settigns if we're playing a demo. Otherwise, we need to enforce
 		// LMS rules for spectators using spy.
@@ -1101,6 +1105,7 @@ static void ChangeSpy (int changespy)
 
 			// [AK] Only choose active players who could also be on our team.
 			if (( playeringame[pnum] ) && ( players[pnum].bSpectating == false ) &&
+				(( changespy != SPY_CARRIER ) || ( GAMEMODE_IsPlayerCarryingGameModeItem( &players[pnum] ))) &&
 				(( PLAYER_IsTrueSpectator( &players[consoleplayer] )) ||
 				(( players[pnum].mo != NULL ) && ( players[pnum].mo->IsTeammate( players[consoleplayer].mo )))))
 			{
@@ -1111,7 +1116,8 @@ static void ChangeSpy (int changespy)
 			if ( changespy >= 0 )
 				return;
 
-		} while (pnum != consoleplayer);
+		// [AK] If we're using SPY_CARRIER, return to the player we were spying on if we couldn't change the view.
+		} while (( changespy != SPY_CARRIER && pnum != consoleplayer ) || ( changespy == SPY_CARRIER && pnum != originalplayer ));
 	}
 
 	// [BC] When we're all done, put the camera in the display player's body, etc.
@@ -1244,6 +1250,20 @@ CCMD (spyto_idx)
 		playerIndex = clamp<int>( playerIndex, 0, MAXPLAYERS - 1 );
 		ChangeSpy ( playerIndex != consoleplayer ? playerIndex : SPY_CANCEL );
 	}
+}
+
+// [AK] Spy on players carrying gamemode-specific items, particularly useful for streamers.
+CCMD (spycarrier)
+{
+	// [BB] The server can't use this.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+	{
+		Printf ( "CCMD spycarrier can't be used on the server\n" );
+		return;
+	}
+
+	// allow spy mode changes even during the demo
+	ChangeSpy (SPY_CARRIER);
 }
 
 // [TP]

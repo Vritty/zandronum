@@ -517,6 +517,7 @@ OptionMenu "CustomizeControls"
 	Control 	"Toggle automap",		"togglemap"
 	Control 	"Chasecam",				"chase"
 	Control 	"Coop spy",				"spynext"
+	Control		"Item carrier spy",			"spycarrier" // [AK]
 	Control 	"Screenshot",			"screenshot"
 	Control		"Spectate",				"spectate" // [TP]
 	Control		"Taunt",				"taunt" // [TP]

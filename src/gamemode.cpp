@@ -879,6 +879,37 @@ bool GAMEMODE_AreLivesLimited( void )
 
 //*****************************************************************************
 //
+bool GAMEMODE_IsPlayerCarryingGameModeItem( player_t *player )
+{
+	GAMEMODE_e mode = GAMEMODE_GetCurrentMode( );
+
+	// [AK] Check if this player is carrying a team item like an enemy team's flag or skull.
+	if (( GAMEMODE_GetCurrentFlags( ) & GMF_USETEAMITEM ) && ( player->mo != NULL ))
+	{
+		if ( TEAM_FindOpposingTeamsItemInPlayersInventory( player ))
+			return true;
+
+		// [AK] Check if the player is carrying any team item. This can be useful for mods that
+		// might define their own special items.
+		AInventory *item = player->mo->FindInventory( PClass::FindClass( "TeamItem" ), true );
+
+		// [AK] The player shouldn't have the white flag when we're not playing one-flag CTF.
+		return (( item ) && (( item->IsKindOf( PClass::FindClass( "WhiteFlag" )) == false ) || ( mode == GAMEMODE_ONEFLAGCTF )));
+	}
+
+	// [AK] Check if this player is carrying the terminator sphere while playing terminator.
+	if (( mode == GAMEMODE_TERMINATOR ) && ( player->cheats2 & CF2_TERMINATORARTIFACT ))
+		return true;
+
+	// [AK] Check if this player is carrying the hellstone while playing (team) possession.
+	if ((( mode == GAMEMODE_POSSESSION ) || ( mode == GAMEMODE_TEAMPOSSESSION )) && ( player->cheats2 & CF2_POSSESSIONARTIFACT ))
+		return true;
+
+	return false;
+}
+
+//*****************************************************************************
+//
 unsigned int GAMEMODE_GetMaxLives( void )
 {
 	return ( ( sv_maxlives > 0 ) ? static_cast<unsigned int> ( sv_maxlives ) : 1 );
