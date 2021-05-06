@@ -1124,6 +1124,9 @@ MEDALSTRING_PRECISION = "Precision!";
 MEDALSTRING_LLAMA = "Llama!";
 MEDALSTRING_YOUFAILIT = "You Fail It!";
 
+// [JS] Game Mode strings.
+GM_YOUFRAGGED = "You fragged";
+GM_YOUWEREFRAGGED = "You were fragged by";
 
 // Heretic strings
 HE1TEXT =

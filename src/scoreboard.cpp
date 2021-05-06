@@ -1811,7 +1811,7 @@ void SCOREBOARD_DisplayFragMessage( player_t *pFraggedPlayer )
 	char	szString[128];
 	DHUDMessageFadeOut	*pMsg;
 
-	sprintf( szString, "You fragged %s!\n", pFraggedPlayer->userinfo.GetName() );
+	sprintf( szString, "%s %s!\n", GStrings( "GM_YOUFRAGGED" ), pFraggedPlayer->userinfo.GetName() );
 
 	// Print the frag message out in the console.
 	Printf( "%s", szString );
@@ -1881,7 +1881,7 @@ void SCOREBOARD_DisplayFraggedMessage( player_t *pFraggingPlayer )
 	char	szString[128];
 	DHUDMessageFadeOut	*pMsg;
 
-	sprintf( szString, "You were fragged by %s.\n", pFraggingPlayer->userinfo.GetName() );
+	sprintf( szString, "%s %s.\n", GStrings( "GM_YOUWEREFRAGGED" ), pFraggingPlayer->userinfo.GetName() );
 
 	// Print the frag message out in the console.
 	Printf( "%s", szString );
