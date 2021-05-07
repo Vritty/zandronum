@@ -1810,15 +1810,22 @@ void SCOREBOARD_DisplayFragMessage( player_t *pFraggedPlayer )
 {
 	char	szString[128];
 	DHUDMessageFadeOut	*pMsg;
+	FString message = GStrings( "GM_YOUFRAGGED" );
 
-	sprintf( szString, "%s %s!\n", GStrings( "GM_YOUFRAGGED" ), pFraggedPlayer->userinfo.GetName() );
+	message.StripLeftRight( );
+
+	// [AK] Don't print the message if the string is empty.
+	if ( message.Len( ) == 0 )
+		return;
+
+	// [AK] Substitute the fragged player's name into the message if we can.
+	message.Substitute( "%s", pFraggedPlayer->userinfo.GetName( ));
+	message += '\n';
 
 	// Print the frag message out in the console.
-	Printf( "%s", szString );
+	Printf( "%s", message.GetChars( ));
 
-	V_ColorizeString( szString );
-
-	pMsg = new DHUDMessageFadeOut( BigFont, szString,
+	pMsg = new DHUDMessageFadeOut( BigFont, message.GetChars( ),
 		1.5f,
 		0.325f,
 		0,
@@ -1880,15 +1887,22 @@ void SCOREBOARD_DisplayFraggedMessage( player_t *pFraggingPlayer )
 {
 	char	szString[128];
 	DHUDMessageFadeOut	*pMsg;
+	FString message = GStrings( "GM_YOUWEREFRAGGED" );
 
-	sprintf( szString, "%s %s.\n", GStrings( "GM_YOUWEREFRAGGED" ), pFraggingPlayer->userinfo.GetName() );
+	message.StripLeftRight( );
+
+	// [AK] Don't print the message if the string is empty.
+	if ( message.Len( ) == 0 )
+		return;
+
+	// [AK] Substitute the fragging player's name into the message if we can.
+	message.Substitute( "%s", pFraggingPlayer->userinfo.GetName( ));
+	message += '\n';
 
 	// Print the frag message out in the console.
-	Printf( "%s", szString );
+	Printf( "%s", message.GetChars( ));
 
-	V_ColorizeString( szString );
-
-	pMsg = new DHUDMessageFadeOut( BigFont, szString,
+	pMsg = new DHUDMessageFadeOut( BigFont, message.GetChars( ),
 		1.5f,
 		0.325f,
 		0,
