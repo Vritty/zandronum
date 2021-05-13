@@ -137,13 +137,12 @@ void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char 
 void HUD_DrawCoopInfo( void )
 {
 	// [BB] Only draw the info if the user wishes to see it (cl_drawcoopinfo)
-	// and if this is a cooperative or team based game mode. Further don't draw this in single player.
 	// [AK] Don't draw the info either if this game mode has the DONTUSECOOPINFO flag.
-	if ( ( cl_drawcoopinfo == false ) || ( zadmflags & ZADF_NO_COOP_INFO )
-		|| ( GAMEMODE_GetCurrentFlags() & GMF_DONTUSECOOPINFO )
-		|| ! ( (GAMEMODE_GetCurrentFlags() & GMF_COOPERATIVE)
-			|| (GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS) )
-		|| NETWORK_GetState() == NETSTATE_SINGLE )
+	if (( cl_drawcoopinfo == false ) || ( zadmflags & ZADF_NO_COOP_INFO ) || ( GAMEMODE_GetCurrentFlags() & GMF_DONTUSECOOPINFO ))
+		return;
+
+	// [BB] Only draw the info if this is a cooperative or team based game mode. Further don't draw this in single player.
+	if ( !( GAMEMODE_GetCurrentFlags() & ( GMF_COOPERATIVE | GMF_PLAYERSONTEAMS )) || ( NETWORK_GetState() == NETSTATE_SINGLE ))
 		return;
 
 	const bool bScale = HUD_IsScaled();
