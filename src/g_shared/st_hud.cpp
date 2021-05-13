@@ -203,13 +203,17 @@ void HUD_DrawCoopInfo( void )
 			drawString = "dead";
 		else if ( SERVER_IsPlayerAllowedToKnowHealth ( consoleplayer, i ) )
 		{
+			int healthPercentage = ( 100 * players[i].mo->health ) / players[i].mo->GetMaxHealth();
+
 			AInventory* pArmor = players[i].mo->FindInventory(RUNTIME_CLASS(ABasicArmor));
 			drawString.Format( "%d \\cD/ %d", players[i].mo->health, pArmor ? pArmor->Amount : 0 );
 			V_ColorizeString( drawString );
-			if ( players[i].mo->health > 66 )
+			if ( healthPercentage > 75 )
 				healthColor = CR_GREEN;
-			else if ( players[i].mo->health > 33 )
+			else if ( healthPercentage > 50 )
 				healthColor = CR_GOLD;
+			else if ( healthPercentage > 25 )
+				healthColor = CR_ORANGE;
 		}
 		else
 			drawString = "??? / ???";

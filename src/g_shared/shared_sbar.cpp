@@ -1826,11 +1826,14 @@ void DBaseStatusBar::DrawTargetName ()
 			// [AK] Print this player's current health and armor.
 			if ( cl_identifytarget >= IDENTIFY_TARGET_HEALTH )
 			{
+				int healthPercentage = ( 100 * pTargetPlayer->mo->health ) / pTargetPlayer->mo->GetMaxHealth();
 				targetInfoMsg += '\n';
 
-				if ( pTargetPlayer->mo->health <= 33 )
+				if ( healthPercentage <= 25 )
 					targetInfoMsg += TEXTCOLOR_RED;
-				else if ( pTargetPlayer->mo->health <= 66 )
+				else if ( healthPercentage <= 50 )
+					targetInfoMsg += TEXTCOLOR_ORANGE;
+				else if ( healthPercentage <= 75 )
 					targetInfoMsg += TEXTCOLOR_GOLD;
 				else
 					targetInfoMsg += TEXTCOLOR_GREEN;
