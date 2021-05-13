@@ -1624,7 +1624,7 @@ void DBaseStatusBar::DrawTopStuff (EHudState state)
 	DrawTargetName( );
 
 	// [BB] Possibly draw info of the other players (health, armor, ...)
-	DrawHUD_CoopInfo();
+	HUD_DrawCoopInfo( );
 
 	if (noisedebug)
 	{

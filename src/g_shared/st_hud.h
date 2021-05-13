@@ -63,6 +63,6 @@ void HUD_DrawTextCentered( FFont* Font, int Normalcolor, int Y, const char *Stri
 void HUD_DrawTextClean( FFont* Font, int Normalcolor, int X, int Y, const char *String );
 void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char *String );
 
-void DrawHUD_CoopInfo();
+void HUD_DrawCoopInfo( void );
 
 #endif	// __ST_HUD_H__

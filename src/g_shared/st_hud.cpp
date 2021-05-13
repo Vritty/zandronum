@@ -132,7 +132,9 @@ void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char 
 	HUD_DrawTextClean( Font, Normalcolor, 160 - Font->StringWidth( String ) / 2, Y, String );
 }
 
-void DrawHUD_CoopInfo()
+//*****************************************************************************
+//
+void HUD_DrawCoopInfo( void )
 {
 	// [BB] Only draw the info if the user wishes to see it (cl_drawcoopinfo)
 	// and if this is a cooperative or team based game mode. Further don't draw this in single player.
