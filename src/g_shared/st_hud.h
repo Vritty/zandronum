@@ -59,6 +59,9 @@ bool HUD_IsScaled ( );
 int HUD_GetWidth ( );
 void HUD_DrawTexture( FTexture *Img, int X, int Y );
 void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *String );
+void HUD_DrawTextCentered( FFont* Font, int Normalcolor, int Y, const char *String, const bool Scale );
+void HUD_DrawTextClean( FFont* Font, int Normalcolor, int X, int Y, const char *String );
+void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char *String );
 
 void DrawHUD_CoopInfo();
 

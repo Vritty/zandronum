@@ -116,6 +116,22 @@ void HUD_DrawTextAligned( int Normalcolor, int Y, const char *String, bool Align
 	HUD_DrawText ( Normalcolor, AlignLeft ? 0 : ( screenWidthSacled - SmallFont->StringWidth ( String ) ) , Y, String, Scale );
 }
 
+void HUD_DrawTextCentered( FFont* Font, int Normalcolor, int Y, const char *String, const bool Scale )
+{
+	int halfWidthScaled = ( Scale ? con_virtualwidth : SCREENWIDTH ) / 2;
+	HUD_DrawText( Font, Normalcolor, halfWidthScaled - Font->StringWidth( String ) / 2, Y, String, Scale );
+}
+
+void HUD_DrawTextClean( FFont* Font, int Normalcolor, int X, int Y, const char *String )
+{
+	screen->DrawText( Font, Normalcolor, X, Y, String, DTA_Clean, true, TAG_DONE );
+}
+
+void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char *String )
+{
+	HUD_DrawTextClean( Font, Normalcolor, 160 - Font->StringWidth( String ) / 2, Y, String );
+}
+
 void DrawHUD_CoopInfo()
 {
 	// [BB] Only draw the info if the user wishes to see it (cl_drawcoopinfo)
