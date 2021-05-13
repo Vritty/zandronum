@@ -73,6 +73,7 @@
 
 static	VOTESTATE_e				g_VoteState;
 static	FString					g_VoteCommand;
+static	FString					g_VoteMessage;
 static	FString					g_VoteReason;
 static	ULONG					g_ulVoteCaller;
 static	ULONG					g_ulVoteCountdownTicks = 0;
@@ -192,6 +193,8 @@ void CALLVOTE_Tick( void )
 //
 void CALLVOTE_BeginVote( FString Command, FString Parameters, FString Reason, ULONG ulPlayer )
 {
+	level_info_t *pLevel = NULL;
+
 	// Don't allow a vote in the middle of another vote.
 	if ( g_VoteState != VOTESTATE_NOVOTE )
 	{
@@ -247,6 +250,18 @@ void CALLVOTE_BeginVote( FString Command, FString Parameters, FString Reason, UL
 		else
 			Printf( "%s has called a vote (\"%s\"%s).\n", players[ulPlayer].userinfo.GetName(), g_VoteCommand.GetChars(), ReasonBlurb.GetChars() );
 	}
+
+	g_VoteMessage = g_VoteCommand.GetChars();
+
+	// [AK] If this is a map or changemap vote, get the level we're changing to.
+	if ( strncmp( g_VoteCommand.GetChars(), "map", 3 ) == 0 )
+		pLevel = FindLevelByName( g_VoteCommand.GetChars() + 4 );
+	else if ( strncmp( g_VoteCommand.GetChars(), "changemap", 9 ) == 0 )
+		pLevel = FindLevelByName( g_VoteCommand.GetChars() + 10 );
+
+	// [AK] Add the full name of the level to the vote message if valid.
+	if ( pLevel != NULL )
+		g_VoteMessage.AppendFormat( " - %s", pLevel->LookupLevelName().GetChars() );
 
 	g_VoteState = VOTESTATE_INVOTE;
 	g_ulVoteCountdownTicks = VOTE_COUNTDOWN_TIME * TICRATE;
@@ -492,23 +507,9 @@ void CALLVOTE_EndVote( bool bPassed )
 
 //*****************************************************************************
 //
-// [AK] Changed this function from CALLVOTE_GetCommand to CALLVOTE_GetVoteMessage.
 const char *CALLVOTE_GetVoteMessage( void )
 {
-	FString command = g_VoteCommand.GetChars();
-	level_info_t *pLevel = NULL;
-
-	// [AK] If this is a map or changemap vote, get the level we're changing to.
-	if ( strncmp( command.GetChars(), "map", 3 ) == 0 )
-		pLevel = FindLevelByName( command.GetChars() + 4 );
-	else if ( strncmp( command.GetChars(), "changemap", 9 ) == 0 )
-		pLevel = FindLevelByName( command.GetChars() + 10 );
-
-	// [AK] Append the full name of the map if valid.
-	if ( pLevel != NULL )
-		command.AppendFormat( " - %s", pLevel->LookupLevelName().GetChars() );
-
-	return ( command.GetChars( ));
+	return ( g_VoteMessage.GetChars( ));
 }
 
 //*****************************************************************************
