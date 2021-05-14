@@ -580,13 +580,13 @@ bool CHAT_Input( event_t *pEvent )
 	{
 		if ( pEvent->subtype == EV_GUI_KeyDown || pEvent->subtype == EV_GUI_KeyRepeat )
 		{
-			if ( pEvent->data1 == '\r' )
+			if (( pEvent->subtype != EV_GUI_KeyRepeat ) && ( pEvent->data1 == '\r' ))
 			{
 				chat_SendMessage( g_ulChatMode, g_ChatBuffer.GetMessage() );
 				CHAT_SetChatMode( CHATMODE_NONE );
 				return ( true );
 			}
-			else if ( pEvent->data1 == GK_ESCAPE )
+			else if (( pEvent->subtype != EV_GUI_KeyRepeat ) && ( pEvent->data1 == GK_ESCAPE ))
 			{
 				CHAT_SetChatMode( CHATMODE_NONE );
 				return ( true );

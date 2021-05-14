@@ -1739,6 +1739,10 @@ static bool C_HandleKey (event_t *ev, BYTE *buffer, int len)
 		return false;
 
 	case EV_GUI_Char:
+		// [AK] Don't type the grave key into the console if it's also used to toggle it.
+		if (( data1 == '`' ) && ( Bindings.GetBinding( KEY_GRAVE ).CompareNoCase( "toggleconsole" ) == 0 ))
+			return false;
+
 		// Add keypress to command line
 		if (buffer[0] < len)
 		{
@@ -2052,6 +2056,11 @@ static bool C_HandleKey (event_t *ev, BYTE *buffer, int len)
 			{
 				break;
 			}
+
+			// [AK] Don't close the console if we're still holding down the grave key.
+			if ( ev->subtype == EV_GUI_KeyRepeat )
+				return false;
+
 		case GK_ESCAPE:
 			// Close console and clear command line. But if we're in the
 			// fullscreen console mode, there's nothing to fall back on
