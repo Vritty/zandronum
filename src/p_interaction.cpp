@@ -215,10 +215,6 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker, int dmgf
 	char gendermessage[1024];
 	bool friendly;
 	int  gender;
-	// We enough characters for the player's name, the terminating zero, and 4 characters
-	// to strip the color codes (I actually believe it's 3, but let's play it safe).
-	char	szAttacker[MAXPLAYERNAME+1+4];
-	char	szVictim[MAXPLAYERNAME+1+4];
 
 	// No obituaries for non-players, voodoo dolls or when not wanted
 	// [AK] Added a check if the player was forced as a dead spectator through ACS.
@@ -366,20 +362,8 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker, int dmgf
 		message = GStrings("OB_DEFAULT");
 	}
 
-	// [BC] Stop the color codes after we display a name in the obituary string.
-	if ( attacker && attacker->player )
-		sprintf( szAttacker, "%s", attacker->player->userinfo.GetName() );
-	else
-		szAttacker[0] = 0;
-
-	if ( self && self->player )
-		sprintf( szVictim, "%s", self->player->userinfo.GetName() );
-	else
-		szVictim[0] = 0;
-
 	SexMessage (message, gendermessage, gender,
-		szVictim[0] ? szVictim : self->player->userinfo.GetName(),
-		szAttacker[0] ? szAttacker : attacker->player->userinfo.GetName());
+		self->player->userinfo.GetName(), attacker->player->userinfo.GetName());
 
 	// [AK] Format our message so color codes can appear.
 	V_ColorizeString( gendermessage );
