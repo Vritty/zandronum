@@ -124,7 +124,7 @@ void GAMEMODE_Construct( void )
 
 	// Teamplay DM.
 	g_GameModes[GAMEMODE_TEAMPLAY].ulFlags = GMF_DEATHMATCH|GMF_PLAYERSEARNFRAGS|GMF_PLAYERSONTEAMS;
-	strcpy( g_GameModes[GAMEMODE_TEAMPLAY].szName, "Team DM" );
+	strcpy( g_GameModes[GAMEMODE_TEAMPLAY].szName, "Team Deathmatch" );
 	strncpy( g_GameModes[GAMEMODE_TEAMPLAY].szShortName, "TDM", 8 );
 	strncpy( g_GameModes[GAMEMODE_TEAMPLAY].szF1Texture, "F1_TDM", 8 );
 
@@ -142,13 +142,13 @@ void GAMEMODE_Construct( void )
 
 	// Last man standing.
 	g_GameModes[GAMEMODE_LASTMANSTANDING].ulFlags = GMF_DEATHMATCH|GMF_PLAYERSEARNWINS|GMF_DONTSPAWNMAPTHINGS|GMF_MAPRESETS|GMF_DEADSPECTATORS|GMF_USEMAXLIVES|GMF_MAPRESET_RESETS_MAPTIME;
-	strcpy( g_GameModes[GAMEMODE_LASTMANSTANDING].szName, "LMS" );
+	strcpy( g_GameModes[GAMEMODE_LASTMANSTANDING].szName, "Last Man Standing" );
 	strncpy( g_GameModes[GAMEMODE_LASTMANSTANDING].szShortName, "LMS", 8 );
 	strncpy( g_GameModes[GAMEMODE_LASTMANSTANDING].szF1Texture, "F1_LMS", 8 );
 
 	// Team LMS.
 	g_GameModes[GAMEMODE_TEAMLMS].ulFlags = GMF_DEATHMATCH|GMF_PLAYERSEARNWINS|GMF_DONTSPAWNMAPTHINGS|GMF_MAPRESETS|GMF_DEADSPECTATORS|GMF_PLAYERSONTEAMS|GMF_USEMAXLIVES|GMF_MAPRESET_RESETS_MAPTIME;
-	strcpy( g_GameModes[GAMEMODE_TEAMLMS].szName, "Team LMS" );
+	strcpy( g_GameModes[GAMEMODE_TEAMLMS].szName, "Team Last Man Standing" );
 	strncpy( g_GameModes[GAMEMODE_TEAMLMS].szShortName, "TLMS", 8 );
 	strncpy( g_GameModes[GAMEMODE_TEAMLMS].szF1Texture, "F1_TLMS", 8 );
 
@@ -173,7 +173,7 @@ void GAMEMODE_Construct( void )
 
 	// Capture the flag.
 	g_GameModes[GAMEMODE_CTF].ulFlags = GMF_TEAMGAME|GMF_USEFLAGASTEAMITEM|GMF_PLAYERSEARNPOINTS|GMF_PLAYERSONTEAMS|GMF_USETEAMITEM;
-	strcpy( g_GameModes[GAMEMODE_CTF].szName, "CTF" );
+	strcpy( g_GameModes[GAMEMODE_CTF].szName, "Capture the Flag" );
 	strncpy( g_GameModes[GAMEMODE_CTF].szShortName, "CTF", 8 );
 	strncpy( g_GameModes[GAMEMODE_CTF].szF1Texture, "F1_CTF", 8 );
 
