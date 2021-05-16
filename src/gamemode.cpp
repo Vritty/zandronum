@@ -512,9 +512,8 @@ bool GAMEMODE_IsGameInCountdown( void )
 {
 	if ( survival )
 		return ( SURVIVAL_GetState( ) == SURVS_COUNTDOWN );
-	// [BB] What about IS_COUNTDOWN?
 	else if ( invasion )
-		return ( INVASION_GetState( ) == IS_FIRSTCOUNTDOWN );
+		return ( ( INVASION_GetState( ) == IS_FIRSTCOUNTDOWN ) || ( INVASION_GetState( ) == IS_COUNTDOWN ) );
 	else if ( duel )
 		return ( DUEL_GetState( ) == DS_COUNTDOWN );
 	else if ( teamlms || lastmanstanding )
@@ -536,7 +535,7 @@ bool GAMEMODE_IsGameInProgress( void )
 	if ( survival )
 		return ( SURVIVAL_GetState( ) == SURVS_INPROGRESS );
 	else if ( invasion )
-		return ( ( INVASION_GetState( ) == IS_INPROGRESS ) || ( INVASION_GetState( ) == IS_BOSSFIGHT ) || ( INVASION_GetState( ) == IS_WAVECOMPLETE ) || ( INVASION_GetState( ) == IS_COUNTDOWN ) );
+		return ( ( INVASION_GetState( ) == IS_INPROGRESS ) || ( INVASION_GetState( ) == IS_BOSSFIGHT ) || ( INVASION_GetState( ) == IS_WAVECOMPLETE ) );
 	else if ( duel )
 		return ( DUEL_GetState( ) == DS_INDUEL );
 	else if ( teamlms || lastmanstanding )
