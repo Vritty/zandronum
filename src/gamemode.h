@@ -217,6 +217,8 @@ GAMEMODE_e	GAMEMODE_GetCurrentMode( void );
 void		GAMEMODE_SetCurrentMode( GAMEMODE_e GameMode );
 MODIFIER_e	GAMEMODE_GetModifier( void );
 void		GAMEMODE_SetModifier( MODIFIER_e Modifier );
+ULONG		GAMEMODE_GetCountdownTicks( void );
+player_t	*GAMEMODE_GetArtifactCarrier( void );
 void		GAMEMODE_SetLimit( GAMELIMIT_e GameLimit, int value );
 
 void		GAMEMODE_ReconfigureGameSettings( bool bLockedOnly = false );

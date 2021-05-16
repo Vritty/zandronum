@@ -1293,6 +1293,56 @@ void GAMEMODE_SetModifier( MODIFIER_e Modifier )
 
 //*****************************************************************************
 //
+ULONG GAMEMODE_GetCountdownTicks( void )
+{
+	if ( g_CurrentGameMode == GAMEMODE_SURVIVAL )
+		return ( SURVIVAL_GetCountdownTicks( ));
+	else if ( g_CurrentGameMode == GAMEMODE_INVASION )
+		return ( INVASION_GetCountdownTicks( ));
+	else if ( g_CurrentGameMode == GAMEMODE_DUEL )
+		return ( DUEL_GetCountdownTicks( ));
+	else if (( g_CurrentGameMode == GAMEMODE_LASTMANSTANDING ) || ( g_CurrentGameMode == GAMEMODE_TEAMLMS ))
+		return ( LASTMANSTANDING_GetCountdownTicks( ));
+	else if (( g_CurrentGameMode == GAMEMODE_POSSESSION ) || ( g_CurrentGameMode == GAMEMODE_TEAMPOSSESSION ))
+		return ( POSSESSION_GetCountdownTicks( ));
+
+	// [AK] The other gamemodes don't have a countdown, so just return zero.
+	return ( 0 );
+}
+
+//*****************************************************************************
+//
+player_t *GAMEMODE_GetArtifactCarrier( void )
+{
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	{
+		if ( playeringame[ulIdx] == false )
+			continue;
+
+		// [AK] Is this player carrying the terminator artifact?
+		if ( g_CurrentGameMode == GAMEMODE_TERMINATOR )
+		{
+			if ( players[ulIdx].cheats2 & CF2_TERMINATORARTIFACT )
+				return ( &players[ulIdx] );
+		}
+		// [AK] Is this player carrying the possession artifact?
+		else if (( g_CurrentGameMode == GAMEMODE_POSSESSION ) || ( g_CurrentGameMode == GAMEMODE_TEAMPOSSESSION ))
+		{
+			if ( players[ulIdx].cheats2 & CF2_POSSESSIONARTIFACT )
+				return ( &players[ulIdx] );
+		}
+		// [AK] Is this player carrying the white flag?
+		else if (( players[ulIdx].mo ) && ( players[ulIdx].mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true )))
+		{
+			return ( &players[ulIdx] );
+		}
+	}
+
+	return ( NULL );
+}
+
+//*****************************************************************************
+//
 void GAMEMODE_SetLimit( GAMELIMIT_e GameLimit, int value )
 {
 	UCVarValue Val;
