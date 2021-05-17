@@ -62,6 +62,9 @@ void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *Strin
 void HUD_DrawTextCentered( FFont* Font, int Normalcolor, int Y, const char *String, const bool Scale );
 void HUD_DrawTextClean( FFont* Font, int Normalcolor, int X, int Y, const char *String );
 void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char *String );
+bool HUD_IsUsingNewHud( void );
+bool HUD_IsVisible( void );
+bool HUD_IsFullscreen( void );
 
 void HUD_DrawCoopInfo( void );
 

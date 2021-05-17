@@ -190,7 +190,6 @@ static	void			scoreboard_DrawBottomString( void );
 //	CONSOLE VARIABLES
 
 CVAR (Bool, r_drawspectatingstring, true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG );
-EXTERN_CVAR( Bool, cl_stfullscreenhud );
 EXTERN_CVAR( Int, screenblocks );
 EXTERN_CVAR( Bool, st_scale );
 
@@ -525,12 +524,12 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 		}
 	}
 	
-	if( SCOREBOARD_IsHudVisible() )
+	if ( HUD_IsVisible( ))
 	{
 		// Draw the item holders (hellstone, flags, skulls, etc).
 		SCOREBOARD_RenderStats_Holders( );
 
-		if( ( SCOREBOARD_IsUsingNewHud() && SCOREBOARD_IsHudFullscreen() ) == false )
+		if (( HUD_IsUsingNewHud( ) && HUD_IsFullscreen( )) == false )
 		{
 			// Are we in a team game? Draw scores.
 			if( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
@@ -616,32 +615,6 @@ void SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer )
 	scoreboard_DrawRankings( ulDisplayPlayer );
 }
 
-//*****************************************************************************
-//
-
-bool SCOREBOARD_IsUsingNewHud( void )
-{
-	if( cl_stfullscreenhud && ( gameinfo.gametype & GAME_DoomChex ) )
-		return true;
-	else
-		return false;
-}
-
-bool SCOREBOARD_IsHudVisible( void )
-{
-	if (screenblocks < 12)
-		return true;
-	else
-		return false;
-}
-
-bool SCOREBOARD_IsHudFullscreen( void )
-{
-	if (viewheight == SCREENHEIGHT)
-		return true;
-	else
-		return false;
-}
 //*****************************************************************************
 //
 void SCOREBOARD_RenderStats_Holders( void )
@@ -797,7 +770,7 @@ void SCOREBOARD_RenderStats_TeamScores( void )
 	
 	// The classic sbar HUD for Doom, Heretic, and Hexen has its own display for CTF and Skulltag scores.
 	if( (gameinfo.gametype == GAME_Doom) || ( gameinfo.gametype == GAME_Heretic) || ( gameinfo.gametype == GAME_Hexen) )
-		if( SCOREBOARD_IsHudFullscreen() )
+		if ( HUD_IsFullscreen( ))
 			if( ctf || skulltag || oneflagctf)
 				return;
 
@@ -906,10 +879,10 @@ void SCOREBOARD_RenderStats_RankSpread( void )
 
 void SCOREBOARD_RenderInvasionStats( void )
 {
-	if( SCOREBOARD_IsUsingNewHud() && SCOREBOARD_IsHudFullscreen())
+	if (( HUD_IsUsingNewHud( )) && ( HUD_IsFullscreen( )))
 		return;
 
-	if ( SCOREBOARD_IsHudVisible() )
+	if ( HUD_IsVisible( ))
 	{
 		char			szString[128];
 		DHUDMessage		*pMsg;

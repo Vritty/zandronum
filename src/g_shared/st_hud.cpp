@@ -56,12 +56,15 @@
 #include "g_level.h"
 #include "doomstat.h"
 #include "team.h"
+#include "gi.h"
 
 //*****************************************************************************
 //	CONSOLE VARIABLES
 
 CVAR( Bool, cl_drawcoopinfo, true, CVAR_ARCHIVE )
 EXTERN_CVAR( Int, con_notifylines )
+EXTERN_CVAR( Bool, cl_stfullscreenhud )
+EXTERN_CVAR( Int, screenblocks )
 
 //*****************************************************************************
 //	FUNCTIONS
@@ -128,6 +131,23 @@ void HUD_DrawTextClean( FFont* Font, int Normalcolor, int X, int Y, const char *
 void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char *String )
 {
 	HUD_DrawTextClean( Font, Normalcolor, 160 - Font->StringWidth( String ) / 2, Y, String );
+}
+
+//*****************************************************************************
+//
+bool HUD_IsUsingNewHud( void )
+{
+	return (( cl_stfullscreenhud ) && ( gameinfo.gametype & GAME_DoomChex ));
+}
+
+bool HUD_IsVisible( void )
+{
+	return ( screenblocks < 12 );
+}
+
+bool HUD_IsFullscreen( void )
+{
+	return ( viewheight == SCREENHEIGHT );
 }
 
 //*****************************************************************************
