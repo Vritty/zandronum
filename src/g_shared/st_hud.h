@@ -55,8 +55,8 @@
 //*****************************************************************************
 //	PROTOTYPES
 
-bool HUD_IsScaled ( );
-int HUD_GetWidth ( );
+bool HUD_IsScaled( void );
+int HUD_GetWidth( void );
 void HUD_DrawTexture( FTexture *Img, int X, int Y );
 void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *String );
 void HUD_DrawTextCentered( FFont* Font, int Normalcolor, int Y, const char *String, const bool Scale );

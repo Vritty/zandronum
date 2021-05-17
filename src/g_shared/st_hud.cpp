@@ -66,23 +66,21 @@ EXTERN_CVAR( Int, con_notifylines )
 //*****************************************************************************
 //	FUNCTIONS
 
-bool HUD_IsScaled ( )
+bool HUD_IsScaled( void )
 {
 	return ( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 );
 }
 
-int HUD_GetWidth ( )
+int HUD_GetWidth( void )
 {
 	return ( HUD_IsScaled() ? con_virtualwidth : SCREENWIDTH );
 }
 
+//*****************************************************************************
+//
 void HUD_DrawTexture( FTexture *Img, int X, int Y, const bool Scale )
 {
-	screen->DrawTexture( Img,
-		X,
-		Y,
-		DTA_UseVirtualScreen, Scale,
-		TAG_DONE );
+	screen->DrawTexture( Img, X, Y, DTA_UseVirtualScreen, Scale, TAG_DONE );
 }
 
 void HUD_DrawTexture( FTexture *Img, int X, int Y )
@@ -90,14 +88,11 @@ void HUD_DrawTexture( FTexture *Img, int X, int Y )
 	HUD_DrawTexture( Img, X, Y, HUD_IsScaled() );
 }
 
+//*****************************************************************************
+//
 void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *String, const bool Scale )
 {
-	screen->DrawText( Font, Normalcolor,
-		X,
-		Y,
-		String,
-		DTA_UseVirtualScreen, Scale,
-		TAG_DONE );
+	screen->DrawText( Font, Normalcolor, X, Y, String, DTA_UseVirtualScreen, Scale, TAG_DONE );
 }
 
 void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *String )
@@ -116,12 +111,15 @@ void HUD_DrawTextAligned( int Normalcolor, int Y, const char *String, bool Align
 	HUD_DrawText ( Normalcolor, AlignLeft ? 0 : ( screenWidthSacled - SmallFont->StringWidth ( String ) ) , Y, String, Scale );
 }
 
+// [AK]
 void HUD_DrawTextCentered( FFont* Font, int Normalcolor, int Y, const char *String, const bool Scale )
 {
 	int halfWidthScaled = ( Scale ? con_virtualwidth : SCREENWIDTH ) / 2;
 	HUD_DrawText( Font, Normalcolor, halfWidthScaled - Font->StringWidth( String ) / 2, Y, String, Scale );
 }
 
+//*****************************************************************************
+// [AK]
 void HUD_DrawTextClean( FFont* Font, int Normalcolor, int X, int Y, const char *String )
 {
 	screen->DrawText( Font, Normalcolor, X, Y, String, DTA_Clean, true, TAG_DONE );
