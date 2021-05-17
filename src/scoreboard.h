@@ -113,7 +113,6 @@ void	SCOREBOARD_RenderInvasionFirstCountdown( ULONG ulTimeLeft );
 void	SCOREBOARD_RenderInvasionCountdown( ULONG ulTimeLeft );
 bool	SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer );
 bool	SCOREBOARD_ShouldDrawRank( ULONG player );
-ULONG	SCOREBOARD_GetViewPlayer( void );
 LONG	SCOREBOARD_CalcSpread( ULONG ulPlayerNum );
 ULONG	SCOREBOARD_CalcRank( ULONG ulPlayerNum );
 bool	SCOREBOARD_IsTied( ULONG ulPlayerNum );

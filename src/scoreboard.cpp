@@ -223,7 +223,7 @@ static void SCOREBOARD_DrawBottomString( void )
 static void SCOREBOARD_DrawWaiting( void )
 {
 	// [RC] Formatting linebreak.
-	if ( static_cast<int>( SCOREBOARD_GetViewPlayer() ) != consoleplayer )
+	if ( static_cast<int>( HUD_GetViewPlayer( )) != consoleplayer )
 		g_BottomString += "\n";
 	
 	g_BottomString += "\\cgWAITING FOR PLAYERS";
@@ -246,18 +246,6 @@ bool SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer )
 		return false;
 
 	return true;
-}
-
-//*****************************************************************************
-// Returns either consoleplayer, or (if using F12), the player we're spying.
-//
-ULONG SCOREBOARD_GetViewPlayer( void )
-{
-	if (( players[consoleplayer].camera ) && ( players[consoleplayer].camera != players[consoleplayer].mo ) && ( players[consoleplayer].camera->player ))
-	{
-		return (ULONG) (players[consoleplayer].camera->player - players);
-	}
-	return consoleplayer;
 }
 
 //*****************************************************************************
@@ -298,7 +286,7 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 
 	g_BottomString = "";
 
-	int viewplayer = static_cast<int>( SCOREBOARD_GetViewPlayer() );
+	int viewplayer = static_cast<int>( HUD_GetViewPlayer( ));
 	// [BB] Draw a message to show that the free spectate mode is active.
 	if ( CLIENTDEMO_IsInFreeSpectateMode() )
 		g_BottomString.AppendFormat( "FREE SPECTATE MODE" );
@@ -861,7 +849,7 @@ void SCOREBOARD_RenderStats_RankSpread( void )
 
 	// 'Wins' isn't an entry on the statusbar, so we have to draw this here.
 	// [BB] Note: SCOREBOARD_RenderStats_RankSpread is not called in LMS, so the LMS check can be removed...
-	unsigned int viewplayerwins = static_cast<unsigned int>( players[ SCOREBOARD_GetViewPlayer() ].ulWins );
+	unsigned int viewplayerwins = static_cast<unsigned int>( players[HUD_GetViewPlayer( )].ulWins );
 	if (( duel || lastmanstanding ) && ( viewplayerwins > 0 ))
 	{
 		sprintf( szString, "\\cGWINS: \\cC%d", viewplayerwins );
@@ -1962,7 +1950,7 @@ void SCOREBOARD_RefreshHUD( void )
 		}
 	}
 
-	player_t *player = &players[ SCOREBOARD_GetViewPlayer() ];
+	player_t *player = &players[HUD_GetViewPlayer( )];
 
 	g_ulRank = SCOREBOARD_CalcRank( player - players );
 	g_lSpread = SCOREBOARD_CalcSpread( player - players );

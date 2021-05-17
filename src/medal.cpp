@@ -70,8 +70,8 @@
 #include "v_text.h"
 #include "v_video.h"
 #include "w_wad.h"
-#include "scoreboard.h"
 #include "p_acs.h"
+#include "st_hud.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -1038,7 +1038,7 @@ ULONG medal_GetDesiredIcon( player_t *pPlayer, AInventory *&pTeamItem )
 	if ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( CLIENTDEMO_IsInFreeSpectateMode() == false ) )
 	{
 		// [BB] Dead spectators shall see the icon for their teammates.
-		if ( pPlayer->mo->IsTeammate( players[SCOREBOARD_GetViewPlayer()].mo ) && !PLAYER_IsTrueSpectator ( &players[SCOREBOARD_GetViewPlayer()] ) )
+		if ( pPlayer->mo->IsTeammate( players[HUD_GetViewPlayer( )].mo ) && !PLAYER_IsTrueSpectator( &players[HUD_GetViewPlayer( )] ) )
 			ulDesiredSprite = SPRITE_ALLY;
 	}
 
@@ -1171,7 +1171,7 @@ void medal_SelectIcon( ULONG ulPlayer )
 		// [BB] Dead spectators shall keep the icon for their teammates.
 		case S_ALLY:
 
-			if ( PLAYER_IsTrueSpectator ( &players[ SCOREBOARD_GetViewPlayer() ] ) || ( !pPlayer->mo->IsTeammate( players[ SCOREBOARD_GetViewPlayer() ].mo ) ) )
+			if (( PLAYER_IsTrueSpectator( &players[HUD_GetViewPlayer( )] )) || ( !pPlayer->mo->IsTeammate( players[HUD_GetViewPlayer( )].mo )))
 			{
 				pPlayer->pIcon->Destroy( );
 				pPlayer->pIcon = NULL;

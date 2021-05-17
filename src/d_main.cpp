@@ -123,6 +123,7 @@
 #include "sectinfo.h"
 #include "md5.h"
 #include "za_database.h"
+#include "st_hud.h"
 
 #include "st_start.h"
 #include "templates.h"
@@ -1037,10 +1038,7 @@ drawfullconsole:
 				POSSESSION_Render( );
 
 				// [BC] Render the scoreboard [BB] respecting free spectate mode.
-				if (( players[consoleplayer].camera != NULL ) && ( players[consoleplayer].camera->player != NULL ) && !CLIENTDEMO_IsInFreeSpectateMode())
-					SCOREBOARD_Render( players[consoleplayer].camera->player - players );
-				else
-					SCOREBOARD_Render( consoleplayer );
+				SCOREBOARD_Render( CLIENTDEMO_IsInFreeSpectateMode( ) == false ? HUD_GetViewPlayer( ) : consoleplayer );
 
 				// Render any medals the player might have been awarded.
 				MEDAL_Render( );

@@ -67,5 +67,6 @@ bool HUD_IsVisible( void );
 bool HUD_IsFullscreen( void );
 
 void HUD_DrawCoopInfo( void );
+ULONG HUD_GetViewPlayer( void );
 
 #endif	// __ST_HUD_H__

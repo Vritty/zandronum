@@ -256,3 +256,16 @@ void HUD_DrawCoopInfo( void )
 		playersDrawn++;
 	}
 }
+
+//*****************************************************************************
+// Returns either consoleplayer, or (if using F12), the player we're spying.
+//
+ULONG HUD_GetViewPlayer( void )
+{
+	if (( players[consoleplayer].camera ) && ( players[consoleplayer].camera->player ))
+	{
+		return ( players[consoleplayer].camera->player - players );
+	}
+
+	return ( consoleplayer );
+}
