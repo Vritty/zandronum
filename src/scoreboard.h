@@ -127,10 +127,4 @@ bool	SCOREBOARD_IsTied( void );
 FString	SCOREBOARD_SpellOrdinal( int ranknum );
 FString	SCOREBOARD_SpellOrdinalColored( int ranknum );
 
-//*****************************************************************************
-//	EXTERNAL CONSOLE VARIABLES
-
-EXTERN_CVAR( Bool, cl_alwaysdrawdmstats )
-EXTERN_CVAR( Bool, cl_alwaysdrawteamstats )
-
 #endif // __SCOREBOARD_H__
