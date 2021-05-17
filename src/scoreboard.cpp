@@ -236,13 +236,17 @@ static void SCOREBOARD_DrawWaiting( void )
 //
 bool SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer )
 {
-	if(
-		(( NETWORK_GetState( ) != NETSTATE_SINGLE ) || ( deathmatch || teamgame || invasion ) || CLIENTDEMO_IsPlaying( )) && (( GAMEMODE_GetCurrentFlags( ) & GMF_DONTUSESCOREBOARD ) == false ) &&
-		( Button_ShowScores.bDown || (( players[ulDisplayPlayer].camera && players[ulDisplayPlayer].camera->health <= 0 ) && (( lastmanstanding || teamlms ) && (( LASTMANSTANDING_GetState( ) == LMSS_COUNTDOWN ) || ( LASTMANSTANDING_GetState( ) == LMSS_WAITINGFORPLAYERS )))  && ( teamlms == false ) && ( duel == false || ( DUEL_GetState( ) != DS_WINSEQUENCE ))))
-		)
-		return true;
-	else
+	// [AK] If the user isn't pressing their scoreboard key or if the current game mode
+	// doesn't use the scoreboard then return false.
+	if (( Button_ShowScores.bDown == false ) || ( GAMEMODE_GetCurrentFlags( ) & GMF_DONTUSESCOREBOARD ))
 		return false;
+
+	// [AK] We generally don't want to draw the scoreboard in singleplayer games unless we're
+	// watching a demo. However, we still want to draw it in deathmatch, teamgame, or invasion.
+	if (( NETWORK_GetState( ) == NETSTATE_SINGLE ) && ( CLIENTDEMO_IsPlaying( ) == false ) && (( deathmatch || teamgame || invasion ) == false ))
+		return false;
+
+	return true;
 }
 
 //*****************************************************************************
