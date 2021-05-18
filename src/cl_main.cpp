@@ -9171,8 +9171,8 @@ void APathFollower::InitFromStream ( BYTESTREAM_s *pByteStream )
 
 	if ( pPathFollower )
 	{
-		pPathFollower->lServerCurrNodeId = currNodeId;
-		pPathFollower->lServerPrevNodeId = prevNodeId;
+		pPathFollower->ServerCurrNodeId = currNodeId;
+		pPathFollower->ServerPrevNodeId = prevNodeId;
 		pPathFollower->fServerTime = serverTime;
 	}
 	else

@@ -48,8 +48,7 @@ protected:
 	bool bPostBeginPlayCalled;
 	bool bActivateCalledBeforePostBeginPlay;
 
-	// [EP] TODO: remove the 'l' mark from the name of the variables which aren't LONG anymore.
-	int lServerPrevNodeId, lServerCurrNodeId;
+	int ServerPrevNodeId, ServerCurrNodeId;
 	float fServerTime;
 public:
 	bool IsActive () const;

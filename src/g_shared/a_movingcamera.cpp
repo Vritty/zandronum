@@ -201,7 +201,7 @@ void APathFollower::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	arc << bActive << bJustStepped << PrevNode << CurrNode << Time << HoldTime;
 	// [BB] Zandronum specific stuff.
-	arc << bPostBeginPlayCalled << bActivateCalledBeforePostBeginPlay << lServerPrevNodeId << lServerCurrNodeId << fServerTime;
+	arc << bPostBeginPlayCalled << bActivateCalledBeforePostBeginPlay << ServerPrevNodeId << ServerCurrNodeId << fServerTime;
 }
 
 // Interpolate between p2 and p3 along a Catmull-Rom spline
@@ -232,7 +232,7 @@ void APathFollower::BeginPlay ()
 	// [BB] Init custom Zandronum stuff.
 	bPostBeginPlayCalled = false;
 	bActivateCalledBeforePostBeginPlay = false;
-	lServerPrevNodeId = lServerCurrNodeId = -1;
+	ServerPrevNodeId = ServerCurrNodeId = -1;
 	fServerTime = 0;
 }
 
@@ -321,15 +321,15 @@ void APathFollower::Activate (AActor *activator)
 		// [BB] Possibly init as instructed by the server.
 		if ( NETWORK_InClientMode() )
 		{
-			if ( lServerCurrNodeId != -1 )
+			if ( ServerCurrNodeId != -1 )
 			{
-				CurrNode = static_cast<AInterpolationPoint *> ( CLIENT_FindThingByNetID ( lServerCurrNodeId ) );
-				lServerCurrNodeId = -1;
+				CurrNode = static_cast<AInterpolationPoint *> ( CLIENT_FindThingByNetID ( ServerCurrNodeId ) );
+				ServerCurrNodeId = -1;
 			}
-			if ( lServerPrevNodeId != -1 )
+			if ( ServerPrevNodeId != -1 )
 			{
-				PrevNode = static_cast<AInterpolationPoint *> ( CLIENT_FindThingByNetID ( lServerPrevNodeId ) );
-				lServerPrevNodeId = -1;
+				PrevNode = static_cast<AInterpolationPoint *> ( CLIENT_FindThingByNetID ( ServerPrevNodeId ) );
+				ServerPrevNodeId = -1;
 			}
 		}
 
