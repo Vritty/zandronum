@@ -995,8 +995,7 @@ public:
 	unsigned int	ulLimitedToTeam;
 
 	// [BC] A new set of flags that ST uses.
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int	ulSTFlags;
+	unsigned int	STFlags;
 
 	// [BC] A new set of flags that deal with network games.
 	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore

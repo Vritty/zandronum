@@ -2774,7 +2774,7 @@ void PLAYER_SpectatorJoinsGame( player_t *pPlayer )
 	// player gets a new body.
 	if ( pPlayer->mo && pPlayer->bSpectating )
 	{
-		pPlayer->mo->ulSTFlags |= STFL_OBSOLETE_SPECTATOR_BODY;
+		pPlayer->mo->STFlags |= STFL_OBSOLETE_SPECTATOR_BODY;
 		// [BB] Also stop all associated scripts. Otherwise they would get disassociated
 		// and continue to run even if the player disconnects later.
 		if ( !( zacompatflags & ZACOMPATF_DONT_STOP_PLAYER_SCRIPTS_ON_DISCONNECT ) )

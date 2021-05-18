@@ -4637,7 +4637,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_ChangeFlag)
 					flagset = FLAGSET_FLAGS6;
 				else if ( flagp == &self->flags7 )
 					flagset = FLAGSET_FLAGS7;
-				else if ( flagp == &self->ulSTFlags )
+				else if ( flagp == &self->STFlags )
 					flagset = FLAGSET_FLAGSST;
 
 				SERVERCOMMANDS_SetThingFlags( self, flagset );

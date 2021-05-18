@@ -1357,7 +1357,7 @@ bool PIT_CheckThing(AActor *thing, FCheckPosition &tm)
 			// we check against the number of teams that have starts on the map to guess how many teams
 			// the mapper thought were available. Note: This is not going to work properly, if the map
 			// has starts for teams 0 and 2, but not for team 1 for example.
-			if (( thing->ulSTFlags & STFL_SCOREPILLAR ) &&
+			if (( thing->STFlags & STFL_SCOREPILLAR ) &&
 				( TEAM_FindOpposingTeamsItemInPlayersInventory ( tm.thing->player ) ) &&
 				( thing->args[0] == static_cast<int> (TEAM_GetNumTeamsWithStarts()) || static_cast<signed>( tm.thing->player->Team ) == thing->args[0] ) &&
 				( thing->args[1] > 0 ))
@@ -2135,7 +2135,7 @@ bool P_TryMove(AActor *thing, fixed_t x, fixed_t y,
 	thing->y = y;
 
 	// [BC] Flag this thing as having moved.
-	thing->ulSTFlags |= STFL_POSITIONCHANGED;
+	thing->STFlags |= STFL_POSITIONCHANGED;
 
 	thing->LinkToWorld();
 
@@ -5384,7 +5384,7 @@ void P_UseItems( player_t *pPlayer )
 		// Don't try to trigger sector actions in client mode.
 		if (( NETWORK_InClientMode() == false ) &&
 			( linetarget->special ) &&
-			( linetarget->ulSTFlags & STFL_USESPECIAL ))
+			( linetarget->STFlags & STFL_USESPECIAL ))
 		{
 			LineSpecials[linetarget->special]( NULL, usething, false, linetarget->args[0],
 									   linetarget->args[1], linetarget->args[2],
@@ -6240,7 +6240,7 @@ void PIT_FloorDrop(AActor *thing, FChangePosition *cpos)
 		}
 
 		// [BC] Mark this thing as having moved.
-		thing->ulSTFlags |= STFL_POSITIONCHANGED;
+		thing->STFlags |= STFL_POSITIONCHANGED;
 	}
 	else if ((thing->z != oldfloorz && !(thing->flags & MF_NOLIFTDROP)))
 	{
@@ -6280,7 +6280,7 @@ void PIT_FloorRaise(AActor *thing, FChangePosition *cpos)
 		thing->z = thing->floorz;
 
 		// [BC] Mark this thing as having moved.
-		thing->ulSTFlags |= STFL_POSITIONCHANGED;
+		thing->STFlags |= STFL_POSITIONCHANGED;
 	}
 	else
 	{
@@ -6290,7 +6290,7 @@ void PIT_FloorRaise(AActor *thing, FChangePosition *cpos)
 			thing->z = thing->z - oldfloorz + thing->floorz;
 
 			// [BC/BB] Mark this thing as having moved.
-			thing->ulSTFlags |= STFL_POSITIONCHANGED;
+			thing->STFlags |= STFL_POSITIONCHANGED;
 		}
 		else return;
 	}
@@ -6342,7 +6342,7 @@ void PIT_CeilingLower(AActor *thing, FChangePosition *cpos)
 		}
 
 		// [BC] Mark this thing as having moved.
-		thing->ulSTFlags |= STFL_POSITIONCHANGED;
+		thing->STFlags |= STFL_POSITIONCHANGED;
 
 		switch (P_PushDown(thing, cpos))
 		{
@@ -6389,7 +6389,7 @@ void PIT_CeilingRaise(AActor *thing, FChangePosition *cpos)
 		P_CheckFakeFloorTriggers(thing, oldz);
 
 		// [BC] Mark this thing as having moved.
-		thing->ulSTFlags |= STFL_POSITIONCHANGED;
+		thing->STFlags |= STFL_POSITIONCHANGED;
 	}
 	else if ((thing->flags2 & MF2_PASSMOBJ) && !isgood && thing->z + thing->height < thing->ceilingz)
 	{
@@ -6400,7 +6400,7 @@ void PIT_CeilingRaise(AActor *thing, FChangePosition *cpos)
 				onmobj->z + onmobj->height);
 
 			// [BC] Mark this thing as having moved.
-			thing->ulSTFlags |= STFL_POSITIONCHANGED;
+			thing->STFlags |= STFL_POSITIONCHANGED;
 		}
 	}
 }

@@ -607,7 +607,7 @@ void AActor::SetOrigin (fixed_t ix, fixed_t iy, fixed_t iz)
 	P_FindFloorCeiling(this, FFCF_ONLYSPAWNPOS);
 
 	// [BC] Flag this actor as having moved.
-	ulSTFlags |= STFL_POSITIONCHANGED;
+	STFlags |= STFL_POSITIONCHANGED;
 }
 
 FBlockNode *FBlockNode::FreeBlocks = NULL;

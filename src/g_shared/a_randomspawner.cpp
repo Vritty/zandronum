@@ -225,7 +225,7 @@ class ARandomSpawner : public AActor
 			HideOrDestroyIfSafe();
 
 		// [BB] Workaround to ensure that the spawner is properly reset in GAME_ResetMap.
-		this->ulSTFlags |= STFL_POSITIONCHANGED;
+		this->STFlags |= STFL_POSITIONCHANGED;
 	}
 
 	void Tick()	// This function is needed for handling boss replacers
@@ -234,7 +234,7 @@ class ARandomSpawner : public AActor
 		if (tracer == NULL || tracer->health <= 0)
 		{
 			// [BB] Don't do this on actors that already have been hidden by HideOrDestroyIfSafe()
-			if ( ( this->ulSTFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED ) == false ) {
+			if ( ( this->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED ) == false ) {
 				CALL_ACTION(A_BossDeath, this);
 				// [BB] Only destroy the actor if it's not needed for a map reset. Otherwise just hide it.
 				HideOrDestroyIfSafe();

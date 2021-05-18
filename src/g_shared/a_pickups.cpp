@@ -718,7 +718,7 @@ bool AInventory::GoAway ()
 		// [BB] If the map resets and this item is level spawned but not supposed to
 		// be respawned regularly, we need to make sure that the item doesn't respawn,
 		// but still allow it to return when the map resets.
-		else if ( ( ulSTFlags & STFL_LEVELSPAWNED ) && ( GAMEMODE_GetCurrentFlags() & GMF_MAPRESETS ) )
+		else if ( ( STFlags & STFL_LEVELSPAWNED ) && ( GAMEMODE_GetCurrentFlags() & GMF_MAPRESETS ) )
 		{
 			HideIndefinitely( );
 			return true;

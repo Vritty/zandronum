@@ -1320,7 +1320,7 @@ DEFINE_PROPERTY(clearflags, 0, Actor)
 	defaults->flags2 &= MF2_ARGSDEFINED;	// this flag must not be cleared
 
 	// [BC] Also zero out ST's flags.
-	defaults->ulSTFlags = 0;
+	defaults->STFlags = 0;
 	defaults->ulNetworkFlags = 0;
 }
 

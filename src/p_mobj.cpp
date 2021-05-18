@@ -369,7 +369,7 @@ void AActor::Serialize (FArchive &arc)
 		<< lFixedColormap // [BB]
 		// [BB] Before the snapshot is loaded, player bodies are spawned, which invalidates the old netIDs.
 		//<< lNetID // [BC] We need to archive this so that it's restored properly when going between maps in a hub.
-		<< ulSTFlags
+		<< STFlags
 		<< ulNetworkFlags
 		<< ulInvasionWave
 		<< pMonsterSpot
@@ -618,7 +618,7 @@ void AActor::HideOrDestroyIfSafe ()
 	// that is level spawned, don't destroy it. Instead, put it in a temporary invisibile
 	// state.
 	if (( GAMEMODE_GetCurrentFlags() & GMF_MAPRESETS ) &&
-		( ulSTFlags & STFL_LEVELSPAWNED ) &&
+		( STFlags & STFL_LEVELSPAWNED ) &&
 		( NETWORK_InClientMode() == false ))
 	{
 		// [BB] Do any actor specific things that are necessary to properly hide this thing.
@@ -637,7 +637,7 @@ void AActor::HideOrDestroyIfSafe ()
 		SetState( RUNTIME_CLASS ( AInventory )->ActorInfo->FindState("HideIndefinitely") );
 
 		// [BB] Remember that this was hidden. These things sometimes have to be explicitly excluded, e.g. in CheckBossDeath.
-		ulSTFlags |= STFL_HIDDEN_INSTEAD_OF_DESTROYED;
+		STFlags |= STFL_HIDDEN_INSTEAD_OF_DESTROYED;
 	}
 	else
 		Destroy();
@@ -833,7 +833,7 @@ void AActor::DestroyAllInventory ()
 	{
 		AInventory *item = Inventory;
 		// [BC] In certain modes, we may need to keep this item around.
-		if (( item->ulSTFlags & STFL_LEVELSPAWNED ) &&
+		if (( item->STFlags & STFL_LEVELSPAWNED ) &&
 			( GAMEMODE_GetCurrentFlags() & GMF_MAPRESETS ))
 		{
 			item->HideIndefinitely( );
@@ -1705,7 +1705,7 @@ void AActor::PlayBounceSound(bool onfloor)
 {
 	// [BB] Skulltag's old hacky bounce sound code. Should be removed eventually.
 	// [BC] Actors don't yet have a bounce sound, so this will have to be hacked for now.
-	if ( ulSTFlags & STFL_USESTBOUNCESOUND )
+	if ( STFlags & STFL_USESTBOUNCESOUND )
 	{
 		S_Sound( this, CHAN_VOICE, "weapons/grbnce", 1, ATTN_IDLE );
 		return;
@@ -2359,7 +2359,7 @@ fixed_t P_XYMovement (AActor *mo, fixed_t scrollx, fixed_t scrolly)
 						{	// Struck a player/creature
 						
 							// Potentially reward the player who shot this missile with an accuracy/precision medal.
-							if (( mo->ulSTFlags & STFL_EXPLODEONDEATH ) == false )
+							if (( mo->STFlags & STFL_EXPLODEONDEATH ) == false )
 								PLAYER_CheckStruckPlayer ( mo->target );
 
 							P_ExplodeMissile (mo, NULL, BlockingMobj);
@@ -2434,7 +2434,7 @@ explode:
 					}
 
 					// Potentially reward the player who shot this missile with an accuracy/precision medal.
-					if (( mo->ulSTFlags & STFL_EXPLODEONDEATH ) == false ) 
+					if (( mo->STFlags & STFL_EXPLODEONDEATH ) == false ) 
 						PLAYER_CheckStruckPlayer ( mo->target );
 
 					// [RH] Don't explode on horizon lines.
@@ -2973,7 +2973,7 @@ void P_ZMovement (AActor *mo, fixed_t oldfloorz)
 
 	// [BC] Mark this item as having moved.
 	if ( mo->z != oldz )
-		mo->ulSTFlags |= STFL_POSITIONCHANGED;
+		mo->STFlags |= STFL_POSITIONCHANGED;
 //
 // adjust height
 //
@@ -3097,7 +3097,7 @@ void P_ZMovement (AActor *mo, fixed_t oldfloorz)
 					P_HitFloor (mo);
 
 					// [BC] Potentially reward the player who shot this missile with an accuracy/precision medal.
-					if (( mo->ulSTFlags & STFL_EXPLODEONDEATH ) == false )
+					if (( mo->STFlags & STFL_EXPLODEONDEATH ) == false )
 						PLAYER_CheckStruckPlayer ( mo->target );
 
 					P_ExplodeMissile (mo, NULL, NULL);
@@ -3235,7 +3235,7 @@ void P_ZMovement (AActor *mo, fixed_t oldfloorz)
 				}
 
 				// [BC] Potentially reward the player who shot this missile with an accuracy/precision medal.
-				if (( mo->ulSTFlags & STFL_EXPLODEONDEATH ) == false )
+				if (( mo->STFlags & STFL_EXPLODEONDEATH ) == false )
 					PLAYER_CheckStruckPlayer ( mo->target );
 
 				P_ExplodeMissile (mo, NULL, NULL);
@@ -3477,8 +3477,8 @@ void P_NightmareRespawn (AActor *mobj)
 	// [BB] The new actor has to inherit the STFL_LEVELSPAWNED flag from the old one.
 	// Otherwise level spawned actors respawned by P_NightmareRespawn won't be restored
 	// during a call of GAME_ResetMap.
-	if ( mobj->ulSTFlags & STFL_LEVELSPAWNED )
-		mo->ulSTFlags |= STFL_LEVELSPAWNED;
+	if ( mobj->STFlags & STFL_LEVELSPAWNED )
+		mo->STFlags |= STFL_LEVELSPAWNED;
 
 	// [BC] If we're the server, tell clients to spawn the thing.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -5101,7 +5101,7 @@ void AActor::LevelSpawned ()
 	HandleSpawnFlags ();
 
 	// [BC] Mark this item as having been spawned on the map.
-	ulSTFlags |= STFL_LEVELSPAWNED;
+	STFlags |= STFL_LEVELSPAWNED;
 }
 
 void AActor::HandleSpawnFlags ()
@@ -7084,7 +7084,7 @@ bool P_CheckMissileSpawn (AActor* th, fixed_t maxdist, bool bExplode)
 			else
 			{
 				// Potentially reward the player who shot this missile with an accuracy/precision medal.
-				if (( th->ulSTFlags & STFL_EXPLODEONDEATH ) == false )
+				if (( th->STFlags & STFL_EXPLODEONDEATH ) == false )
 					PLAYER_CheckStruckPlayer ( th->target );
 
 				// [WS] Can we explode the missile?
@@ -7816,13 +7816,13 @@ void AActor::Revive()
 	// Otherwise level spawned actors revived by an Archvile won't be restored
 	// during a call of GAME_ResetMap.
 	// [WS] We also need this similar treatment for STFL_POSITIONCHANGED.
-	const bool actorWasLevelSpawned = !!(ulSTFlags & STFL_LEVELSPAWNED);
-	const bool actorHasPositionChanged = !!(ulSTFlags & STFL_POSITIONCHANGED);
-	ulSTFlags = info->ulSTFlags;
+	const bool actorWasLevelSpawned = !!(STFlags & STFL_LEVELSPAWNED);
+	const bool actorHasPositionChanged = !!(STFlags & STFL_POSITIONCHANGED);
+	STFlags = info->STFlags;
 	if ( actorWasLevelSpawned )
-		ulSTFlags |= STFL_LEVELSPAWNED;
+		STFlags |= STFL_LEVELSPAWNED;
 	if ( actorHasPositionChanged )
-		ulSTFlags |= STFL_POSITIONCHANGED;
+		STFlags |= STFL_POSITIONCHANGED;
 	ulNetworkFlags = info->ulNetworkFlags;
 
 	DamageType = info->DamageType;
@@ -8146,7 +8146,7 @@ CCMD( respawnactors )
 			}
 
 			pNewActor->flags &= ~MF_DROPPED;
-			pNewActor->ulSTFlags |= STFL_LEVELSPAWNED;
+			pNewActor->STFlags |= STFL_LEVELSPAWNED;
 
 			// Remove the old actor.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )

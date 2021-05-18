@@ -943,7 +943,7 @@ int botcmd_LookForItemWithFlag( CSkullBot *pBot, const int Flag, const char *Fun
 		I_Error( "%s: Illegal item index, %d!", FunctionName, static_cast<int> (lIdx) );
 
 	while (( BOTCMD_IgnoreItem( pBot, lIdx, bVisibilityCheck )) ||
-		(( g_NetIDList.findPointerByID ( lIdx )->ulSTFlags & Flag ) == false ))
+		(( g_NetIDList.findPointerByID ( lIdx )->STFlags & Flag ) == false ))
 	{
 		if ( ++lIdx == IDList<AActor>::MAX_NETID )
 			break;

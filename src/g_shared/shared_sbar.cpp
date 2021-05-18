@@ -1809,7 +1809,7 @@ void DBaseStatusBar::DrawTargetName ()
 			return;
 
 		// [CK] If the player shouldn't be identified from decorate flags, ignore them
-		if ( pTargetPlayer->mo != NULL && ( pTargetPlayer->mo->ulSTFlags & STFL_DONTIDENTIFYTARGET ) != 0 ) 
+		if ( pTargetPlayer->mo != NULL && ( pTargetPlayer->mo->STFlags & STFL_DONTIDENTIFYTARGET ) != 0 ) 
 			return;
 
 		// Build the string and text color;

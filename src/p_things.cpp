@@ -444,7 +444,7 @@ nolead:						mobj->angle = R_PointToAngle2 (mobj->x, mobj->y, targ->x, targ->y);
 							SERVERCOMMANDS_SetThingFlags( mobj, FLAGSET_FLAGS4 );
 						if ( mobj->flags5 != mobj->GetDefault( )->flags5 )
 							SERVERCOMMANDS_SetThingFlags( mobj, FLAGSET_FLAGS5 );
-						if ( mobj->ulSTFlags != mobj->GetDefault( )->ulSTFlags )
+						if ( mobj->STFlags != mobj->GetDefault( )->STFlags )
 							SERVERCOMMANDS_SetThingFlags( mobj, FLAGSET_FLAGSST );
 						// [BB] If necessary, also adjust gravity.
 						if ( mobj->gravity != mobj->GetDefault( )->gravity )

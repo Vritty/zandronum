@@ -5136,7 +5136,7 @@ void ServerCommands::SetThingFlags::Execute()
 		break;
 	case FLAGSET_FLAGSST:
 
-		actor->ulSTFlags = flags;
+		actor->STFlags = flags;
 		break;
 	default:
 		CLIENT_PrintWarning( "client_SetThingFlags: Received an unknown flagset value: %d\n", static_cast<int>( flagset ) );
