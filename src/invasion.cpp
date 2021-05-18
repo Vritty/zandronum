@@ -149,11 +149,11 @@ void ABaseMonsterInvasionSpot::Tick( void )
 	}
 
 	// Are we ticking down to the next spawn?
-	if ( lNextSpawnTick > 0 )
-		lNextSpawnTick--;
+	if ( NextSpawnTick > 0 )
+		NextSpawnTick--;
 
 	// Next spawn tick is 0! Time to spawn something.
-	if ( lNextSpawnTick == 0 )
+	if ( NextSpawnTick == 0 )
 	{
 		// Spawn the item.
 		g_bIncreaseNumMonstersOnSpawn = false;
@@ -187,14 +187,14 @@ void ABaseMonsterInvasionSpot::Tick( void )
 			SERVERCOMMANDS_SpawnThing( pActor );
 
 		// The item successfully spawned. Now, there's one less items that have to spawn.
-		lNumLeftThisWave--;
+		NumLeftThisWave--;
 
 		// If there's still something left to spawn set the number of ticks left to spawn the next one.
-		if ( lNumLeftThisWave > 0 )
-			lNextSpawnTick = this->args[1] * TICRATE;
+		if ( NumLeftThisWave > 0 )
+			NextSpawnTick = this->args[1] * TICRATE;
 		// Otherwise, we're done spawning things this round.
 		else
-			lNextSpawnTick = -1;
+			NextSpawnTick = -1;
 
 		// Set the proper angle, and spawn the teleport fog.
 		pActor->angle = angle;
@@ -216,7 +216,7 @@ void ABaseMonsterInvasionSpot::Tick( void )
 void ABaseMonsterInvasionSpot::Serialize( FArchive &arc )
 {
 	Super::Serialize( arc );
-	arc << lNextSpawnTick << lNumLeftThisWave;
+	arc << NextSpawnTick << NumLeftThisWave;
 }
 
 //*****************************************************************************
@@ -339,11 +339,11 @@ void ABasePickupInvasionSpot::Tick( void )
 	}
 
 	// Are we ticking down to the next spawn?
-	if ( lNextSpawnTick > 0 )
-		lNextSpawnTick--;
+	if ( NextSpawnTick > 0 )
+		NextSpawnTick--;
 
 	// Next spawn tick is 0! Time to spawn something.
-	if ( lNextSpawnTick == 0 )
+	if ( NextSpawnTick == 0 )
 	{
 		// Spawn the item.
 		pActor = Spawn( GetSpawnName( ), x, y, z, ALLOW_REPLACE );
@@ -360,11 +360,11 @@ void ABasePickupInvasionSpot::Tick( void )
 			( pClass == NULL ) ||
 			( pClass->IsDescendantOf( RUNTIME_CLASS( AAmmo )) == false ))
 		{
-			lNumLeftThisWave--;
+			NumLeftThisWave--;
 		}
 
 		// Don't spawn anything until this item has been picked up.
-		lNextSpawnTick = -1;
+		NextSpawnTick = -1;
 
 		// Set the proper angle, and spawn the teleport fog.
 		pActor->angle = angle;
@@ -385,7 +385,7 @@ void ABasePickupInvasionSpot::Tick( void )
 void ABasePickupInvasionSpot::Serialize( FArchive &arc )
 {
 	Super::Serialize( arc );
-	arc << lNextSpawnTick << lNumLeftThisWave;
+	arc << NextSpawnTick << NumLeftThisWave;
 }
 
 //*****************************************************************************
@@ -397,19 +397,19 @@ void ABasePickupInvasionSpot::PickedUp( void )
 	// If there's still something left to spawn, or if we're the server and this is a type
 	// of ammo, set the number of ticks left to spawn the next one.
 	pClass = PClass::FindClass( GetSpawnName( ));
-	if (( lNumLeftThisWave > 0 ) ||
+	if (( NumLeftThisWave > 0 ) ||
 		(( NETWORK_GetState( ) == NETSTATE_SERVER ) &&
 		 ( pClass ) &&
 		 ( pClass->IsDescendantOf( RUNTIME_CLASS( AAmmo )))))
 	{
 		if ( this->args[1] == 0 )
-			lNextSpawnTick = 2 * TICRATE;
+			NextSpawnTick = 2 * TICRATE;
 		else
-			lNextSpawnTick = this->args[1] * TICRATE;
+			NextSpawnTick = this->args[1] * TICRATE;
 	}
 	// Otherwise, we're done spawning things this round.
 	else
-		lNextSpawnTick = -1;
+		NextSpawnTick = -1;
 }
 
 //*****************************************************************************
@@ -513,11 +513,11 @@ void ABaseWeaponInvasionSpot::Tick( void )
 	}
 
 	// Are we ticking down to the next spawn?
-	if ( lNextSpawnTick > 0 )
-		lNextSpawnTick--;
+	if ( NextSpawnTick > 0 )
+		NextSpawnTick--;
 
 	// Next spawn tick is 0! Time to spawn something.
-	if ( lNextSpawnTick == 0 )
+	if ( NextSpawnTick == 0 )
 	{
 		// Spawn the item.
 		pActor = Spawn( GetSpawnName( ), x, y, z, ALLOW_REPLACE );
@@ -530,7 +530,7 @@ void ABaseWeaponInvasionSpot::Tick( void )
 			SERVERCOMMANDS_SpawnThing( pActor );
 
 		// Don't spawn anything until this item has been picked up.
-		lNextSpawnTick = -1;
+		NextSpawnTick = -1;
 
 		// Set the proper angle, and spawn the teleport fog.
 		pActor->angle = angle;
@@ -553,7 +553,7 @@ void ABaseWeaponInvasionSpot::Tick( void )
 void ABaseWeaponInvasionSpot::Serialize( FArchive &arc )
 {
 	Super::Serialize( arc );
-	arc << lNextSpawnTick;
+	arc << NextSpawnTick;
 }
 
 //*****************************************************************************
@@ -929,32 +929,32 @@ void INVASION_BeginWave( ULONG ulWave )
 		// Spot is dormant. Don't do anything with it this round.
 		if ( pMonsterSpot->flags2 & MF2_DORMANT )
 		{
-			pMonsterSpot->lNextSpawnTick = -1;
+			pMonsterSpot->NextSpawnTick = -1;
 			continue;
 		}
 
 		// Not time to spawn this item yet!
 		if ( g_ulCurrentWave < (ULONG)pMonsterSpot->args[3] )
 		{
-			pMonsterSpot->lNextSpawnTick = -1;
+			pMonsterSpot->NextSpawnTick = -1;
 			continue;
 		}
 
 		lWaveForItem = g_ulCurrentWave - (( pMonsterSpot->args[3] <= 1 ) ? 0 : ( pMonsterSpot->args[3] - 1 ));
 
 		// This item will be used this wave. Calculate the number of things to spawn.
-		pMonsterSpot->lNumLeftThisWave = invasion_GetNumThingsThisWave( pMonsterSpot->args[0], lWaveForItem, true );
-		if (( pMonsterSpot->args[4] > 0 ) && ( pMonsterSpot->lNumLeftThisWave > pMonsterSpot->args[4] ))
-			pMonsterSpot->lNumLeftThisWave = pMonsterSpot->args[4];
+		pMonsterSpot->NumLeftThisWave = invasion_GetNumThingsThisWave( pMonsterSpot->args[0], lWaveForItem, true );
+		if (( pMonsterSpot->args[4] > 0 ) && ( pMonsterSpot->NumLeftThisWave > pMonsterSpot->args[4] ))
+			pMonsterSpot->NumLeftThisWave = pMonsterSpot->args[4];
 
-		g_ulNumMonstersLeft += pMonsterSpot->lNumLeftThisWave;
+		g_ulNumMonstersLeft += pMonsterSpot->NumLeftThisWave;
 		if ( stricmp( pMonsterSpot->GetSpawnName( ), "Archvile" ) == 0 )
-			g_ulNumArchVilesLeft += pMonsterSpot->lNumLeftThisWave;
+			g_ulNumArchVilesLeft += pMonsterSpot->NumLeftThisWave;
 
 		// Nothing to spawn!
-		if ( pMonsterSpot->lNumLeftThisWave <= 0 )
+		if ( pMonsterSpot->NumLeftThisWave <= 0 )
 		{
-			pMonsterSpot->lNextSpawnTick = -1;
+			pMonsterSpot->NextSpawnTick = -1;
 			continue;
 		}
 
@@ -966,12 +966,12 @@ void INVASION_BeginWave( ULONG ulWave )
 			if ( pMonsterSpot->args[2] == 255 )
 			{
 				pMonsterSpot->bIsBossMonster = true;
-				pMonsterSpot->lNextSpawnTick = 0;
+				pMonsterSpot->NextSpawnTick = 0;
 
-				g_ulNumBossMonsters += pMonsterSpot->lNumLeftThisWave;
+				g_ulNumBossMonsters += pMonsterSpot->NumLeftThisWave;
 			}
 			else
-				pMonsterSpot->lNextSpawnTick = pMonsterSpot->args[2] * TICRATE;
+				pMonsterSpot->NextSpawnTick = pMonsterSpot->args[2] * TICRATE;
 			continue;
 		}
 
@@ -993,7 +993,7 @@ void INVASION_BeginWave( ULONG ulWave )
 				level.total_items--;
 
 			pActor->Destroy( );
-			pMonsterSpot->lNextSpawnTick = 0;
+			pMonsterSpot->NextSpawnTick = 0;
 			continue;
 		}
 
@@ -1008,14 +1008,14 @@ void INVASION_BeginWave( ULONG ulWave )
 			SERVERCOMMANDS_SpawnThing( pActor );
 
 		// The item successfully spawned. Now, there's one less items that have to spawn.
-		pMonsterSpot->lNumLeftThisWave--;
+		pMonsterSpot->NumLeftThisWave--;
 
 		// If there's still something left to spawn set the number of ticks left to spawn the next one.
-		if ( pMonsterSpot->lNumLeftThisWave > 0 )
-			pMonsterSpot->lNextSpawnTick = pMonsterSpot->args[1] * TICRATE;
+		if ( pMonsterSpot->NumLeftThisWave > 0 )
+			pMonsterSpot->NextSpawnTick = pMonsterSpot->args[1] * TICRATE;
 		// Otherwise, we're done spawning things this round.
 		else
-			pMonsterSpot->lNextSpawnTick = -1;
+			pMonsterSpot->NextSpawnTick = -1;
 
 		// Set the proper angle, and spawn the teleport fog.
 		pActor->angle = pMonsterSpot->angle;
@@ -1036,28 +1036,28 @@ void INVASION_BeginWave( ULONG ulWave )
 		// Spot is dormant. Don't do anything with it this round.
 		if ( pPickupSpot->flags2 & MF2_DORMANT )
 		{
-			pPickupSpot->lNextSpawnTick = -1;
+			pPickupSpot->NextSpawnTick = -1;
 			continue;
 		}
 
 		// Not time to spawn this item yet!
 		if ( g_ulCurrentWave < (ULONG)pPickupSpot->args[3] )
 		{
-			pPickupSpot->lNextSpawnTick = -1;
+			pPickupSpot->NextSpawnTick = -1;
 			continue;
 		}
 
 		lWaveForItem = g_ulCurrentWave - (( pPickupSpot->args[3] <= 1 ) ? 0 : ( pPickupSpot->args[3] - 1 ));
 
 		// This item will be used this wave. Calculate the number of things to spawn.
-		pPickupSpot->lNumLeftThisWave = invasion_GetNumThingsThisWave( pPickupSpot->args[0], lWaveForItem, false );
-		if (( pPickupSpot->args[4] > 0 ) && ( pPickupSpot->lNumLeftThisWave > pPickupSpot->args[4] ))
-			pPickupSpot->lNumLeftThisWave = pPickupSpot->args[4];
+		pPickupSpot->NumLeftThisWave = invasion_GetNumThingsThisWave( pPickupSpot->args[0], lWaveForItem, false );
+		if (( pPickupSpot->args[4] > 0 ) && ( pPickupSpot->NumLeftThisWave > pPickupSpot->args[4] ))
+			pPickupSpot->NumLeftThisWave = pPickupSpot->args[4];
 
 		// Nothing to spawn!
-		if ( pPickupSpot->lNumLeftThisWave <= 0 )
+		if ( pPickupSpot->NumLeftThisWave <= 0 )
 		{
-			pPickupSpot->lNextSpawnTick = -1;
+			pPickupSpot->NextSpawnTick = -1;
 			continue;
 		}
 
@@ -1065,7 +1065,7 @@ void INVASION_BeginWave( ULONG ulWave )
 		// spawn it.
 		if ( pPickupSpot->args[2] > 2 )
 		{
-			pPickupSpot->lNextSpawnTick = pPickupSpot->args[2] * TICRATE;
+			pPickupSpot->NextSpawnTick = pPickupSpot->args[2] * TICRATE;
 			continue;
 		}
 
@@ -1078,7 +1078,7 @@ void INVASION_BeginWave( ULONG ulWave )
 				( pActor->pPickupSpot == pPickupSpot ))
 			{
 				bContinue = true;
-				pPickupSpot->lNextSpawnTick = -1;
+				pPickupSpot->NextSpawnTick = -1;
 				break;
 			}
 		}
@@ -1094,9 +1094,9 @@ void INVASION_BeginWave( ULONG ulWave )
 			SERVERCOMMANDS_SpawnThing( pActor );
 
 		// The item successfully spawned. Now, there's one less items that have to spawn.
-		pPickupSpot->lNumLeftThisWave--;
+		pPickupSpot->NumLeftThisWave--;
 
-		pPickupSpot->lNextSpawnTick = -1;
+		pPickupSpot->NextSpawnTick = -1;
 
 		// Set the proper angle, and spawn the teleport fog.
 		pActor->angle = pPickupSpot->angle;
@@ -1116,14 +1116,14 @@ void INVASION_BeginWave( ULONG ulWave )
 		// Spot is dormant. Don't do anything with it this round.
 		if ( pWeaponSpot->flags2 & MF2_DORMANT )
 		{
-			pWeaponSpot->lNextSpawnTick = -1;
+			pWeaponSpot->NextSpawnTick = -1;
 			continue;
 		}
 
 		// Not time to spawn this item yet, or we already spawned it.
 		if (( (ULONG)pWeaponSpot->args[3] != 0 ) && ( g_ulCurrentWave != (ULONG)pWeaponSpot->args[3] ))
 		{
-			pWeaponSpot->lNextSpawnTick = -1;
+			pWeaponSpot->NextSpawnTick = -1;
 			continue;
 		}
 
@@ -1131,7 +1131,7 @@ void INVASION_BeginWave( ULONG ulWave )
 		// spawn it.
 		if ( pWeaponSpot->args[2] > 2 )
 		{
-			pWeaponSpot->lNextSpawnTick = pWeaponSpot->args[2] * TICRATE;
+			pWeaponSpot->NextSpawnTick = pWeaponSpot->args[2] * TICRATE;
 			continue;
 		}
 
@@ -1145,7 +1145,7 @@ void INVASION_BeginWave( ULONG ulWave )
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 			SERVERCOMMANDS_SpawnThing( pActor );
 
-		pWeaponSpot->lNextSpawnTick = -1;
+		pWeaponSpot->NextSpawnTick = -1;
 
 		// Set the proper angle, and spawn the teleport fog.
 		pActor->angle = pWeaponSpot->angle;
