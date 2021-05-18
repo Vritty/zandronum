@@ -9776,7 +9776,7 @@ scriptwait:
 		case PCD_PLAYERTEAM:
 
 			if ( activator && activator->player )
-				PushToStack( activator->player->ulTeam );
+				PushToStack( activator->player->Team );
 			else
 				PushToStack( 0 );
 			break;
@@ -11239,8 +11239,8 @@ scriptwait:
 				userinfo_t *userinfo = &pl->userinfo;
 				switch (STACK(1))
 				{
-				// [CW] PLAYERINFO_TEAM needs to use ulTeam rather than the one in userinfo_t.
-				case PLAYERINFO_TEAM:			STACK(2) = players[STACK( 2 )].ulTeam; break;
+				// [CW] PLAYERINFO_TEAM needs to use the one in player_t rather than the one in userinfo_t.
+				case PLAYERINFO_TEAM:			STACK(2) = players[STACK( 2 )].Team; break;
 				case PLAYERINFO_AIMDIST:		STACK(2) = userinfo->GetAimDist(); break;
 				case PLAYERINFO_COLOR:			STACK(2) = userinfo->GetColor(); break;
 				case PLAYERINFO_GENDER:			STACK(2) = userinfo->GetGender(); break;

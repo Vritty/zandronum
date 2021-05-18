@@ -201,7 +201,7 @@ void HUD_DrawCoopInfo( void )
 		EColorRange nameColor = CR_GREY;
 		// [BB] If the player is on a team, use the team's text color.
 		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-			nameColor = static_cast<EColorRange> ( TEAM_GetTextColor ( players[i].ulTeam ) );
+			nameColor = static_cast<EColorRange> ( TEAM_GetTextColor ( players[i].Team ) );
 		HUD_DrawTextAligned ( nameColor, curYPos, drawString.GetChars(), drawLeft, bScale );
 		curYPos += SmallFont->GetHeight( ) + 1;
 

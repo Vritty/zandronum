@@ -317,7 +317,7 @@ player_t::player_t()
   ConversationFaceTalker(0),
   // [BC] Initialize ST's additional properties.
   bOnTeam( 0 ),
-  ulTeam( 0 ),
+  Team( 0 ),
   lPointCount( 0 ),
   ulDeathCount( 0 ),
   ulLastFragTick( 0 ),
@@ -484,7 +484,7 @@ player_t &player_t::operator=(const player_t &p)
 	// [BB] Zandronum additions
 	cheats2 = p.cheats2;
 	bOnTeam = p.bOnTeam;
-	ulTeam = p.ulTeam;
+	Team = p.Team;
 	lPointCount = p.lPointCount;
 	ulDeathCount = p.ulDeathCount;
 	ulLastFragTick = p.ulLastFragTick;
@@ -2127,11 +2127,11 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 				}
 
 				// Cancel out the potential for an assist.
-				TEAM_SetAssistPlayer( player->ulTeam, MAXPLAYERS );
+				TEAM_SetAssistPlayer( player->Team, MAXPLAYERS );
 
 				// Award a "Defense!" medal to the player who fragged this flag carrier.
 				// [BB] but only if the flag belongs to the team of the fragger.
-				if (( pSource ) && ( pSource->player ) && ( pSource->IsTeammate( this ) == false ) && ( pSource->player->ulTeam == i ))
+				if (( pSource ) && ( pSource->player ) && ( pSource->IsTeammate( this ) == false ) && ( pSource->player->Team == i ))
 				{
 					MEDAL_GiveMedal( pSource->player - players, MEDAL_DEFENSE );
 					if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -4183,7 +4183,7 @@ void player_t::Serialize (FArchive &arc)
 		<< BlendA
 		// [BB] Skulltag additions - start
 		<< bOnTeam
-		<< ulTeam
+		<< Team
 		<< bChatting
 		<< bInConsole
 		<< bInMenu

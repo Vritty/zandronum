@@ -221,7 +221,7 @@ void LASTMANSTANDING_Tick( void )
 
 					if ( NETWORK_GetState() != NETSTATE_SERVER
 						&& players[consoleplayer].bOnTeam
-						&& lWinner == (LONG)players[consoleplayer].ulTeam )
+						&& lWinner == (LONG)players[consoleplayer].Team )
 					{
 						ANNOUNCER_PlayEntry( cl_announcer, "YouWin" );
 					}
@@ -300,7 +300,7 @@ LONG LASTMANSTANDING_TeamGetLastManStanding( void )
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
 		if ( playeringame[ulIdx] && ( players[ulIdx].bOnTeam ) && ( players[ulIdx].bSpectating == false ) && PLAYER_IsAliveOrCanRespawn ( &players[ulIdx] ) )
-			return ( players[ulIdx].ulTeam );
+			return ( players[ulIdx].Team );
 	}
 
 	return ( -1 );

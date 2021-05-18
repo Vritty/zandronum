@@ -1359,10 +1359,10 @@ bool PIT_CheckThing(AActor *thing, FCheckPosition &tm)
 			// has starts for teams 0 and 2, but not for team 1 for example.
 			if (( thing->ulSTFlags & STFL_SCOREPILLAR ) &&
 				( TEAM_FindOpposingTeamsItemInPlayersInventory ( tm.thing->player ) ) &&
-				( thing->args[0] == static_cast<int> (TEAM_GetNumTeamsWithStarts()) || static_cast<signed>( tm.thing->player->ulTeam ) == thing->args[0] ) &&
+				( thing->args[0] == static_cast<int> (TEAM_GetNumTeamsWithStarts()) || static_cast<signed>( tm.thing->player->Team ) == thing->args[0] ) &&
 				( thing->args[1] > 0 ))
 			{
-				if ( !TEAM_GetItemTaken( tm.thing->player->ulTeam ) )
+				if ( !TEAM_GetItemTaken( tm.thing->player->Team ) )
 					TEAM_ScoreSkulltagPoint( tm.thing->player, thing->args[1], thing );
 				else
 					TEAM_DisplayNeedToReturnSkullMessage( tm.thing->player );
@@ -4995,7 +4995,7 @@ void P_RailAttackWithPossibleSpread (AActor *source, int damage, int offset_xy, 
 		if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) &&
 			( source->player->bOnTeam ))
 		{
-			lOuterColor = TEAM_GetRailgunColor( source->player->ulTeam );
+			lOuterColor = TEAM_GetRailgunColor( source->player->Team );
 			lInnerColor = PLAYER_GetRailgunColor( source->player );
 		}
 		else

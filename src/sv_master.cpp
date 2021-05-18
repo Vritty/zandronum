@@ -516,7 +516,7 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 				if ( players[ulIdx].bOnTeam == false )
 					g_MasterServerBuffer.ByteStream.WriteByte( 255 );
 				else
-					g_MasterServerBuffer.ByteStream.WriteByte( players[ulIdx].ulTeam );
+					g_MasterServerBuffer.ByteStream.WriteByte( players[ulIdx].Team );
 			}
 
 			g_MasterServerBuffer.ByteStream.WriteByte( players[ulIdx].ulTime / ( TICRATE * 60 ));

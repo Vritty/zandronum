@@ -215,7 +215,7 @@ bool CAMPAIGN_DidPlayerBeatMap( void )
 		{
 			for ( ULONG i = 0; i < teams.Size( ); i++ )
 			{
-				if ( TEAM_GetFragCount( players[consoleplayer].ulTeam ) < TEAM_GetFragCount( i ))
+				if ( TEAM_GetFragCount( players[consoleplayer].Team ) < TEAM_GetFragCount( i ))
 					return ( false );
 			}
 		}
@@ -225,7 +225,7 @@ bool CAMPAIGN_DidPlayerBeatMap( void )
 		{
 			for ( ULONG i = 0; i < teams.Size( ); i++ )
 			{
-				if ( TEAM_GetScore( players[consoleplayer].ulTeam ) < TEAM_GetScore( i ))
+				if ( TEAM_GetScore( players[consoleplayer].Team ) < TEAM_GetScore( i ))
 					return ( false );
 			}
 		}
@@ -235,7 +235,7 @@ bool CAMPAIGN_DidPlayerBeatMap( void )
 		{
 			for ( ULONG i = 0; i < teams.Size( ); i++ )
 			{
-				if ( TEAM_GetWinCount( players[consoleplayer].ulTeam ) < TEAM_GetWinCount( i ))
+				if ( TEAM_GetWinCount( players[consoleplayer].Team ) < TEAM_GetWinCount( i ))
 					return ( false );
 			}
 		}

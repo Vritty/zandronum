@@ -692,7 +692,7 @@ void SERVERCOMMANDS_SetPlayerTeam( ULONG ulPlayer, ULONG ulPlayerExtra, ServerCo
 	if ( players[ulPlayer].bOnTeam == false )
 		command.SetTeam( teams.Size( ));
 	else
-		command.SetTeam( players[ulPlayer].ulTeam );
+		command.SetTeam( players[ulPlayer].Team );
 
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
@@ -1059,7 +1059,7 @@ void SERVERCOMMANDS_PlayerSay( ULONG ulPlayer, const char *pszString, ULONG ulMo
 					continue;
 
 				// If the players are not on the same team, don't send the message.
-				if ( ( players[*it].ulTeam != players[ulPlayer].ulTeam ) && ( ( PLAYER_IsTrueSpectator ( &players[*it] ) != PLAYER_IsTrueSpectator ( &players[ulPlayer] ) ) || ( PLAYER_IsTrueSpectator ( &players[*it] ) == false ) ) )
+				if ( ( players[*it].Team != players[ulPlayer].Team ) && ( ( PLAYER_IsTrueSpectator ( &players[*it] ) != PLAYER_IsTrueSpectator ( &players[ulPlayer] ) ) || ( PLAYER_IsTrueSpectator ( &players[*it] ) == false ) ) )
 					continue;
 			}
 			// Not in a team mode.

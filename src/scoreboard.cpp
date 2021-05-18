@@ -297,7 +297,7 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 
 		// [RC] Or draw this in their team's color.
 		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-			 cColor = V_GetColorChar( TEAM_GetTextColor( players[viewplayer].ulTeam ) );
+			 cColor = V_GetColorChar( TEAM_GetTextColor( players[viewplayer].Team ) );
 
 		g_BottomString.AppendFormat( "\\c%cFOLLOWING - %s\\c%c", cColor, players[viewplayer].userinfo.GetName(), cColor );
 	}
@@ -625,8 +625,8 @@ void SCOREBOARD_RenderStats_Holders( void )
 				if ( teampossession )
 				{
 					V_RemoveColorCodes( szName );
-					if ( TEAM_CheckIfValid ( g_pPossessionArtifactCarrier->ulTeam ) )
-						sprintf( szString, "\\c%c%s :", V_GetColorChar( TEAM_GetTextColor( g_pPossessionArtifactCarrier->ulTeam )), szName );
+					if ( TEAM_CheckIfValid ( g_pPossessionArtifactCarrier->Team ) )
+						sprintf( szString, "\\c%c%s :", V_GetColorChar( TEAM_GetTextColor( g_pPossessionArtifactCarrier->Team )), szName );
 				}
 				else
 					sprintf( szString, "%s \\cG:", szName );
@@ -646,7 +646,7 @@ void SCOREBOARD_RenderStats_Holders( void )
 			{
 				sprintf( szName, "%s", g_pWhiteCarrier->userinfo.GetName() );
 				V_RemoveColorCodes( szName );
-				if ( TEAM_CheckIfValid ( g_pWhiteCarrier->ulTeam ) )
+				if ( TEAM_CheckIfValid ( g_pWhiteCarrier->Team ) )
 					sprintf( szString, "\\cC%s \\cC:", szName );
 			}
 			else
@@ -1819,7 +1819,7 @@ void SCOREBOARD_DisplayFragMessage( player_t *pFraggedPlayer )
 			if ( TEAM_ShouldUseTeam( i ) == false )
 				continue;
 
-			if ( i == players[consoleplayer].ulTeam )
+			if ( i == players[consoleplayer].Team )
 				continue;
 
 			lMenLeftStanding += TEAM_CountLivingAndRespawnablePlayers( i );
@@ -1968,7 +1968,7 @@ void SCOREBOARD_RefreshHUD( void )
 		{
 			if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
 			{
-				unsigned livingAndRespawnableTeammates = TEAM_CountLivingAndRespawnablePlayers( player->ulTeam );
+				unsigned livingAndRespawnableTeammates = TEAM_CountLivingAndRespawnablePlayers( player->Team );
 				g_lNumOpponentsLeft = GAME_CountLivingAndRespawnablePlayers() - livingAndRespawnableTeammates;
 				g_lNumAlliesLeft = livingAndRespawnableTeammates - PLAYER_IsAliveOrCanRespawn( player );
 			}
@@ -2187,7 +2187,7 @@ static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPl
 		if (( terminator ) && ( players[ulPlayer].cheats2 & CF2_TERMINATORARTIFACT ))
 			ulColor = CR_RED;
 		else if ( players[ulPlayer].bOnTeam == true )
-			ulColor = TEAM_GetTextColor( players[ulPlayer].ulTeam );
+			ulColor = TEAM_GetTextColor( players[ulPlayer].Team );
 		else if ( ulDisplayPlayer == ulPlayer )
 			ulColor = demoplayback ? CR_GOLD : CR_GREEN;
 
@@ -3128,8 +3128,8 @@ static void scoreboard_DoRankingListPass( ULONG ulPlayer, LONG lSpectators, LONG
 		}
 
 		// Skip or require players that aren't on this team.
-		if (((lWrongTeam == 1) && (players[g_iSortedPlayers[ulIdx]].ulTeam != ulDesiredTeam)) ||
-			((lWrongTeam == 2) && (players[g_iSortedPlayers[ulIdx]].ulTeam == ulDesiredTeam)))
+		if (((lWrongTeam == 1) && (players[g_iSortedPlayers[ulIdx]].Team != ulDesiredTeam)) ||
+			((lWrongTeam == 2) && (players[g_iSortedPlayers[ulIdx]].Team == ulDesiredTeam)))
 			continue;
 
 		scoreboard_RenderIndividualPlayer( ulPlayer, g_iSortedPlayers[ulIdx] );

@@ -219,7 +219,7 @@ ULONG TEAM_CountPlayers( ULONG ulTeamIdx )
 		if (( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
 			continue;
 
-		if ( players[ulIdx].bOnTeam && ( players[ulIdx].ulTeam == ulTeamIdx ))
+		if ( players[ulIdx].bOnTeam && ( players[ulIdx].Team == ulTeamIdx ))
 			ulCount++;
 	}
 
@@ -244,7 +244,7 @@ ULONG TEAM_CountLivingAndRespawnablePlayers( ULONG ulTeamIdx )
 		if ( PLAYER_IsAliveOrCanRespawn ( &players[ulIdx] ) == false )
 			continue;
 
-		if ( players[ulIdx].bOnTeam && ( players[ulIdx].ulTeam == ulTeamIdx ))
+		if ( players[ulIdx].bOnTeam && ( players[ulIdx].Team == ulTeamIdx ))
 			ulCount++;
 	}
 
@@ -482,7 +482,7 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 	int playerAssistNumber = GAMEEVENT_CAPTURE_NOASSIST; // [AK] Need this for game event.
 
 	// Determine who assisted.
-	bAssisted = ( TEAM_GetAssistPlayer( pPlayer->ulTeam ) != MAXPLAYERS );
+	bAssisted = ( TEAM_GetAssistPlayer( pPlayer->Team ) != MAXPLAYERS );
 
 	if ( bAssisted )
 	{
@@ -490,7 +490,7 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 		bSelfAssisted = false;
 		for( ULONG i = 0; i < MAXPLAYERS; i++ )
 		{
-			if( (&players[i] == pPlayer) && (TEAM_GetAssistPlayer( pPlayer->ulTeam ) == i) )
+			if( (&players[i] == pPlayer) && (TEAM_GetAssistPlayer( pPlayer->Team ) == i) )
 			{
 				bSelfAssisted = true;
 				break;
@@ -500,17 +500,17 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 
 	// Create the console message.
 	if( ( bAssisted ) && ( ! bSelfAssisted ) )
-		sprintf(szString, "%s and %s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), players[TEAM_GetAssistPlayer( pPlayer->ulTeam )].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam )), TEAM_GetName( pPlayer->ulTeam ));
+		sprintf(szString, "%s and %s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), players[TEAM_GetAssistPlayer( pPlayer->Team )].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
 	else
-		sprintf(szString, "%s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam )), TEAM_GetName( pPlayer->ulTeam ));
+		sprintf(szString, "%s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
 
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		SERVERCOMMANDS_Print( szString, PRINT_HIGH );
 
 	// Create the fullscreen message.
-	FString coloredTeamName = V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam ) );
+	FString coloredTeamName = V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) );
 	coloredTeamName += " ";
-	coloredTeamName += TEAM_GetName( pPlayer->ulTeam );
+	coloredTeamName += TEAM_GetName( pPlayer->Team );
 	switch ( ulNumPoints )
 	{
 	case 0:
@@ -564,14 +564,14 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 	}
 
 	// Create the "scored by / assisted by" message.
-	sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam ) ), pPlayer->userinfo.GetName());
+	sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) ), pPlayer->userinfo.GetName());
 
 	if ( bAssisted )
 	{
 		if ( bSelfAssisted )
-			sprintf( szString + strlen ( szString ), "\\n\\c%c( Self-Assisted )", V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam ) ) );
+			sprintf( szString + strlen ( szString ), "\\n\\c%c( Self-Assisted )", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) ) );
 		else
-			sprintf( szString + strlen ( szString ), "\\n\\c%cAssisted by: %s", V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam ) ), players[TEAM_GetAssistPlayer( pPlayer->ulTeam )].userinfo.GetName());
+			sprintf( szString + strlen ( szString ), "\\n\\c%cAssisted by: %s", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) ), players[TEAM_GetAssistPlayer( pPlayer->Team )].userinfo.GetName());
 	}
 	
 	V_ColorizeString( szString );
@@ -584,7 +584,7 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 			TEAM_MESSAGE_Y_AXIS_SUB,
 			0,
 			0,
-			(EColorRange)(TEAM_GetTextColor (pPlayer->ulTeam)),
+			(EColorRange)(TEAM_GetTextColor (pPlayer->Team)),
 			3.0f,
 			0.5f );
 		StatusBar->AttachMessage( pMsg, MAKE_ID('S','U','B','S') );
@@ -594,7 +594,7 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 		SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_BLUE, 3.0f, 0.0f, 0.5f, "SmallFont", MAKE_ID( 'S', 'U', 'B', 'S' ) );
 
 	// Give his team a point.
-	TEAM_SetScore( pPlayer->ulTeam, TEAM_GetScore( pPlayer->ulTeam ) + ulNumPoints, true );
+	TEAM_SetScore( pPlayer->Team, TEAM_GetScore( pPlayer->Team ) + ulNumPoints, true );
 	PLAYER_SetPoints ( pPlayer, pPlayer->lPointCount + ulNumPoints );
 
 	// Take the skull away.
@@ -641,18 +641,18 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 		SERVERCOMMANDS_GivePlayerMedal( ULONG( pPlayer - players ), MEDAL_TAG );
 
 	// If someone just recently returned the skull, award him with an "Assist!" medal.
-	if ( TEAM_GetAssistPlayer( pPlayer->ulTeam ) != MAXPLAYERS )
+	if ( TEAM_GetAssistPlayer( pPlayer->Team ) != MAXPLAYERS )
 	{
 		// [AK] Mark the assisting player.
-		playerAssistNumber = TEAM_GetAssistPlayer( pPlayer->ulTeam );
+		playerAssistNumber = TEAM_GetAssistPlayer( pPlayer->Team );
 
-		MEDAL_GiveMedal( TEAM_GetAssistPlayer( pPlayer->ulTeam ), MEDAL_ASSIST );
+		MEDAL_GiveMedal( TEAM_GetAssistPlayer( pPlayer->Team ), MEDAL_ASSIST );
 
 		// Tell clients about the medal that been given.
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-			SERVERCOMMANDS_GivePlayerMedal( TEAM_GetAssistPlayer( pPlayer->ulTeam ), MEDAL_ASSIST );
+			SERVERCOMMANDS_GivePlayerMedal( TEAM_GetAssistPlayer( pPlayer->Team ), MEDAL_ASSIST );
 
-		TEAM_SetAssistPlayer( pPlayer->ulTeam, MAXPLAYERS );
+		TEAM_SetAssistPlayer( pPlayer->Team, MAXPLAYERS );
 	}
 
 	// [AK] Trigger an event script (activator is the capturer, assister is the first arg, and points earned is second arg).
@@ -683,7 +683,7 @@ void TEAM_DisplayNeedToReturnSkullMessage( player_t *pPlayer )
 		return;
 
 	// Create the message.
-	sprintf( szString, "\\c%cThe %s skull must be returned first!", V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam )), TEAM_GetName( pPlayer->ulTeam ));
+	sprintf( szString, "\\c%cThe %s skull must be returned first!", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
 
 	V_ColorizeString( szString );
 
@@ -719,7 +719,7 @@ void TEAM_FlagDropped( player_t *pPlayer, ULONG ulTeamIdx )
 		(( pPlayer - players ) >= MAXPLAYERS ) ||
 		(( pPlayer - players ) < 0 ) ||
 		( pPlayer->bOnTeam == false ) ||
-		( TEAM_CheckIfValid( pPlayer->ulTeam ) == false ))
+		( TEAM_CheckIfValid( pPlayer->Team ) == false ))
 	{
 		return;
 	}
@@ -1151,8 +1151,8 @@ const char *TEAM_SelectCustomStringForPlayer( player_t *pPlayer, const FString T
 	if ( pPlayer == NULL )
 		return pszDefaultString;
 
-	if ( pPlayer->bOnTeam && TEAM_HasCustomString ( pPlayer->ulTeam, stringPointer ) )
-		return TEAM_GetCustomString ( pPlayer->ulTeam, stringPointer );
+	if ( pPlayer->bOnTeam && TEAM_HasCustomString ( pPlayer->Team, stringPointer ) )
+		return TEAM_GetCustomString ( pPlayer->Team, stringPointer );
 	else
 		return pszDefaultString;
 }
@@ -1759,7 +1759,7 @@ bool TEAM_IsActorAllowedForPlayer( AActor *pActor, player_t *pPlayer )
 		return true;
 
 	// [BB] Check if the actor is allowed for the team the player is on.
-	return TEAM_IsActorAllowedForTeam( pActor, pPlayer->ulTeam );
+	return TEAM_IsActorAllowedForTeam( pActor, pPlayer->Team );
 }
 
 //****************************************************************************
@@ -1911,7 +1911,7 @@ bool TEAM_IsActorVisibleToPlayer( const AActor *pActor, player_t *pPlayer )
 		return true;
 
 	// [BB] Finally check the team restricion.
-	return TEAM_CheckTeamRestriction( pPlayer->ulTeam, pActor->VisibleToTeam );
+	return TEAM_CheckTeamRestriction( pPlayer->Team, pActor->VisibleToTeam );
 }
 
 //*****************************************************************************
@@ -2098,7 +2098,7 @@ CCMD( team )
 	{
 		if ( players[consoleplayer].bOnTeam )
 		{
-			Printf( "You are on the \034%c%s " TEXTCOLOR_NORMAL "team.\n", V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].ulTeam ) ), TEAM_GetName( players[consoleplayer].ulTeam ) );
+			Printf( "You are on the \034%c%s " TEXTCOLOR_NORMAL "team.\n", V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ) ), TEAM_GetName( players[consoleplayer].Team ) );
 		}
 		else
 			Printf( "You are not currently on a team.\n" );
@@ -2217,7 +2217,7 @@ CCMD( changeteam )
 				return;
 			}
 
-			lDesiredTeam = TEAM_GetNextTeam( players[consoleplayer].ulTeam );
+			lDesiredTeam = TEAM_GetNextTeam( players[consoleplayer].Team );
 		}
 
 		Val = cl_joinpassword.GetGenericRep( CVAR_String );
@@ -2262,12 +2262,12 @@ CCMD( changeteam )
 		if ( players[consoleplayer].bOnTeam == false )
 			return;
 
-		lDesiredTeam = TEAM_GetNextTeam( players[consoleplayer].ulTeam );
+		lDesiredTeam = TEAM_GetNextTeam( players[consoleplayer].Team );
 	}
 
 	// If the desired team matches our current team, break out.
 	// [BB] Don't break out if we are a spectator. In this case we don't change our team, but we want to join.
-	if (( players[consoleplayer].bOnTeam ) && ( lDesiredTeam == static_cast<signed> (players[consoleplayer].ulTeam) )
+	if (( players[consoleplayer].bOnTeam ) && ( lDesiredTeam == static_cast<signed> (players[consoleplayer].Team) )
 		&& !(players[consoleplayer].bSpectating) )
 	{
 		return;
@@ -2300,12 +2300,12 @@ CCMD( changeteam )
 		// Player was on a team, so tell everyone that he's changing teams.
 		if ( bOnTeam )
 		{
-			Printf( "%s defected to the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].ulTeam ) ), TEAM_GetName( players[consoleplayer].ulTeam ));
+			Printf( "%s defected to the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ) ), TEAM_GetName( players[consoleplayer].Team ));
 		}
 		// Otherwise, tell everyone he's joining a team.
 		else
 		{
-			Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].ulTeam ) ), TEAM_GetName( players[consoleplayer].ulTeam ));
+			Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ) ), TEAM_GetName( players[consoleplayer].Team ));
 		}
 
 		if ( players[consoleplayer].mo )
@@ -2328,7 +2328,7 @@ CCMD( changeteam )
 		players[consoleplayer].bDeadSpectator = false;
 
 		if ( GAMEMODE_GetCurrentFlags() & GMF_TEAMGAME )
-			G_TeamgameSpawnPlayer( consoleplayer, players[consoleplayer].ulTeam, true );
+			G_TeamgameSpawnPlayer( consoleplayer, players[consoleplayer].Team, true );
 		else
 			G_DeathMatchSpawnPlayer( consoleplayer, true );
 	}

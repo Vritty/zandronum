@@ -508,14 +508,14 @@ void POSSESSION_ScorePossessionPoint( player_t *pPlayer )
 
 	// If the player's on a team in team possession mode, give the player's point a team.
 	if ( teampossession && pPlayer->bOnTeam )
-		TEAM_SetScore( pPlayer->ulTeam, TEAM_GetScore( pPlayer->ulTeam ) + 1, true );
+		TEAM_SetScore( pPlayer->Team, TEAM_GetScore( pPlayer->Team ) + 1, true );
 
 	// Refresh the HUD since there's bound to be changes.
 	SCOREBOARD_RefreshHUD( );
 
 	// Determine if the pointlimit has been reached.
 	if (( teampossession ) && ( pPlayer->bOnTeam ))
-		bPointLimitReached = ( pointlimit && ( TEAM_GetScore( pPlayer->ulTeam ) >= pointlimit ));
+		bPointLimitReached = ( pointlimit && ( TEAM_GetScore( pPlayer->Team ) >= pointlimit ));
 	else
 		bPointLimitReached = ( pointlimit && ( pPlayer->lPointCount >= pointlimit ));
 
@@ -681,7 +681,7 @@ void POSSESSION_TimeExpired( void )
 
 	// If the player's on a team in team possession mode, give the player's point a team.
 	if ( teampossession && g_pPossessionArtifactCarrier->bOnTeam )
-		TEAM_SetScore( g_pPossessionArtifactCarrier->ulTeam, TEAM_GetScore( g_pPossessionArtifactCarrier->ulTeam ) + 1, true );
+		TEAM_SetScore( g_pPossessionArtifactCarrier->Team, TEAM_GetScore( g_pPossessionArtifactCarrier->Team ) + 1, true );
 
 	NETWORK_Printf( "%s\n", GStrings( "TXT_TIMELIMIT" ));
 	GAME_SetEndLevelDelay( 5 * TICRATE );
@@ -754,7 +754,7 @@ void possession_DisplayScoreInfo( ULONG ulPlayer )
 
 	// First, determine if the pointlimit has been reached.
 	if (( teampossession ) && ( players[ulPlayer].bOnTeam ))
-		bPointLimitReached = ( pointlimit && ( TEAM_GetScore( players[ulPlayer].ulTeam ) >= pointlimit ));
+		bPointLimitReached = ( pointlimit && ( TEAM_GetScore( players[ulPlayer].Team ) >= pointlimit ));
 	else
 		bPointLimitReached = ( pointlimit && ( players[ulPlayer].lPointCount >= pointlimit ));
 
@@ -762,8 +762,8 @@ void possession_DisplayScoreInfo( ULONG ulPlayer )
 	// [RC] On team possession, state who scored.
 	if ( teampossession && ( players[ulPlayer].bOnTeam ))
 	{
-		sprintf( szString, "\\c%c%s %s!", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].ulTeam )), TEAM_GetName( players[ulPlayer].ulTeam ) ,bPointLimitReached ? "WINS" : "SCORES" );
-		sprintf( szScorer, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].ulTeam )), players[ulPlayer].userinfo.GetName() );
+		sprintf( szString, "\\c%c%s %s!", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].Team )), TEAM_GetName( players[ulPlayer].Team ) ,bPointLimitReached ? "WINS" : "SCORES" );
+		sprintf( szScorer, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].Team )), players[ulPlayer].userinfo.GetName() );
 
 		// [BB] I don't see why we should remove the player name's color codes here. It's not done in CTF either
 		// and the player's team is apparent from the rest of the message.

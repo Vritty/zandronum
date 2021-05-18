@@ -4566,7 +4566,7 @@ void P_SetupLevel (char *lumpname, int position)
 			// The campaign could have already put them on a team.
 			if ( players[i].bOnTeam )
 			{
-				G_TeamgameSpawnPlayer( i, players[i].ulTeam, false );
+				G_TeamgameSpawnPlayer( i, players[i].Team, false );
 			}
 			else
 				G_TemporaryTeamSpawnPlayer( i, false );

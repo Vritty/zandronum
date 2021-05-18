@@ -3010,7 +3010,7 @@ void PLAYER_ResetPlayerData( player_t *pPlayer )
 	pPlayer->crouchoffset = 0;
 	pPlayer->crouchviewdelta = 0;
 	pPlayer->bOnTeam = 0;
-	pPlayer->ulTeam = 0;
+	pPlayer->Team = 0;
 	pPlayer->lPointCount = 0;
 	pPlayer->ulDeathCount = 0;
 	PLAYER_ResetSpecialCounters ( pPlayer );
@@ -3872,7 +3872,7 @@ void ServerCommands::KillPlayer::Execute()
 	{
 		if ((( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS ) == false ) || (( fraglimit == 0 ) || ( players[ulSourcePlayer].fragcount < fraglimit ))) &&
 			(( ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS ) && !( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ) == false ) || (( winlimit == 0 ) || ( players[ulSourcePlayer].ulWins < static_cast<ULONG>(winlimit) ))) &&
-			(( ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ) == false ) || (( winlimit == 0 ) || ( TEAM_GetWinCount( players[ulSourcePlayer].ulTeam ) < winlimit ))))
+			(( ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ) == false ) || (( winlimit == 0 ) || ( TEAM_GetWinCount( players[ulSourcePlayer].Team ) < winlimit ))))
 		{
 			// Display a large "You were fragged by <name>." message in the middle of the screen.
 			if ( player == &players[consoleplayer] )
@@ -6028,7 +6028,7 @@ static void client_DoGameModeWinSequence( BYTESTREAM_s *pByteStream )
 	{
 		if ( lastmanstanding && ( ulWinner == static_cast<ULONG>(consoleplayer) ))
 			ANNOUNCER_PlayEntry( cl_announcer, "YouWin" );
-		else if ( teamlms && players[consoleplayer].bOnTeam && ( ulWinner == players[consoleplayer].ulTeam ))
+		else if ( teamlms && players[consoleplayer].bOnTeam && ( ulWinner == players[consoleplayer].Team ))
 			ANNOUNCER_PlayEntry( cl_announcer, "YouWin" );
 
 		LASTMANSTANDING_DoWinSequence( ulWinner );

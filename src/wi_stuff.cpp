@@ -365,7 +365,7 @@ ULONG WI_CalcRank( void )
 			if ( players[consoleplayer].bOnTeam == false )
 				return ( 2 );
 
-			if ( TEAM_GetFragCount( players[consoleplayer].ulTeam ) == TEAM_GetHighestFragCount( ))
+			if ( TEAM_GetFragCount( players[consoleplayer].Team ) == TEAM_GetHighestFragCount( ))
 				return ( 1 );
 			else
 				return ( 2 );
@@ -379,7 +379,7 @@ ULONG WI_CalcRank( void )
 			if ( players[consoleplayer].bOnTeam == false )
 				return ( 2 );
 
-			if ( TEAM_GetWinCount( players[consoleplayer].ulTeam ) == TEAM_GetHighestWinCount( ))
+			if ( TEAM_GetWinCount( players[consoleplayer].Team ) == TEAM_GetHighestWinCount( ))
 				return ( 1 );
 			else
 				return ( 2 );
@@ -393,7 +393,7 @@ ULONG WI_CalcRank( void )
 			if ( players[consoleplayer].bOnTeam == false )
 				return ( 2 );
 
-			if ( TEAM_GetScore( players[consoleplayer].ulTeam ) == TEAM_GetHighestScoreCount( ))
+			if ( TEAM_GetScore( players[consoleplayer].Team ) == TEAM_GetHighestScoreCount( ))
 				return ( 1 );
 			else
 				return ( 2 );
@@ -1408,9 +1408,9 @@ void WI_UpdateCampaignStats( void )
 
 		if (( teamplay ) && ( players[consoleplayer].bOnTeam ))
 		{
-			cnt_Frags = TEAM_GetFragCount( players[consoleplayer].ulTeam );
-			cnt_Deaths = TEAM_GetDeathCount( players[consoleplayer].ulTeam );
-			if ( TEAM_GetFragCount( players[consoleplayer].ulTeam ) >= TEAM_GetHighestFragCount( ))
+			cnt_Frags = TEAM_GetFragCount( players[consoleplayer].Team );
+			cnt_Deaths = TEAM_GetDeathCount( players[consoleplayer].Team );
+			if ( TEAM_GetFragCount( players[consoleplayer].Team ) >= TEAM_GetHighestFragCount( ))
 				cnt_Rank = 1;
 			else
 				cnt_Rank = 2;
@@ -1425,9 +1425,9 @@ void WI_UpdateCampaignStats( void )
 		}
 		else if (( teamlms ) && ( players[consoleplayer].bOnTeam ))
 		{
-			cnt_Frags = TEAM_GetWinCount( players[consoleplayer].ulTeam );
-			cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].ulTeam );
-			if ( TEAM_GetWinCount( players[consoleplayer].ulTeam ) >= TEAM_GetHighestWinCount( ))
+			cnt_Frags = TEAM_GetWinCount( players[consoleplayer].Team );
+			cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].Team );
+			if ( TEAM_GetWinCount( players[consoleplayer].Team ) >= TEAM_GetHighestWinCount( ))
 				cnt_Rank = 1;
 			else
 				cnt_Rank = 2;
@@ -1435,8 +1435,8 @@ void WI_UpdateCampaignStats( void )
 		}
 		else if (( teamgame || teampossession ) && ( players[consoleplayer].bOnTeam ))
 		{
-			cnt_Frags = TEAM_GetScore( players[consoleplayer].ulTeam );
-			cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].ulTeam );
+			cnt_Frags = TEAM_GetScore( players[consoleplayer].Team );
+			cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].Team );
 			cnt_Rank = WI_CalcRank( );
 			cnt_NumPlayers = SERVER_CountPlayers( true );
 		}
@@ -1459,9 +1459,9 @@ void WI_UpdateCampaignStats( void )
 
 		if (( teamplay ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( cnt_Frags >= TEAM_GetFragCount( players[consoleplayer].ulTeam ))
+			if ( cnt_Frags >= TEAM_GetFragCount( players[consoleplayer].Team ))
 			{
-				cnt_Frags = TEAM_GetFragCount( players[consoleplayer].ulTeam );
+				cnt_Frags = TEAM_GetFragCount( players[consoleplayer].Team );
 				S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 				cp_state++;
 			}
@@ -1477,18 +1477,18 @@ void WI_UpdateCampaignStats( void )
 		}
 		else if (( teamlms ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( cnt_Frags >= TEAM_GetWinCount( players[consoleplayer].ulTeam ))
+			if ( cnt_Frags >= TEAM_GetWinCount( players[consoleplayer].Team ))
 			{
-				cnt_Frags = TEAM_GetWinCount( players[consoleplayer].ulTeam );
+				cnt_Frags = TEAM_GetWinCount( players[consoleplayer].Team );
 				S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 				cp_state++;
 			}
 		}
 		else if (( teamgame || teampossession ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( cnt_Frags >= TEAM_GetScore( players[consoleplayer].ulTeam ))
+			if ( cnt_Frags >= TEAM_GetScore( players[consoleplayer].Team ))
 			{
-				cnt_Frags = TEAM_GetScore( players[consoleplayer].ulTeam );
+				cnt_Frags = TEAM_GetScore( players[consoleplayer].Team );
 				S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 				cp_state++;
 			}
@@ -1512,9 +1512,9 @@ void WI_UpdateCampaignStats( void )
 
 		if (( teamplay ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( cnt_Deaths >= TEAM_GetDeathCount( players[consoleplayer].ulTeam ))
+			if ( cnt_Deaths >= TEAM_GetDeathCount( players[consoleplayer].Team ))
 			{
-				cnt_Deaths = TEAM_GetDeathCount( players[consoleplayer].ulTeam );
+				cnt_Deaths = TEAM_GetDeathCount( players[consoleplayer].Team );
 				S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 				cp_state++;
 			}
@@ -1530,18 +1530,18 @@ void WI_UpdateCampaignStats( void )
 		}
 		else if (( teamlms ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( cnt_Deaths >= TEAM_GetFragCount( players[consoleplayer].ulTeam ))
+			if ( cnt_Deaths >= TEAM_GetFragCount( players[consoleplayer].Team ))
 			{
-				cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].ulTeam );
+				cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].Team );
 				S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 				cp_state++;
 			}
 		}
 		else if (( teamgame || teampossession ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( cnt_Deaths >= TEAM_GetFragCount( players[consoleplayer].ulTeam ))
+			if ( cnt_Deaths >= TEAM_GetFragCount( players[consoleplayer].Team ))
 			{
-				cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].ulTeam );
+				cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].Team );
 				S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 				cp_state++;
 			}
@@ -1566,7 +1566,7 @@ void WI_UpdateCampaignStats( void )
 
 		if (( teamplay ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( TEAM_GetFragCount( players[consoleplayer].ulTeam ) >= TEAM_GetHighestFragCount( ))
+			if ( TEAM_GetFragCount( players[consoleplayer].Team ) >= TEAM_GetHighestFragCount( ))
 			{
 				if ( cnt_Rank > 1 )
 					cnt_Rank = 1;
@@ -1579,7 +1579,7 @@ void WI_UpdateCampaignStats( void )
 		}
 		else if (( teamlms ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( TEAM_GetWinCount( players[consoleplayer].ulTeam ) >= TEAM_GetHighestWinCount( ))
+			if ( TEAM_GetWinCount( players[consoleplayer].Team ) >= TEAM_GetHighestWinCount( ))
 			{
 				if ( cnt_Rank > 1 )
 					cnt_Rank = 1;

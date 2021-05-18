@@ -1098,7 +1098,7 @@ void G_DoLoadLevel (int position, bool autosave)
 			// Clear everyone's team.
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				players[i].ulTeam = teams.Size( );
+				players[i].Team = teams.Size( );
 				players[i].bOnTeam = false;
 			}
 		}
@@ -1121,7 +1121,7 @@ void G_DoLoadLevel (int position, bool autosave)
 					if ( players[i].bSpectating )
 						continue;
 
-					if (( players[i].bOnTeam == false ) && ( players[i].ulTeam == teams.Size( ) ))
+					if (( players[i].bOnTeam == false ) && ( players[i].Team == teams.Size( ) ))
 						lNumNeedingTeam++;
 				}
 
@@ -1130,7 +1130,7 @@ void G_DoLoadLevel (int position, bool autosave)
 					do
 					{
 						lRand = ( M_Random( ) % MAXPLAYERS );
-					} while (( playeringame[lRand] == false ) || ( players[lRand].bSpectating ) || ( players[lRand].bOnTeam ) || ( players[lRand].ulTeam != teams.Size( ) ));
+					} while (( playeringame[lRand] == false ) || ( players[lRand].bSpectating ) || ( players[lRand].bOnTeam ) || ( players[lRand].Team != teams.Size( ) ));
 
 
 					// [BB] Note: The team starts for the new map are not initialized yet, so we can't take them into account when selecting the team here.
@@ -1235,7 +1235,7 @@ void G_DoLoadLevel (int position, bool autosave)
 
 				if ( TEAM_CheckIfValid ( ulTeam ) )
 				{
-					players[consoleplayer].ulTeam = ulTeam;
+					players[consoleplayer].Team = ulTeam;
 					players[consoleplayer].bOnTeam = true;
 				}
 				else

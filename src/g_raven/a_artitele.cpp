@@ -46,7 +46,7 @@ bool AArtiTeleport::Use (bool pickup)
 
 	// [BB] If this is a team game and there are valid team starts for the team
 	// the owner is on, teleport to one of the team starts.
-	const ULONG ownerTeam = Owner->player ? Owner->player->ulTeam : teams.Size( );
+	const ULONG ownerTeam = Owner->player ? Owner->player->Team : teams.Size( );
 	if ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
 	     && TEAM_CheckIfValid ( ownerTeam )
 	     && ( teams[ownerTeam].TeamStarts.Size( ) > 0 ) )

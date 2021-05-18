@@ -2116,7 +2116,7 @@ FUNC( LS_Team_Score )
 	if ( !it || !it->player || it->player->bOnTeam == false )
 		return ( false );
 
-	TEAM_SetScore( it->player->ulTeam, TEAM_GetScore( it->player->ulTeam ) + arg0, true );
+	TEAM_SetScore( it->player->Team, TEAM_GetScore( it->player->Team ) + arg0, true );
 	PLAYER_SetPoints ( it->player, it->player->lPointCount + arg0 );
 
 	return ( false );

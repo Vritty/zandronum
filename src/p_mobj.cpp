@@ -5405,7 +5405,7 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 				{
 					// [BB] If the player is on a team, only a class valid for this team may be selected.
 					if ( p->bOnTeam )
-						type = TEAM_SelectRandomValidPlayerClass( p->ulTeam );
+						type = TEAM_SelectRandomValidPlayerClass( p->Team );
 					else
 						type = pr_multiclasschoice() % PlayerClasses.Size ();
 				}
@@ -7532,13 +7532,13 @@ bool AActor::IsTeammate (AActor *other)
 		{
 			if (!player->bOnTeam)
 				return ( false );
-			myTeam = player->ulTeam;
+			myTeam = player->Team;
 		}
 		if (other->player)
 		{
 			if (!other->player->bOnTeam)
 				return ( false );
-			otherTeam = other->player->ulTeam;
+			otherTeam = other->player->Team;
 		}
 
 		// If they're not on our team...

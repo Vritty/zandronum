@@ -207,7 +207,7 @@ void JOINQUEUE_PlayerLeftGame( int player, bool pop )
 
 				if ( NETWORK_GetState() != NETSTATE_SERVER
 					&& players[consoleplayer].bOnTeam
-					&& lWinner == (LONG)players[consoleplayer].ulTeam )
+					&& lWinner == (LONG)players[consoleplayer].Team )
 				{
 					ANNOUNCER_PlayEntry( cl_announcer, "YouWin" );
 				}

@@ -1394,7 +1394,7 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 		if ( ( dmflags2 & DF2_NO_TEAM_SELECT ) && ( players[g_lCurrentClient].bSpectating == false ) )
 		{
 			players[g_lCurrentClient].bOnTeam = true;
-			players[g_lCurrentClient].ulTeam = TEAM_ChooseBestTeamForPlayer( );
+			players[g_lCurrentClient].Team = TEAM_ChooseBestTeamForPlayer( );
 
 		}
 		// [BB] Non-spectators in team games are always on a team. Under normal circumstances it shouldn't
@@ -1879,7 +1879,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	players[lClient].ulTime = 0;
 	players[lClient].bSpectating = false;
 	players[lClient].bDeadSpectator = false;
-	players[lClient].ulTeam = teams.Size( );
+	players[lClient].Team = teams.Size( );
 	players[lClient].bOnTeam = false;
 
 	g_aClients[lClient].bRCONAccess = false;
@@ -5851,7 +5851,7 @@ static bool server_RequestJoin( BYTESTREAM_s *pByteStream )
 		( !( GAMEMODE_GetCurrentFlags() & GMF_TEAMGAME ) || ( TemporaryTeamStarts.Size( ) == 0 ) ) )
 	{
 		players[g_lCurrentClient].bOnTeam = true;
-		players[g_lCurrentClient].ulTeam = TEAM_ChooseBestTeamForPlayer( );
+		players[g_lCurrentClient].Team = TEAM_ChooseBestTeamForPlayer( );
 
 		// If this player is on a team, tell all the other clients that a team has been selected
 		// for him.
@@ -6012,7 +6012,7 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	}
 
 	// If the desired team matches our current team, break out.
-	if (( players[g_lCurrentClient].bOnTeam ) && ( lDesiredTeam == static_cast<signed> (players[g_lCurrentClient].ulTeam) ))
+	if (( players[g_lCurrentClient].bOnTeam ) && ( lDesiredTeam == static_cast<signed> (players[g_lCurrentClient].Team) ))
 	{
 		SERVER_PrintfPlayer( g_lCurrentClient, "You are already on the %s team!\n", TEAM_GetName( lDesiredTeam ));
 		return ( false );
@@ -6061,12 +6061,12 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	// Player was on a team, so tell everyone that he's changing teams.
 	if ( bOnTeam )
 	{
-		SERVER_Printf( "%s defected to the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].ulTeam )), TEAM_GetName( players[g_lCurrentClient].ulTeam ));
+		SERVER_Printf( "%s defected to the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].Team )), TEAM_GetName( players[g_lCurrentClient].Team ));
 	}
 	// Otherwise, tell everyone he's joining a team.
 	else
 	{
-		SERVER_Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].ulTeam )), TEAM_GetName( players[g_lCurrentClient].ulTeam ));
+		SERVER_Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].Team )), TEAM_GetName( players[g_lCurrentClient].Team ));
 	}
 
 	if ( players[g_lCurrentClient].mo )
@@ -6091,7 +6091,7 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	players[g_lCurrentClient].bDeadSpectator = false;
 
 	if ( GAMEMODE_GetCurrentFlags() & GMF_TEAMGAME )
-		G_TeamgameSpawnPlayer( g_lCurrentClient, players[g_lCurrentClient].ulTeam, true );
+		G_TeamgameSpawnPlayer( g_lCurrentClient, players[g_lCurrentClient].Team, true );
 	else
 		G_DeathMatchSpawnPlayer( g_lCurrentClient, true );
 

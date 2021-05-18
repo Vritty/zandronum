@@ -713,7 +713,7 @@ void CHAT_Render( void )
 	if ( g_ulChatMode == CHATMODE_NONE )
 		return;
 	else if ( g_ulChatMode == CHATMODE_TEAM )
-		prompt.Format( "Say <to %s>: ", PLAYER_IsTrueSpectator( &players[consoleplayer] ) ? "Spectators" : TEAM_GetName( players[consoleplayer].ulTeam ));
+		prompt.Format( "Say <to %s>: ", PLAYER_IsTrueSpectator( &players[consoleplayer] ) ? "Spectators" : TEAM_GetName( players[consoleplayer].Team ));
 	else if ( g_ulChatMode == CHATMODE_PRIVATE_SEND )
 		prompt.Format( "Say <to %s>: ", g_ulChatPlayer != MAXPLAYERS ? players[g_ulChatPlayer].userinfo.GetName() : "Server" );
 
@@ -748,7 +748,7 @@ void CHAT_Render( void )
 
 	// Use different colors in team chat.
 	if ( g_ulChatMode == CHATMODE_TEAM )
-		promptColor = PLAYER_IsTrueSpectator( &players[consoleplayer] ) ? CR_DARKGRAY : static_cast<EColorRange>( TEAM_GetTextColor( players[consoleplayer].ulTeam ));
+		promptColor = PLAYER_IsTrueSpectator( &players[consoleplayer] ) ? CR_DARKGRAY : static_cast<EColorRange>( TEAM_GetTextColor( players[consoleplayer].Team ));
 	// [AK] Use a different color when sending a private message to the server.
 	else if (( g_ulChatMode == CHATMODE_PRIVATE_SEND ) && ( g_ulChatPlayer == MAXPLAYERS ))
 		promptColor = CR_GREY;
@@ -940,7 +940,7 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 		else
 		{
 			OutString = TEXTCOLOR_ESCAPE;
-			OutString += V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].ulTeam ));
+			OutString += V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ));
 			OutString += "<TEAM> ";
 		}
 

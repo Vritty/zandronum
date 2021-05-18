@@ -277,7 +277,7 @@ LONG ATeamItem::AllowFlagPickup( AActor *pToucher )
 		return ( DENY_PICKUP );
 
 	// [BB] Players are always allowed to return their own dropped team item.
-	if (( this->GetClass( ) == TEAM_GetItem( pToucher->player->ulTeam )) &&
+	if (( this->GetClass( ) == TEAM_GetItem( pToucher->player->Team )) &&
 		( this->flags & MF_DROPPED ))
 		return ( RETURN_FLAG );
 
@@ -307,7 +307,7 @@ LONG ATeamItem::AllowFlagPickup( AActor *pToucher )
 		return ( DENY_PICKUP );
 
 	// Player is touching the enemy flag.
-	if ( this->GetClass( ) != TEAM_GetItem( pToucher->player->ulTeam ))
+	if ( this->GetClass( ) != TEAM_GetItem( pToucher->player->Team ))
 		return ( ALLOW_PICKUP );
 
 	return ( DENY_PICKUP );
@@ -425,8 +425,8 @@ bool AFlag::HandlePickup( AInventory *pItem )
 
 	// If we're carrying the opposing team's flag, and trying to pick up our flag,
 	// then that means we've captured the flag. Award a point.
-	if (( this->GetClass( ) != TEAM_GetItem( Owner->player->ulTeam )) &&
-		( pItem->GetClass( ) == TEAM_GetItem( Owner->player->ulTeam )))
+	if (( this->GetClass( ) != TEAM_GetItem( Owner->player->Team )) &&
+		( pItem->GetClass( ) == TEAM_GetItem( Owner->player->Team )))
 	{
 		// Don't award a point if we're touching a dropped version of our flag.
 		if ( static_cast<AFlag *>( pItem )->AllowFlagPickup( Owner ) == RETURN_FLAG )
@@ -435,7 +435,7 @@ bool AFlag::HandlePickup( AInventory *pItem )
 		if (( TEAM_GetSimpleCTFSTMode( )) && ( NETWORK_InClientMode() == false ))
 		{
 			// Give his team a point.
-			TEAM_SetScore( Owner->player->ulTeam, TEAM_GetScore( Owner->player->ulTeam ) + 1, true );
+			TEAM_SetScore( Owner->player->Team, TEAM_GetScore( Owner->player->Team ) + 1, true );
 			PLAYER_SetPoints ( Owner->player, Owner->player->lPointCount + 1 );
 
 			// Award the scorer with a "Capture!" medal.
@@ -457,7 +457,7 @@ bool AFlag::HandlePickup( AInventory *pItem )
 				SERVERCOMMANDS_PrintHUDMessage( "", 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.5f, "SmallFont", MAKE_ID( 'S', 'U', 'B', 'S' ) );
 
 			// Create the "captured" message.
-			sprintf( szString, "\\c%c%s team scores!", V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )), TEAM_GetName( Owner->player->ulTeam ));
+			sprintf( szString, "\\c%c%s team scores!", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
 			V_ColorizeString( szString );
 
 			// Now, print it.
@@ -480,19 +480,19 @@ bool AFlag::HandlePickup( AInventory *pItem )
 			}
 
 			// [RC] Create the "scored by" and "assisted by" message.
-			sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )), Owner->player->userinfo.GetName() );
-			const bool bAssisted = (TEAM_GetAssistPlayer(Owner->player->ulTeam) != MAXPLAYERS);
+			sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), Owner->player->userinfo.GetName() );
+			const bool bAssisted = (TEAM_GetAssistPlayer(Owner->player->Team) != MAXPLAYERS);
 			if ( bAssisted )
 			{
 				for(ULONG i = 0; i < MAXPLAYERS; i++)
 					if(&players[i] == Owner->player)
-						if( TEAM_GetAssistPlayer( Owner->player->ulTeam) == i)
+						if( TEAM_GetAssistPlayer( Owner->player->Team) == i)
 							selfAssist = true;
 
 				if ( selfAssist )
-					sprintf( szString + strlen ( szString ), "\\n\\c%c[ Self-Assisted ]", V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )));
+					sprintf( szString + strlen ( szString ), "\\n\\c%c[ Self-Assisted ]", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )));
 				else
-					sprintf( szString + strlen ( szString ), "\\n\\c%cAssisted by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )), players[TEAM_GetAssistPlayer( Owner->player->ulTeam )].userinfo.GetName());
+					sprintf( szString + strlen ( szString ), "\\n\\c%cAssisted by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), players[TEAM_GetAssistPlayer( Owner->player->Team )].userinfo.GetName());
 			}
 
 			V_ColorizeString( szString );
@@ -516,9 +516,9 @@ bool AFlag::HandlePickup( AInventory *pItem )
 				SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.5f, "SmallFont", MAKE_ID( 'S', 'U', 'B', 'S' ) );
 
 				if( ( bAssisted ) && ( ! selfAssist ) )
-					SERVER_Printf( "%s and %s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), players[TEAM_GetAssistPlayer( Owner->player->ulTeam )].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )), TEAM_GetName( Owner->player->ulTeam ));
+					SERVER_Printf( "%s and %s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), players[TEAM_GetAssistPlayer( Owner->player->Team )].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
 				else
-					SERVER_Printf( "%s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )), TEAM_GetName( Owner->player->ulTeam ));
+					SERVER_Printf( "%s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
 			}
 
 			
@@ -526,15 +526,15 @@ bool AFlag::HandlePickup( AInventory *pItem )
 			if ( bAssisted )
 			{
 				// [CK] Mark the assisting player
-				playerAssistNumber = TEAM_GetAssistPlayer( Owner->player->ulTeam );
+				playerAssistNumber = TEAM_GetAssistPlayer( Owner->player->Team );
 
-				MEDAL_GiveMedal( TEAM_GetAssistPlayer( Owner->player->ulTeam ), MEDAL_ASSIST );
+				MEDAL_GiveMedal( TEAM_GetAssistPlayer( Owner->player->Team ), MEDAL_ASSIST );
 
 				// Tell clients about the medal that been given.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_GivePlayerMedal( TEAM_GetAssistPlayer( Owner->player->ulTeam ), MEDAL_ASSIST );
+					SERVERCOMMANDS_GivePlayerMedal( TEAM_GetAssistPlayer( Owner->player->Team ), MEDAL_ASSIST );
 
-				TEAM_SetAssistPlayer( Owner->player->ulTeam, MAXPLAYERS );
+				TEAM_SetAssistPlayer( Owner->player->Team, MAXPLAYERS );
 			}
 
 			// [CK] Now we have the information to trigger an event script (Activator is the capturer, assister is the second arg)
@@ -650,7 +650,7 @@ void AFlag::DisplayFlagTaken( AActor *pToucher )
 
 	// [RC] Create the "held by" message for the team.
 	ULONG playerIndex = ULONG( pToucher->player - players );
-	sprintf( szString, "\\c%cHeld by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].ulTeam )), players[playerIndex].userinfo.GetName() );
+	sprintf( szString, "\\c%cHeld by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName() );
 
 	V_ColorizeString( szString );
 
@@ -740,10 +740,10 @@ void AFlag::ReturnFlag( AActor *pReturner )
 	{
 		for ( ULONG i = 0; i < MAXPLAYERS; i++ )
 		{
-			if ( ( players[i].ulTeam == ulItemTeam )
+			if ( ( players[i].Team == ulItemTeam )
 			     && TEAM_FindOpposingTeamsItemInPlayersInventory ( &players[i] ) )
 			{
-				TEAM_SetAssistPlayer( pReturner->player->ulTeam, ULONG( pReturner->player - players ));
+				TEAM_SetAssistPlayer( pReturner->player->Team, ULONG( pReturner->player - players ));
 			}
 		}
 	}
@@ -753,7 +753,7 @@ void AFlag::ReturnFlag( AActor *pReturner )
 	{
 		// [RC] Create the "returned by" message for this team.
 		ULONG playerIndex = ULONG( pReturner->player - players );
-		sprintf( szString, "\\c%cReturned by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].ulTeam )), players[playerIndex].userinfo.GetName() );
+		sprintf( szString, "\\c%cReturned by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName() );
 
 		// [CK] Send out an event that a flag/skull was returned, this is the easiest place to do it
 		// Second argument is the team index, third argument is what kind of return it was
@@ -871,7 +871,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 
 	ulTeam = TEAM_GetTeamFromItem( this );
 
-	if ( TEAM_GetTeamFromItem( pItem ) == Owner->player->ulTeam )
+	if ( TEAM_GetTeamFromItem( pItem ) == Owner->player->Team )
 		return ( false );
 
 	// If we're trying to pick up the opponent's flag, award a point since we're
@@ -879,7 +879,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 	if (( TEAM_GetSimpleCTFSTMode( )) && ( NETWORK_InClientMode() == false ))
 	{
 		// Give his team a point.
-		TEAM_SetScore( Owner->player->ulTeam, TEAM_GetScore( Owner->player->ulTeam ) + 1, true );
+		TEAM_SetScore( Owner->player->Team, TEAM_GetScore( Owner->player->Team ) + 1, true );
 		PLAYER_SetPoints ( Owner->player, Owner->player->lPointCount + 1 );
 
 		// Award the scorer with a "Capture!" medal.
@@ -890,21 +890,21 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 			SERVERCOMMANDS_GivePlayerMedal( ULONG( Owner->player - players ), MEDAL_CAPTURE );
 
 		// If someone just recently returned the flag, award him with an "Assist!" medal.
-		if ( TEAM_GetAssistPlayer( Owner->player->ulTeam ) != MAXPLAYERS )
+		if ( TEAM_GetAssistPlayer( Owner->player->Team ) != MAXPLAYERS )
 		{
 			// [AK] Mark the assisting player.
-			playerAssistNumber = TEAM_GetAssistPlayer( Owner->player->ulTeam );
-			MEDAL_GiveMedal( TEAM_GetAssistPlayer( Owner->player->ulTeam ), MEDAL_ASSIST );
+			playerAssistNumber = TEAM_GetAssistPlayer( Owner->player->Team );
+			MEDAL_GiveMedal( TEAM_GetAssistPlayer( Owner->player->Team ), MEDAL_ASSIST );
 
 			// Tell clients about the medal that been given.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-				SERVERCOMMANDS_GivePlayerMedal( TEAM_GetAssistPlayer( Owner->player->ulTeam ), MEDAL_ASSIST );
+				SERVERCOMMANDS_GivePlayerMedal( TEAM_GetAssistPlayer( Owner->player->Team ), MEDAL_ASSIST );
 
-			TEAM_SetAssistPlayer( Owner->player->ulTeam, MAXPLAYERS );
+			TEAM_SetAssistPlayer( Owner->player->Team, MAXPLAYERS );
 		}
 
 		// Create the "captured" message.
-		sprintf( szString, "\\c%c%s team scores!", V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )), TEAM_GetName( Owner->player->ulTeam ));
+		sprintf( szString, "\\c%c%s team scores!", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
 		V_ColorizeString( szString );
 
 		// Now, print it.
@@ -927,7 +927,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 		}
 
 		// [BC] Rivecoder's "scored by" message.
-		sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->ulTeam )), Owner->player->userinfo.GetName() );
+		sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), Owner->player->userinfo.GetName() );
 		V_ColorizeString( szString );
 
 		// Now, print it.
@@ -1065,7 +1065,7 @@ void AWhiteFlag::DisplayFlagTaken( AActor *pToucher )
 	sprintf( szName, "%s", players[ulPlayer].userinfo.GetName() );
 	V_RemoveColorCodes( szName );
 
-	sprintf( szString, "\\ccHeld by: \\c%c%s", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].ulTeam )), szName );
+	sprintf( szString, "\\ccHeld by: \\c%c%s", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].Team )), szName );
 	V_ColorizeString( szString );
 
 	// Now, print it.
@@ -1268,7 +1268,7 @@ void ASkull::DisplayFlagTaken( AActor *pToucher )
 
 	// [RC] Create the "held by" message for this team.
 	ULONG playerIndex = ULONG( pToucher->player - players );
-	sprintf( szString, "\\c%cHeld by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].ulTeam )), players[playerIndex].userinfo.GetName());
+	sprintf( szString, "\\c%cHeld by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName());
 
 	V_ColorizeString( szString );
 
@@ -1358,10 +1358,10 @@ void ASkull::ReturnFlag( AActor *pReturner )
 	{
 		for ( ULONG i = 0; i < MAXPLAYERS; i++ )
 		{
-			if ( ( players[i].ulTeam == ulItemTeam )
+			if ( ( players[i].Team == ulItemTeam )
 			     && TEAM_FindOpposingTeamsItemInPlayersInventory ( &players[i] ) )
 			{
-				TEAM_SetAssistPlayer( pReturner->player->ulTeam, ULONG( pReturner->player - players ));
+				TEAM_SetAssistPlayer( pReturner->player->Team, ULONG( pReturner->player - players ));
 			}
 		}
 	}
@@ -1371,7 +1371,7 @@ void ASkull::ReturnFlag( AActor *pReturner )
 	{
 		// [RC] Create the "returned by" message for this team.
 		ULONG playerIndex = ULONG( pReturner->player - players );
-		sprintf( szString, "\\c%cReturned by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].ulTeam )), players[playerIndex].userinfo.GetName() );
+		sprintf( szString, "\\c%cReturned by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName() );
 
 		// [AK] Trigger an event script indicating that a player returned the skull.
 		GAMEMODE_HandleEvent( GAMEEVENT_RETURNS, pReturner, static_cast<int> ( ulItemTeam ), GAMEEVENT_RETURN_PLAYERRETURN );

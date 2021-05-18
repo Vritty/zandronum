@@ -602,7 +602,7 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 				{
 					NETWORK_Printf( "%s\n", GStrings( "TXT_FRAGLIMIT" ));
 					if ( teamplay && ( source->player->bOnTeam ))
-						NETWORK_Printf( "%s wins!\n", TEAM_GetName( source->player->ulTeam ));
+						NETWORK_Printf( "%s wins!\n", TEAM_GetName( source->player->Team ));
 					else
 						NETWORK_Printf( "%s wins!\n", source->player->userinfo.GetName() );
 
@@ -635,7 +635,7 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 						if (( NETWORK_GetState( ) == NETSTATE_SINGLE_MULTIPLAYER ) && ( players[consoleplayer].mo->CheckLocalView( source->player - players )))
 							sprintf( szString, "\\cGYOU WIN!" );
 						else if (( teamplay ) && ( source->player->bOnTeam ))
-							sprintf( szString, "\\c%c%s wins!\n", V_GetColorChar( TEAM_GetTextColor( source->player->ulTeam )), TEAM_GetName( source->player->ulTeam ));
+							sprintf( szString, "\\c%c%s wins!\n", V_GetColorChar( TEAM_GetTextColor( source->player->Team )), TEAM_GetName( source->player->Team ));
 						else
 							sprintf( szString, "%s \\cGWINS!", players[source->player - players].userinfo.GetName() );
 						V_ColorizeString( szString );
@@ -781,7 +781,7 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 						
 		// [BC] Increment team deathcount.
 		if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( player->bOnTeam ))
-			TEAM_SetDeathCount( player->ulTeam, TEAM_GetDeathCount( player->ulTeam ) + 1 );
+			TEAM_SetDeathCount( player->Team, TEAM_GetDeathCount( player->Team ) + 1 );
 	}
 
 	// [BC] We can do this stuff in client mode.
@@ -933,7 +933,7 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 		{
 			if ((( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS ) == false ) || (( fraglimit == 0 ) || ( source->player->fragcount < fraglimit ))) &&
 				(( ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS ) && !( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ) == false ) || (( winlimit == 0 ) || ( source->player->ulWins < static_cast<ULONG>(winlimit) ))) &&
-				(( ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ) == false ) || (( winlimit == 0 ) || ( TEAM_GetWinCount( source->player->ulTeam ) < winlimit ))))
+				(( ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ) == false ) || (( winlimit == 0 ) || ( TEAM_GetWinCount( source->player->Team ) < winlimit ))))
 			{
 				// Display a large "You were fragged by <name>." message in the middle of the screen.
 				if (( player - players ) == consoleplayer )
@@ -2164,7 +2164,7 @@ void PLAYER_SetFragcount( player_t *pPlayer, LONG lFragCount, bool bAnnounce, bo
 	if ( bUpdateTeamFrags )
 	{
 		if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( pPlayer->bOnTeam ))
-			TEAM_SetFragCount( pPlayer->ulTeam, TEAM_GetFragCount( pPlayer->ulTeam ) + ( lFragCount - pPlayer->fragcount ), bAnnounce );
+			TEAM_SetFragCount( pPlayer->Team, TEAM_GetFragCount( pPlayer->Team ) + ( lFragCount - pPlayer->fragcount ), bAnnounce );
 	}
 
 	// Set the player's fragcount.
@@ -2269,7 +2269,7 @@ void PLAYER_GivePossessionPoint( player_t *pPlayer )
 	// If this is team possession, also give the player's team a point.
 	else if ( teampossession && pPlayer->bOnTeam )
 	{
-		TEAM_SetScore( pPlayer->ulTeam, TEAM_GetScore( pPlayer->ulTeam ) + 1, true );
+		TEAM_SetScore( pPlayer->Team, TEAM_GetScore( pPlayer->Team ) + 1, true );
 		PLAYER_SetPoints ( pPlayer, pPlayer->lPointCount + 1 );
 	}
 	else
@@ -2314,14 +2314,14 @@ void PLAYER_GivePossessionPoint( player_t *pPlayer )
 			// End the level after five seconds.
 			GAME_SetEndLevelDelay( 5 * TICRATE );
 		}
-		else if ( teampossession && ( TEAM_GetScore( pPlayer->ulTeam ) >= pointlimit ))
+		else if ( teampossession && ( TEAM_GetScore( pPlayer->Team ) >= pointlimit ))
 		{
-			NETWORK_Printf( "Pointlimit hit.\n%s wins!\n", TEAM_GetName( pPlayer->ulTeam ));
+			NETWORK_Printf( "Pointlimit hit.\n%s wins!\n", TEAM_GetName( pPlayer->Team ));
 
 			if (( NETWORK_GetState() != NETSTATE_SERVER ) && pPlayer->mo->IsTeammate( players[consoleplayer].camera ))
 				ANNOUNCER_PlayEntry( cl_announcer, "YouWin" );
 
-			sprintf( szString, "\\c%c%s WINS!", V_GetColorChar( TEAM_GetTextColor( pPlayer->ulTeam )), TEAM_GetName( pPlayer->ulTeam ));
+			sprintf( szString, "\\c%c%s WINS!", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
 			V_ColorizeString( szString );
 
 			if ( NETWORK_GetState( ) != NETSTATE_SERVER )
@@ -2363,7 +2363,7 @@ void PLAYER_SetTeam( player_t *pPlayer, ULONG ulTeam, bool bNoBroadcast )
 		( pPlayer->bOnTeam == false && ulTeam < teams.Size( ) ) ||
 		
 		// Player is on a team, but is being put on a different team.
-		( pPlayer->bOnTeam && ( ulTeam < teams.Size( ) ) && ( ulTeam != pPlayer->ulTeam ))
+		( pPlayer->bOnTeam && ( ulTeam < teams.Size( ) ) && ( ulTeam != pPlayer->Team ))
 		)
 	{
 		bBroadcastChange = true;
@@ -2380,7 +2380,7 @@ void PLAYER_SetTeam( player_t *pPlayer, ULONG ulTeam, bool bNoBroadcast )
 		pPlayer->bOnTeam = true;
 
 	// Set the team.
-	pPlayer->ulTeam = ulTeam;
+	pPlayer->Team = ulTeam;
 
 	// [BB] Keep track of the original playerstate. In case it's altered by TEAM_EnsurePlayerHasValidClass,
 	// the player had a class forbidden to the new team and needs to be respawned.

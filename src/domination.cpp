@@ -193,7 +193,7 @@ void DOMINATION_SetOwnership(unsigned int point, player_t *toucher)
 	if(!toucher->bOnTeam) //The toucher must be on a team
 		return;
 
-	unsigned int team = toucher->ulTeam;
+	unsigned int team = toucher->Team;
 
 	PointOwners[point] = team;
 	Printf ( "%s has taken control of %s\n", toucher->userinfo.GetName(), (*level.info->SectorInfo.PointNames[point]).GetChars() );
@@ -229,7 +229,7 @@ void DOMINATION_EnterSector(player_t *toucher)
 				continue;
 
 			// [BB] The team already owns the point, nothing to do.
-			if ( toucher->ulTeam == PointOwners[point] )
+			if ( toucher->Team == PointOwners[point] )
 				continue;
 
 			DOMINATION_SetOwnership(point, toucher);

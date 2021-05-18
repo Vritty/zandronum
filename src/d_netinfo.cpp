@@ -367,12 +367,12 @@ void D_GetPlayerColor (int player, float *h, float *s, float *v, FPlayerColorSet
 */
 	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
 	{
-		if ( players[player].bOnTeam && ( TEAM_IsCustomPlayerColorAllowed ( players[player].ulTeam ) == false ) )
+		if ( players[player].bOnTeam && ( TEAM_IsCustomPlayerColorAllowed ( players[player].Team ) == false ) )
 		{
 			int			nColor;
 
 			// Get the color string from the team object.
-			nColor = TEAM_GetColor( players[player].ulTeam );
+			nColor = TEAM_GetColor( players[player].Team );
 
 			// Convert.
 			RGBtoHSV( RPART( nColor ) / 255.f, GPART( nColor ) / 255.f, BPART( nColor ) / 255.f,
@@ -557,7 +557,7 @@ int D_GetFragCount (player_t *player)
 	}
 	else
 	{
-		return ( TEAM_GetFragCount( player->ulTeam ));
+		return ( TEAM_GetFragCount( player->Team ));
 	}
 }
 
@@ -1594,7 +1594,7 @@ CCMD (playerinfo)
 		// Print special info
 		Printf("%20s: %s\n",      "Name", ui->GetName());
 		// [BB] Zandronum still uses its own team code.
-		Printf("%20s: %s (%d)\n", "Team", players[i].bOnTeam ? TEAM_GetName( players[i].ulTeam ) : "NONE", static_cast<unsigned int> (players[i].ulTeam) );
+		Printf("%20s: %s (%d)\n", "Team", players[i].bOnTeam ? TEAM_GetName( players[i].Team ) : "NONE", players[i].Team );
 		Printf("%20s: %s (%d)\n", "Skin", skins[ui->GetSkin()].name, ui->GetSkin());
 		Printf("%20s: %s (%d)\n", "Gender", GenderNames[ui->GetGender()], ui->GetGender());
 		Printf("%20s: %s (%d)\n", "PlayerClass",

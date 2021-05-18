@@ -598,8 +598,7 @@ public:
 	bool		bOnTeam;
 
 	// Team this player is on for ST/CTF.
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int ulTeam;
+	unsigned int Team;
 
 	// Amount of points this player has scored so far.
 	LONG		lPointCount;

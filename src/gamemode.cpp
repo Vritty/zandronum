@@ -776,7 +776,7 @@ void GAMEMODE_SpawnPlayer( const ULONG ulPlayer, bool bClientUpdate )
 	if ( GAMEMODE_GetCurrentFlags() & GMF_TEAMGAME )
 	{
 		if ( players[ulPlayer].bOnTeam )
-			G_TeamgameSpawnPlayer( ulPlayer, players[ulPlayer].ulTeam, bClientUpdate );
+			G_TeamgameSpawnPlayer( ulPlayer, players[ulPlayer].Team, bClientUpdate );
 		else
 			G_TemporaryTeamSpawnPlayer( ulPlayer, bClientUpdate );
 	}

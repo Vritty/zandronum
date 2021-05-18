@@ -2161,7 +2161,7 @@ void G_PlayerReborn (int player, bool bGiveInventory)
 	bSpectating = p->bSpectating;
 	bDeadSpectator = p->bDeadSpectator;
 	ulLivesLeft = p->ulLivesLeft;
-	ulTeam = p->ulTeam;
+	ulTeam = p->Team;
 	lPointCount = p->lPointCount;
 	ulDeathCount = p->ulDeathCount;
 	ulConsecutiveHits = p->ulConsecutiveHits;
@@ -2220,7 +2220,7 @@ void G_PlayerReborn (int player, bool bGiveInventory)
 	p->bSpectating = bSpectating;
 	p->bDeadSpectator = bDeadSpectator;
 	p->ulLivesLeft = ulLivesLeft;
-	p->ulTeam = ulTeam;
+	p->Team = ulTeam;
 	p->lPointCount = lPointCount;
 	p->ulDeathCount = ulDeathCount;
 	p->ulConsecutiveHits = ulConsecutiveHits;
@@ -2365,7 +2365,7 @@ static fixed_t TeamLMSPlayersRangeFromSpot( ULONG ulPlayer, FPlayerStart *spot )
 			continue;
 
 		// Ignore players on our team.
-		if (( players[ulPlayer].bOnTeam ) && ( players[i].bOnTeam ) && ( players[ulPlayer].ulTeam == players[i].ulTeam ))
+		if (( players[ulPlayer].bOnTeam ) && ( players[i].bOnTeam ) && ( players[ulPlayer].Team == players[i].Team ))
 			continue;
 
 		ulNumSpots++;
@@ -2549,11 +2549,11 @@ void G_DeathMatchSpawnPlayer( int playernum, bool bClientUpdate )
 	// game modes with teams, e.g. TDM, TLMS.
 	if ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
 		&& players[playernum].bOnTeam
-		&& TEAM_CheckIfValid ( players[playernum].ulTeam )
-		&& ( teams[players[playernum].ulTeam].TeamStarts.Size( ) >= 1 )
+		&& TEAM_CheckIfValid ( players[playernum].Team )
+		&& ( teams[players[playernum].Team].TeamStarts.Size( ) >= 1 )
 		&& sv_useteamstartsindm )
 	{
-		G_TeamgameSpawnPlayer( playernum, players[playernum].ulTeam, bClientUpdate );
+		G_TeamgameSpawnPlayer( playernum, players[playernum].Team, bClientUpdate );
 		return;
 	}
 

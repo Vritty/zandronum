@@ -1818,7 +1818,7 @@ void DBaseStatusBar::DrawTargetName ()
 
 		// Attempt to use the team color.
 		if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( pTargetPlayer->bOnTeam ))
-			ulTextColor = TEAM_GetTextColor( pTargetPlayer->ulTeam );
+			ulTextColor = TEAM_GetTextColor( pTargetPlayer->Team );
 
 		// [AK] If this player is our teammate, print more information about them.
 		if (( pTargetPlayer->mo != NULL ) && ( pTargetPlayer->mo->IsTeammate( players[consoleplayer].mo )))
