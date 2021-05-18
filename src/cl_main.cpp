@@ -2580,7 +2580,7 @@ AActor *CLIENT_SpawnThing( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z,
 			}
 		}
 
-		pActor->lNetID = lNetID;
+		pActor->NetID = lNetID;
 		g_NetIDList.useID ( lNetID, pActor );
 
 		pActor->SpawnPoint[0] = X;
@@ -2655,7 +2655,7 @@ void CLIENT_SpawnMissile( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z, 
 	// Derive the thing's angle from its velocity.
 	pActor->angle = R_PointToAngle2( 0, 0, VelX, VelY );
 
-	pActor->lNetID = lNetID;
+	pActor->NetID = lNetID;
 	g_NetIDList.useID ( lNetID, pActor );
 
 	// Play the seesound if this missile has one.
@@ -3470,7 +3470,7 @@ void ServerCommands::SpawnPlayer::Execute()
 		players[consoleplayer].camera = pPlayer->mo;
 
 	// Set the network ID.
-	pPlayer->mo->lNetID = netid;
+	pPlayer->mo->NetID = netid;
 	g_NetIDList.useID ( netid, pPlayer->mo );
 
 	// Set the spectator variables [after G_PlayerReborn so our data doesn't get lost] [BB] Why?.

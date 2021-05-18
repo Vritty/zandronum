@@ -2459,7 +2459,7 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 	{
 		// If the actor doesn't have a network ID, don't spawn it (it
 		// probably isn't important).
-		if ( pActor->lNetID == -1 )
+		if ( pActor->NetID == -1 )
 			continue;
 
 		// [BB] The other clients already have destroyed this actor, so don't spawn it.

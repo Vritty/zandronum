@@ -368,7 +368,7 @@ void AActor::Serialize (FArchive &arc)
 	arc << LimitedToTeam // [BB]
 		<< FixedColormap // [BB]
 		// [BB] Before the snapshot is loaded, player bodies are spawned, which invalidates the old netIDs.
-		//<< lNetID // [BC] We need to archive this so that it's restored properly when going between maps in a hub.
+		//<< NetID // [BC] We need to archive this so that it's restored properly when going between maps in a hub.
 		<< STFlags
 		<< NetworkFlags
 		<< InvasionWave
@@ -392,8 +392,8 @@ void AActor::Serialize (FArchive &arc)
 		// [BB] If the the actor needs one, generate a new netID.
 		if ( !( NetworkFlags & NETFL_NONETID ) && !( NetworkFlags & NETFL_SERVERSIDEONLY ) )
 		{
-			lNetID = g_NetIDList.getNewID( );
-			g_NetIDList.useID ( lNetID, this );
+			NetID = g_NetIDList.getNewID( );
+			g_NetIDList.useID ( NetID, this );
 		}
 
 		touching_sectorlist = NULL;
@@ -4759,8 +4759,8 @@ void IDList<T>::rebuild( void )
 
 	while ( (pActor = it.Next()) )
 	{
-		if (( pActor->lNetID > 0 ) && ( pActor->lNetID < MAX_NETID ))
-			useID ( pActor->lNetID, pActor );
+		if (( pActor->NetID > 0 ) && ( pActor->NetID < MAX_NETID ))
+			useID ( pActor->NetID, pActor );
 	}
 }
 
@@ -4822,8 +4822,8 @@ template class IDList<AActor>;
 
 void AActor::FreeNetID ()
 {
-	g_NetIDList.freeID ( lNetID );
-	lNetID = -1;
+	g_NetIDList.freeID ( NetID );
+	NetID = -1;
 }
 
 //==========================================================================
@@ -5036,13 +5036,13 @@ AActor *AActor::StaticSpawn (const PClass *type, fixed_t ix, fixed_t iy, fixed_t
 	if ((( actor->NetworkFlags & NETFL_NONETID ) == false ) && ( ( actor->NetworkFlags & NETFL_SERVERSIDEONLY ) == false ) &&
 		( NETWORK_InClientMode() == false ))
 	{
-		actor->lNetID = g_NetIDList.getNewID( );
-		g_NetIDList.useID ( actor->lNetID, actor );
+		actor->NetID = g_NetIDList.getNewID( );
+		g_NetIDList.useID ( actor->NetID, actor );
 		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && sv_showspawnnames )
-			Printf ( "%s %d\n", actor->GetClass()->TypeName.GetChars(), actor->lNetID );
+			Printf ( "%s %d\n", actor->GetClass()->TypeName.GetChars(), actor->NetID );
 	}
 	else
-		actor->lNetID = -1;
+		actor->NetID = -1;
 
 	// [BB] Initilize the colormap of this actor.
 	actor->FixedColormap = NOFIXEDCOLORMAP;
@@ -5259,9 +5259,9 @@ bool AActor::IsActive( void ) const
 void AActor::Destroy ()
 {
 	// [BC/BB] Free it's network ID.
-	g_NetIDList.freeID ( lNetID );
+	g_NetIDList.freeID ( NetID );
 
-	lNetID = -1;
+	NetID = -1;
 
 	// [BB] If this is a monster corpse, we potentially have to NULL out the reference to it.
 	if ( invasion )
@@ -6410,10 +6410,10 @@ AActor *P_SpawnPuff (AActor *source, const PClass *pufftype, fixed_t x, fixed_t 
 		else if (( (flags & PF_HITTHING) && puff->SeeSound ) ||
 				 ( puff->AttackSound ) || ( ( puff->GetClass()->Meta.GetMetaString (AMETA_Obituary) != NULL ) && ( flags & PF_TEMPORARY ) ) )
 		{
-			if ( puff->lNetID == -1 )
+			if ( puff->NetID == -1 )
 			{
-				puff->lNetID = g_NetIDList.getNewID( );
-				g_NetIDList.useID ( puff->lNetID , puff );
+				puff->NetID = g_NetIDList.getNewID( );
+				g_NetIDList.useID ( puff->NetID , puff );
 			}
 
 			SERVERCOMMANDS_SpawnPuff( puff );

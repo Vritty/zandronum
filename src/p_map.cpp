@@ -4501,7 +4501,7 @@ AActor *P_LineAttack(AActor *t1, angle_t angle, fixed_t distance,
 	if (killPuff && puff != NULL)
 	{
 		// [BB] Remove the temporary puff from the clients.
-		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( puff->lNetID != -1 ) )
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( puff->NetID != -1 ) )
 			SERVERCOMMANDS_DestroyThing( puff );
 
 		puff->Destroy();

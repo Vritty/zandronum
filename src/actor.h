@@ -1136,8 +1136,7 @@ public:
 	int			FixedColormap;
 
 	// ID used to identify this actor over network games.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			lNetID;
+	int			NetID;
 
 	// Pointer to the pickup spot this item was spawned from.
 	ABaseMonsterInvasionSpot		*pMonsterSpot;

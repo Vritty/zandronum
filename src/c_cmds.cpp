@@ -1261,7 +1261,7 @@ CCMD(linetarget)
 	if (linetarget)
 	{
 		// [TP] If we're the client, ask the server for information about the linetarget.
-		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->lNetID != -1 )
+		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->NetID != -1 )
 		{
 			CLIENTCOMMANDS_InfoCheat( linetarget, false );
 			return;
@@ -1286,7 +1286,7 @@ CCMD(info)
 	if (linetarget)
 	{
 		// [TP] If we're the client, ask the server for information about the linetarget.
-		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->lNetID != -1 )
+		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->NetID != -1 )
 		{
 			CLIENTCOMMANDS_InfoCheat( linetarget, true );
 			return;
@@ -1612,7 +1612,7 @@ void CountActors ( )
 	while ( (mo = it.Next()) )
 	{
 		numActors++;
-		if ( mo->lNetID > 0 )
+		if ( mo->NetID > 0 )
 			numActorsWithNetID++;
 		const FName curName = mo->GetClass()->TypeName.GetChars();
 		if ( actorCountMap.CheckKey( curName ) == NULL )

@@ -250,7 +250,7 @@ class ActorParameter(SpecParameter):
 					   allownull=('nullallowed' in self.attributes) and 'true' or 'false', **locals()))
 
 	def writesend(self, writer, command, reference, **args):
-		writer.writeline('command.addShort( this->{reference} ? this->{reference}->lNetID : -1 );'.format(**locals()))
+		writer.writeline('command.addShort( this->{reference} ? this->{reference}->NetID : -1 );'.format(**locals()))
 
 # ----------------------------------------------------------------------------------------------------------------------
 

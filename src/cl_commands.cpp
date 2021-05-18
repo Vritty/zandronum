@@ -733,11 +733,11 @@ void CLIENTCOMMANDS_FullUpdateReceived ( void )
 // [Dusk]
 void CLIENTCOMMANDS_InfoCheat( AActor* mobj, bool extended )
 {
-	if ( mobj == NULL || mobj->lNetID == -1 )
+	if ( mobj == NULL || mobj->NetID == -1 )
 		return;
 
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_INFOCHEAT );
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( mobj->lNetID );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( mobj->NetID );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( extended );
 }
 

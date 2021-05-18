@@ -1816,7 +1816,7 @@ void G_FinishTravel ()
 			G_CooperativeSpawnPlayer( pawn->player - players, false, true );
 
 			// [BC]
-			lSavedNetID = pawndup->lNetID;
+			lSavedNetID = pawndup->NetID;
 			pawndup = pawn->player->mo;
 			if (!(changeflags & CHANGELEVEL_KEEPFACING))
 			{
@@ -1854,8 +1854,8 @@ void G_FinishTravel ()
 			pawn->player->SendPitchLimits();
 
 			// [BC]
-			pawn->lNetID = lSavedNetID;
-			g_NetIDList.useID ( pawn->lNetID, pawn );
+			pawn->NetID = lSavedNetID;
+			g_NetIDList.useID ( pawn->NetID, pawn );
 
 			for (inv = pawn->Inventory; inv != NULL; inv = inv->Inventory)
 			{
