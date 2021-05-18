@@ -653,8 +653,7 @@ public:
 	bool		bStruckPlayer;
 
 	// Number of times the railgun has been fired. Every 4 times, a reload is in order.
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int ulRailgunShots;
+	unsigned int RailgunShots;
 
 	// Number of medals the player currently has of each type.
 	ULONG		ulMedalCount[NUM_MEDALS];
@@ -663,8 +662,7 @@ public:
 	AFloatyIcon	*pIcon;
 
 	// Bonus to the maximum amount of health the player can have.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			lMaxHealthBonus;
+	int			MaxHealthBonus;
 
 	// Consecutive wins in duel mode.
 	ULONG		ulWins;

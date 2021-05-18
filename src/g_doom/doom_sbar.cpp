@@ -592,7 +592,7 @@ void DrawFullHUD_Health()
 			szString );
 
 		LONG lMaxHealth = CPlayer->mo ? CPlayer->mo->GetMaxHealth() : deh.StartHealth;
-		sprintf( szString, "%d", static_cast<int> (( CPlayer->cheats & CF_PROSPERITY ) ? ( deh.MaxSoulsphere + 50 ) : lMaxHealth + CPlayer->lMaxHealthBonus) );
+		sprintf( szString, "%d", static_cast<int> (( CPlayer->cheats & CF_PROSPERITY ) ? ( deh.MaxSoulsphere + 50 ) : lMaxHealth + CPlayer->MaxHealthBonus) );
 		HUD_DrawText( ConFont, CR_RED,
 			ulCurXPos + ( healthArmorTexWidth ) + 8 + ConFont->StringWidth( "200/200" ) - ConFont->StringWidth( szString ),
 			ulCurYPos - ( TexMan["MEDIA0"]->GetHeight( ) / 2 ) - ( ConFont->GetHeight( ) / 2 ),

@@ -2249,7 +2249,7 @@ void PLAYER_ResetSpecialCounters ( player_t *pPlayer )
 	pPlayer->ulConsecutiveRailgunHits = 0;
 	pPlayer->ulDeathsWithoutFrag = 0;
 	pPlayer->ulFragsWithoutDeath = 0;
-	pPlayer->ulRailgunShots = 0;
+	pPlayer->RailgunShots = 0;
 	pPlayer->ulUnrewardedDamageDealt = 0;
 }
 

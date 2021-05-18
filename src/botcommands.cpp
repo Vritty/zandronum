@@ -2390,7 +2390,7 @@ static void botcmd_GetArmor( CSkullBot *pBot )
 //
 static void botcmd_GetBaseHealth( CSkullBot *pBot )
 {
-	g_iReturnInt = deh.StartHealth + pBot->GetPlayer( )->lMaxHealthBonus;
+	g_iReturnInt = deh.StartHealth + pBot->GetPlayer( )->MaxHealthBonus;
 }
 
 //*****************************************************************************

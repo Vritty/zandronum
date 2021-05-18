@@ -1168,7 +1168,7 @@ FUNC(LS_HealThing)
 				if ( it->player->cheats & CF_PROSPERITY )
 					max = deh.MaxSoulsphere + 50;
 				else
-					max = it->GetDefault()->health + it->player->lMaxHealthBonus;
+					max = it->GetDefault()->health + it->player->MaxHealthBonus;
 			}
 			else
 			{
@@ -1180,7 +1180,7 @@ FUNC(LS_HealThing)
 		else if (max == 1)
 		{
 			// [BC] Include the player's max. health bonus in the max. allowed health.
-			max = deh.MaxSoulsphere + it->player->lMaxHealthBonus;
+			max = deh.MaxSoulsphere + it->player->MaxHealthBonus;
 		}
 
 		// If health is already above max, do nothing

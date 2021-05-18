@@ -238,7 +238,7 @@ bool P_GiveBody (AActor *actor, int num, int max)
 				max = deh.MaxSoulsphere + 50;
 			// [BC] Add the player's max. health bonus to his max.
 			else
-				max = static_cast<APlayerPawn*>(actor)->GetMaxHealth() + player->mo->stamina + player->lMaxHealthBonus;
+				max = static_cast<APlayerPawn*>(actor)->GetMaxHealth() + player->mo->stamina + player->MaxHealthBonus;
 			// [MH] First step in predictable generic morph effects
  			if (player->morphTics)
  			{
@@ -1971,12 +1971,12 @@ bool AMaxHealth::TryPickup( AActor *&pOther )
 	if ( pPlayer != NULL )
 	{
 		// Increase the player's max. health.
-		pPlayer->lMaxHealthBonus += Amount;
+		pPlayer->MaxHealthBonus += Amount;
 
 		// If it exceeds the maximum amount allowable by this object, cap it. The default
 		// is 50.
-		if ( pPlayer->lMaxHealthBonus > MaxAmount )
-			pPlayer->lMaxHealthBonus = MaxAmount;
+		if ( pPlayer->MaxHealthBonus > MaxAmount )
+			pPlayer->MaxHealthBonus = MaxAmount;
 	}
 
 	// [BC] The rest of this is based on AHealth::TryPickup. It just has to be different
@@ -1997,13 +1997,13 @@ bool AMaxHealth::TryPickup( AActor *&pOther )
 		else if ( lMax == 0 )
 		{
 			// [BC] Add the player's max. health bonus to his max.
-			lMax = static_cast<APlayerPawn *>( pOther )->GetMaxHealth( ) + pPlayer->mo->stamina + pPlayer->lMaxHealthBonus;
+			lMax = static_cast<APlayerPawn *>( pOther )->GetMaxHealth( ) + pPlayer->mo->stamina + pPlayer->MaxHealthBonus;
 			if ( pPlayer->morphTics )
 				lMax = MAXMORPHHEALTH;
 		}
 		// Apply max. health bonus to the max. allowable health.
 		else
-			lMax = lMax + pPlayer->lMaxHealthBonus;
+			lMax = lMax + pPlayer->MaxHealthBonus;
 
 		// The player's health already exceeds his maximum allowable health.
 		if ( pPlayer->health >= lMax )

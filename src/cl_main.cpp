@@ -3024,7 +3024,7 @@ void PLAYER_ResetPlayerData( player_t *pPlayer )
 	pPlayer->ulLivesLeft = 0;
 	pPlayer->bStruckPlayer = 0;
 	pPlayer->pIcon = 0;
-	pPlayer->lMaxHealthBonus = 0;
+	pPlayer->MaxHealthBonus = 0;
 	pPlayer->ulWins = 0;
 	pPlayer->pSkullBot = 0;
 	pPlayer->bIsBot = 0;

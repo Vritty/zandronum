@@ -335,9 +335,9 @@ player_t::player_t()
   bDeadSpectator( 0 ),
   ulLivesLeft( 0 ),
   bStruckPlayer( 0 ),
-  ulRailgunShots( 0 ),
+  RailgunShots( 0 ),
   pIcon( 0 ),
-  lMaxHealthBonus( 0 ),
+  MaxHealthBonus( 0 ),
   ulWins( 0 ),
   pSkullBot( 0 ),
   bIsBot( 0 ),
@@ -502,10 +502,10 @@ player_t &player_t::operator=(const player_t &p)
 	bDeadSpectator = p.bDeadSpectator;
 	ulLivesLeft = p.ulLivesLeft;
 	bStruckPlayer = p.bStruckPlayer;
-	ulRailgunShots = p.ulRailgunShots;
+	RailgunShots = p.RailgunShots;
 	memcpy(ulMedalCount, &p.ulMedalCount, sizeof( ULONG ) * NUM_MEDALS);
 	pIcon = p.pIcon;
-	lMaxHealthBonus = p.lMaxHealthBonus;
+	MaxHealthBonus = p.MaxHealthBonus;
 	ulWins = p.ulWins;
 	pSkullBot = p.pSkullBot;
 	bIsBot = p.bIsBot;
@@ -1523,7 +1523,7 @@ void APlayerPawn::GiveDefaultInventory ()
 	if ( player->bSpectating && (!player->bDeadSpectator || !( zadmflags & ZADF_DEAD_PLAYERS_CAN_KEEP_INVENTORY ) ) ) return;
 
 	// [BC] Initialize the max. health bonus.
-	player->lMaxHealthBonus = 0;
+	player->MaxHealthBonus = 0;
 
 	// [BC] If the user has chosen to handicap himself, do that now.
 	if (( deathmatch || teamgame || alwaysapplydmflags ) && player->userinfo.GetHandicap() )
@@ -3871,7 +3871,7 @@ void P_PlayerThink (player_t *player)
 			// Apply degeneration.
 			if ( dmflags2 & DF2_YES_DEGENERATION )
 			{
-				if ((( level.time & 127 ) == 0 ) && ( player->health > ( deh.StartHealth + player->lMaxHealthBonus )))
+				if ((( level.time & 127 ) == 0 ) && ( player->health > ( deh.StartHealth + player->MaxHealthBonus )))
 				{
 					player->health--;
 					player->mo->health--;
@@ -4187,8 +4187,8 @@ void player_t::Serialize (FArchive &arc)
 		<< bChatting
 		<< bInConsole
 		<< bInMenu
-		<< ulRailgunShots
-		<< lMaxHealthBonus
+		<< RailgunShots
+		<< MaxHealthBonus
 		<< cheats2
 		// [BB] Skulltag additions - end
 		;

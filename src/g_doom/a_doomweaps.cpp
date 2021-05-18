@@ -933,9 +933,9 @@ DEFINE_ACTION_FUNCTION(AActor, A_CheckRailReload)
 	if ( self->player == NULL )
 		return;
 
-	self->player->ulRailgunShots++;
+	self->player->RailgunShots++;
 	// If we have not made our 4th shot...
-	if ((( self->player->ulRailgunShots % 4 ) == 0 ) == false )
+	if ((( self->player->RailgunShots % 4 ) == 0 ) == false )
 	{
 		// Go back to the refire frames, instead of continuing on to the reload frames.
 		if ( self->player->ReadyWeapon->GetClass( ) == PClass::FindClass("Railgun" ))

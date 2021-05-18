@@ -441,11 +441,11 @@ void SERVERCOMMANDS_SetPlayerHealthAndMaxHealthBonus( ULONG ulPlayer, ULONG ulPl
 		return;
 
 	// [BB] Workaround to set max health bonus for the player on the client(s).
-	if ( players[ulPlayer].lMaxHealthBonus > 0 ) {
+	if ( players[ulPlayer].MaxHealthBonus > 0 ) {
 		AInventory *pInventory = Spawn<AMaxHealth>(0,0,0, NO_REPLACE);
 		if ( pInventory )
 		{
-			pInventory->Amount = players[ulPlayer].lMaxHealthBonus;
+			pInventory->Amount = players[ulPlayer].MaxHealthBonus;
 			SERVERCOMMANDS_GiveInventory( ulPlayer, pInventory, ulPlayerExtra, flags );
 			pInventory->Destroy ();
 			pInventory = NULL;

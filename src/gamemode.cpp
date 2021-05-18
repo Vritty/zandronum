@@ -796,7 +796,7 @@ void GAMEMODE_ResetPlayersKillCount( const bool bInformClients )
 	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
 		players[ulIdx].killcount = 0;
-		players[ulIdx].ulRailgunShots = 0;
+		players[ulIdx].RailgunShots = 0;
 		// [BB] Also reset the things for ZADF_AWARD_DAMAGE_INSTEAD_KILLS.
 		players[ulIdx].lPointCount = 0;
 		players[ulIdx].ulUnrewardedDamageDealt = 0;
