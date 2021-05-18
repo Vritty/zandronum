@@ -195,7 +195,7 @@ void COOP_SpawnVoodooDollsForPlayerIfNecessary ( const ULONG ulPlayer, const boo
 			pDoll->STFlags |= STFL_LEVELSPAWNED;
 
 			// [BB] The clients will not spawn the doll, so mark it accordingly and free it's network ID.
-			pDoll->ulNetworkFlags |= NETFL_SERVERSIDEONLY;
+			pDoll->NetworkFlags |= NETFL_SERVERSIDEONLY;
 			g_NetIDList.freeID ( pDoll->lNetID );
 			pDoll->lNetID = -1;
 

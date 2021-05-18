@@ -267,10 +267,10 @@ static FFlagDef ActorFlags[]=
 	DEFINE_FLAG(STFL, DONTIDENTIFYTARGET, AActor, STFlags), // [CK]
 
 	// [BB] New DECORATE network related flag defines here.
-	DEFINE_FLAG(NETFL, NONETID, AActor, ulNetworkFlags),
-	DEFINE_FLAG(NETFL, ALLOWCLIENTSPAWN, AActor, ulNetworkFlags),
-	DEFINE_FLAG(NETFL, CLIENTSIDEONLY, AActor, ulNetworkFlags),
-	DEFINE_FLAG(NETFL, SERVERSIDEONLY, AActor, ulNetworkFlags),
+	DEFINE_FLAG(NETFL, NONETID, AActor, NetworkFlags),
+	DEFINE_FLAG(NETFL, ALLOWCLIENTSPAWN, AActor, NetworkFlags),
+	DEFINE_FLAG(NETFL, CLIENTSIDEONLY, AActor, NetworkFlags),
+	DEFINE_FLAG(NETFL, SERVERSIDEONLY, AActor, NetworkFlags),
 
 	// Effect flags
 	DEFINE_FLAG(FX, VISIBILITYPULSE, AActor, effects),

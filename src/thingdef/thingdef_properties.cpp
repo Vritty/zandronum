@@ -1321,7 +1321,7 @@ DEFINE_PROPERTY(clearflags, 0, Actor)
 
 	// [BC] Also zero out ST's flags.
 	defaults->STFlags = 0;
-	defaults->ulNetworkFlags = 0;
+	defaults->NetworkFlags = 0;
 }
 
 //==========================================================================

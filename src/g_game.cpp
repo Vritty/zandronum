@@ -3409,7 +3409,7 @@ void GAME_ResetMap( bool bRunEnterScripts )
 		// [BB] Remove all CLIENTSIDEONLY actors not spawned by the map.
 		while (( pActor = ActorIterator.Next( )) != NULL )
 		{
-			if ( ( ( pActor->STFlags & STFL_LEVELSPAWNED ) == false ) && ( pActor->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) )
+			if ( ( ( pActor->STFlags & STFL_LEVELSPAWNED ) == false ) && ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY ) )
 			{
 				// [BB] This caused problems on the non-client code, so until we discover what
 				// exactly happnes there, just do the same workaround here.
@@ -3421,7 +3421,7 @@ void GAME_ResetMap( bool bRunEnterScripts )
 			// [BB] ALLOWCLIENTSPAWN actors spawned by the map are supposed to stay untouched. Some mods ignore
 			// this restriction. To work around some problems caused by this, we reset their args. In particular,
 			// this is helpful for DynamicLight tricks.
-			if ( ( pActor->STFlags & STFL_LEVELSPAWNED ) && ( pActor->ulNetworkFlags & NETFL_ALLOWCLIENTSPAWN ) )
+			if ( ( pActor->STFlags & STFL_LEVELSPAWNED ) && ( pActor->NetworkFlags & NETFL_ALLOWCLIENTSPAWN ) )
 				for ( int i = 0; i < 5; ++i )
 					pActor->args[i] = pActor->SavedArgs[i];
 		}

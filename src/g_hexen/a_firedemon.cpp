@@ -66,7 +66,7 @@ void A_FiredSpawnRock (AActor *actor)
 		// we also mark this as SERVERSIDEONLY.
 		if ( NETWORK_GetState () == NETSTATE_SERVER )
 		{
-			mo->ulNetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
 			mo->FreeNetID ();
 		}
 
@@ -280,7 +280,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_FiredSplotch)
 		// we also mark this as SERVERSIDEONLY.
 		if ( NETWORK_GetState () == NETSTATE_SERVER )
 		{
-			mo->ulNetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
 			mo->FreeNetID ();
 		}
 
@@ -296,7 +296,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_FiredSplotch)
 		// we also mark this as SERVERSIDEONLY.
 		if ( NETWORK_GetState () == NETSTATE_SERVER )
 		{
-			mo->ulNetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
 			mo->FreeNetID ();
 		}
 

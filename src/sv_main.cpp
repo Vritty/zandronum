@@ -2463,7 +2463,7 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 			continue;
 
 		// [BB] The other clients already have destroyed this actor, so don't spawn it.
-		if ( pActor->ulNetworkFlags & NETFL_DESTROYED_ON_CLIENT )
+		if ( pActor->NetworkFlags & NETFL_DESTROYED_ON_CLIENT )
 			continue;
 
 		// Don't spawn players, items about to be deleted, inventory items
@@ -2471,7 +2471,7 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		if (( pActor->IsKindOf( RUNTIME_CLASS( APlayerPawn ))) ||
 			( pActor->state == RUNTIME_CLASS ( AInventory )->ActorInfo->FindState("HoldAndDestroy") ) ||	// S_HOLDANDDESTROY
 			( pActor->state == RUNTIME_CLASS ( AInventory )->ActorInfo->FindState("Held") ) || // S_HELD
-			( pActor->ulNetworkFlags & NETFL_ALLOWCLIENTSPAWN ))
+			( pActor->NetworkFlags & NETFL_ALLOWCLIENTSPAWN ))
 		{
 			continue;
 		}
@@ -2556,7 +2556,7 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 			// [BC] It's not necessarily important for clients to know this, such
 			// as with invasion spawners. You can do it if you want, though! It would
 			// probably save headache later on.
-			//if ( pActor->ulNetworkFlags & NETFL_UPDATEARGUMENTS )
+			//if ( pActor->NetworkFlags & NETFL_UPDATEARGUMENTS )
 			// [BB] I don't want to export NETFL_UPDATEARGUMENTS to DECORATE, so we have
 			// to tell the clients all the arguments.
 			if ( ( pActor->args[0] != 0 )
@@ -6237,7 +6237,7 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 
 				// [AK] If this actor is clientsided only then remove it from our end. We only had to
 				// spawn it so we could tell the clients to spawn it, but we don't need it anymore.
-				if ( pActor->ulNetworkFlags & NETFL_CLIENTSIDEONLY )
+				if ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY )
 				{
 					pActor->Destroy();
 					pActor = NULL;
@@ -6291,7 +6291,7 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 
 				// [AK] If this actor is clientsided only then remove it from our end. We only had to
 				// spawn it so we could tell the clients to spawn it, but we don't need it anymore.
-				if ( pActor->ulNetworkFlags & NETFL_CLIENTSIDEONLY )
+				if ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY )
 				{
 					pActor->Destroy();
 					pActor = NULL;

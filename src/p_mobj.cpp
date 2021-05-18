@@ -370,7 +370,7 @@ void AActor::Serialize (FArchive &arc)
 		// [BB] Before the snapshot is loaded, player bodies are spawned, which invalidates the old netIDs.
 		//<< lNetID // [BC] We need to archive this so that it's restored properly when going between maps in a hub.
 		<< STFlags
-		<< ulNetworkFlags
+		<< NetworkFlags
 		<< InvasionWave
 		<< pMonsterSpot
 		<< pPickupSpot
@@ -390,7 +390,7 @@ void AActor::Serialize (FArchive &arc)
 	if (arc.IsLoading ())
 	{
 		// [BB] If the the actor needs one, generate a new netID.
-		if ( !( ulNetworkFlags & NETFL_NONETID ) && !( ulNetworkFlags & NETFL_SERVERSIDEONLY ) )
+		if ( !( NetworkFlags & NETFL_NONETID ) && !( NetworkFlags & NETFL_SERVERSIDEONLY ) )
 		{
 			lNetID = g_NetIDList.getNewID( );
 			g_NetIDList.useID ( lNetID, this );
@@ -1430,7 +1430,7 @@ bool AActor::Grind(bool items)
 				// Whether or not this is intentional, if the clients spawn the gibs on
 				// their own, they have to mark them as CLIENTSIDEONLY.
 				if( NETWORK_InClientMode() )
-					gib->ulNetworkFlags |= NETFL_CLIENTSIDEONLY;
+					gib->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 
 				PalEntry bloodcolor = GetBloodColor();
 				if (bloodcolor != 0)
@@ -2405,7 +2405,7 @@ fixed_t P_XYMovement (AActor *mo, fixed_t scrollx, fixed_t scrolly)
 
 					// [CK/BB] Inform the client about the reflection.
 					if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-						mo->ulNetworkFlags |= NETFL_BOUNCED_OFF_ACTOR;
+						mo->NetworkFlags |= NETFL_BOUNCED_OFF_ACTOR;
 
 					return oldfloorz;
 				}
@@ -3246,11 +3246,11 @@ void P_ZMovement (AActor *mo, fixed_t oldfloorz)
 	P_CheckFakeFloorTriggers (mo, oldz);
 
 	// [TIHan/BB] If it's a missile that is bounceable and it bounced, send info to the client
-	if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( mo->ulNetworkFlags & NETFL_BOUNCED_OFF_ACTOR ) )
+	if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( mo->NetworkFlags & NETFL_BOUNCED_OFF_ACTOR ) )
 	{
 		SERVERCOMMANDS_MoveThingExact( mo, CM_X|CM_Y|CM_Z|CM_VELX|CM_VELY|CM_VELZ|CM_ANGLE );
 		// [BB] Remove the mark, the syncing is done now.
-		mo->ulNetworkFlags &= ~NETFL_BOUNCED_OFF_ACTOR;
+		mo->NetworkFlags &= ~NETFL_BOUNCED_OFF_ACTOR;
 	}
 }
 
@@ -5033,7 +5033,7 @@ AActor *AActor::StaticSpawn (const PClass *type, fixed_t ix, fixed_t iy, fixed_t
 			SERVERCOMMANDS_SetMapNumTotalSecrets();
 	}
 
-	if ((( actor->ulNetworkFlags & NETFL_NONETID ) == false ) && ( ( actor->ulNetworkFlags & NETFL_SERVERSIDEONLY ) == false ) &&
+	if ((( actor->NetworkFlags & NETFL_NONETID ) == false ) && ( ( actor->NetworkFlags & NETFL_SERVERSIDEONLY ) == false ) &&
 		( NETWORK_InClientMode() == false ))
 	{
 		actor->lNetID = g_NetIDList.getNewID( );
@@ -5711,7 +5711,7 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 		// the server from telling the clients to spawn the fog again during a full update.
 		if ( pFog && ( NETWORK_GetState( ) == NETSTATE_SERVER ) )
 		{
-			pFog->ulNetworkFlags |= NETFL_ALLOWCLIENTSPAWN;
+			pFog->NetworkFlags |= NETFL_ALLOWCLIENTSPAWN;
 			// [BB] Also remove the netID. Otherwise, the server will not know that 
 			// it cannot notify the client about changes to the fog, like when it is
 			// destroyed during a map reset.
@@ -6175,14 +6175,14 @@ AActor *P_SpawnMapThing (FMapThing *mthing, int position)
 */
 	// [BC] If we're a client, there's no need to spawn map things (unless specified).
 	if ( NETWORK_InClientMode() && 
-		(( info->ulNetworkFlags & NETFL_ALLOWCLIENTSPAWN ) == false ) &&
-		(( info->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
+		(( info->NetworkFlags & NETFL_ALLOWCLIENTSPAWN ) == false ) &&
+		(( info->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
 	{
 		return NULL;
 	}
 
 	// [BB] The server doesn't spawn CLIENTSIDEONLY actors.
-	if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( info->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) )
+	if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( info->NetworkFlags & NETFL_CLIENTSIDEONLY ) )
 	{
 		return NULL;
 	}
@@ -6322,7 +6322,7 @@ AActor *P_SpawnPuff (AActor *source, const PClass *pufftype, fixed_t x, fixed_t 
 		// We want to see if the actor would have NONETID on the actor without
 		// spawning it. Therefore we will get the type, and check the flag here.
 		AActor *pPuffActor = GetDefaultByType( pufftype );
-		if ( pPuffActor == NULL || ( ( pPuffActor->ulNetworkFlags & NETFL_NONETID ) == 0 ) )
+		if ( pPuffActor == NULL || ( ( pPuffActor->NetworkFlags & NETFL_NONETID ) == 0 ) )
 			return NULL;
 	}
 
@@ -6436,7 +6436,7 @@ AActor *P_SpawnPuff (AActor *source, const PClass *pufftype, fixed_t x, fixed_t 
 					// [CK] If the player is the source, and the player fired a
 					// puff with +NONETID, and the player wants to predict puffs
 					// then we won't send them this command.
-					if ( ( activatorPlayerNumber == ulPlayer ) && ( puff->ulNetworkFlags & NETFL_NONETID ) && ( source->player->userinfo.GetClientFlags() & CLIENTFLAGS_CLIENTSIDEPUFFS ) )
+					if ( ( activatorPlayerNumber == ulPlayer ) && ( puff->NetworkFlags & NETFL_NONETID ) && ( source->player->userinfo.GetClientFlags() & CLIENTFLAGS_CLIENTSIDEPUFFS ) )
 						continue;
 
 					// [BB] If the puff has a net ID, it must be spawned with one.
@@ -6619,7 +6619,7 @@ void P_BloodSplatter (fixed_t x, fixed_t y, fixed_t z, AActor *originator)
 		// we also mark this as SERVERSIDEONLY.
 		if ( NETWORK_GetState () == NETSTATE_SERVER )
 		{
-			mo->ulNetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
 			mo->FreeNetID ();
 		}
 
@@ -7823,7 +7823,7 @@ void AActor::Revive()
 		STFlags |= STFL_LEVELSPAWNED;
 	if ( actorHasPositionChanged )
 		STFlags |= STFL_POSITIONCHANGED;
-	ulNetworkFlags = info->ulNetworkFlags;
+	NetworkFlags = info->NetworkFlags;
 
 	DamageType = info->DamageType;
 	health = SpawnHealth();

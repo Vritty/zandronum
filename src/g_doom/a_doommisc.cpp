@@ -60,7 +60,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_BarrelDestroy)
 		// [BB] The clients destroy their local version of the actor, we have to keep this in mind.
 		// For instance to prevent this from being spawned on newly connecting clients.
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-			self->ulNetworkFlags |= NETFL_DESTROYED_ON_CLIENT;
+			self->NetworkFlags |= NETFL_DESTROYED_ON_CLIENT;
 	}
 	else
 	{

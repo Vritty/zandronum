@@ -399,7 +399,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_PoisonBagInit)
 		// setting NETFL_CLIENTSIDEONLY, resulting in proper removal when
 		// GAME_ResetMap() is executed.
 		if (NETWORK_GetState() == NETSTATE_CLIENT) {
-			mo->ulNetworkFlags |= NETFL_CLIENTSIDEONLY;
+			mo->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 		}
 	}
 }

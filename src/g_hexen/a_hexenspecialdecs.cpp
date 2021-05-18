@@ -221,7 +221,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_LeafSpawn)
 			// we also mark this as SERVERSIDEONLY.
 			if ( NETWORK_GetState () == NETSTATE_SERVER )
 			{
-				mo->ulNetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
 				mo->FreeNetID ();
 			}
 

@@ -455,7 +455,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_GetHurt)
 	// [BB] The server handles this.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -621,7 +621,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_FLoopActiveSound)
 DEFINE_ACTION_FUNCTION(AActor, A_Countdown)
 {
 	// [BB] The server handles this.
-	if ( NETWORK_InClientMode() && ( ( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) )
+	if ( NETWORK_InClientMode() && ( ( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) )
 		return;
 
 	if (--self->reactiontime <= 0)

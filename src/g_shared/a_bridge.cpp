@@ -148,7 +148,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_BridgeInit)
 		// [Dusk] bridge balls should not be included in full updates
 		// as the bridge thing will spawn them instead.
 		if (NETWORK_GetState() == NETSTATE_SERVER)
-			ball->ulNetworkFlags |= NETFL_ALLOWCLIENTSPAWN;
+			ball->NetworkFlags |= NETFL_ALLOWCLIENTSPAWN;
 	}
 }
 

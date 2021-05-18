@@ -40,14 +40,14 @@ class ARandomSpawner : public AActor
 		// [BB] This is server-side.
 		if ( NETWORK_InClientMode() )
 		{
-			if (( this->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+			if (( this->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 				return;
 		}
 
 		// [BB] If the server handles the spawner, the client doesn't need know about it.
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		{
-			this->ulNetworkFlags |= NETFL_SERVERSIDEONLY;
+			this->NetworkFlags |= NETFL_SERVERSIDEONLY;
 			this->FreeNetID();
 		}
 
@@ -216,7 +216,7 @@ class ARandomSpawner : public AActor
 			}
 			// [BB] The client did the spawning, so this has to be a client side only actor.
 			else if ( NETWORK_InClientMode() )
-				newmobj->ulNetworkFlags |= NETFL_CLIENTSIDEONLY;
+				newmobj->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 		}
 		if (boss)
 			this->tracer = newmobj;

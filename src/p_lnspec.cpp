@@ -977,7 +977,7 @@ FUNC(LS_ThrustThing)
 static void ThrustThingHelper (AActor *it, angle_t angle, int force, INTBOOL nolimit)
 {
 	// [BB] This is server side.
-	if ( ( NETWORK_IsConsolePlayerOrNotInClientMode ( it->player ) == false ) && !( it->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) )
+	if ( ( NETWORK_IsConsolePlayerOrNotInClientMode ( it->player ) == false ) && !( it->NetworkFlags & NETFL_CLIENTSIDEONLY ) )
 		return;
 
 	angle >>= ANGLETOFINESHIFT;
@@ -1030,7 +1030,7 @@ FUNC(LS_ThrustThingZ)	// [BC]
 	else if (it)
 	{
 		// [BB] This is server side.
-		if ( ( NETWORK_IsConsolePlayerOrNotInClientMode ( it->player ) ) || ( it->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) )
+		if ( ( NETWORK_IsConsolePlayerOrNotInClientMode ( it->player ) ) || ( it->NetworkFlags & NETFL_CLIENTSIDEONLY ) )
 		{
 			if (!arg3)
 				it->velz = thrust;

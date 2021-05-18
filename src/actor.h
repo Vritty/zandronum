@@ -997,8 +997,7 @@ public:
 	unsigned int	STFlags;
 
 	// [BC] A new set of flags that deal with network games.
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int	ulNetworkFlags;
+	unsigned int	NetworkFlags;
 
 	int				special1;		// Special info
 	int				special2;		// Special info

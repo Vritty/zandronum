@@ -109,8 +109,8 @@ bool NETWORK_ShouldActorNotBeSpawned ( const AActor *pSpawner, const PClass *pSp
 		return true;
 
 	bool bSpawnOnClient = ( bForceClientSide
-	                        || ( pSpawner && ( pSpawner->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) )
-	                        || ( GetDefaultByType(pSpawnType)->ulNetworkFlags & NETFL_CLIENTSIDEONLY )
+	                        || ( pSpawner && ( pSpawner->NetworkFlags & NETFL_CLIENTSIDEONLY ) )
+	                        || ( GetDefaultByType(pSpawnType)->NetworkFlags & NETFL_CLIENTSIDEONLY )
 	                      );
 
 	// [BB] Clients don't spawn non-client side only things.
@@ -357,7 +357,7 @@ static void DoAttack (AActor *self, bool domelee, bool domissile,
 	// [BC] Let the server play these sounds.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -447,7 +447,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PlaySound)
 	// [BC] Let the server play these sounds.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -496,7 +496,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_StopSound)
 	// being picked up. Let the server tell the clients to stop the sound.
 	if (( stateowner != NULL ) && ( stateowner != self ) && ( stateowner->IsKindOf( RUNTIME_CLASS( ACustomInventory ))))
 	{
-		if (( NETWORK_InClientMode( )) && (( stateowner->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
+		if (( NETWORK_InClientMode( )) && (( stateowner->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
 			return;
 		else if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 			SERVERCOMMANDS_StopSound( self, slot );
@@ -537,7 +537,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PlaySoundEx)
 	// [BB] Let the server play these sounds.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -602,7 +602,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_StopSoundEx)
 		// being picked up. Let the server tell the clients to stop the sound.
 		if (( stateowner != NULL ) && ( stateowner != self ) && ( stateowner->IsKindOf( RUNTIME_CLASS( ACustomInventory ))))
 		{
-			if (( NETWORK_InClientMode( )) && (( stateowner->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
+			if (( NETWORK_InClientMode( )) && (( stateowner->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ))
 				return;
 			else if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				SERVERCOMMANDS_StopSound( self, int(channel) - NAME_Auto );
@@ -764,7 +764,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_Jump)
 	// [BC] Don't jump here in client mode.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -791,7 +791,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_JumpIfHealthLower)
 	// [BC] Don't jump here in client mode.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -872,7 +872,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_JumpIfCloser)
 	// [BC] Don't jump here in client mode.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -921,7 +921,7 @@ void DoJumpIfInventory(AActor * owner, DECLARE_PARAMINFO)
 	{
 		if ( NETWORK_InClientMode() )
 		{
-			if ((( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) &&
+			if ((( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) &&
 				(( self->player == NULL ) || (( self->player - players ) != consoleplayer )))
 			{
 				return;
@@ -1119,7 +1119,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_CallSpecial)
 	// [BC] Don't do this in client mode.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 		{
 			ACTION_SET_RESULT( false );
 			return;
@@ -1281,7 +1281,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_CustomMissile)
 				// [BB] The client did the spawning, so this has to be a client side only actor.
 				// Needs to be done regardless of whether the spawn was successful.
 				if ( NETWORK_InClientMode() )
-					missile->ulNetworkFlags |= NETFL_CLIENTSIDEONLY;
+					missile->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 				// [BC] If we're the server, tell clients to spawn the missile.
 				else if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 					SERVERCOMMANDS_SpawnMissile( missile );
@@ -1380,7 +1380,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_CustomMeleeAttack)
 	ACTION_PARAM_BOOL(bleed, 4);
 
 	// [BB] This is handled by the server.
-	if ( NETWORK_InClientMode() && ( ( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) )
+	if ( NETWORK_InClientMode() && ( ( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) )
 		return;
 
 	if (DamageType==NAME_None) DamageType = NAME_Melee;	// Melee is the default type
@@ -1851,7 +1851,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_CustomPunch)
 	// [BC] Weapons are handled by the server.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -1957,7 +1957,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_RailAttack)
 	if ( NETWORK_InClientMode()
 		&& !UNLAGGED_DrawRailClientside( self ) )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -2547,7 +2547,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_SpawnItem)
 		}
 		// [BB] The client did the spawning, so this has to be a client side only actor.
 		else if ( NETWORK_InClientMode() )
-			mo->ulNetworkFlags |= NETFL_CLIENTSIDEONLY;
+			mo->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 	}
 	ACTION_SET_RESULT(res);	// for an inventory item's use state
 }
@@ -2666,7 +2666,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_SpawnItemEx)
 		// [BC] Flag this actor as being client-spawned.
 		if ( NETWORK_InClientMode() )
 		{
-			mo->ulNetworkFlags |= NETFL_CLIENTSIDEONLY;
+			mo->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 		}
 	}
 }
@@ -2701,7 +2701,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_ThrowGrenade)
 	// [BC] Weapons are handled by the server.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -2765,7 +2765,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_Recoil)
 	// Note: I'm not sure whether this should be server side also for players.
 	if ( NETWORK_InClientMode() )
 	{
-		if ( (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) && ( self->player == NULL ) )
+		if ( (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) && ( self->player == NULL ) )
 			return;
 	}
 
@@ -3209,7 +3209,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_SpawnDebris)
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				SERVERCOMMANDS_SpawnThing( mo );
 			else if ( NETWORK_InClientMode() )
-				mo->ulNetworkFlags |= NETFL_CLIENTSIDEONLY;
+				mo->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 
 			if (transfer_translation)
 			{
@@ -3256,7 +3256,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_CheckSight)
 	// [Dusk] If the actor does NOT have CLIENTSIDEONLY, the client does nothing.
 	if ( NETWORK_InClientMode() )
 	{
-		if ( !( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) ||
+		if ( !( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) ||
 			P_CheckSight( players[consoleplayer].camera, self, SF_IGNOREVISIBILITY ) )
 		{
 			return;
@@ -3438,7 +3438,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_DropInventory)
 	// [BC] This is handled server-side.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -3491,7 +3491,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_JumpIf)
 	// [BC] Don't jump here in client mode.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -3553,7 +3553,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_KillSiblings)
 	// [BB] This is handled server-side.
 	if ( NETWORK_InClientMode() )
 	{
-		if (( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
+		if (( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false )
 			return;
 	}
 
@@ -3810,7 +3810,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_Respawn)
 			SERVERCOMMANDS_SpawnThing( self );
 			SERVERCOMMANDS_SetThingAngle( self );
 			// [BB] Since the clients just spawned this actor again, be sure to remove this flag.
-			self ->ulNetworkFlags &= ~NETFL_DESTROYED_ON_CLIENT;
+			self ->NetworkFlags &= ~NETFL_DESTROYED_ON_CLIENT;
 		}
 
 		if (flags & RSF_FOG)
@@ -5188,7 +5188,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_Teleport)
 	ACTION_PARAM_FIXED(MaxDist, 5);
 
 	// [BB] This is handled by the server.
-	if ( NETWORK_InClientMode() && ( ( self->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) )
+	if ( NETWORK_InClientMode() && ( ( self->NetworkFlags & NETFL_CLIENTSIDEONLY ) == false ) )
 		return;
 
 	// Randomly choose not to teleport like A_Srcr2Decide.

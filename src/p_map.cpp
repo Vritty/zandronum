@@ -3602,7 +3602,7 @@ bool P_BounceActor(AActor *mo, AActor *BlockingMobj, bool ontop)
 			SERVERCOMMANDS_PlayBounceSound( mo, true );
 			// [BB] We need to inform the clients about the new velocity and sync the position,
 			// but can only do this after calling P_ZMovement. Mark the actor accordingly.
-			mo->ulNetworkFlags |= NETFL_BOUNCED_OFF_ACTOR;
+			mo->NetworkFlags |= NETFL_BOUNCED_OFF_ACTOR;
 		}
 
 		return true;

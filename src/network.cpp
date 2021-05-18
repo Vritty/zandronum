@@ -1322,7 +1322,7 @@ bool NETWORK_IsActorClientHandled( const AActor *pActor )
 	if ( pActor == NULL )
 		return false;
 
-	return ( ( pActor->ulNetworkFlags & NETFL_CLIENTSIDEONLY ) || ( pActor->lNetID == -1 ) );
+	return ( ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY ) || ( pActor->lNetID == -1 ) );
 }
 
 //*****************************************************************************

@@ -109,7 +109,7 @@ bool EnsureActorHasNetID( const AActor *pActor )
 
 	if ( pActor->lNetID == -1 )
 	{
-		if ( sv_showwarnings && !( pActor->ulNetworkFlags & NETFL_SERVERSIDEONLY ) )
+		if ( sv_showwarnings && !( pActor->NetworkFlags & NETFL_SERVERSIDEONLY ) )
 			Printf ( "Warning: Actor %s doesn't have a netID and therefore can't be manipulated online!\n", pActor->GetClass()->TypeName.GetChars() );
 		return false;
 	}
@@ -1228,7 +1228,7 @@ void SERVERCOMMANDS_SpawnThingNoNetID( AActor *pActor, ULONG ulPlayerExtra, Serv
 	if ( pActor == NULL )
 		return;
 
-	if ( pActor->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pActor->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::SpawnThingNoNetID command;
@@ -1269,7 +1269,7 @@ void SERVERCOMMANDS_SpawnThingExactNoNetID( AActor *pActor, ULONG ulPlayerExtra,
 	if ( pActor == NULL )
 		return;
 
-	if ( pActor->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pActor->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::SpawnThingExactNoNetID command;
@@ -1310,7 +1310,7 @@ void SERVERCOMMANDS_LevelSpawnThingNoNetID( AActor *pActor, ULONG ulPlayerExtra,
 	if ( pActor == NULL )
 		return;
 
-	if ( pActor->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pActor->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::LevelSpawnThingNoNetID command;
@@ -2058,7 +2058,7 @@ void SERVERCOMMANDS_SpawnPuffNoNetID( AActor *pActor, ULONG ulState, bool bSendT
 		return;
 
 	// [AK] If the puff is serversided only, don't tell the clients to spawn it.
-	if ( pActor->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pActor->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::SpawnPuffNoNetID command;
@@ -2515,7 +2515,7 @@ void SERVERCOMMANDS_SpawnMissile( AActor *pMissile, ULONG ulPlayerExtra, ServerC
 		return;
 
 	// [AK] If the missile is serversided only, don't tell the clients to spawn it.
-	if ( pMissile->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pMissile->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::SpawnMissile command;
@@ -2549,7 +2549,7 @@ void SERVERCOMMANDS_SpawnMissileExact( AActor *pMissile, ULONG ulPlayerExtra, Se
 		return;
 
 	// [AK] If the missile is serversided only, don't tell the clients to spawn it.
-	if ( pMissile->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pMissile->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::SpawnMissileExact command;
@@ -3634,7 +3634,7 @@ void SERVERCOMMANDS_GiveInventory( ULONG ulPlayer, AInventory *pInventory, ULONG
 	if ( pInventory == NULL )
 		return;
 
-	if ( pInventory->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pInventory->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	NetCommand command ( SVC_GIVEINVENTORY );
@@ -3676,7 +3676,7 @@ void SERVERCOMMANDS_TakeInventory( ULONG ulPlayer, const PClass *inventoryClass,
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
 		return;
 
-	if ( inventoryClass == NULL || ( GetDefaultByType ( inventoryClass )->ulNetworkFlags & NETFL_SERVERSIDEONLY ) )
+	if ( inventoryClass == NULL || ( GetDefaultByType ( inventoryClass )->NetworkFlags & NETFL_SERVERSIDEONLY ) )
 		return;
 
 	NetCommand command ( SVC_TAKEINVENTORY );
@@ -3736,7 +3736,7 @@ void SERVERCOMMANDS_GiveWeaponHolder( ULONG ulPlayer, AWeaponHolder *pHolder, UL
 	if ( pHolder == NULL )
 		return;
 
-	if ( pHolder->ulNetworkFlags & NETFL_SERVERSIDEONLY )
+	if ( pHolder->NetworkFlags & NETFL_SERVERSIDEONLY )
 		return;
 
 	ServerCommands::GiveWeaponHolder command;
