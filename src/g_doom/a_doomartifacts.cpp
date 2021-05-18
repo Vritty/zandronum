@@ -42,9 +42,9 @@ public:
 	{
 		Super::PostBeginPlay( );
 
-		ulPowerupFlags = args[0];
-		if ( ulPowerupFlags == 0 )
-			ulPowerupFlags |= RPF_ALL;
+		PowerupFlags = args[0];
+		if ( PowerupFlags == 0 )
+			PowerupFlags |= RPF_ALL;
 	}
 
 	bool	IsFrameAllowed( ULONG ulFrame )
@@ -53,17 +53,14 @@ public:
 		if (( ulFrame == 4 ) && ( NETWORK_GetState( ) != NETSTATE_SINGLE ))
 			return ( false );
 
-		return !!( ulPowerupFlags & ( 1 << ulFrame ));
+		return !!( PowerupFlags & ( 1 << ulFrame ));
 	}
 
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int ulCurrentFrame;
+	unsigned int CurrentFrame;
 
 protected:
 	const char *PickupMessage ();
-
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int ulPowerupFlags;
+	unsigned int PowerupFlags;
 };
 
 DEFINE_ACTION_FUNCTION(AActor, A_RandomPowerupFrame)
@@ -77,7 +74,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_RandomPowerupFrame)
 	if ( pRandomPowerup->IsFrameAllowed( ulFrame ) == false )
 		self->SetState( self->state->NextState );
 	else
-		pRandomPowerup->ulCurrentFrame = ulFrame;
+		pRandomPowerup->CurrentFrame = ulFrame;
 }
 
 IMPLEMENT_CLASS (ARandomPowerup)
@@ -93,7 +90,7 @@ bool ARandomPowerup::Use (bool pickup)
 		return ( false );
 	}
 
-	switch ( ulCurrentFrame )
+	switch ( CurrentFrame )
 	{
 	// Megasphere.
 	case 0:
@@ -170,7 +167,7 @@ bool ARandomPowerup::Use (bool pickup)
 void ARandomPowerup::Serialize( FArchive &arc )
 {
 	Super::Serialize( arc );
-	arc << ulCurrentFrame << ulPowerupFlags;
+	arc << CurrentFrame << PowerupFlags;
 }
 
 const char *ARandomPowerup::PickupMessage( )
@@ -180,7 +177,7 @@ const char *ARandomPowerup::PickupMessage( )
 		return ( NULL );
 	}
 
-	switch ( ulCurrentFrame )
+	switch ( CurrentFrame )
 	{
 	case 0:
 
