@@ -77,17 +77,16 @@ void SERVER_SAVE_Construct( void )
 PLAYERSAVEDINFO_t *SERVER_SAVE_GetSavedInfo( const char *pszPlayerName, NETADDRESS_s Address )
 {
 	ULONG	ulIdx;
-	char	szPlayerName[128];
+	FString name = pszPlayerName;
 
-	sprintf( szPlayerName, "%s", pszPlayerName );
-	V_RemoveColorCodes( szPlayerName );
+	V_RemoveColorCodes( name );
 
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
 		if ( g_SavedPlayerInfo[ulIdx].bInitialized == false )
 			continue;
 
-		if (( stricmp( szPlayerName, g_SavedPlayerInfo[ulIdx].szName ) == 0 ) &&
+		if (( g_SavedPlayerInfo[ulIdx].Name.CompareNoCase( name ) == 0 ) &&
 			Address.Compare( g_SavedPlayerInfo[ulIdx].Address ))
 		{
 			return ( &g_SavedPlayerInfo[ulIdx] );
@@ -110,7 +109,7 @@ void SERVER_SAVE_ClearList( void )
 		g_SavedPlayerInfo[ulIdx].lFragCount = 0;
 		g_SavedPlayerInfo[ulIdx].lPointCount = 0;
 		g_SavedPlayerInfo[ulIdx].lWinCount = 0;
-		g_SavedPlayerInfo[ulIdx].szName[0] = 0;
+		g_SavedPlayerInfo[ulIdx].Name = "";
 		g_SavedPlayerInfo[ulIdx].ulTime = 0;
 	}
 }
@@ -120,17 +119,16 @@ void SERVER_SAVE_ClearList( void )
 void SERVER_SAVE_SaveInfo( PLAYERSAVEDINFO_t *pInfo )
 {
 	ULONG	ulIdx;
-	char	szPlayerName[128];
+	FString name = pInfo->Name;
 
-	sprintf( szPlayerName, "%s", pInfo->szName );
-	V_RemoveColorCodes( szPlayerName );
+	V_RemoveColorCodes( name );
 
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
 		if ( g_SavedPlayerInfo[ulIdx].bInitialized )
 		{
 			// If this slot matches the player we're trying to save, just update it.
-			if (( stricmp( szPlayerName, g_SavedPlayerInfo[ulIdx].szName ) == 0 ) &&
+			if (( g_SavedPlayerInfo[ulIdx].Name.CompareNoCase( name ) == 0 ) &&
 				pInfo->Address.Compare( g_SavedPlayerInfo[ulIdx].Address ))
 			{
 				server_save_UpdateSlotWithInfo( ulIdx, pInfo );
@@ -159,7 +157,7 @@ void server_save_UpdateSlotWithInfo( ULONG ulSlot, PLAYERSAVEDINFO_t *pInfo )
 	g_SavedPlayerInfo[ulSlot].lPointCount		= pInfo->lPointCount;
 	g_SavedPlayerInfo[ulSlot].lWinCount			= pInfo->lWinCount;
 	g_SavedPlayerInfo[ulSlot].ulTime			= pInfo->ulTime;
-	sprintf( g_SavedPlayerInfo[ulSlot].szName, "%s", pInfo->szName );
+	g_SavedPlayerInfo[ulSlot].Name				= pInfo->Name;
 
-	V_RemoveColorCodes( g_SavedPlayerInfo[ulSlot].szName );
+	V_RemoveColorCodes( g_SavedPlayerInfo[ulSlot].Name );
 }

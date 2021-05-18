@@ -1922,7 +1922,6 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 {
 	player_t	*pPlayer;
 	FString		szSkin;
-	char		szOldPlayerName[MAXPLAYERNAME+1];
 	ULONG		ulUserInfoInstance;
 	// [BB] We may only kick the player after completely parsing the current message,
 	// otherwise we'll get network parsing errors.
@@ -1997,7 +1996,7 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 
 		if ( name == NAME_Name )
 		{
-			sprintf( szOldPlayerName, "%s", pPlayer->userinfo.GetName() );
+			FString oldPlayerName = pPlayer->userinfo.GetName();
 
 			if ( value.Len() > MAXPLAYERNAME )
 				value.Truncate(MAXPLAYERNAME);
@@ -2045,20 +2044,17 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 
 			if ( g_aClients[g_lCurrentClient].State == CLS_SPAWNED )
 			{
-				char	szPlayerNameNoColor[MAXPLAYERNAME+1];
-				char	szOldPlayerNameNoColor[MAXPLAYERNAME+1];
+				FString playerNameNoColor = pPlayer->userinfo.GetName();
+				FString oldPlayerNameNoColor = oldPlayerName;
 
-				sprintf( szPlayerNameNoColor, "%s", pPlayer->userinfo.GetName() );
-				sprintf( szOldPlayerNameNoColor, "%s", szOldPlayerName );
+				V_ColorizeString( playerNameNoColor );
+				V_RemoveColorCodes( playerNameNoColor );
+				V_ColorizeString( oldPlayerNameNoColor );
+				V_RemoveColorCodes( oldPlayerNameNoColor );
 
-				V_ColorizeString( szPlayerNameNoColor );
-				V_ColorizeString( szOldPlayerNameNoColor );
-				V_RemoveColorCodes( szPlayerNameNoColor );
-				V_RemoveColorCodes( szOldPlayerNameNoColor );
-
-				if ( stricmp( szPlayerNameNoColor, szOldPlayerNameNoColor ) != 0 )
+				if ( playerNameNoColor.CompareNoCase( oldPlayerNameNoColor ) != 0 )
 				{
-					SERVER_Printf( "%s is now known as %s\n", szOldPlayerName, pPlayer->userinfo.GetName() );
+					SERVER_Printf( "%s is now known as %s\n", oldPlayerName.GetChars(), pPlayer->userinfo.GetName() );
 
 					// [RC] Update clients using the RCON utility.
 					SERVER_RCON_UpdateInfo( SVRCU_PLAYERDATA );
@@ -2897,7 +2893,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 		Info.lPointCount	= players[ulClient].lPointCount;
 		Info.lWinCount		= players[ulClient].ulWins;
 		Info.ulTime			= players[ulClient].ulTime; // [RC] Save time
-		sprintf( Info.szName, "%s", players[ulClient].userinfo.GetName() );
+		Info.Name			= players[ulClient].userinfo.GetName();
 
 		SERVER_SAVE_SaveInfo( &Info );
 	}
@@ -2913,7 +2909,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 			pInfo->lFragCount = 0;
 			pInfo->lPointCount = 0;
 			pInfo->lWinCount = 0;
-			pInfo->szName[0] = 0;
+			pInfo->Name = "";
 		}
 	}
 

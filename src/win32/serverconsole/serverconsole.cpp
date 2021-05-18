@@ -1853,7 +1853,7 @@ void SERVERCONSOLE_SetupColumns( void )
 void SERVERCONSOLE_ReListPlayers( void )
 {
 	LVITEM		Item;
-	char		szString[MAXPLAYERNAME+1];
+	FString		playerName;
 	LONG		lIndex;
 	LONG		lIdx;
 
@@ -1876,9 +1876,9 @@ void SERVERCONSOLE_ReListPlayers( void )
 		if ( playeringame[lIdx] == false )
 			continue;
 
-		sprintf( szString, "%s", players[lIdx].userinfo.GetName() );
-		V_RemoveColorCodes( szString );
-		Item.pszText = szString;
+		playerName = players[lIdx].userinfo.GetName();
+		V_RemoveColorCodes( playerName );
+		Item.pszText = const_cast<char *>( playerName.GetChars());
 
 		lIndex = SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_INSERTITEM, 0, (LPARAM)&Item );
 		if ( lIndex == -1 )
@@ -1896,7 +1896,7 @@ void SERVERCONSOLE_ReListPlayers( void )
 void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 {
 	LVITEM		Item;
-	char		szString[MAXPLAYERNAME+1];
+	FString		message;
 	LONG		lIndex = -1;
 	LONG		lIdx;
 
@@ -1918,9 +1918,9 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 	if ( ulUpdateFlags & UDF_NAME )
 	{
 		Item.iSubItem = COLUMN_NAME;
-		sprintf( szString, "%s", players[lPlayer].userinfo.GetName() );
-		Item.pszText = szString;
-		V_RemoveColorCodes( szString );
+		message = players[lPlayer].userinfo.GetName();
+		V_RemoveColorCodes( message );
+		Item.pszText = const_cast<char *>( message.GetChars());
 
 		SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_SETITEM, lIndex, (LPARAM)&Item );
 	}
@@ -1929,25 +1929,25 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 	{
 		Item.iSubItem = COLUMN_FRAGS;
 		if ( PLAYER_IsTrueSpectator( &players[lPlayer] ))
-			sprintf( szString, "Spectating" );
+			message = "Spectating";
 		else if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) && ( !players[lPlayer].bOnTeam ))
-			sprintf( szString, "No team" );
+			message = "No team";
 		else if ( lastmanstanding || teamlms )
 		{
 			if ( players[lPlayer].health <=0 )
-				sprintf( szString, "Dead" );
+				message = "Dead";
 			else if ( lastmanstanding )
-				sprintf( szString, "%ld", players[lPlayer].ulWins );
+				message.Format( "%ld", players[lPlayer].ulWins );
 			else
-				sprintf( szString, "%d", players[lPlayer].fragcount );
+				message.Format( "%d", players[lPlayer].fragcount );
 		}
 		else if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNPOINTS ) || (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNKILLS ) && ( zadmflags & ZADF_AWARD_DAMAGE_INSTEAD_KILLS )))
-			sprintf( szString, "%ld", players[lPlayer].lPointCount );
+			message.Format( "%ld", players[lPlayer].lPointCount );
 		else if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNFRAGS )
-			sprintf( szString, "%d", players[lPlayer].fragcount );
+			message.Format( "%d", players[lPlayer].fragcount );
 		else
-			sprintf( szString, "%d", players[lPlayer].killcount );
-		Item.pszText = szString;
+			message.Format( "%d", players[lPlayer].killcount );
+		Item.pszText = const_cast<char *>( message.GetChars());
 		SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_SETITEM, lIndex, (LPARAM)&Item );
 	}
 
@@ -1955,10 +1955,10 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 	{
 		Item.iSubItem = COLUMN_PING;
 		if ( players[lPlayer].bIsBot )
-			sprintf( szString, "Bot" );
+			message = "Bot";
 		else
-			sprintf( szString, "%ld", players[lPlayer].ulPing );
-		Item.pszText = szString;
+			message.Format( "%ld", players[lPlayer].ulPing );
+		Item.pszText = const_cast<char *>( message.GetChars());
 
 		SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_SETITEM, lIndex, (LPARAM)&Item );
 	}
@@ -1966,8 +1966,8 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 	if ( ulUpdateFlags & UDF_TIME )
 	{
 		Item.iSubItem = COLUMN_TIME;
-		sprintf( szString, "%ld", ( players[lPlayer].ulTime / ( TICRATE * 60 )));
-		Item.pszText = szString;
+		message.Format( "%ld", ( players[lPlayer].ulTime / ( TICRATE * 60 )));
+		Item.pszText = const_cast<char *>( message.GetChars());
 
 		SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_SETITEM, lIndex, (LPARAM)&Item );
 	}

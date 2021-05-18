@@ -296,8 +296,8 @@ static	int			g_iReturnInt = -1;
 static	bool		g_bReturnBool = false;
 static	char		g_szReturnString[BOTCMD_RETURNSTRING_SIZE] = { 0 };
 static	char		g_szLastChatString[256] = { 0 };
-static	char		g_szLastChatPlayer[MAXPLAYERNAME+1] = { 0 };
-static	char		g_szLastJoinedPlayer[MAXPLAYERNAME+1] = { 0 };
+static	FString		g_LastChatPlayer;
+static	FString		g_LastJoinedPlayer;
 static	FRandom		g_RandomBotCmdSeed( "RandomBotCmdSeed" );
 static	FRandom		g_RandomBotChatSeed( "RandomBotChatSeed" );
 
@@ -612,16 +612,14 @@ void BOTCMD_SetLastChatString( const char *pszString )
 //
 void BOTCMD_SetLastChatPlayer( const char *pszString )
 {
-	strncpy( g_szLastChatPlayer, pszString, MAXPLAYERNAME );
-	g_szLastChatPlayer[MAXPLAYERNAME] = 0;
+	g_LastChatPlayer = pszString;
 }
 
 //*****************************************************************************
 //
 void BOTCMD_SetLastJoinedPlayer( const char *pszString )
 {
-	strncpy( g_szLastJoinedPlayer, pszString, MAXPLAYERNAME );
-	g_szLastJoinedPlayer[MAXPLAYERNAME] = 0;
+	g_LastJoinedPlayer = pszString;
 }
 
 //*****************************************************************************
@@ -746,10 +744,10 @@ void BOTCMD_DoChatStringSubstitutions( CSkullBot *pBot, const char *pszInString,
 
 				pszInString += strlen( "player_random" );
 			}
-			else if (( strnicmp( pszInString + 1, "player_lastchat", strlen( "player_lastchat" )) == 0 ) && ( g_szLastChatPlayer[0] != 0 ))
+			else if (( strnicmp( pszInString + 1, "player_lastchat", strlen( "player_lastchat" )) == 0 ) && ( g_LastChatPlayer.Len( ) > 0 ))
 			{				
-				sprintf( pszOutString, "%s", g_szLastChatPlayer );
-				pszOutString += strlen( g_szLastChatPlayer );
+				sprintf( pszOutString, "%s", g_LastChatPlayer.GetChars( ));
+				pszOutString += g_LastChatPlayer.Len( );
 
 				pszInString += strlen( "player_lastchat" );
 			}
@@ -2270,8 +2268,8 @@ static void botcmd_GetLastChatString( CSkullBot *pBot )
 //
 static void botcmd_GetLastChatPlayer( CSkullBot *pBot )
 {
-	if ( strlen( g_szLastChatPlayer ) < BOTCMD_RETURNSTRING_SIZE )
-		sprintf( g_szReturnString, "%s", g_szLastChatPlayer );
+	if ( g_LastChatPlayer.Len( ) < BOTCMD_RETURNSTRING_SIZE )
+		sprintf( g_szReturnString, "%s", g_LastChatPlayer.GetChars( ));
 	else
 		g_szReturnString[0] = 0;
 }
@@ -2518,8 +2516,8 @@ static void botcmd_GetSpread( CSkullBot *pBot )
 //
 static void botcmd_GetLastJoinedPlayer( CSkullBot *pBot )
 {
-	if ( strlen( g_szLastJoinedPlayer ) < BOTCMD_RETURNSTRING_SIZE )
-		sprintf( g_szReturnString, "%s", g_szLastJoinedPlayer );
+	if ( g_LastJoinedPlayer.Len( ) < BOTCMD_RETURNSTRING_SIZE )
+		sprintf( g_szReturnString, "%s", g_LastJoinedPlayer.GetChars( ));
 	else
 		g_szReturnString[0] = 0;
 }

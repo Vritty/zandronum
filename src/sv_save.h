@@ -59,7 +59,7 @@
 struct PLAYERSAVEDINFO_t
 {
 	// Name of the player.
-	char			szName[MAXPLAYERNAME+1];
+	FString			Name;
 
 	// Address of the player whose information is being saved.
 	NETADDRESS_s	Address;
