@@ -73,7 +73,7 @@ void DDoor::Serialize (FArchive &arc)
 		<< m_TopCountdown
 		<< m_LightTag
 		// [BC]
-		<< m_lDoorID;
+		<< m_DoorID;
 }
 
 //============================================================================
@@ -118,7 +118,7 @@ void DDoor::Tick ()
 
 				// [BC] If we're the server, tell clients to change the door's direction.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_ChangeDoorDirection( m_lDoorID, m_Direction );
+					SERVERCOMMANDS_ChangeDoorDirection( m_DoorID, m_Direction );
 
 				break;
 				
@@ -128,7 +128,7 @@ void DDoor::Tick ()
 
 				// [BC] If we're the server, tell clients to change the door's direction.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_ChangeDoorDirection( m_lDoorID, m_Direction );
+					SERVERCOMMANDS_ChangeDoorDirection( m_DoorID, m_Direction );
 
 				break;
 				
@@ -158,7 +158,7 @@ void DDoor::Tick ()
 			
 				// [BC] If we're the server, tell clients to change the door's direction.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_ChangeDoorDirection( m_lDoorID, m_Direction );
+					SERVERCOMMANDS_ChangeDoorDirection( m_DoorID, m_Direction );
 
 				break;
 				
@@ -208,7 +208,7 @@ void DDoor::Tick ()
 
 				// [BC] If we're the server, tell clients to destroy the door.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_DestroyDoor( m_lDoorID );
+					SERVERCOMMANDS_DestroyDoor( m_DoorID );
 
 				Destroy ();						// unlink and free
 				break;
@@ -219,7 +219,7 @@ void DDoor::Tick ()
 
 				// [BC] If we're the server, tell clients to change the door's direction.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_ChangeDoorDirection( m_lDoorID, m_Direction );
+					SERVERCOMMANDS_ChangeDoorDirection( m_DoorID, m_Direction );
 
 				break;
 				
@@ -240,7 +240,7 @@ void DDoor::Tick ()
 
 				// [BC] If we're the server, tell clients to change the door's direction.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_ChangeDoorDirection( m_lDoorID, m_Direction );
+					SERVERCOMMANDS_ChangeDoorDirection( m_DoorID, m_Direction );
 
 				break;
 			}
@@ -287,7 +287,7 @@ void DDoor::Tick ()
 
 				// [BC] If we're the server, tell clients to change the door's direction.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_ChangeDoorDirection( m_lDoorID, m_Direction );
+					SERVERCOMMANDS_ChangeDoorDirection( m_DoorID, m_Direction );
 
 				break;
 				
@@ -297,7 +297,7 @@ void DDoor::Tick ()
 				
 				// [BC] If we're the server, tell clients to destroy the door.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_DestroyDoor( m_lDoorID );
+					SERVERCOMMANDS_DestroyDoor( m_DoorID );
 
 				Destroy ();						// unlink and free
 				break;
@@ -326,7 +326,7 @@ void DDoor::Tick ()
 
 void DDoor::UpdateToClient( ULONG ulClient )
 {
-	SERVERCOMMANDS_DoDoor( m_Sector, m_Type, m_Speed, m_Direction, m_LightTag, m_lDoorID, ulClient, SVCF_ONLYTHISCLIENT );
+	SERVERCOMMANDS_DoDoor( m_Sector, m_Type, m_Speed, m_Direction, m_LightTag, m_DoorID, ulClient, SVCF_ONLYTHISCLIENT );
 }
 
 int DDoor::GetDirection ()
@@ -450,7 +450,7 @@ DDoor::DDoor (sector_t *sector)
 	: DMovingCeiling (sector)
 {
 	// [EP]
-	m_lDoorID = -1;
+	m_DoorID = -1;
 }
 
 //============================================================================
@@ -523,20 +523,20 @@ DDoor::DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay, int lightTa
 	m_OldFloorDist = sec->floorplane.d;
 
 	// [BB] We need to initialize the ID, because P_GetFirstFreeDoorID relies on this.
-	m_lDoorID = -1;
+	m_DoorID = -1;
 	// [BC] Assign the door's network ID.
 	if ( NETWORK_InClientMode() == false )
-		m_lDoorID = P_GetFirstFreeDoorID( );
+		m_DoorID = P_GetFirstFreeDoorID( );
 }
 
 LONG DDoor::GetID( void )
 {
-	return ( m_lDoorID );
+	return ( m_DoorID );
 }
 
 void DDoor::SetID( LONG lID )
 {
-	m_lDoorID = lID;
+	m_DoorID = lID;
 }
 
 DDoor::EVlDoor DDoor::GetType( void )

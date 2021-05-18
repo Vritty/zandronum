@@ -514,8 +514,7 @@ protected:
 	EPlatType	m_Type;
 
 	// [BC] This is the platform's unique network ID.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			m_lPlatID;
+	int			m_PlatID;
 
 	void Reactivate ();
 	void Stop ();
@@ -595,8 +594,7 @@ protected:
 	TObjPtr<DInterpolation> m_Interp_Floor;
 
 	// [BC] This is the pillar's unique network ID.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			m_lPillarID;
+	int			m_PillarID;
 
 private:
 	DPillar ();
@@ -675,8 +673,7 @@ public:
 protected:
 
 	// [BC] This is the door's unique network ID.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			m_lDoorID;
+	int			m_DoorID;
 
 	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 						   int tag, int speed, int delay, int lock,
@@ -833,8 +830,7 @@ protected:
 	int 		m_OldDirection;
 
 	// [BC] This is the ceiling's unique network ID.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			m_lCeilingID;
+	int			m_CeilingID;
 
 private:
 	DCeiling ();
@@ -976,8 +972,7 @@ protected:
 	int			m_PerStepTime;
 
 	// [BC] This is the floor's unique network ID.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			m_lFloorID;
+	int			m_FloorID;
 
 	friend bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 		fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
@@ -1045,8 +1040,7 @@ protected:
 	TObjPtr<DInterpolation> m_Interp_Floor;
 
 	// [BC] This is the elevator's unique network ID.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			m_lElevatorID;
+	int			m_ElevatorID;
 
 	friend bool EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
 		fixed_t height, int tag);
@@ -1094,8 +1088,7 @@ protected:
 	TObjPtr<DInterpolation> m_Interpolation;
 
 	// [BC] This is the waggle's unique network ID.
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			m_lWaggleID;
+	int			m_WaggleID;
 
 	friend bool EV_StartWaggle (int tag, line_t *line, int height, int speed,
 		int offset, int timer, bool ceiling);

@@ -104,26 +104,26 @@ void DFloor::Serialize (FArchive &arc)
 		<< m_PerStepTime
 		<< m_Hexencrush
 		// [BC]
-		<< m_lFloorID;
+		<< m_FloorID;
 }
 
 //==========================================================================
 // [BC]
 void DElevator::UpdateToClient( ULONG ulClient )
 {
-	SERVERCOMMANDS_DoElevator( m_Type, m_Sector, m_Speed, m_Direction, m_FloorDestDist, m_CeilingDestDist, m_lElevatorID, ulClient, SVCF_ONLYTHISCLIENT );
+	SERVERCOMMANDS_DoElevator( m_Type, m_Sector, m_Speed, m_Direction, m_FloorDestDist, m_CeilingDestDist, m_ElevatorID, ulClient, SVCF_ONLYTHISCLIENT );
 }
 
 // [BC]
 LONG DElevator::GetID( void )
 {
-	return ( m_lElevatorID );
+	return ( m_ElevatorID );
 }
 
 // [BC]
 void DElevator::SetID( LONG lID )
 {
-	m_lElevatorID = lID;
+	m_ElevatorID = lID;
 }
 
 // [BC]
@@ -228,7 +228,7 @@ void DFloor::Tick ()
 
 			// [BC] Tell clients to change the floor type.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-				SERVERCOMMANDS_ChangeFloorType( m_lFloorID, m_Type );
+				SERVERCOMMANDS_ChangeFloorType( m_FloorID, m_Type );
 		}
 
 		if (m_Type != waitStair || m_ResetCount == 0)
@@ -312,7 +312,7 @@ void DFloor::Tick ()
 
 			// [BC] If we're the server, tell clients to destroy the floor.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-				SERVERCOMMANDS_DestroyFloor( m_lFloorID );
+				SERVERCOMMANDS_DestroyFloor( m_FloorID );
 
 			Destroy ();
 		}
@@ -328,10 +328,10 @@ void DFloor::Tick ()
 void DFloor::UpdateToClient( ULONG ulClient )
 {
 	if ( ( m_Type != buildStair ) && ( m_Type != waitStair ) && ( m_Type != resetStair ) )
-		SERVERCOMMANDS_DoFloor( m_Type, m_Sector, m_Direction, m_Speed, m_FloorDestDist, m_Crush, m_Hexencrush, m_lFloorID, ulClient, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_DoFloor( m_Type, m_Sector, m_Direction, m_Speed, m_FloorDestDist, m_Crush, m_Hexencrush, m_FloorID, ulClient, SVCF_ONLYTHISCLIENT );
 	else
-		SERVERCOMMANDS_BuildStair( m_Type, m_Sector, m_Direction, m_Speed, m_FloorDestDist, m_Crush, m_Hexencrush, m_ResetCount, m_Delay, m_PauseTime, m_StepTime, m_PerStepTime, m_lFloorID, ulClient, SVCF_ONLYTHISCLIENT );
-	SERVERCOMMANDS_StartFloorSound( m_lFloorID );
+		SERVERCOMMANDS_BuildStair( m_Type, m_Sector, m_Direction, m_Speed, m_FloorDestDist, m_Crush, m_Hexencrush, m_ResetCount, m_Delay, m_PauseTime, m_StepTime, m_PerStepTime, m_FloorID, ulClient, SVCF_ONLYTHISCLIENT );
+	SERVERCOMMANDS_StartFloorSound( m_FloorID );
 }
 
 void DFloor::SetFloorChangeType (sector_t *sec, int change)
@@ -375,17 +375,17 @@ DFloor::DFloor (sector_t *sec)
 	: DMovingFloor (sec)
 {
 	// [EP]
-	m_lFloorID = -1;
+	m_FloorID = -1;
 }
 
 LONG DFloor::GetID( void )
 {
-	return ( m_lFloorID );
+	return ( m_FloorID );
 }
 
 void DFloor::SetID( LONG lID )
 {
-	m_lFloorID = lID;
+	m_FloorID = lID;
 }
 
 DFloor::EFloor DFloor::GetType( void )
@@ -568,7 +568,7 @@ manual_floor:
 
 		// [BC] Assign the floor's network ID. However, don't do this on the client end.
 		if ( NETWORK_InClientMode() == false )
-			floor->m_lFloorID = P_GetFirstFreeFloorID( );
+			floor->m_FloorID = P_GetFirstFreeFloorID( );
 
 		floor->StartFloorSound ();
 
@@ -751,8 +751,8 @@ manual_floor:
 		// [BC] If we're the server, tell clients to create the floor.
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		{
-			SERVERCOMMANDS_DoFloor( floortype, &sectors[secnum], floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_lFloorID );
-			SERVERCOMMANDS_StartFloorSound( floor->m_lFloorID );
+			SERVERCOMMANDS_DoFloor( floortype, &sectors[secnum], floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_FloorID );
+			SERVERCOMMANDS_StartFloorSound( floor->m_FloorID );
 		}
 
 		// Do not interpolate instant movement floors.
@@ -850,7 +850,7 @@ bool EV_FloorCrushStop (int tag)
 
 			// [BC] If we're the server, tell clients to destroy the floor.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-				SERVERCOMMANDS_DestroyFloor( barrier_cast<DFloor *>( sec->floordata )->m_lFloorID );
+				SERVERCOMMANDS_DestroyFloor( barrier_cast<DFloor *>( sec->floordata )->m_FloorID );
 
 			sec->floordata->Destroy ();
 			sec->floordata = NULL;
@@ -969,11 +969,11 @@ manual_stair:
 
 		// [BC] Assign the floor's network ID. However, don't do this on the client end.
 		if ( NETWORK_InClientMode() == false )
-			floor->m_lFloorID = P_GetFirstFreeFloorID( );
+			floor->m_FloorID = P_GetFirstFreeFloorID( );
 
 		// [BC] If we're the server, tell clients to create the floor.
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-			SERVERCOMMANDS_BuildStair( floor->m_Type, &sectors[secnum], floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_ResetCount, floor->m_Delay, floor->m_PauseTime, floor->m_StepTime, floor->m_PerStepTime, floor->m_lFloorID );
+			SERVERCOMMANDS_BuildStair( floor->m_Type, &sectors[secnum], floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_ResetCount, floor->m_Delay, floor->m_PauseTime, floor->m_StepTime, floor->m_PerStepTime, floor->m_FloorID );
 
 		// Find next sector to raise
 		// 1. Find 2-sided line with same sector side[0] (lowest numbered)
@@ -1085,13 +1085,13 @@ manual_stair:
 
 				// [BC] Assign the floor's network ID. However, don't do this on the client end.
 				if ( NETWORK_InClientMode() == false )
-					floor->m_lFloorID = P_GetFirstFreeFloorID( );
+					floor->m_FloorID = P_GetFirstFreeFloorID( );
 
 				// [BC] If we're the server, tell clients to create the floor.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				{
-					SERVERCOMMANDS_BuildStair( floor->m_Type, &sectors[secnum], floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_ResetCount, floor->m_Delay, floor->m_PauseTime, floor->m_StepTime, floor->m_PerStepTime, floor->m_lFloorID );
-					SERVERCOMMANDS_StartFloorSound( floor->m_lFloorID );
+					SERVERCOMMANDS_BuildStair( floor->m_Type, &sectors[secnum], floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_ResetCount, floor->m_Delay, floor->m_PauseTime, floor->m_StepTime, floor->m_PerStepTime, floor->m_FloorID );
+					SERVERCOMMANDS_StartFloorSound( floor->m_FloorID );
 				}
 			}
 		} while (ok);
@@ -1178,13 +1178,13 @@ manual_donut:
 			
 			// [BC] Assign the floor's network ID. However, don't do this on the client end.
 			if ( NETWORK_InClientMode() == false )
-				floor->m_lFloorID = P_GetFirstFreeFloorID( );
+				floor->m_FloorID = P_GetFirstFreeFloorID( );
 
 			// [BC] If we're the server, tell clients to create the floor.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 			{
-				SERVERCOMMANDS_DoFloor( floor->m_Type, floor->m_Sector, floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_lFloorID );
-				SERVERCOMMANDS_StartFloorSound( floor->m_lFloorID );
+				SERVERCOMMANDS_DoFloor( floor->m_Type, floor->m_Sector, floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_FloorID );
+				SERVERCOMMANDS_StartFloorSound( floor->m_FloorID );
 			}
 
 			//	Spawn lowering donut-hole
@@ -1201,13 +1201,13 @@ manual_donut:
 
 			// [BC] Assign the floor's network ID. However, don't do this on the client end.
 			if ( NETWORK_InClientMode() == false )
-				floor->m_lFloorID = P_GetFirstFreeFloorID( );
+				floor->m_FloorID = P_GetFirstFreeFloorID( );
 
 			// [BC] If we're the server, tell clients to create the floor.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 			{
-				SERVERCOMMANDS_DoFloor( floor->m_Type, floor->m_Sector, floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_lFloorID );
-				SERVERCOMMANDS_StartFloorSound( floor->m_lFloorID );
+				SERVERCOMMANDS_DoFloor( floor->m_Type, floor->m_Sector, floor->m_Direction, floor->m_Speed, floor->m_FloorDestDist, floor->m_Crush, floor->m_Hexencrush, floor->m_FloorID );
+				SERVERCOMMANDS_StartFloorSound( floor->m_FloorID );
 			}
 
 			break;
@@ -1247,7 +1247,7 @@ DElevator::DElevator (sector_t *sec)
 	m_Interp_Floor = sec->SetInterpolation(sector_t::FloorMove, true);
 	m_Interp_Ceiling = sec->SetInterpolation(sector_t::CeilingMove, true);
 	// [EP]
-	m_lElevatorID = -1;
+	m_ElevatorID = -1;
 }
 
 void DElevator::Serialize (FArchive &arc)
@@ -1261,7 +1261,7 @@ void DElevator::Serialize (FArchive &arc)
 		<< m_Interp_Floor
 		<< m_Interp_Ceiling
 		// [BC]
-		<< m_lElevatorID;
+		<< m_ElevatorID;
 }
 
 //==========================================================================
@@ -1355,7 +1355,7 @@ void DElevator::Tick ()
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		{
 			SERVERCOMMANDS_StopSectorSequence( m_Sector );
-			SERVERCOMMANDS_DestroyElevator( m_lElevatorID );
+			SERVERCOMMANDS_DestroyElevator( m_ElevatorID );
 		}
 
 		// make floor stop sound
@@ -1434,7 +1434,7 @@ manual_elevator:
 
 		// [BC] Assign the floor's network ID. However, don't do this on the client end.
 		if ( NETWORK_InClientMode() == false )
-			elevator->m_lElevatorID = P_GetFirstFreeElevatorID( );
+			elevator->m_ElevatorID = P_GetFirstFreeElevatorID( );
 
 		floorheight = sec->CenterFloor ();
 		ceilingheight = sec->CenterCeiling ();
@@ -1489,8 +1489,8 @@ manual_elevator:
 		// [BC] If we're the server, tell clients to create the elevator.
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		{
-			SERVERCOMMANDS_DoElevator( elevator->m_Type, elevator->m_Sector, elevator->m_Speed, elevator->m_Direction, elevator->m_FloorDestDist, elevator->m_CeilingDestDist, elevator->m_lElevatorID );
-			SERVERCOMMANDS_StartElevatorSound( elevator->m_lElevatorID );
+			SERVERCOMMANDS_DoElevator( elevator->m_Type, elevator->m_Sector, elevator->m_Speed, elevator->m_Direction, elevator->m_FloorDestDist, elevator->m_CeilingDestDist, elevator->m_ElevatorID );
+			SERVERCOMMANDS_StartElevatorSound( elevator->m_ElevatorID );
 		}
 
 	}
@@ -1601,7 +1601,7 @@ void DWaggleBase::Serialize (FArchive &arc)
 		<< m_State
 		<< m_Interpolation
 		// [BC]
-		<< m_lWaggleID;
+		<< m_WaggleID;
 }
 
 //==========================================================================
@@ -1618,7 +1618,7 @@ DWaggleBase::DWaggleBase (sector_t *sec)
 	: Super (sec)
 {
 	// [EP]
-	m_lWaggleID = -1;
+	m_WaggleID = -1;
 }
 
 void DWaggleBase::Destroy()
@@ -1634,19 +1634,19 @@ void DWaggleBase::Destroy()
 // [BC]
 void DWaggleBase::UpdateToClient( ULONG ulClient )
 {
-	SERVERCOMMANDS_DoWaggle( GetClass( ) == RUNTIME_CLASS( DCeilingWaggle ), m_Sector, m_OriginalDist, m_Accumulator, m_AccDelta, m_TargetScale, m_Scale, m_ScaleDelta, m_Ticker, m_State, m_lWaggleID, ulClient, SVCF_ONLYTHISCLIENT );
+	SERVERCOMMANDS_DoWaggle( GetClass( ) == RUNTIME_CLASS( DCeilingWaggle ), m_Sector, m_OriginalDist, m_Accumulator, m_AccDelta, m_TargetScale, m_Scale, m_ScaleDelta, m_Ticker, m_State, m_WaggleID, ulClient, SVCF_ONLYTHISCLIENT );
 }
 
 // [BC]
 LONG DWaggleBase::GetID( void )
 {
-	return ( m_lWaggleID );
+	return ( m_WaggleID );
 }
 
 // [BC]
 void DWaggleBase::SetID( LONG lID )
 {
-	m_lWaggleID = lID;
+	m_WaggleID = lID;
 }
 
 // [BC]
@@ -1755,7 +1755,7 @@ void DWaggleBase::DoWaggle (bool ceiling)
 
 			// [BC] If we're the server, tell clients to delete the waggle.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-				SERVERCOMMANDS_DestroyWaggle( m_lWaggleID );
+				SERVERCOMMANDS_DestroyWaggle( m_WaggleID );
 
 			Destroy ();
 			return;
@@ -1800,7 +1800,7 @@ void DWaggleBase::DoWaggle (bool ceiling)
 				continue;
 			}
 
-			SERVERCOMMANDS_UpdateWaggle( m_lWaggleID, m_Accumulator, ulIdx, SVCF_ONLYTHISCLIENT );
+			SERVERCOMMANDS_UpdateWaggle( m_WaggleID, m_Accumulator, ulIdx, SVCF_ONLYTHISCLIENT );
 		}
 	}
 }
@@ -1905,11 +1905,11 @@ manual_waggle:
 
 		// [BC] Assign the waggle's network ID. However, don't do this on the client end.
 		if ( NETWORK_InClientMode() == false )
-			waggle->m_lWaggleID = P_GetFirstFreeWaggleID( );
+			waggle->m_WaggleID = P_GetFirstFreeWaggleID( );
 
 		// [BC] If we're the server, tell clients to do the waggle.
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-			SERVERCOMMANDS_DoWaggle( ceiling, sector, waggle->m_OriginalDist, waggle->m_Accumulator, waggle->m_AccDelta, waggle->m_TargetScale, waggle->m_Scale, waggle->m_ScaleDelta, waggle->m_Ticker, waggle->m_State, waggle->m_lWaggleID );
+			SERVERCOMMANDS_DoWaggle( ceiling, sector, waggle->m_OriginalDist, waggle->m_Accumulator, waggle->m_AccDelta, waggle->m_TargetScale, waggle->m_Scale, waggle->m_ScaleDelta, waggle->m_Ticker, waggle->m_State, waggle->m_WaggleID );
 
 	}
 	return retCode;

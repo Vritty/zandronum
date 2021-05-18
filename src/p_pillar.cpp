@@ -70,7 +70,7 @@ DPillar::DPillar(sector_t *sector)
 	m_Interp_Floor = sector->SetInterpolation(sector_t::FloorMove, true);
 	m_Interp_Ceiling = sector->SetInterpolation(sector_t::CeilingMove, true);
 	// [EP]
-	m_lPillarID = -1;
+	m_PillarID = -1;
 }
 
 void DPillar::Destroy()
@@ -101,25 +101,25 @@ void DPillar::Serialize (FArchive &arc)
 		<< m_Interp_Floor
 		<< m_Interp_Ceiling
 		// [BC]
-		<< m_lPillarID;
+		<< m_PillarID;
 }
 
 // [BC]
 void DPillar::UpdateToClient( ULONG ulClient )
 {
-	SERVERCOMMANDS_DoPillar( m_Type, m_Sector, m_FloorSpeed, m_CeilingSpeed, m_FloorTarget, m_CeilingTarget, m_Crush, m_Hexencrush, m_lPillarID, ulClient, SVCF_ONLYTHISCLIENT );
+	SERVERCOMMANDS_DoPillar( m_Type, m_Sector, m_FloorSpeed, m_CeilingSpeed, m_FloorTarget, m_CeilingTarget, m_Crush, m_Hexencrush, m_PillarID, ulClient, SVCF_ONLYTHISCLIENT );
 }
 
 // [BC]
 LONG DPillar::GetID( void )
 {
-	return ( m_lPillarID );
+	return ( m_PillarID );
 }
 
 // [BC]
 void DPillar::SetID( LONG lID )
 {
-	m_lPillarID = lID;
+	m_PillarID = lID;
 }
 
 // [BC]
@@ -228,7 +228,7 @@ void DPillar::Tick ()
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		{
 			SERVERCOMMANDS_StopSectorSequence( m_Sector );
-			SERVERCOMMANDS_DestroyPillar( m_lPillarID );
+			SERVERCOMMANDS_DestroyPillar( m_PillarID );
 
 			// Also, since this sector has reached its destination, verify that all the clients
 			// have the correct floor/ceiling height for this sector.
@@ -267,7 +267,7 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 	m_Crush = crush;
 	m_Hexencrush = hexencrush;
 	// [EP]
-	m_lPillarID = -1;
+	m_PillarID = -1;
 
 	if (type == pillarBuild)
 	{
