@@ -46,9 +46,6 @@
 // Description: Contains variables and routines related to the server portion
 // of the program.
 //
-// Possible improvements:
-//	- Globally replace SERVER_CalcNumPlayers with SERVER_CountPlayers.
-//
 //-----------------------------------------------------------------------------
 
 #include <algorithm>
@@ -863,13 +860,13 @@ LONG SERVER_FindFreeClientSlot( void )
 	ULONG	ulNumSlots;
 
 	// [BB] Even if maxclients is reached, we allow one additional connection from localhost.
-	// The check (SERVER_CalcNumPlayers( ) >= sv_maxclients) for a non local connection attempt
-	// is done in SERVER_SetupNewConnection.
+	// The check (SERVER_CountPlayers( true ) >= sv_maxclients) for a non local connection
+	// attempt is done in SERVER_SetupNewConnection.
 	ulNumSlots = sv_maxclients + 1;
 
 	// If the number of players in the game is greater than or equal to the number of current
 	// players, disallow the join.
-	if ( SERVER_CalcNumPlayers( ) >= ulNumSlots )
+	if ( SERVER_CountPlayers( true ) >= ulNumSlots )
 		return ( -1 );
 
 	// Look for a free player slot.
@@ -924,13 +921,6 @@ ULONG SERVER_CalcNumConnectedClients( void )
 	}
 
 	return ( ulNumConnectedClients );
-}
-
-//*****************************************************************************
-//
-ULONG SERVER_CalcNumPlayers( void )
-{
-	return SERVER_CountPlayers( true );
 }
 
 //*****************************************************************************
@@ -1354,7 +1344,7 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 		SERVERCOMMANDS_PrintMOTD( motd.GetChars(), g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 	// [BB] Client is using the "join full server from localhost" hack. Inform him about it!
-	if ( ( SERVER_CalcNumPlayers( ) > static_cast<unsigned> (sv_maxclients) ) )
+	if ( ( SERVER_CountPlayers( true ) > static_cast<unsigned> (sv_maxclients) ) )
 		SERVERCOMMANDS_PrintMOTD( "Emergency!\n\nYou are joining from localhost even though the server is full.\nDo whatever is necessary to clean the situation and disconnect afterwards.\n", g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 	// If we're in a duel or LMS mode, tell him the state of the game mode.
@@ -1741,7 +1731,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 		// [BB]: In case of emergency you should be able to join your own server,
 		// even if it is full. Here we check, if the connection request comes from
 		// localhost, i.e. 127.0.0.1. If it does, we allow a connect even in case of
-		// SERVER_CalcNumPlayers( ) >= sv_maxclients as long as SERVER_FindFreeClientSlot( )
+		// SERVER_CountPlayers( true ) >= sv_maxclients as long as SERVER_FindFreeClientSlot( )
 		// finds a free slot.
 		bAdminClientConnecting = false;
 		if ( g_AdminIPList.isIPInList ( AddressFrom ) )
@@ -1751,7 +1741,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 		lClient = SERVER_FindFreeClientSlot( );
 
 		// If the server is full, send him a packet saying that it is.
-		if (( lClient == -1 ) || ( SERVER_CalcNumPlayers( ) >= static_cast<unsigned> (sv_maxclients) && !bAdminClientConnecting ))
+		if (( lClient == -1 ) || ( SERVER_CountPlayers( true ) >= static_cast<unsigned> (sv_maxclients) && !bAdminClientConnecting ))
 		{
 			// Tell the client a packet saying the server is full.
 			SERVER_ConnectionError( AddressFrom, "Server is full.", NETWORK_ERRORCODE_SERVERISFULL );
@@ -2989,7 +2979,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 	}
 
 	// If nobody's left on the server, zero out the scores.
-	if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( SERVER_CalcNumPlayers( ) == 0 ))
+	if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( SERVER_CountPlayers( true ) == 0 ))
 	{
 		for ( ULONG i = 0; i < teams.Size( ); i++ )
 		{
@@ -3010,7 +3000,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 	// If no one is left on the server and we're using a cvar lobby map,
 	// reset to it after 30 seconds.
 	if ( GAMEMODE_IsNextMapCvarLobby( ) &&
-		 SERVER_CalcNumPlayers( ) == 0 )
+		 SERVER_CountPlayers( true ) == 0 )
 	{
 		g_lMapRestartTimer = TICRATE * 30;
 	}

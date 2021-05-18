@@ -813,7 +813,7 @@ void TEAM_TimeExpired( void )
 
 	// If there are players on the map, either declare a winner or sudden death. If
 	// there aren't any, then just end the map.
-	if ( SERVER_CalcNumPlayers( ))
+	if ( SERVER_CountPlayers( true ))
 	{
 		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
 			lHighestScore = TEAM_GetHighestScoreCount( );

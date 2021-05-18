@@ -412,7 +412,6 @@ LONG		SERVER_FindFreeClientSlot( void );
 LONG		SERVER_FindClientByAddress( NETADDRESS_s Address );
 CLIENT_s	*SERVER_GetClient( ULONG ulIdx );
 ULONG		SERVER_CalcNumConnectedClients( void );
-ULONG		SERVER_CalcNumPlayers( void );
 ULONG		SERVER_CountPlayers( bool bCountBots );
 ULONG		SERVER_CalcNumNonSpectatingPlayers( ULONG ulExcludePlayer );
 void		SERVER_CheckTimeouts( void );

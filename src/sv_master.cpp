@@ -488,7 +488,7 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	}
 
 	if ( ulBits & SQF_NUMPLAYERS )
-		g_MasterServerBuffer.ByteStream.WriteByte( SERVER_CalcNumPlayers( ));
+		g_MasterServerBuffer.ByteStream.WriteByte( SERVER_CountPlayers( true ));
 
 	if ( ulBits & SQF_PLAYERDATA )
 	{

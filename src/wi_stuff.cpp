@@ -1421,7 +1421,7 @@ void WI_UpdateCampaignStats( void )
 			cnt_Frags = players[consoleplayer].ulWins;
 			cnt_Deaths = players[consoleplayer].fragcount;
 			cnt_Rank = WI_CalcRank( );
-			cnt_NumPlayers = SERVER_CalcNumPlayers( );
+			cnt_NumPlayers = SERVER_CountPlayers( true );
 		}
 		else if (( teamlms ) && ( players[consoleplayer].bOnTeam ))
 		{
@@ -1438,14 +1438,14 @@ void WI_UpdateCampaignStats( void )
 			cnt_Frags = TEAM_GetScore( players[consoleplayer].ulTeam );
 			cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].ulTeam );
 			cnt_Rank = WI_CalcRank( );
-			cnt_NumPlayers = SERVER_CalcNumPlayers( );
+			cnt_NumPlayers = SERVER_CountPlayers( true );
 		}
 		else
 		{
 			cnt_Frags = players[consoleplayer].fragcount;
 			cnt_Deaths = players[consoleplayer].ulDeathCount;
 			cnt_Rank = WI_CalcRank( );
-			cnt_NumPlayers = SERVER_CalcNumPlayers( );
+			cnt_NumPlayers = SERVER_CountPlayers( true );
 		}
 		cnt_time = plrs[0].stime / TICRATE;
 	}
@@ -1596,9 +1596,9 @@ void WI_UpdateCampaignStats( void )
 				cnt_Rank = WI_CalcRank( );
 		}
 
-		if ( cnt_NumPlayers >= static_cast<signed> ((( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ? 2 : SERVER_CalcNumPlayers( ))))
+		if ( cnt_NumPlayers >= static_cast<signed> ((( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ? 2 : SERVER_CountPlayers( true ))))
 		{
-			cnt_NumPlayers = (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ? 2 : SERVER_CalcNumPlayers( ));
+			cnt_NumPlayers = (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) ? 2 : SERVER_CountPlayers( true ));
 			S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 			cp_state++;
 		}

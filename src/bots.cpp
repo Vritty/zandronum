@@ -549,7 +549,7 @@ ULONG BOTS_FindFreePlayerSlot( void )
 
 	// Don't allow us to add bots past the max. clients limit.
 	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) &&
-		( static_cast<LONG>(SERVER_CalcNumPlayers( )) >= sv_maxclients ))
+		( static_cast<LONG>( SERVER_CountPlayers( true )) >= sv_maxclients ))
 	{
 		return ( MAXPLAYERS );
 	}
