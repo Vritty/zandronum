@@ -2607,7 +2607,7 @@ AActor *CLIENT_SpawnThing( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z,
 
 		// Allow for client-side body removal in invasion mode.
 		if ( invasion )
-			pActor->ulInvasionWave = INVASION_GetCurrentWave( );
+			pActor->InvasionWave = INVASION_GetCurrentWave( );
 	}
 	else
 		CLIENT_PrintWarning( "CLIENT_SpawnThing: Failed to spawn actor %s with id %ld\n", pType->TypeName.GetChars( ), lNetID );
@@ -3537,7 +3537,7 @@ void ServerCommands::SpawnPlayer::Execute()
 	pActor->angle = angle;
 	pActor->pitch = pActor->roll = 0;
 	pActor->health = pPlayer->health;
-	pActor->lFixedColormap = NOFIXEDCOLORMAP;
+	pActor->FixedColormap = NOFIXEDCOLORMAP;
 
 	//Added by MC: Identification (number in the players[MAXPLAYERS] array)
 	pActor->id = ulPlayer;

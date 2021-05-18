@@ -1375,7 +1375,7 @@ DEFINE_PROPERTY(designatedteam, I, Actor)
 DEFINE_PROPERTY(limitedtoteam, I, Actor)
 {
 	PROP_INT_PARM(i, 0);
-	defaults->ulLimitedToTeam=i+1;
+	defaults->LimitedToTeam=i+1;
 }
 
 //==========================================================================

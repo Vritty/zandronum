@@ -206,7 +206,7 @@ void ABaseMonsterInvasionSpot::Tick( void )
 				SERVERCOMMANDS_SpawnThing( pFog );
 		}
 		pActor->pMonsterSpot = this;
-		pActor->ulInvasionWave = g_CurrentWave;
+		pActor->InvasionWave = g_CurrentWave;
 	}
 }
 
@@ -833,17 +833,17 @@ void INVASION_StartCountdown( ULONG ulTicks )
 			}
 
 			// Also, get rid of any bodies from previous waves.
-			// [BB] Clients just slap the ulInvasionWave value to everything spawned in CLIENT_SpawnThing,
+			// [BB] Clients just slap the InvasionWave value to everything spawned in CLIENT_SpawnThing,
 			// therefore they know what to do here.
 			if (( g_CurrentWave > 1 ) &&
-				( pActor->ulInvasionWave == ( g_CurrentWave - 1 )))
+				( pActor->InvasionWave == ( g_CurrentWave - 1 )))
 			{
 				pActor->Destroy( );
 				continue;
 			}
 
 			// [BB] Build a vector containing all pointers to corpses from the wave one round ago.
-			if (( pActor->ulInvasionWave == g_CurrentWave ) &&
+			if (( pActor->InvasionWave == g_CurrentWave ) &&
 				( NETWORK_InClientMode() == false ))
 			{
 				g_MonsterCorpsesFromPreviousWave.push_back( pActor );
@@ -1027,7 +1027,7 @@ void INVASION_BeginWave( ULONG ulWave )
 				SERVERCOMMANDS_SpawnThing( pFog );
 		}
 		pActor->pMonsterSpot = pMonsterSpot;
-		pActor->ulInvasionWave = g_CurrentWave;
+		pActor->InvasionWave = g_CurrentWave;
 	}
 
 	while (( pPickupSpot = PickupIterator.Next( )))

@@ -1804,7 +1804,7 @@ bool TEAM_IsActorAllowedForTeam( AActor *pActor, ULONG ulTeam )
 	if ( pActor == NULL )
 		return false;
 
-	return TEAM_CheckTeamRestriction( ulTeam, pActor->ulLimitedToTeam );
+	return TEAM_CheckTeamRestriction( ulTeam, pActor->LimitedToTeam );
 }
 
 //****************************************************************************

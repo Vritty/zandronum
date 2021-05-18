@@ -388,10 +388,10 @@ inline void GLSprite::PutSprite(bool translucent)
 		list = GLDL_MASKED;
 	}
 
-	// [TP/BB] This makes sure that actors, which have lFixedColormap set, are rendered accordingly.
+	// [TP/BB] This makes sure that actors, which have FixedColormap set, are rendered accordingly.
 	// For example a player using a doom sphere is rendered red for the other players.
-	if ( this->actor && this->actor->lFixedColormap != NOFIXEDCOLORMAP )
-		this->Colormap.colormap = CM_FIRSTSPECIALCOLORMAP + this->actor->lFixedColormap;
+	if ( this->actor && this->actor->FixedColormap != NOFIXEDCOLORMAP )
+		this->Colormap.colormap = CM_FIRSTSPECIALCOLORMAP + this->actor->FixedColormap;
 
 	gl_drawinfo->drawlists[list].AddSprite(this);
 }
@@ -812,11 +812,11 @@ void GLSprite::Process(AActor* thing,sector_t * sector)
 			Colormap.LightColor.g=
 			Colormap.LightColor.b=(255+v+v)/3;
 		}
-		// [BB] This makes sure that actors, which have lFixedColormap set, are renderes accordingly.
+		// [BB] This makes sure that actors, which have FixedColormap set, are renderes accordingly.
 		// For example a player using a doom sphere is rendered red for the other players.
-		if ( thing->lFixedColormap != NOFIXEDCOLORMAP )
+		if ( thing->FixedColormap != NOFIXEDCOLORMAP )
 		{
-			Colormap.colormap = CM_FIRSTSPECIALCOLORMAP + thing->lFixedColormap;
+			Colormap.colormap = CM_FIRSTSPECIALCOLORMAP + thing->FixedColormap;
 		}
 	}
 

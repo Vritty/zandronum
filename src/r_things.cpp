@@ -876,11 +876,11 @@ void R_ProjectSprite (AActor *thing, int fakeside, F3DFloor *fakefloor, F3DFloor
 	{ // fixed map
 		vis->Style.colormap = fixedcolormap;
 	}
-	// [BB] This makes sure that actors, which have lFixedColormap set, are renderes accordingly.
+	// [BB] This makes sure that actors, which have FixedColormap set, are renderes accordingly.
 	// For example a player using a doom sphere is rendered red for the other players.
-	else if ( ( thing->lFixedColormap != NOFIXEDCOLORMAP ) && ( thing->lFixedColormap >= 0 ) && ( unsigned ( thing->lFixedColormap ) < SpecialColormaps.Size() ) )
+	else if ( ( thing->FixedColormap != NOFIXEDCOLORMAP ) && ( thing->FixedColormap >= 0 ) && ( unsigned ( thing->FixedColormap ) < SpecialColormaps.Size() ) )
 	{
-		vis->Style.colormap = SpecialColormaps[ thing->lFixedColormap ].Colormap;
+		vis->Style.colormap = SpecialColormaps[ thing->FixedColormap ].Colormap;
 		vis->Style.bFixedColormap = true;
 	}
 	else

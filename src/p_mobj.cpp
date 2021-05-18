@@ -365,13 +365,13 @@ void AActor::Serialize (FArchive &arc)
 	arc << ConversationRoot << Conversation;
 	
 	// [BB] Zandronum additions.
-	arc << ulLimitedToTeam // [BB]
-		<< lFixedColormap // [BB]
+	arc << LimitedToTeam // [BB]
+		<< FixedColormap // [BB]
 		// [BB] Before the snapshot is loaded, player bodies are spawned, which invalidates the old netIDs.
 		//<< lNetID // [BC] We need to archive this so that it's restored properly when going between maps in a hub.
 		<< STFlags
 		<< ulNetworkFlags
-		<< ulInvasionWave
+		<< InvasionWave
 		<< pMonsterSpot
 		<< pPickupSpot
 		<< Rune;
@@ -5045,7 +5045,7 @@ AActor *AActor::StaticSpawn (const PClass *type, fixed_t ix, fixed_t iy, fixed_t
 		actor->lNetID = -1;
 
 	// [BB] Initilize the colormap of this actor.
-	actor->lFixedColormap = NOFIXEDCOLORMAP;
+	actor->FixedColormap = NOFIXEDCOLORMAP;
 
 	// Check if the flag or skull has spawned in an instant return zone.
 	if (( TEAM_SpawningTemporaryFlag( ) == false ) &&
@@ -5505,7 +5505,7 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 	mobj->angle = spawn_angle;
 	mobj->pitch = mobj->roll = 0;
 	mobj->health = p->health;
-	mobj->lFixedColormap = NOFIXEDCOLORMAP;
+	mobj->FixedColormap = NOFIXEDCOLORMAP;
 
 	//Added by MC: Identification (number in the players[MAXPLAYERS] array)
     mobj->id = playernum;

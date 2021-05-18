@@ -191,14 +191,14 @@ void APowerup::DoEffect ()
 			{
 				Owner->player->fixedcolormap = Colormap;
 				// [BC] Apply the colormap to the player's body, also.
-				Owner->lFixedColormap = Colormap;
+				Owner->FixedColormap = Colormap;
 			}
 			else if (Owner->player->fixedcolormap == Colormap)	
 			{
 				// only unset if the fixed colormap comes from this item
 				Owner->player->fixedcolormap = NOFIXEDCOLORMAP;
 				// [BB] Also unset the colormap of the player's body.
-				Owner->lFixedColormap = NOFIXEDCOLORMAP;
+				Owner->FixedColormap = NOFIXEDCOLORMAP;
 			}
 		}
 	}
@@ -218,7 +218,7 @@ void APowerup::EndEffect ()
 	{ // only unset if the fixed colormap comes from this item
 		Owner->player->fixedcolormap = NOFIXEDCOLORMAP;
 		// [BB] Also unset the colormap of the player's body.
-		Owner->lFixedColormap = NOFIXEDCOLORMAP;
+		Owner->FixedColormap = NOFIXEDCOLORMAP;
 	}
 }
 
@@ -510,8 +510,8 @@ void APowerInvulnerable::EndEffect ()
 	if (Owner->player != NULL)
 	{
 		Owner->player->fixedcolormap = NOFIXEDCOLORMAP;
-		// [BB] Additionally clear lFixedColormap.
-		Owner->lFixedColormap = NOFIXEDCOLORMAP;
+		// [BB] Additionally clear FixedColormap.
+		Owner->FixedColormap = NOFIXEDCOLORMAP;
 	}
 }
 

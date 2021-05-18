@@ -990,9 +990,8 @@ public:
 	// [BB] If 0, everybody can see the actor, if > 0, only members of team (VisibleToTeam-1) can see it.
 	DWORD			VisibleToTeam;
 
-	// [BB] If 0, not limited to any team, if > 0, limited to the team with number (ulLimitedToTeam-1).
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int	ulLimitedToTeam;
+	// [BB] If 0, not limited to any team, if > 0, limited to the team with number (LimitedToTeam-1).
+	unsigned int	LimitedToTeam;
 
 	// [BC] A new set of flags that ST uses.
 	unsigned int	STFlags;
@@ -1135,8 +1134,7 @@ public:
 
 	// [BC] Bunch of new stuff for ST.
 	// Should this actor be drawn with a different colormap?
-	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
-	int			lFixedColormap;
+	int			FixedColormap;
 
 	// ID used to identify this actor over network games.
 	// [EP] TODO: remove the 'l' prefix from this variable, it isn't LONG anymore
@@ -1147,8 +1145,7 @@ public:
 	ABasePickupInvasionSpot			*pPickupSpot;
 
 	// What wave does this monster belong to in invasion mode?
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int ulInvasionWave;
+	unsigned int InvasionWave;
 
 	// [TP] Rune that is currently in effect
 	TObjPtr<class APowerup> Rune;
