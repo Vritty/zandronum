@@ -3398,7 +3398,7 @@ FUNC(LS_ClearForceField)
 				line->sidedef[1]->SetTexture(side_t::mid, FNullTextureID());
 
 				// [BC] Mark this line's texture change flags.
-				line->ulTexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
+				line->TexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
 
 				// [BC] If we're the server, tell clients that this line's textures and
 				// blocking status have been altered.

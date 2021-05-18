@@ -3329,7 +3329,7 @@ void SERVER_UpdateLines( ULONG ulClient )
 	for ( ulLine = 0; ulLine < (ULONG)numlines; ulLine++ )
 	{
 		// Have any of the textures changed?
-		if ( lines[ulLine].ulTexChangeFlags )
+		if ( lines[ulLine].TexChangeFlags )
 			SERVERCOMMANDS_SetLineTexture( ulLine, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [AK] Check if we need to update this line's texture offsets or scale.

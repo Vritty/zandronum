@@ -920,8 +920,8 @@ void DAnimatedDoor::Tick ()
 				m_Line2->sidedef[1]->SetTexture(side_t::mid, m_DoorAnim->TextureFrames[m_Frame]);
 
 				// [BC] Mark this line's textures as having been changed.
-				m_Line1->ulTexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
-				m_Line2->ulTexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
+				m_Line1->TexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
+				m_Line2->TexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
 
 				// [BC] If we're the server, tell clients that these lines' texture
 				// has changed.
@@ -983,8 +983,8 @@ void DAnimatedDoor::Tick ()
 				m_Line2->sidedef[1]->SetTexture(side_t::mid, m_DoorAnim->TextureFrames[m_Frame]);
 
 				// [BC] Mark this line's textures as having been changed.
-				m_Line1->ulTexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
-				m_Line2->ulTexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
+				m_Line1->TexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
+				m_Line2->TexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
 
 				// [BC] If we're the server, tell clients that these lines' texture
 				// has changed.
@@ -1037,8 +1037,8 @@ DAnimatedDoor::DAnimatedDoor (sector_t *sec, line_t *line, int speed, int delay,
 	m_Line2->sidedef[0]->SetTexture(side_t::mid, picnum);
 
 	// [BC] Mark this line's textures as having been changed.
-	m_Line1->ulTexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
-	m_Line2->ulTexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
+	m_Line1->TexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
+	m_Line2->TexChangeFlags |= TEXCHANGE_FRONTMEDIUM|TEXCHANGE_BACKMEDIUM;
 
 	// [BC] If we're the server, tell clients that these lines' texture
 	// has changed.

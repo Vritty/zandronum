@@ -248,9 +248,9 @@ bool P_ChangeSwitchTexture (side_t *side, int useAgain, BYTE special, bool *ques
 	{
 		if ( side->linedef != NULL )
 		{
-			side->linedef->ulTexChangeFlags |= 1 << ulShift;
+			side->linedef->TexChangeFlags |= 1 << ulShift;
 			ulShift += 3;
-			side->linedef->ulTexChangeFlags |= 1 << ulShift;
+			side->linedef->TexChangeFlags |= 1 << ulShift;
 		}
 	}
 

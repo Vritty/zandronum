@@ -3519,7 +3519,7 @@ void GAME_ResetMap( bool bRunEnterScripts )
 		lines[ulIdx].args[4] = lines[ulIdx].SavedArgs[4];
 
 		// Also, restore any changed textures.
-		if ( lines[ulIdx].ulTexChangeFlags != 0 )
+		if ( lines[ulIdx].TexChangeFlags != 0 )
 		{
 			if ( lines[ulIdx].sidedef[0] != NULL )
 			{
@@ -3540,7 +3540,7 @@ void GAME_ResetMap( bool bRunEnterScripts )
 				SERVERCOMMANDS_SetLineTexture( ulIdx );
 
 			// Mark the texture as no being changed.
-			lines[ulIdx].ulTexChangeFlags = 0;
+			lines[ulIdx].TexChangeFlags = 0;
 		}
 
 		// [AK] Check if we need to restore this line's texture offsets or scale.

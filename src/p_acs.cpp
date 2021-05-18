@@ -3931,7 +3931,7 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 			if ( side )
 				ulShift += 3;
 
-			lines[linenum].ulTexChangeFlags |= 1 << ulShift;
+			lines[linenum].TexChangeFlags |= 1 << ulShift;
 /*
 			if (( 1 << ulShift ) == TEXCHANGE_FRONTTOP )
 				Printf( "FRONT TOP: %d\n", linenum );
@@ -4012,7 +4012,7 @@ void DLevelScript::ReplaceTextures (const char *fromname, const char *toname, in
 					ulShift += j;
 					if ( wal->linedef->sidedef[1] == wal )
 						ulShift += 3;
-					wal->linedef->ulTexChangeFlags |= 1 << ulShift;
+					wal->linedef->TexChangeFlags |= 1 << ulShift;
 				}
 			}
 		}

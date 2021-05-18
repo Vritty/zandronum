@@ -490,7 +490,7 @@ void P_SerializeWorld (FArchive &arc)
 		}
 		arc << li->args[1] << li->args[2] << li->args[3] << li->args[4];
 		// [BC]
-		arc << li->ulTexChangeFlags
+		arc << li->TexChangeFlags
 			<< li->SavedSpecial
 			<< li->SavedArgs[0] << li->SavedArgs[1] << li->SavedArgs[2] << li->SavedArgs[3] << li->SavedArgs[4]
 			<< li->SavedFlags

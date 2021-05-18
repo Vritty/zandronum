@@ -1066,8 +1066,7 @@ struct line_t
 	int 		validcount;	// if == validcount, already checked
 	int			locknumber;	// [Dusk] lock number for special
 	// [BC] Have any of this line's textures been changed during the course of the level?
-	// [EP] TODO: remove the 'ul' prefix from this variable, it isn't ULONG anymore
-	unsigned int ulTexChangeFlags;
+	unsigned int TexChangeFlags;
 
 	// [BC] Saved properties for when a map resets, or when we need to give updates
 	// to new clients connecting.

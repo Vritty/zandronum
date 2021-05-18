@@ -3067,13 +3067,13 @@ void SERVERCOMMANDS_SetLineTexture( ULONG ulLine, ULONG ulPlayerExtra, ServerCom
 		return;
 
 	// No changed textures to update.
-	if ( lines[ulLine].ulTexChangeFlags == 0 )
+	if ( lines[ulLine].TexChangeFlags == 0 )
 		return;
 
 	ServerCommands::SetLineTexture command;
 	command.SetLine( &lines[ulLine] );
 
-	if ( lines[ulLine].ulTexChangeFlags & TEXCHANGE_FRONTTOP )
+	if ( lines[ulLine].TexChangeFlags & TEXCHANGE_FRONTTOP )
 	{
 		command.SetTextureName( lines[ulLine].sidedef[0]->GetTexture(side_t::top).isValid() ? TexMan[lines[ulLine].sidedef[0]->GetTexture(side_t::top)]->Name : "-" );
 		command.SetSide( 0 );
@@ -3081,7 +3081,7 @@ void SERVERCOMMANDS_SetLineTexture( ULONG ulLine, ULONG ulPlayerExtra, ServerCom
 		command.sendCommandToClients( ulPlayerExtra, flags );
 	}
 
-	if ( lines[ulLine].ulTexChangeFlags & TEXCHANGE_FRONTMEDIUM )
+	if ( lines[ulLine].TexChangeFlags & TEXCHANGE_FRONTMEDIUM )
 	{
 		command.SetTextureName( lines[ulLine].sidedef[0]->GetTexture(side_t::mid).isValid() ? TexMan[lines[ulLine].sidedef[0]->GetTexture(side_t::mid)]->Name : "-" );
 		command.SetSide( 0 );
@@ -3089,7 +3089,7 @@ void SERVERCOMMANDS_SetLineTexture( ULONG ulLine, ULONG ulPlayerExtra, ServerCom
 		command.sendCommandToClients( ulPlayerExtra, flags );
 	}
 
-	if ( lines[ulLine].ulTexChangeFlags & TEXCHANGE_FRONTBOTTOM )
+	if ( lines[ulLine].TexChangeFlags & TEXCHANGE_FRONTBOTTOM )
 	{
 		command.SetTextureName( lines[ulLine].sidedef[0]->GetTexture(side_t::bottom).isValid() ? TexMan[lines[ulLine].sidedef[0]->GetTexture(side_t::bottom)]->Name : "-" );
 		command.SetSide( 0 );
@@ -3099,7 +3099,7 @@ void SERVERCOMMANDS_SetLineTexture( ULONG ulLine, ULONG ulPlayerExtra, ServerCom
 
 	if ( lines[ulLine].sidedef[1] != NULL )
 	{
-		if ( lines[ulLine].ulTexChangeFlags & TEXCHANGE_BACKTOP )
+		if ( lines[ulLine].TexChangeFlags & TEXCHANGE_BACKTOP )
 		{
 			command.SetTextureName( lines[ulLine].sidedef[1]->GetTexture(side_t::top).isValid() ? TexMan[lines[ulLine].sidedef[1]->GetTexture(side_t::top)]->Name : "-" );
 			command.SetSide( 1 );
@@ -3107,7 +3107,7 @@ void SERVERCOMMANDS_SetLineTexture( ULONG ulLine, ULONG ulPlayerExtra, ServerCom
 			command.sendCommandToClients( ulPlayerExtra, flags );
 		}
 
-		if ( lines[ulLine].ulTexChangeFlags & TEXCHANGE_BACKMEDIUM )
+		if ( lines[ulLine].TexChangeFlags & TEXCHANGE_BACKMEDIUM )
 		{
 			command.SetTextureName( lines[ulLine].sidedef[1]->GetTexture(side_t::mid).isValid() ? TexMan[lines[ulLine].sidedef[1]->GetTexture(side_t::mid)]->Name : "-" );
 			command.SetSide( 1 );
@@ -3115,7 +3115,7 @@ void SERVERCOMMANDS_SetLineTexture( ULONG ulLine, ULONG ulPlayerExtra, ServerCom
 			command.sendCommandToClients( ulPlayerExtra, flags );
 		}
 
-		if ( lines[ulLine].ulTexChangeFlags & TEXCHANGE_BACKBOTTOM )
+		if ( lines[ulLine].TexChangeFlags & TEXCHANGE_BACKBOTTOM )
 		{
 			command.SetTextureName( lines[ulLine].sidedef[1]->GetTexture(side_t::bottom).isValid() ? TexMan[lines[ulLine].sidedef[1]->GetTexture(side_t::bottom)]->Name : "-" );
 			command.SetSide( 1 );
