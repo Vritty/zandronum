@@ -1464,105 +1464,66 @@ void SCOREBOARD_RenderInvasionCountdown( ULONG ulTimeLeft )
 //
 LONG SCOREBOARD_CalcSpread( ULONG ulPlayerNum )
 {
-	bool	bInit = true;
-	ULONG	ulIdx;
-	LONG	lHighestFrags = 0;
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
+	LONG lHighestScore = 0;
+	bool bInit = true;
 
 	// First, find the highest fragcount that isn't ours.
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
-		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
+		if (( ulPlayerNum == ulIdx ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
+			continue;
+
+		if (( ulFlags & GMF_PLAYERSEARNWINS ) && (( bInit ) || ( players[ulIdx].ulWins > static_cast<ULONG>( lHighestScore ))))
 		{
-			if (( ulPlayerNum == ulIdx ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
-				continue;
-
-			if ( bInit )
-			{
-				lHighestFrags = players[ulIdx].ulWins;
-				bInit = false;
-			}
-
-			if ( players[ulIdx].ulWins > (ULONG)lHighestFrags )
-				lHighestFrags = players[ulIdx].ulWins;
+			lHighestScore = players[ulIdx].ulWins;
+			bInit = false;
 		}
-		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
+		else if (( ulFlags & GMF_PLAYERSEARNPOINTS ) && (( bInit ) || ( players[ulIdx].lPointCount > lHighestScore )))
 		{
-			if (( ulPlayerNum == ulIdx ) || ( playeringame[ulIdx] == false ) || ( players[ulIdx].bSpectating ))
-				continue;
-
-			if ( bInit )
-			{
-				lHighestFrags = players[ulIdx].lPointCount;
-				bInit = false;
-			}
-
-			if ( players[ulIdx].lPointCount > lHighestFrags )
-				lHighestFrags = players[ulIdx].lPointCount;
+			lHighestScore = players[ulIdx].lPointCount;
+			bInit = false;
 		}
-		else
+		else if (( ulFlags & GMF_PLAYERSEARNFRAGS ) && (( bInit ) || ( players[ulIdx].fragcount > lHighestScore )))
 		{
-			if ( ulPlayerNum == ulIdx || ( playeringame[ulIdx] == false ) || ( players[ulIdx].bSpectating ))
-				continue;
-
-			if ( bInit )
-			{
-				lHighestFrags = players[ulIdx].fragcount;
-				bInit = false;
-			}
-
-			if ( players[ulIdx].fragcount > lHighestFrags )
-				lHighestFrags = players[ulIdx].fragcount;
+			lHighestScore = players[ulIdx].fragcount;
+			bInit = false;
 		}
 	}
 
-	// If we're the only person in the game...
-	if ( bInit )
+	// [AK] Return the difference between our score and the highest score.
+	if ( bInit == false )
 	{
-		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-			lHighestFrags = players[ulPlayerNum].ulWins;
-		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
-			lHighestFrags = players[ulPlayerNum].lPointCount;
+		if ( ulFlags & GMF_PLAYERSEARNWINS )
+			return ( players[ulPlayerNum].ulWins - lHighestScore );
+		else if ( ulFlags & GMF_PLAYERSEARNPOINTS )
+			return ( players[ulPlayerNum].lPointCount - lHighestScore );
 		else
-			lHighestFrags = players[ulPlayerNum].fragcount;
+			return ( players[ulPlayerNum].fragcount - lHighestScore );
 	}
 
-	// Finally, simply return the difference.
-	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-		return ( players[ulPlayerNum].ulWins - lHighestFrags );
-	else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
-		return ( players[ulPlayerNum].lPointCount - lHighestFrags );
-	else
-		return ( players[ulPlayerNum].fragcount - lHighestFrags );
+	// [AK] If we're the only person in the game just return zero.
+	return ( 0 );
 }
 
 //*****************************************************************************
 //
 ULONG SCOREBOARD_CalcRank( ULONG ulPlayerNum )
 {
-	ULONG	ulIdx;
-	ULONG	ulRank;
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
+	ULONG ulRank = 0;
 
-	ulRank = 0;
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
-		if ( ulIdx == ulPlayerNum || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
+		if (( ulIdx == ulPlayerNum ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
 			continue;
 
-		if ( lastmanstanding )
-		{
-			if ( players[ulIdx].ulWins > players[ulPlayerNum].ulWins )
-				ulRank++;
-		}
-		else if ( possession )
-		{
-			if ( players[ulIdx].lPointCount > players[ulPlayerNum].lPointCount )
-				ulRank++;
-		}
-		else
-		{
-			if ( players[ulIdx].fragcount > players[ulPlayerNum].fragcount )
-				ulRank++;
-		}
+		if (( ulFlags & GMF_PLAYERSEARNWINS ) && ( players[ulIdx].ulWins > players[ulPlayerNum].ulWins ))
+			ulRank++;
+		else if (( ulFlags & GMF_PLAYERSEARNPOINTS ) && ( players[ulIdx].lPointCount > players[ulPlayerNum].lPointCount ))
+			ulRank++;
+		else if (( ulFlags & GMF_PLAYERSEARNFRAGS ) && ( players[ulIdx].fragcount > players[ulPlayerNum].fragcount ))
+			ulRank++;
 	}
 
 	return ( ulRank );
@@ -1572,28 +1533,19 @@ ULONG SCOREBOARD_CalcRank( ULONG ulPlayerNum )
 //
 bool SCOREBOARD_IsTied( ULONG ulPlayerNum )
 {
-	ULONG	ulIdx;
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
 
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
-		if ( ulIdx == ulPlayerNum || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
+		if (( ulIdx == ulPlayerNum ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
 			continue;
 
-		if ( lastmanstanding )
-		{
-			if ( players[ulIdx].ulWins == players[ulPlayerNum].ulWins )
-				return ( true );
-		}
-		else if ( possession )
-		{
-			if ( players[ulIdx].lPointCount == players[ulPlayerNum].lPointCount )
-				return ( true );
-		}
-		else
-		{
-			if ( players[ulIdx].fragcount == players[ulPlayerNum].fragcount )
-				return ( true );
-		}
+		if (( ulFlags & GMF_PLAYERSEARNWINS ) && ( players[ulIdx].ulWins == players[ulPlayerNum].ulWins ))
+			return ( true );
+		else if (( ulFlags & GMF_PLAYERSEARNPOINTS ) && ( players[ulIdx].lPointCount == players[ulPlayerNum].lPointCount ))
+			return ( true );
+		else if (( ulFlags & GMF_PLAYERSEARNFRAGS ) && ( players[ulIdx].fragcount == players[ulPlayerNum].fragcount ))
+			return ( true );
 	}
 
 	return ( false );
