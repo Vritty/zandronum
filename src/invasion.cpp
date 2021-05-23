@@ -88,13 +88,12 @@ static	ULONG		invasion_GetNumThingsThisWave( ULONG ulNumOnFirstWave, ULONG ulWav
 //*****************************************************************************
 //	VARIABLES
 
-// [EP] TODO: remove the 'ul' mark from the name of the variables which aren't ULONG anymore
-static	unsigned int		g_ulCurrentWave = 0;
-static	unsigned int		g_ulNumMonstersLeft = 0;
-static	unsigned int		g_ulNumArchVilesLeft = 0;
-static	unsigned int		g_ulInvasionCountdownTicks = 0;
+static	unsigned int		g_CurrentWave = 0;
+static	unsigned int		g_NumMonstersLeft = 0;
+static	unsigned int		g_NumArchVilesLeft = 0;
+static	unsigned int		g_InvasionCountdownTicks = 0;
 static	INVASIONSTATE_e		g_InvasionState;
-static	unsigned int		g_ulNumBossMonsters = 0;
+static	unsigned int		g_NumBossMonsters = 0;
 static	bool				g_bIncreaseNumMonstersOnSpawn = true;
 static	std::vector<AActor*> g_MonsterCorpsesFromPreviousWave;
 
@@ -141,7 +140,7 @@ void ABaseMonsterInvasionSpot::Tick( void )
 		( g_InvasionState != IS_BOSSFIGHT ))
 	{
 		// Not time to spawn this yet.
-		if ( g_ulNumMonstersLeft > g_ulNumBossMonsters )
+		if ( g_NumMonstersLeft > g_NumBossMonsters )
 			return;
 
 		// Since this a boss monster, potentially set the invasion state to fighting a boss.
@@ -207,7 +206,7 @@ void ABaseMonsterInvasionSpot::Tick( void )
 				SERVERCOMMANDS_SpawnThing( pFog );
 		}
 		pActor->pMonsterSpot = this;
-		pActor->ulInvasionWave = g_ulCurrentWave;
+		pActor->ulInvasionWave = g_CurrentWave;
 	}
 }
 
@@ -651,35 +650,35 @@ void INVASION_Tick( void )
 		break;
 	case IS_FIRSTCOUNTDOWN:
 
-		if ( g_ulInvasionCountdownTicks )
+		if ( g_InvasionCountdownTicks )
 		{
-			g_ulInvasionCountdownTicks--;
+			g_InvasionCountdownTicks--;
 
 			// FIGHT!
-			if (( g_ulInvasionCountdownTicks == 0 ) &&
+			if (( g_InvasionCountdownTicks == 0 ) &&
 				( NETWORK_InClientMode() == false ))
 			{
 				INVASION_BeginWave( 1 );
 			}
 			// Play "3... 2... 1..." sounds.
-			else if ( g_ulInvasionCountdownTicks == ( 3 * TICRATE ))
+			else if ( g_InvasionCountdownTicks == ( 3 * TICRATE ))
 				ANNOUNCER_PlayEntry( cl_announcer, "Three" );
-			else if ( g_ulInvasionCountdownTicks == ( 2 * TICRATE ))
+			else if ( g_InvasionCountdownTicks == ( 2 * TICRATE ))
 				ANNOUNCER_PlayEntry( cl_announcer, "Two" );
-			else if ( g_ulInvasionCountdownTicks == ( 1 * TICRATE ))
+			else if ( g_InvasionCountdownTicks == ( 1 * TICRATE ))
 				ANNOUNCER_PlayEntry( cl_announcer, "One" );
 		}
 		break;
 	case IS_WAVECOMPLETE:
 
-		if ( g_ulInvasionCountdownTicks )
+		if ( g_InvasionCountdownTicks )
 		{
-			g_ulInvasionCountdownTicks--;
+			g_InvasionCountdownTicks--;
 
-			if (( g_ulInvasionCountdownTicks == 0 ) &&
+			if (( g_InvasionCountdownTicks == 0 ) &&
 				( NETWORK_InClientMode() == false ))
 			{
-				if ( (LONG)g_ulCurrentWave == wavelimit )
+				if ( static_cast<LONG>( g_CurrentWave ) == wavelimit )
 					G_ExitLevel( 0, false );
 				else
 				{
@@ -694,22 +693,22 @@ void INVASION_Tick( void )
 		break;
 	case IS_COUNTDOWN:
 
-		if ( g_ulInvasionCountdownTicks )
+		if ( g_InvasionCountdownTicks )
 		{
-			g_ulInvasionCountdownTicks--;
+			g_InvasionCountdownTicks--;
 
 			// FIGHT!
-			if (( g_ulInvasionCountdownTicks == 0 ) &&
+			if (( g_InvasionCountdownTicks == 0 ) &&
 				( NETWORK_InClientMode() == false ))
 			{
-				INVASION_BeginWave( g_ulCurrentWave + 1 );
+				INVASION_BeginWave( g_CurrentWave + 1 );
 			}
 			// Play "3... 2... 1..." sounds.
-			else if ( g_ulInvasionCountdownTicks == ( 3 * TICRATE ))
+			else if ( g_InvasionCountdownTicks == ( 3 * TICRATE ))
 				ANNOUNCER_PlayEntry( cl_announcer, "Three" );
-			else if ( g_ulInvasionCountdownTicks == ( 2 * TICRATE ))
+			else if ( g_InvasionCountdownTicks == ( 2 * TICRATE ))
 				ANNOUNCER_PlayEntry( cl_announcer, "Two" );
-			else if ( g_ulInvasionCountdownTicks == ( 1 * TICRATE ))
+			else if ( g_InvasionCountdownTicks == ( 1 * TICRATE ))
 				ANNOUNCER_PlayEntry( cl_announcer, "One" );
 		}
 		break;
@@ -836,15 +835,15 @@ void INVASION_StartCountdown( ULONG ulTicks )
 			// Also, get rid of any bodies from previous waves.
 			// [BB] Clients just slap the ulInvasionWave value to everything spawned in CLIENT_SpawnThing,
 			// therefore they know what to do here.
-			if (( g_ulCurrentWave > 1 ) &&
-				( pActor->ulInvasionWave == ( g_ulCurrentWave - 1 )))
+			if (( g_CurrentWave > 1 ) &&
+				( pActor->ulInvasionWave == ( g_CurrentWave - 1 )))
 			{
 				pActor->Destroy( );
 				continue;
 			}
 
 			// [BB] Build a vector containing all pointers to corpses from the wave one round ago.
-			if (( pActor->ulInvasionWave == g_ulCurrentWave ) &&
+			if (( pActor->ulInvasionWave == g_CurrentWave ) &&
 				( NETWORK_InClientMode() == false ))
 			{
 				g_MonsterCorpsesFromPreviousWave.push_back( pActor );
@@ -886,7 +885,7 @@ void INVASION_BeginWave( ULONG ulWave )
 	}
 
 	// Make sure this is 0. Can be non-zero in network games if they're slightly out of sync.
-	g_ulInvasionCountdownTicks = 0;
+	g_InvasionCountdownTicks = 0;
 
 	// Tell clients to "fight!".
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -913,10 +912,10 @@ void INVASION_BeginWave( ULONG ulWave )
 	else
 		Printf( "BEGIN!\n" );
 
-	g_ulCurrentWave = ulWave;
-	g_ulNumMonstersLeft = 0;
-	g_ulNumArchVilesLeft = 0;
-	g_ulNumBossMonsters = 0;
+	g_CurrentWave = ulWave;
+	g_NumMonstersLeft = 0;
+	g_NumArchVilesLeft = 0;
+	g_NumBossMonsters = 0;
 
 	// Clients don't need to do any more.
 	if ( NETWORK_InClientMode() )
@@ -934,22 +933,22 @@ void INVASION_BeginWave( ULONG ulWave )
 		}
 
 		// Not time to spawn this item yet!
-		if ( g_ulCurrentWave < (ULONG)pMonsterSpot->args[3] )
+		if ( g_CurrentWave < static_cast<ULONG>( pMonsterSpot->args[3] ))
 		{
 			pMonsterSpot->NextSpawnTick = -1;
 			continue;
 		}
 
-		lWaveForItem = g_ulCurrentWave - (( pMonsterSpot->args[3] <= 1 ) ? 0 : ( pMonsterSpot->args[3] - 1 ));
+		lWaveForItem = g_CurrentWave - (( pMonsterSpot->args[3] <= 1 ) ? 0 : ( pMonsterSpot->args[3] - 1 ));
 
 		// This item will be used this wave. Calculate the number of things to spawn.
 		pMonsterSpot->NumLeftThisWave = invasion_GetNumThingsThisWave( pMonsterSpot->args[0], lWaveForItem, true );
 		if (( pMonsterSpot->args[4] > 0 ) && ( pMonsterSpot->NumLeftThisWave > pMonsterSpot->args[4] ))
 			pMonsterSpot->NumLeftThisWave = pMonsterSpot->args[4];
 
-		g_ulNumMonstersLeft += pMonsterSpot->NumLeftThisWave;
+		g_NumMonstersLeft += pMonsterSpot->NumLeftThisWave;
 		if ( stricmp( pMonsterSpot->GetSpawnName( ), "Archvile" ) == 0 )
-			g_ulNumArchVilesLeft += pMonsterSpot->NumLeftThisWave;
+			g_NumArchVilesLeft += pMonsterSpot->NumLeftThisWave;
 
 		// Nothing to spawn!
 		if ( pMonsterSpot->NumLeftThisWave <= 0 )
@@ -968,7 +967,7 @@ void INVASION_BeginWave( ULONG ulWave )
 				pMonsterSpot->bIsBossMonster = true;
 				pMonsterSpot->NextSpawnTick = 0;
 
-				g_ulNumBossMonsters += pMonsterSpot->NumLeftThisWave;
+				g_NumBossMonsters += pMonsterSpot->NumLeftThisWave;
 			}
 			else
 				pMonsterSpot->NextSpawnTick = pMonsterSpot->args[2] * TICRATE;
@@ -976,9 +975,9 @@ void INVASION_BeginWave( ULONG ulWave )
 		}
 
 		// Spawn the item.
-		ulNumMonstersLeft = g_ulNumMonstersLeft;
+		ulNumMonstersLeft = g_NumMonstersLeft;
 		pActor = Spawn( pMonsterSpot->GetSpawnName( ), pMonsterSpot->x, pMonsterSpot->y, pMonsterSpot->z, ALLOW_REPLACE );
-		g_ulNumMonstersLeft = ulNumMonstersLeft;
+		g_NumMonstersLeft = ulNumMonstersLeft;
 
 		// If the item spawned in a "not so good" location, delete it and try again next tick.
 		if ( P_TestMobjLocation( pActor ) == false )
@@ -1028,7 +1027,7 @@ void INVASION_BeginWave( ULONG ulWave )
 				SERVERCOMMANDS_SpawnThing( pFog );
 		}
 		pActor->pMonsterSpot = pMonsterSpot;
-		pActor->ulInvasionWave = g_ulCurrentWave;
+		pActor->ulInvasionWave = g_CurrentWave;
 	}
 
 	while (( pPickupSpot = PickupIterator.Next( )))
@@ -1041,13 +1040,13 @@ void INVASION_BeginWave( ULONG ulWave )
 		}
 
 		// Not time to spawn this item yet!
-		if ( g_ulCurrentWave < (ULONG)pPickupSpot->args[3] )
+		if ( g_CurrentWave < static_cast<ULONG>( pPickupSpot->args[3] ))
 		{
 			pPickupSpot->NextSpawnTick = -1;
 			continue;
 		}
 
-		lWaveForItem = g_ulCurrentWave - (( pPickupSpot->args[3] <= 1 ) ? 0 : ( pPickupSpot->args[3] - 1 ));
+		lWaveForItem = g_CurrentWave - (( pPickupSpot->args[3] <= 1 ) ? 0 : ( pPickupSpot->args[3] - 1 ));
 
 		// This item will be used this wave. Calculate the number of things to spawn.
 		pPickupSpot->NumLeftThisWave = invasion_GetNumThingsThisWave( pPickupSpot->args[0], lWaveForItem, false );
@@ -1121,7 +1120,7 @@ void INVASION_BeginWave( ULONG ulWave )
 		}
 
 		// Not time to spawn this item yet, or we already spawned it.
-		if (( (ULONG)pWeaponSpot->args[3] != 0 ) && ( g_ulCurrentWave != (ULONG)pWeaponSpot->args[3] ))
+		if (( static_cast<ULONG>( pWeaponSpot->args[3] ) != 0 ) && ( g_CurrentWave != static_cast<ULONG>( pWeaponSpot->args[3] )))
 		{
 			pWeaponSpot->NextSpawnTick = -1;
 			continue;
@@ -1186,10 +1185,10 @@ void INVASION_DoWaveComplete( void )
 		char				szString[32];
 		DHUDMessageFadeOut	*pMsg;
 
-		if ( (LONG)g_ulCurrentWave == wavelimit )
+		if ( static_cast<LONG>( g_CurrentWave ) == wavelimit )
 			sprintf( szString, "VICTORY!" );
 		else
-			sprintf( szString, "WAVE %d COMPLETE!", static_cast<unsigned int> (g_ulCurrentWave) );
+			sprintf( szString, "WAVE %d COMPLETE!", static_cast<unsigned int>( g_CurrentWave ));
 		V_ColorizeString( szString );
 
 		// Display "VICTORY!"/"WAVE %d COMPLETE!" HUD message.
@@ -1215,14 +1214,14 @@ void INVASION_DoWaveComplete( void )
 //
 ULONG INVASION_GetCountdownTicks( void )
 {
-	return ( g_ulInvasionCountdownTicks );
+	return ( g_InvasionCountdownTicks );
 }
 
 //*****************************************************************************
 //
 void INVASION_SetCountdownTicks( ULONG ulTicks )
 {
-	g_ulInvasionCountdownTicks = ulTicks;
+	g_InvasionCountdownTicks = ulTicks;
 }
 
 //*****************************************************************************
@@ -1245,11 +1244,11 @@ void INVASION_SetState( INVASIONSTATE_e State )
 	{
 	case IS_WAITINGFORPLAYERS:
 
-		g_ulCurrentWave = 0;
-		g_ulNumMonstersLeft = 0;
-		g_ulNumArchVilesLeft = 0;
-		g_ulNumBossMonsters = 0;
-		g_ulInvasionCountdownTicks = 0;
+		g_CurrentWave = 0;
+		g_NumMonstersLeft = 0;
+		g_NumArchVilesLeft = 0;
+		g_NumBossMonsters = 0;
+		g_InvasionCountdownTicks = 0;
 
 		// [BB] Respawn any players who were downed during the previous round.
 		// [BB] INVASION_SetState ( IS_WAITINGFORPLAYERS ) may also be called if invasion is false.
@@ -1280,22 +1279,22 @@ void INVASION_SetState( INVASIONSTATE_e State )
 
 	// Tell clients about the state change.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-		SERVERCOMMANDS_SetGameModeState( State, g_ulInvasionCountdownTicks );
+		SERVERCOMMANDS_SetGameModeState( State, g_InvasionCountdownTicks );
 }
 
 //*****************************************************************************
 //
 ULONG INVASION_GetNumMonstersLeft( void )
 {
-	return ( g_ulNumMonstersLeft );
+	return ( g_NumMonstersLeft );
 }
 
 //*****************************************************************************
 //
 void INVASION_SetNumMonstersLeft( ULONG ulLeft )
 {
-	g_ulNumMonstersLeft = ulLeft;
-	if (( g_ulNumMonstersLeft == 0 ) &&
+	g_NumMonstersLeft = ulLeft;
+	if (( g_NumMonstersLeft == 0 ) &&
 		( NETWORK_InClientMode() == false ))
 	{
 		INVASION_DoWaveComplete( );
@@ -1306,28 +1305,28 @@ void INVASION_SetNumMonstersLeft( ULONG ulLeft )
 //
 ULONG INVASION_GetNumArchVilesLeft( void )
 {
-	return ( g_ulNumArchVilesLeft );
+	return ( g_NumArchVilesLeft );
 }
 
 //*****************************************************************************
 //
 void INVASION_SetNumArchVilesLeft( ULONG ulLeft )
 {
-	g_ulNumArchVilesLeft = ulLeft;
+	g_NumArchVilesLeft = ulLeft;
 }
 
 //*****************************************************************************
 //
 ULONG INVASION_GetCurrentWave( void )
 {
-	return ( g_ulCurrentWave );
+	return ( g_CurrentWave );
 }
 
 //*****************************************************************************
 //
 void INVASION_SetCurrentWave( ULONG ulWave )
 {
-	g_ulCurrentWave = ulWave;
+	g_CurrentWave = ulWave;
 }
 
 //*****************************************************************************
@@ -1352,7 +1351,7 @@ void INVASION_WriteSaveInfo( FILE *pFile )
 	FPNGChunkArchive	arc( pFile, MAKE_ID( 'i','n','V','s' ));
 
 	ulInvasionState = g_InvasionState;
-	arc << g_ulNumMonstersLeft << g_ulInvasionCountdownTicks << g_ulCurrentWave << ulInvasionState << g_ulNumBossMonsters << g_ulNumArchVilesLeft;
+	arc << g_NumMonstersLeft << g_InvasionCountdownTicks << g_CurrentWave << ulInvasionState << g_NumBossMonsters << g_NumArchVilesLeft;
 }
 
 //*****************************************************************************
@@ -1367,7 +1366,7 @@ void INVASION_ReadSaveInfo( PNGHandle *pPng )
 		unsigned int		ulInvasionState;
 		FPNGChunkArchive	arc( pPng->File->GetFile( ), MAKE_ID( 'i','n','V','s' ), Length );
 
-		arc << g_ulNumMonstersLeft << g_ulInvasionCountdownTicks << g_ulCurrentWave << ulInvasionState << g_ulNumBossMonsters << g_ulNumArchVilesLeft;
+		arc << g_NumMonstersLeft << g_InvasionCountdownTicks << g_CurrentWave << ulInvasionState << g_NumBossMonsters << g_NumArchVilesLeft;
 		g_InvasionState = (INVASIONSTATE_e)ulInvasionState;
 	}
 }
