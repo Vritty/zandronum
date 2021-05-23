@@ -119,7 +119,6 @@ bool	SCOREBOARD_IsTied( ULONG ulPlayerNum );
 void	SCOREBOARD_DisplayFragMessage( player_t *pFraggedPlayer );
 void	SCOREBOARD_DisplayFraggedMessage( player_t *pFraggingPlayer );
 void	SCOREBOARD_RefreshHUD( void );
-ULONG	SCOREBOARD_GetNumPlayers( void );
 ULONG	SCOREBOARD_GetRank( void );
 LONG	SCOREBOARD_GetSpread( void );
 LONG	SCOREBOARD_GetLeftToLimit( void );

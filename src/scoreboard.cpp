@@ -84,9 +84,6 @@
 // Player list according to rank.
 static	int		g_iSortedPlayers[MAXPLAYERS];
 
-// How many players are currently in the game?
-static	ULONG	g_ulNumPlayers = 0;
-
 // What is our current rank?
 static	ULONG	g_ulRank = 0;
 
@@ -816,6 +813,7 @@ void SCOREBOARD_RenderStats_TeamScores( void )
 //
 void SCOREBOARD_RenderStats_RankSpread( void )
 {
+	ULONG		ulNumPlayers = SERVER_CalcNumNonSpectatingPlayers( MAXPLAYERS );
 	ULONG		ulYPos;
 	char		szString[160];
 
@@ -826,10 +824,10 @@ void SCOREBOARD_RenderStats_RankSpread( void )
 		ulYPos -= ( g_ulTextHeight * 2 );
 
 	// [RC] Don't draw this if there aren't any competitors.
-	if ( g_ulNumPlayers <= 1 )
+	if ( ulNumPlayers <= 1 )
 		return;
 
-	sprintf( szString, "\\cGRANK: \\cC%d/%s%d", static_cast<unsigned int> (g_ulRank + 1), g_bIsTied ? "\\cG" : "", static_cast<unsigned int> (g_ulNumPlayers) );
+	sprintf( szString, "\\cGRANK: \\cC%d/%s%d", static_cast<unsigned int> (g_ulRank + 1), g_bIsTied ? "\\cG" : "", static_cast<unsigned int>( ulNumPlayers ));
 	V_ColorizeString( szString );
 
 	HUD_DrawText( SmallFont, CR_GRAY,
@@ -1859,7 +1857,6 @@ void SCOREBOARD_RefreshHUD( void )
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
 
-	g_ulNumPlayers = 0;
 	g_pTerminatorArtifactCarrier = NULL;
 	g_pPossessionArtifactCarrier = NULL;
 
@@ -1869,35 +1866,22 @@ void SCOREBOARD_RefreshHUD( void )
 	g_pWhiteCarrier = NULL;
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
-		if ( lastmanstanding || teamlms )
+		if (( playeringame[ulIdx] ) && ( PLAYER_IsTrueSpectator( &players[ulIdx] ) == false ))
 		{
-			if ( playeringame[ulIdx] == false )
-				continue;
-
-			if ( PLAYER_IsTrueSpectator( &players[ulIdx] ) == false )
-				g_ulNumPlayers++;
-		}
-		else
-		{
-			if ( playeringame[ulIdx] && ( players[ulIdx].bSpectating == false ))
+			if ( players[ulIdx].cheats2 & CF2_TERMINATORARTIFACT )
+				g_pTerminatorArtifactCarrier = &players[ulIdx];
+			else if ( players[ulIdx].cheats2 & CF2_POSSESSIONARTIFACT )
+				g_pPossessionArtifactCarrier = &players[ulIdx];
+			else if ( players[ulIdx].mo )
 			{
-				g_ulNumPlayers++;
-
-				if ( players[ulIdx].cheats2 & CF2_TERMINATORARTIFACT )
-					g_pTerminatorArtifactCarrier = &players[ulIdx];
-				else if ( players[ulIdx].cheats2 & CF2_POSSESSIONARTIFACT )
-					g_pPossessionArtifactCarrier = &players[ulIdx];
-				else if ( players[ulIdx].mo )
+				for ( ULONG i = 0; i < teams.Size( ); i++ )
 				{
-					for ( ULONG i = 0; i < teams.Size( ); i++ )
-					{
-						if ( players[ulIdx].mo->FindInventory( TEAM_GetItem( i )))
-							TEAM_SetCarrier( i, &players[ulIdx] );
-					}
-
-					if ( players[ulIdx].mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true ))
-						g_pWhiteCarrier = &players[ulIdx];
+					if ( players[ulIdx].mo->FindInventory( TEAM_GetItem( i )))
+						TEAM_SetCarrier( i, &players[ulIdx] );
 				}
+
+				if ( players[ulIdx].mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true ))
+					g_pWhiteCarrier = &players[ulIdx];
 			}
 		}
 	}
@@ -1930,13 +1914,6 @@ void SCOREBOARD_RefreshHUD( void )
 			}
 		}
 	}
-}
-
-//*****************************************************************************
-//
-ULONG SCOREBOARD_GetNumPlayers( void )
-{
-	return ( g_ulNumPlayers );
 }
 
 //*****************************************************************************
