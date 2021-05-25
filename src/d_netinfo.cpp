@@ -991,9 +991,10 @@ static bool IsValidNameChange()
 		// [TP] Made conditional with sv_limitcommands
 		else if ( sv_limitcommands
 			&& ( g_ulLastNameChangeTime > 0 )
-			&& ( (ULONG)gametic < ( g_ulLastNameChangeTime + ( TICRATE * 30 ))))
+			&& ( (ULONG)gametic < ( g_ulLastNameChangeTime + ( TICRATE * CLIENT_NAMECHANGE_WAITTIME ))))
 		{
-			Printf( "You must wait at least 30 seconds before changing your name again.\n" );
+			// [AK] Show the client how many more seconds they need to wait before they can change their name again.
+			Printf( "You must wait another %d seconds before changing your name again.\n", CLIENT_NAMECHANGE_WAITTIME - ( gametic - g_ulLastNameChangeTime ) / TICRATE );
 			return false;
 		}
 	}

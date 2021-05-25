@@ -40,6 +40,9 @@ EXTERN_CVAR (Float, autoaim)
 EXTERN_CVAR ( Int, cl_clientflags ) // [CK]
 EXTERN_CVAR ( Flag, cl_clientsidepuffs ) // [CK]
 
+// [AK] The number of seconds a client must wait before they can change their name again.
+#define CLIENT_NAMECHANGE_WAITTIME	30
+
 // [CK] We are using bitfields now for boolean flags to save bandwidth.
 enum
 {
