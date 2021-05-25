@@ -108,9 +108,6 @@ static	player_t	*g_pPossessionArtifactCarrier = NULL;
 // Who is carrying the white flag?
 static	player_t	*g_pWhiteCarrier = NULL;
 
-// Centered text that displays in the bottom of the screen.
-static	FString		g_BottomString;
-
 // Current position of our "pen".
 static	ULONG		g_ulCurYPos;
 
@@ -180,8 +177,7 @@ static	void			scoreboard_Prepare4ColumnDisplay( void );
 static	void			scoreboard_Prepare3ColumnDisplay( void );
 static	void			scoreboard_DoRankingListPass( ULONG ulPlayer, LONG lSpectators, LONG lDead, LONG lNotPlaying, LONG lNoTeam, LONG lWrongTeam, ULONG ulDesiredTeam );
 static	void			scoreboard_DrawRankings( ULONG ulPlayer );
-static	void			scoreboard_DrawWaiting( void );
-static	void			scoreboard_DrawBottomString( void );
+static	void			scoreboard_DrawBottomString( ULONG ulPlayer );
 
 //*****************************************************************************
 //	CONSOLE VARIABLES
@@ -194,37 +190,117 @@ EXTERN_CVAR( Bool, st_scale );
 //*****************************************************************************
 //	FUNCTIONS
 
-static void SCOREBOARD_DrawBottomString( void )
+static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 {
-	// [RC] Draw the centered bottom message (spectating, following, waiting, etc).
-	if ( g_BottomString.Len( ) > 0 )
+	FString bottomString;
+
+	// [BB] Draw a message to show that the free spectate mode is active.
+	if ( CLIENTDEMO_IsInFreeSpectateMode( ))
+		bottomString.AppendFormat( "Free Spectate Mode" );
+	// If the console player is looking through someone else's eyes, draw the following message.
+	else if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
 	{
-		DHUDMessageFadeOut	*pMsg;
-		V_ColorizeString( g_BottomString );
+		char cColor = V_GetColorChar( CR_RED );
 
-		pMsg = new DHUDMessageFadeOut( SmallFont, g_BottomString,
-			1.5f,
-			1.0f,
-			0,
-			0,
-			CR_WHITE,
-			0.10f,
-			0.15f );
+		// [RC] Or draw this in their team's color.
+		if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+			cColor = V_GetColorChar( TEAM_GetTextColor( players[ulDisplayPlayer].Team ));
 
-		StatusBar->AttachMessage( pMsg, MAKE_ID('W','A','I','T') );
+		bottomString.AppendFormat( "\\c%cFollowing - %s\\c%c", cColor, players[ulDisplayPlayer].userinfo.GetName( ), cColor );
 	}
-}
 
-//*****************************************************************************
-//
-static void SCOREBOARD_DrawWaiting( void )
-{
-	// [RC] Formatting linebreak.
-	if ( static_cast<int>( HUD_GetViewPlayer( )) != consoleplayer )
-		g_BottomString += "\n";
-	
-	g_BottomString += "\\cgWAITING FOR PLAYERS";
-	SCOREBOARD_DrawBottomString();
+	// Print the totals for living and dead allies/enemies.
+	if (( players[ulDisplayPlayer].bSpectating == false ) && ( GAMEMODE_GetCurrentFlags( ) & GMF_DEADSPECTATORS ) && ( GAMEMODE_GetState( ) == GAMESTATE_INPROGRESS ))
+	{
+		if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
+			bottomString += " - ";
+
+		// Survival, Survival Invasion, etc
+		if ( GAMEMODE_GetCurrentFlags( ) & GMF_COOPERATIVE )
+		{
+			if ( g_lNumAlliesLeft < 1 )
+			{
+				bottomString += TEXTCOLOR_RED "Last Player Alive"; // Uh-oh.
+			}
+			else
+			{
+				bottomString += TEXTCOLOR_GRAY;
+				bottomString.AppendFormat( "%d ", static_cast<int>( g_lNumAlliesLeft ));
+				bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
+			}
+		}
+		// Last Man Standing, TLMS, etc
+		else
+		{
+			bottomString += TEXTCOLOR_GRAY;
+			bottomString.AppendFormat( "%d ", static_cast<int>( g_lNumOpponentsLeft ));
+			bottomString.AppendFormat( TEXTCOLOR_RED "opponent%s", g_lNumOpponentsLeft != 1 ? "s" : "" );
+
+			if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+			{
+				if ( g_lNumAlliesLeft < 1 )
+				{
+					bottomString += " left - allies dead";
+				}
+				else
+				{
+					bottomString += ", ";
+					bottomString.AppendFormat( TEXTCOLOR_GRAY " %d ", static_cast<int>( g_lNumAlliesLeft ));
+					bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
+				}
+			}
+			else
+			{
+				bottomString += " left";
+			}
+		}
+	}
+
+	// If the console player is spectating, draw the spectator message.
+	// [BB] Only when not in free spectate mode.
+	if (( r_drawspectatingstring ) && ( players[consoleplayer].bSpectating ) && ( CLIENTDEMO_IsInFreeSpectateMode( ) == false ))
+	{
+		LONG lPosition = JOINQUEUE_GetPositionInLine( consoleplayer );
+		bottomString += "\n" TEXTCOLOR_GREEN;
+
+		if ( players[consoleplayer].bDeadSpectator )
+			bottomString += "Spectating - Waiting to respawn";
+		else if ( lPosition != -1 )
+			bottomString.AppendFormat( "Waiting to play - %s in line", SCOREBOARD_SpellOrdinal( lPosition ));
+		else
+		{
+			int key1 = 0, key2 = 0;
+
+			Bindings.GetKeysForCommand( "menu_join", &key1, &key2 );
+			bottomString += "Spectating - press '";
+
+			if ( key2 )
+				bottomString.AppendFormat( "%s' or '%s'", KeyNames[key1], KeyNames[key2] );
+			else if ( key1 )
+				bottomString += KeyNames[key1];
+			else
+				bottomString += G_DescribeJoinMenuKey( );
+
+			bottomString += "' to join";
+		}
+	}
+
+	// [AK] Draw a message showing that we're waiting for players if we are.
+	if (( GAMEMODE_GetState( ) == GAMESTATE_WAITFORPLAYERS ) && ( players[ulDisplayPlayer].bSpectating == false ))
+	{
+		if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
+			bottomString += '\n';
+
+		bottomString += TEXTCOLOR_RED "Waiting for players";
+	}
+
+	// [RC] Draw the centered bottom message (spectating, following, waiting, etc).
+	if ( bottomString.Len( ) > 0 )
+	{
+		V_ColorizeString( bottomString );
+		DHUDMessageFadeOut *pMsg = new DHUDMessageFadeOut( SmallFont, bottomString, 1.5f, 1.0f, 0, 0, CR_WHITE, 0.10f, 0.15f );
+		StatusBar->AttachMessage( pMsg, MAKE_ID( 'W', 'A', 'I', 'T' ));
+	}
 }
 
 //*****************************************************************************
@@ -259,8 +335,6 @@ bool SCOREBOARD_ShouldDrawRank( ULONG ulPlayer )
 //
 void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 {
-	LONG				lPosition;
-
 	// Make sure the display player is valid.
 	if ( ulDisplayPlayer >= MAXPLAYERS )
 		return;
@@ -290,104 +364,6 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 	if (SCOREBOARD_ShouldDrawBoard( ulDisplayPlayer ))
 		SCOREBOARD_RenderBoard( ulDisplayPlayer );
 
-	g_BottomString = "";
-
-	int viewplayer = static_cast<int>( HUD_GetViewPlayer( ));
-	// [BB] Draw a message to show that the free spectate mode is active.
-	if ( CLIENTDEMO_IsInFreeSpectateMode() )
-		g_BottomString.AppendFormat( "FREE SPECTATE MODE" );
-	// If the console player is looking through someone else's eyes, draw the following message.
-	else if ( viewplayer != consoleplayer )
-	{
-		char cColor = V_GetColorChar( CR_RED );
-
-		// [RC] Or draw this in their team's color.
-		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-			 cColor = V_GetColorChar( TEAM_GetTextColor( players[viewplayer].Team ) );
-
-		g_BottomString.AppendFormat( "\\c%cFOLLOWING - %s\\c%c", cColor, players[viewplayer].userinfo.GetName(), cColor );
-	}
-
-	// Print the totals for living and dead allies/enemies.
-	if (( players[ulDisplayPlayer].bSpectating == false ) && ( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) && ( GAMEMODE_GetState() == GAMESTATE_INPROGRESS ))
-	{
-		// Survival, Survival Invasion, etc
-		if ( GAMEMODE_GetCurrentFlags() & GMF_COOPERATIVE )
-		{
-			if ( viewplayer != consoleplayer )
-				g_BottomString.AppendFormat(" - ");
-
-			if(g_lNumAlliesLeft < 1)
-				g_BottomString += "\\cgLAST PLAYER ALIVE"; // Uh-oh.
-			else {
-				g_BottomString.AppendFormat( "\\cc%d ", static_cast<int> (g_lNumAlliesLeft) );
-				g_BottomString.AppendFormat( "\\cGALL%s LEFT", ( g_lNumAlliesLeft != 1 ) ? "IES" : "Y" );
-			}
-		}
-
-		// Last Man Standing, TLMS, etc
-		if ( GAMEMODE_GetCurrentFlags() & GMF_DEATHMATCH )
-		{
-			if ( viewplayer != consoleplayer )
-				g_BottomString.AppendFormat(" - ");
-
-			if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-			{
-				g_BottomString += "\\cC";
-				g_BottomString.AppendFormat( "%d ", static_cast<int> (g_lNumOpponentsLeft) );
-				g_BottomString.AppendFormat( "\\cGOPPONENT%s", ( g_lNumOpponentsLeft != 1 ) ? "s" : "" );
-				g_BottomString += "\\cC";					
-				if(g_lNumAlliesLeft > 0)
-				{
-					g_BottomString.AppendFormat( ", %d ", static_cast<int> (g_lNumAlliesLeft) );
-					g_BottomString.AppendFormat( "\\cGALL%s LEFT ", ( g_lNumAlliesLeft != 1 ) ? "IES" : "Y" );
-				}
-				else
-					g_BottomString += "\\cG LEFT - ALLIES DEAD";
-			}
-			else
-			{
-				g_BottomString += "\\cC";
-				g_BottomString.AppendFormat( "%d ", static_cast<int> (g_lNumOpponentsLeft) );
-				g_BottomString.AppendFormat( "\\cGOPPONENT%s LEFT", ( g_lNumOpponentsLeft != 1 ) ? "S" : "" );
-			}
-		}
-	}
-
-	// If the console player is spectating, draw the spectator message.
-	// [BB] Only when not in free spectate mode.
-	if (( players[consoleplayer].bSpectating ) && r_drawspectatingstring && !CLIENTDEMO_IsInFreeSpectateMode())
-	{
-		g_BottomString += "\n";
-		lPosition = JOINQUEUE_GetPositionInLine( consoleplayer );
-		if ( players[consoleplayer].bDeadSpectator )
-			g_BottomString += "\\cdSPECTATING - WAITING TO RESPAWN";
-		else if ( lPosition != -1 )
-		{
-			g_BottomString += "\\cdWAITING TO PLAY - ";
-			FString ordinal = SCOREBOARD_SpellOrdinal( lPosition );
-			ordinal.ToUpper();
-			g_BottomString += ordinal;
-			g_BottomString += " IN LINE";
-		}
-		else
-		{
-			int key1 = 0;
-			int key2 = 0;
-			Bindings.GetKeysForCommand( "menu_join", &key1, &key2 );
-			g_BottomString += "\\cdSPECTATING - PRESS \'";
-
-			if ( key2 )
-				g_BottomString = g_BottomString + KeyNames[key1] + "\' OR \'" + KeyNames[key2];
-			else if ( key1 )
-				g_BottomString += KeyNames[key1];
-			else
-				g_BottomString += G_DescribeJoinMenuKey();
-
-			g_BottomString += "\' TO JOIN";
-		}
-	}
-
 	if ( CALLVOTE_ShouldShowVoteScreen( ))
 	{		
 		// [RC] Display either the fullscreen or minimized vote screen.
@@ -407,15 +383,6 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 			// Render "x vs. x" text.
 			SCOREBOARD_RenderDuelCountdown( DUEL_GetCountdownTicks( ) + TICRATE );
 			break;
-		case DS_WAITINGFORPLAYERS:
-
-			if ( players[ulDisplayPlayer].bSpectating == false )
-			{
-				SCOREBOARD_DrawWaiting();
-				// Nothing more to do if we're just waiting for players.
-				return;
-			}
-			break;
 		default:
 			break;
 		}
@@ -430,15 +397,6 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 
 			// Render title text.
 			SCOREBOARD_RenderLMSCountdown( LASTMANSTANDING_GetCountdownTicks( ) + TICRATE );
-			break;
-		case LMSS_WAITINGFORPLAYERS:
-
-			if ( players[ulDisplayPlayer].bSpectating == false )
-			{
-				SCOREBOARD_DrawWaiting();				
-				// Nothing more to do if we're just waiting for players.
-				return;
-			}
 			break;
 		default:
 			break;
@@ -456,13 +414,6 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 			// Render title text.
 			SCOREBOARD_RenderPossessionCountdown(( POSSESSION_GetState( ) == PSNS_COUNTDOWN ) ? (( possession ) ? "POSSESSION" : "TEAM POSSESSION" ) : "NEXT ROUND IN...", POSSESSION_GetCountdownTicks( ) + TICRATE );
 			break;
-		case PSNS_WAITINGFORPLAYERS:
-
-			if ( players[ulDisplayPlayer].bSpectating == false )
-			{
-				g_BottomString += "\\cgWAITING FOR PLAYERS";
-			}
-			break;
 		default:
 			break;
 		}
@@ -477,15 +428,6 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 
 			// Render title text.
 			SCOREBOARD_RenderSurvivalCountdown( SURVIVAL_GetCountdownTicks( ) + TICRATE );
-			break;
-		case SURVS_WAITINGFORPLAYERS:
-
-			if ( players[ulDisplayPlayer].bSpectating == false )
-			{
-				SCOREBOARD_DrawWaiting();
-				// Nothing more to do if we're just waiting for players.
-				return;
-			}
 			break;
 		default:
 			break;
@@ -549,7 +491,7 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 	}
 	
 	// Display the bottom message.
-	SCOREBOARD_DrawBottomString();
+	scoreboard_DrawBottomString( ulDisplayPlayer );
 }
 
 //*****************************************************************************
