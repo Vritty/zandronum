@@ -208,6 +208,8 @@ void D_UpdatePlayerColors( ULONG ulPlayer )
 // [BB] Two variables to keep track of client side name changes.
 static	ULONG	g_ulLastNameChangeTime = 0;
 static	FString g_oldPlayerName;
+// [AK] A toggle boolean variable to prevent sending another userinfo change if we revert the player's name.
+static	bool	g_bDontSendNameChange = false;
 
 enum
 {
@@ -1013,16 +1015,30 @@ void D_SendPendingUserinfoChanges()
 		// name change and remove it from the list of things to send.
 		UserInfoChanges::iterator namePosition = PendingUserinfoChanges.find( NAME_Name );
 
-		if (( namePosition != PendingUserinfoChanges.end() ) && ( IsValidNameChange() == false ))
+		if ( namePosition != PendingUserinfoChanges.end() )
 		{
-			PendingUserinfoChanges.erase( namePosition );
-			name = g_oldPlayerName;
-		}
-		else
-		{
-			// [BB] The client made a valid name change, keep track of this.
-			g_ulLastNameChangeTime = gametic;
-			g_oldPlayerName = name;
+			if ( g_bDontSendNameChange )
+			{
+				// [AK] This is an unintended userinfo name change that should just be erased.
+				PendingUserinfoChanges.erase( namePosition );
+			}
+			else if ( IsValidNameChange() == false )
+			{
+				// [AK] Don't send another userinfo change while we're reverting the player's name.
+				g_bDontSendNameChange = true;
+
+				PendingUserinfoChanges.erase( namePosition );
+				name = g_oldPlayerName;
+
+				// [AK] We're okay to send name changes now.
+				g_bDontSendNameChange = false;
+			}
+			else
+			{
+				// [BB] The client made a valid name change, keep track of this.
+				g_ulLastNameChangeTime = gametic;
+				g_oldPlayerName = name;
+			}
 		}
 
 		CLIENTCOMMANDS_UserInfo( PendingUserinfoChanges );
