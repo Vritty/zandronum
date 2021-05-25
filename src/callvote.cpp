@@ -90,8 +90,6 @@ static	std::list<VOTE_s>		g_PreviousVotes;
 //	PROTOTYPES
 
 static	void			callvote_EndVote( void );
-static	ULONG			callvote_CountPlayersWhoVotedYes( void );
-static	ULONG			callvote_CountPlayersWhoVotedNo( void );
 static	bool			callvote_CheckForFlooding( FString &Command, FString &Parameters, ULONG ulPlayer );
 static	bool			callvote_CheckValidity( FString &Command, FString &Parameters );
 static	ULONG			callvote_GetVoteType( const char *pszCommand );
@@ -173,7 +171,7 @@ void CALLVOTE_Tick( void )
 							g_VoteCommand.Format( "addban %s 10min \"Vote kick", g_KickVoteVictimAddress.ToString() );
 						else
 							g_VoteCommand.Format( "forcespec_idx %d \"Vote forcespec", static_cast<int>(SERVER_FindClientByAddress ( g_KickVoteVictimAddress )) );
-						g_VoteCommand.AppendFormat( ", %d to %d", static_cast<int>(callvote_CountPlayersWhoVotedYes( )), static_cast<int>(callvote_CountPlayersWhoVotedNo( )) );
+						g_VoteCommand.AppendFormat( ", %u to %u", CALLVOTE_CountPlayersWhoVotedYes( ), CALLVOTE_CountPlayersWhoVotedNo( ) );
 						if ( g_VoteReason.IsNotEmpty() )
 							g_VoteCommand.AppendFormat ( " (%s)", g_VoteReason.GetChars( ) );
 						g_VoteCommand += ".\"";
@@ -603,8 +601,8 @@ void CALLVOTE_TallyVotes( void )
 	ULONG ulNumNo;
 
 	// Count up all the Yes/No votes.
-	ulNumYes = callvote_CountPlayersWhoVotedYes();
-	ulNumNo = callvote_CountPlayersWhoVotedNo();
+	ulNumYes = CALLVOTE_CountPlayersWhoVotedYes();
+	ulNumNo = CALLVOTE_CountPlayersWhoVotedNo();
 
 	// If More than half of the total eligible voters have voted, we must have a majority!
 	if ( MAX( ulNumYes, ulNumNo ) > ( CALLVOTE_CountNumEligibleVoters( ) / 2 ))
@@ -674,7 +672,7 @@ static void callvote_EndVote( void )
 
 //*****************************************************************************
 //
-static ULONG callvote_CountPlayersWhoVotedYes( void )
+ULONG CALLVOTE_CountPlayersWhoVotedYes( void )
 {
 	ULONG	ulIdx;
 	ULONG	ulNumYes;
@@ -691,7 +689,7 @@ static ULONG callvote_CountPlayersWhoVotedYes( void )
 
 //*****************************************************************************
 //
-static ULONG callvote_CountPlayersWhoVotedNo( void )
+ULONG CALLVOTE_CountPlayersWhoVotedNo( void )
 {
 	ULONG	ulIdx;
 	ULONG	ulNumNo;

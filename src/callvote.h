@@ -128,6 +128,8 @@ const char		*CALLVOTE_GetVoteMessage( void );
 const char		*CALLVOTE_GetReason( void );
 void			CALLVOTE_DisconnectedVoter( ULONG ulPlayer );
 void			CALLVOTE_TallyVotes( void );
+ULONG			CALLVOTE_CountPlayersWhoVotedYes( void );
+ULONG			CALLVOTE_CountPlayersWhoVotedNo( void );
 ULONG			CALLVOTE_GetVoteCaller( void );
 VOTESTATE_e		CALLVOTE_GetVoteState( void );
 ULONG			CALLVOTE_GetCountdownTicks( void );
