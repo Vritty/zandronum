@@ -596,55 +596,36 @@ bool v_IsCharacterWhitespace ( char c )
 
 
 // [RC] Conforms names to meet standards.
-void V_CleanPlayerName( char *pszString )
+void V_CleanPlayerName( FString &String )
 {
-	char	*pszStart;
-	char	*p;
-	char	c;
-	ULONG	ulStringLength;
-	ULONG   ulTotalLength;
-	ULONG   ulNonWhitespace;
-	char	szColorlessName[256];
-
-	ulStringLength = static_cast<ULONG>(strlen( pszString ));
-	ulTotalLength = 0;
-	ulNonWhitespace = 0;
-
-	// Start at the beginning of the string.
-	p = pszString;
-	pszStart = pszString;
+	ULONG ulNonWhitespace = 0;
 
 	// The name must be longer than three characters.
-	if ( ulStringLength < 3 )
+	if ( String.Len() < 3 )
 	{
-		strcpy( pszString, "Player" );
+		String = "Player";
 		return;
 	}
 
 	// Go through and remove the illegal characters.
-	while ( (c = *p++) )
+	for ( unsigned int i = 0; i < String.Len(); i++ )
 	{
-		if ( !v_IsCharAcceptableInNames(c) )
+		if ( !v_IsCharAcceptableInNames( String[i] ))
 		{
-			ULONG	ulPos;
-			ulStringLength = static_cast<ULONG>(strlen( pszString ));
-
+			char *pszString = String.LockBuffer();
+			
 			// Shift the rest of the string back one.
-			for ( ulPos = 0; ulPos < ulStringLength; ulPos++ )
-				pszString[ulPos] = pszString[ulPos + 1];
+			for ( unsigned int j = i; j < String.Len() - 1; j++ )
+				pszString[j] = pszString[j + 1];
+
+			// [AK] Remove the last character in the string.
+			String.UnlockBuffer();
+			String.Truncate( String.Len() - 1 );
 
 			// Don't skip a character.
-			p--;
-		}
-		else
-		{
-			pszString++;
-			ulTotalLength++;
+			i--;
 		}
 	}
-
-	// Cut the string at its new end.
-	*pszString = 0;
 
 	// [BB] Remove any trailing incomplete escaped color codes. Since we just removed
 	// quite a bit from the string, it's possible that those are there now.
@@ -654,7 +635,7 @@ void V_CleanPlayerName( char *pszString )
 	// unescaped color codes, so I have to uncolorize, clean and colorize the name here.
 	// Not so efficient, but V_CleanPlayerName is called seldom enough so that this
 	// doesn't matter.
-	FString tempString = pszStart;
+	FString tempString = String;
 	V_UnColorizeString ( tempString );
 	V_RemoveTrailingCrapFromFString ( tempString );
 	// [BB] If the name uses color codes, make sure that it is terminated with "\\c-".
@@ -677,37 +658,20 @@ void V_CleanPlayerName( char *pszString )
 		tempString += "\\c-";
 	}
 	V_ColorizeString ( tempString );
-	sprintf ( pszStart, "%s", tempString.GetChars() );
+	String = tempString;
 
 	// Determine the name's actual length.
-	strncpy( szColorlessName, pszStart, 256 );
-	V_RemoveColorCodes( szColorlessName );
+	V_RemoveColorCodes( tempString );
 	
-	p = szColorlessName;
-	ulNonWhitespace = 0;
-	while ( (c = *p++) )
+	for ( unsigned int i = 0; i < tempString.Len(); i++ )
 	{
-		if ( !v_IsCharacterWhitespace(c) )
+		if ( v_IsCharacterWhitespace( tempString[i] ) == false )
 			ulNonWhitespace++;
 	}
 		
 	// Check the length again, as characters were removed.
 	if ( ulNonWhitespace < 3 )
-		strcpy( pszStart, "Player" );
-}
-
-// [BB] Version of V_CleanPlayerName that accepts a FString as argument.
-void V_CleanPlayerName( FString &String )
-{
-	const int length = (int) String.Len();
-	// [BB] V_CleanPlayerName possibly appends "\\c-", hence we need to reserve more memory than just "length + terminating 0".
-	// [EP] Don't forget it might return "Player" in case the name results being too short.
-	char *tempCharArray = new char[MAX<size_t>(7, length+4)];
-	strncpy( tempCharArray, String.GetChars(), length );
-	tempCharArray[length] = 0;
-	V_CleanPlayerName( tempCharArray );
-	String = tempCharArray;
-	delete[] tempCharArray;
+		String = "Player";
 }
 
 // [RC] Converts COL_ numbers to their \c counterparts.
