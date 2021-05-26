@@ -55,11 +55,6 @@
 //*****************************************************************************
 //	DEFINES
 
-#define	COLUMN1_XPOS		24
-#define	COLUMN2_XPOS		72
-#define	COLUMN3_XPOS		192
-#define	COLUMN4_XPOS		256
-
 // Maximum number of columns.
 #define MAX_COLUMNS			8
 
