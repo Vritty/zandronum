@@ -246,6 +246,15 @@ bool SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer )
 }
 
 //*****************************************************************************
+//
+// [TP]
+//
+bool SCOREBOARD_ShouldDrawRank( ULONG ulPlayer )
+{
+	return (( deathmatch ) && (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) == 0 ) && ( PLAYER_IsTrueSpectator( &players[ulPlayer] ) == false ));
+}
+
+//*****************************************************************************
 // Renders some HUD strings, and the main board if the player is pushing the keys.
 //
 void SCOREBOARD_Render( ULONG ulDisplayPlayer )
@@ -2724,17 +2733,6 @@ static void scoreboard_DrawTeamScores( ULONG ulPlayer )
 
 		g_ulCurYPos += 10;
 	}
-}
-
-//*****************************************************************************
-//
-// [TP]
-//
-bool SCOREBOARD_ShouldDrawRank( ULONG player )
-{
-	return deathmatch
-		&& ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) == 0
-		&& ( PLAYER_IsTrueSpectator( &players[player] ) == false );
 }
 
 //*****************************************************************************
