@@ -117,8 +117,8 @@ void HUD_DrawTextAligned( int Normalcolor, int Y, const char *String, bool Align
 // [AK]
 void HUD_DrawTextCentered( FFont* Font, int Normalcolor, int Y, const char *String, const bool Scale )
 {
-	int halfWidthScaled = ( Scale ? con_virtualwidth : SCREENWIDTH ) / 2;
-	HUD_DrawText( Font, Normalcolor, halfWidthScaled - Font->StringWidth( String ) / 2, Y, String, Scale );
+	int X = (( Scale ? con_virtualwidth : SCREENWIDTH ) - Font->StringWidth( String )) >> 1;
+	HUD_DrawText( Font, Normalcolor, X, Y, String, Scale );
 }
 
 //*****************************************************************************
@@ -130,7 +130,7 @@ void HUD_DrawTextClean( FFont* Font, int Normalcolor, int X, int Y, const char *
 
 void HUD_DrawTextCleanCentered( FFont *Font, int Normalcolor, int Y, const char *String )
 {
-	HUD_DrawTextClean( Font, Normalcolor, 160 - Font->StringWidth( String ) / 2, Y, String );
+	HUD_DrawTextClean( Font, Normalcolor, 160 - ( Font->StringWidth( String ) >> 1 ), Y, String );
 }
 
 //*****************************************************************************
