@@ -1048,9 +1048,6 @@ void chat_SendMessage( ULONG ulMode, const char *pszString )
 	if ( ChatMessage.IsEmpty( ) )
 		return;
 
-	// Format our message so color codes can appear.
-	V_ColorizeString( ChatMessage );
-
 	// [CW] Substitute the message if necessary.
 	chat_DoSubstitution( ChatMessage );
 
@@ -1068,6 +1065,9 @@ void chat_SendMessage( ULONG ulMode, const char *pszString )
 		ChatMessage.Insert( strnicmp( "/me", pszString, 3 ) == 0 ? 3 : 0, cl_chatprefix );
 		ChatMessage += cl_chatsuffix;
 	}
+
+	// Format our message so color codes can appear.
+	V_ColorizeString( ChatMessage );
 
 	// If we're the client, let the server handle formatting/sending the msg to other players.
 	if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
