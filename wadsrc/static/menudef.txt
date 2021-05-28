@@ -1177,6 +1177,11 @@ OptionMenu MessageOptions
 	Option "Minimum message level", 	"msg", "MessageLevels"
 	Option "Center messages",			"con_centernotify", "OnOff"
 	Option "Color in messages",			"con_colorinmessages", "ZA_ColorInMessages" // [TP]
+	// [AK] Added textfields for the chat prefix/suffix.
+	StaticText " "
+	TextField "Chat prefix",			"cl_chatprefix"
+	TextField "Chat suffix",			"cl_chatsuffix"
+
 	StaticText " "
 	StaticText "Message Colors", 1
 	StaticText " "
