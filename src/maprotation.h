@@ -79,6 +79,7 @@ void			MAPROTATION_Construct( void );
 
 ULONG			MAPROTATION_GetNumEntries( void );
 ULONG			MAPROTATION_GetCurrentPosition( void );
+void			MAPROTATION_SetCurrentPosition( ULONG ulPosition );
 bool			MAPROTATION_CanEnterMap( ULONG ulIdx, ULONG ulPlayerCount );
 void			MAPROTATION_AdvanceMap( bool bMarkUsed );
 level_info_t	*MAPROTATION_GetNextMap( void );

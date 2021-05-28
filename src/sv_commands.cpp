@@ -3470,6 +3470,7 @@ void SERVERCOMMANDS_MapLoad( ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	ServerCommands::MapLoad command;
 	command.SetMapName( level.mapname );
+	command.SetCurrentPosition( MAPROTATION_GetCurrentPosition() );
 	command.sendCommandToClients ( ulPlayerExtra, flags );
 }
 
@@ -4955,6 +4956,7 @@ void SERVERCOMMANDS_SyncMapRotation( ULONG ulPlayerExtra, ServerCommandFlags fla
 	}
 
 	command.SetEntries( mapEntries );
+	command.SetCurrentPosition( MAPROTATION_GetCurrentPosition() );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 

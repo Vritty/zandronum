@@ -59,6 +59,7 @@
 #include "sv_main.h"
 #include "sv_commands.h"
 #include "network.h"
+#include "v_text.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -93,6 +94,13 @@ ULONG MAPROTATION_GetNumEntries( void )
 ULONG MAPROTATION_GetCurrentPosition( void )
 {
 	return ( g_ulCurMapInList );
+}
+
+//*****************************************************************************
+//
+void MAPROTATION_SetCurrentPosition( ULONG ulPosition )
+{
+	g_ulCurMapInList = ulPosition;
 }
 
 //*****************************************************************************
@@ -479,6 +487,10 @@ CCMD( maplist )
 		for ( ULONG ulIdx = 0; ulIdx < g_MapRotationEntries.size( ); ulIdx++ )
 		{
 			message.Format( "%lu. %s - %s", ulIdx + 1, g_MapRotationEntries[ulIdx].pMap->mapname, g_MapRotationEntries[ulIdx].pMap->LookupLevelName( ).GetChars( ));
+
+			// [AK] Highlight the current position in the map rotation in green, but only if we're actually playing on that map.
+			if (( g_ulCurMapInList == ulIdx ) && ( stricmp( level.mapname, g_MapRotationEntries[g_ulCurMapInList].pMap->mapname ) == 0 ))
+				message.Insert( 0, TEXTCOLOR_GREEN );
 
 			// [AK] Also print the min and max player limits if they're different from the default values.
 			if (( g_MapRotationEntries[ulIdx].ulMinPlayers > 0 ) || ( g_MapRotationEntries[ulIdx].ulMaxPlayers < MAXPLAYERS ))

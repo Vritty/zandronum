@@ -1,5 +1,7 @@
 Command MapLoad
 	String mapName
+	# [AK] Also send the current position of the map rotation.
+	Byte currentPosition
 EndCommand
 
 Command MapNew

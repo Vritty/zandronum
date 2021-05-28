@@ -6942,6 +6942,9 @@ void ServerCommands::MapLoad::Execute()
 		// Start new level.
 		G_InitNew( mapName, false );
 
+		// [AK] Set the current position of the map rotation.
+		MAPROTATION_SetCurrentPosition( currentPosition );
+
 		// [BB] We'll receive a full update for the new map from the server.
 		g_bFullUpdateIncomplete = true;
 
@@ -9227,6 +9230,9 @@ void ServerCommands::SyncMapRotation::Execute()
 
 	for ( unsigned int i = 0; i < entries.Size(); i++ )
 		MAPROTATION_AddMap( entries[i].name, 0, entries[i].minPlayers, entries[i].maxPlayers, true );
+
+	// [AK] Set the current position of the map rotation.
+	MAPROTATION_SetCurrentPosition( currentPosition );
 }
 
 //*****************************************************************************
