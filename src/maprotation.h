@@ -51,6 +51,7 @@
 #define	__MAPROTATION_H__
 
 #include "g_level.h"
+#include "c_dispatch.h"
 
 //*****************************************************************************
 //	STRUCTURES
@@ -87,6 +88,7 @@ void			MAPROTATION_SetPositionToMap( const char *pszMapName );
 bool			MAPROTATION_IsMapInRotation( const char *pszMapName );
 bool			MAPROTATION_IsUsed( ULONG ulIdx );
 void			MAPROTATION_AddMap( FCommandLine &argv, bool bSilent, bool bInsert = false );
+void			MAPROTATION_AddMap( const char *pszMapName, int iPosition, ULONG ulMinPlayers, ULONG ulMaxPlayers, bool bSilent );
 void			MAPROTATION_DelMap (char *pszMapName, bool bSilent);
 
 //*****************************************************************************

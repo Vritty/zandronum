@@ -120,6 +120,7 @@
 #include "am_map.h"
 #include "menu/menu.h"
 #include "v_text.h"
+#include "maprotation.h"
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
@@ -2270,6 +2271,31 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				else
 				{
 					g_HasRCONAccess = false;
+				}
+				break;
+
+			case SVC2_ADDTOMAPROTATION:
+				{
+					const char *pszMapName = pByteStream->ReadString();
+					int position = pByteStream->ReadByte();
+					ULONG ulMinPlayers = pByteStream->ReadByte();
+					ULONG ulMaxPlayers = pByteStream->ReadByte();
+
+					// [AK] Add this map to the rotation.
+					MAPROTATION_AddMap( pszMapName, position, ulMinPlayers, ulMaxPlayers, true );
+				}
+				break;
+
+			case SVC2_DELFROMMAPROTATION:
+				if ( pByteStream->ReadByte() )
+				{
+					// [AK] Clear all maps from the rotation.
+					MAPROTATION_Construct();
+				}
+				else
+				{
+					// [AK] Remove the map with the given name from the rotation.
+					MAPROTATION_DelMap( const_cast<char*>( pByteStream->ReadString()), true );
 				}
 				break;
 
@@ -9190,6 +9216,17 @@ void ServerCommands::SyncJoinQueue::Execute()
 
 	for ( unsigned int i = 0; i < slots.Size(); ++i )
 		JOINQUEUE_AddPlayer( slots[i].player, slots[i].team );
+}
+
+//*****************************************************************************
+//
+void ServerCommands::SyncMapRotation::Execute()
+{
+	// [AK] Clear the map rotation first before adding the new maps.
+	MAPROTATION_Construct();
+
+	for ( unsigned int i = 0; i < entries.Size(); i++ )
+		MAPROTATION_AddMap( entries[i].name, 0, entries[i].minPlayers, entries[i].maxPlayers, true );
 }
 
 //*****************************************************************************

@@ -28,6 +28,17 @@ Command SyncJoinQueue
 	Struct<JoinSlot>[] slots
 EndCommand
 
+Struct MapRotationEntry
+	String name
+	Byte minPlayers
+	Byte maxPlayers
+EndStruct
+
+Command SyncMapRotation
+	ExtendedCommand
+	Struct<MapRotationEntry>[] entries
+EndCommand
+
 Command ReplaceTextures
 	String fromTexture
 	String toTexture

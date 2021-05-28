@@ -2692,6 +2692,9 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 	// [TP] Inform the client of the state of the join queue
 	SERVERCOMMANDS_SyncJoinQueue( ulClient, SVCF_ONLYTHISCLIENT );
 
+	// [AK] Inform the client of the map rotation list.
+	SERVERCOMMANDS_SyncMapRotation( ulClient, SVCF_ONLYTHISCLIENT );
+
 	// [BB] Let the client know that the full update is completed.
 	SERVERCOMMANDS_FullUpdateCompleted( ulClient );
 	// [BB] The client will let us know that it received the update.

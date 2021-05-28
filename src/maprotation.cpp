@@ -57,6 +57,8 @@
 #include "p_setup.h"
 #include "joinqueue.h"
 #include "sv_main.h"
+#include "sv_commands.h"
+#include "network.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -73,6 +75,10 @@ void MAPROTATION_Construct( void )
 {
 	g_MapRotationEntries.clear( );
 	g_ulCurMapInList = g_ulNextMapInList = 0;
+
+	// [AK] If we're the server, tell the clients to clear their map lists too.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		SERVERCOMMANDS_DelFromMapRotation( NULL, true );
 }
 
 //*****************************************************************************
@@ -333,24 +339,38 @@ bool MAPROTATION_IsUsed( ULONG ulIdx )
 //
 void MAPROTATION_AddMap( FCommandLine &argv, bool bSilent, bool bInsert )
 {
+	int iPosition = bInsert ? atoi( argv[2] ) : 0;
+	int iLimitArg = bInsert ? 3 : 2;
+
+	// [AK] Get the minimum and maximum player limits if they've been included.
+	ULONG ulMinPlayers = ( argv.argc( ) > iLimitArg ) ? atoi( argv[iLimitArg] ) : 0;
+	ULONG ulMaxPlayers = ( argv.argc( ) > iLimitArg + 1 ) ? atoi( argv[iLimitArg + 1] ) : MAXPLAYERS;
+
+	MAPROTATION_AddMap( argv[1], iPosition, ulMinPlayers, ulMaxPlayers, bSilent );
+}
+
+//*****************************************************************************
+//
+void MAPROTATION_AddMap( const char *pszMapName, int iPosition, ULONG ulMinPlayers, ULONG ulMaxPlayers, bool bSilent )
+{
 	// Find the map.
-	level_info_t *pMap = FindLevelByName( argv[1] );
+	level_info_t *pMap = FindLevelByName( pszMapName );
 	if ( pMap == NULL )
 	{
-		Printf( "map %s doesn't exist.\n", argv[1] );
+		Printf( "map %s doesn't exist.\n", pszMapName );
 		return;
 	}
+
+	// [AK] Save the position we originally passed into this function.
+	int iOriginalPosition = iPosition;
 
 	MAPROTATIONENTRY_t newEntry;
 	newEntry.pMap = pMap;
 	newEntry.bUsed = false;
 
-	int iPosition = bInsert ? atoi( argv[2] ) : 0;
-	int iLimitArg = bInsert ? 3 : 2;
-
 	// [AK] Add the minimum and maximum player limits the map will use.
-	newEntry.ulMinPlayers = ( argv.argc( ) > iLimitArg) ? clamp( atoi( argv[iLimitArg] ), 0, MAXPLAYERS ) : 0;
-	newEntry.ulMaxPlayers = ( argv.argc( ) > iLimitArg + 1 ) ? clamp( atoi( argv[iLimitArg + 1] ), 1, MAXPLAYERS ) : MAXPLAYERS;
+	newEntry.ulMinPlayers = clamp<ULONG>( ulMinPlayers, 0, MAXPLAYERS );
+	newEntry.ulMaxPlayers = clamp<ULONG>( ulMaxPlayers, 1, MAXPLAYERS );
 
 	// [AK] The minimum limit should never be greater than the maximum limit.
 	if ( newEntry.ulMinPlayers > newEntry.ulMaxPlayers )
@@ -379,6 +399,10 @@ void MAPROTATION_AddMap( FCommandLine &argv, bool bSilent, bool bInsert )
 	MAPROTATION_SetPositionToMap( level.mapname );
 	if ( !bSilent )
 		Printf( "%s (%s) added to map rotation list at position %d.\n", pMap->mapname, pMap->LookupLevelName( ).GetChars( ), iPosition);
+
+	// [AK] If we're the server, tell the clients to add the map on their end.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		SERVERCOMMANDS_AddToMapRotation( pMap->mapname, iOriginalPosition, newEntry.ulMinPlayers, newEntry.ulMaxPlayers );
 }
 
 //*****************************************************************************
@@ -407,13 +431,19 @@ void MAPROTATION_DelMap (char *pszMapName, bool bSilent)
 		}
 	}
 
-	if (gotcha && !bSilent)
+	if (gotcha)
 	{
-		Printf ("%s (%s) has been removed from map rotation list.\n",
-			pMap->mapname, pMap->LookupLevelName().GetChars());
+		if ( !bSilent )
+			Printf ( "%s (%s) has been removed from map rotation list.\n", pMap->mapname, pMap->LookupLevelName( ).GetChars( ));
+
+		// [AK] If we're the server, tell the clients to remove the map on their end.
+		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+			SERVERCOMMANDS_DelFromMapRotation( pszMapName );
 	}
-	else if (!gotcha)
+	else
+	{
 		Printf ("Map %s is not in rotation.\n", pszMapName);
+	}
 }
 
 //*****************************************************************************
