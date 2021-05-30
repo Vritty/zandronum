@@ -415,7 +415,7 @@ void MAPROTATION_AddMap( const char *pszMapName, int iPosition, ULONG ulMinPlaye
 
 //*****************************************************************************
 // [Dusk] Removes a map from map rotation
-void MAPROTATION_DelMap (char *pszMapName, bool bSilent)
+void MAPROTATION_DelMap (const char *pszMapName, bool bSilent)
 {
 	// look up the map
 	level_info_t *pMap = FindLevelByName (pszMapName);

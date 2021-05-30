@@ -2295,7 +2295,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				else
 				{
 					// [AK] Remove the map with the given name from the rotation.
-					MAPROTATION_DelMap( const_cast<char*>( pByteStream->ReadString()), true );
+					MAPROTATION_DelMap( pByteStream->ReadString(), true );
 				}
 				break;
 
