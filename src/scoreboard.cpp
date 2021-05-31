@@ -102,14 +102,8 @@ static	LONG	g_lNumOpponentsLeft = 0;
 // [RC] How many allies are alive in Survival, or Team LMS?
 static	LONG	g_lNumAlliesLeft = 0;
 
-// Who has the terminator artifact?
-static	player_t	*g_pTerminatorArtifactCarrier = NULL;
-
-// Who has the possession artifact?
-static	player_t	*g_pPossessionArtifactCarrier = NULL;
-
-// Who is carrying the white flag?
-static	player_t	*g_pWhiteCarrier = NULL;
+// [AK] Who has the terminator sphere, hellstone, or white flag?
+static	player_t	*g_pArtifactCarrier = NULL;
 
 // Current position of our "pen".
 static	ULONG		g_ulCurYPos;
@@ -558,85 +552,45 @@ void SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer )
 //
 void SCOREBOARD_RenderStats_Holders( void )
 {
-	ULONG		ulYPos;
-	char		szString[160];
-	char		szPatchName[9];
-	char		szName[MAXPLAYERNAME+1];
+	ULONG ulYPos;
+	ULONG color = CR_GRAY;
+	FString patchName;
+	FString text;
 
 	// Draw the carrier information for ONE object (POS, TERM, OFCTF).
 	if ( oneflagctf || terminator || possession || teampossession)
 	{
 		// Decide what text and object needs to be drawn.
-		if ( possession || teampossession )
+		if ( oneflagctf )
 		{
-			sprintf( szPatchName, "HELLSTON" );
-			if ( g_pPossessionArtifactCarrier )
-			{
-				sprintf( szName, "%s", g_pPossessionArtifactCarrier->userinfo.GetName() );
-				if ( teampossession )
-				{
-					V_RemoveColorCodes( szName );
-					if ( TEAM_CheckIfValid ( g_pPossessionArtifactCarrier->Team ) )
-						sprintf( szString, "\\c%c%s :", V_GetColorChar( TEAM_GetTextColor( g_pPossessionArtifactCarrier->Team )), szName );
-				}
-				else
-					sprintf( szString, "%s \\cG:", szName );
-			}
-			else
-				sprintf( szString, "\\cC- \\cG:" );
-		}
-		else if ( terminator )
-		{
-			sprintf( szPatchName, "TERMINAT" );
-			sprintf( szString, "\\cC%s \\cG:", g_pTerminatorArtifactCarrier ? g_pTerminatorArtifactCarrier->userinfo.GetName() : "-" );
-		}
-		else if ( oneflagctf )
-		{
-			sprintf( szPatchName, "STFLA3" );
-			if ( g_pWhiteCarrier )
-			{
-				sprintf( szName, "%s", g_pWhiteCarrier->userinfo.GetName() );
-				V_RemoveColorCodes( szName );
-				if ( TEAM_CheckIfValid ( g_pWhiteCarrier->Team ) )
-					sprintf( szString, "\\cC%s \\cC:", szName );
-			}
-			else
-				sprintf( szString, "\\cC%s \\cC:", TEAM_GetReturnTicks( teams.Size( ) ) ? "?" : "-" );
-		}
+			patchName = "STFLA3";
 
-		// Now, draw it.
-		ulYPos = ST_Y - g_ulTextHeight + 1;
-		V_ColorizeString( szString );
-		if ( g_bScale )
-		{
-			screen->DrawTexture( TexMan[szPatchName],
-				( g_ValWidth.Int ) - ( TexMan[szPatchName]->GetWidth( )),
-				(LONG)( ulYPos * g_rYScale ),
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
-
-			screen->DrawText( SmallFont, CR_GRAY,
-				( con_virtualwidth ) - ( TexMan[szPatchName]->GetWidth( )) - ( SmallFont->StringWidth( szString )),
-				(LONG)( ulYPos * g_rYScale ),
-				szString,
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
+			if ( g_pArtifactCarrier )
+				text.AppendFormat( "%s" TEXTCOLOR_NORMAL ": ", g_pArtifactCarrier->userinfo.GetName( ));
+			else
+				text.AppendFormat( "%s: ", TEAM_GetReturnTicks( teams.Size( )) ? "?" : "-" );
 		}
 		else
 		{
-			screen->DrawTexture( TexMan[szPatchName],
-				( SCREENWIDTH ) - ( TexMan[szPatchName]->GetWidth( )),
-				(LONG)ulYPos,
-				TAG_DONE );
+			// [AK] Draw the terminator sphere or hellstone icons in their respective gamemodes.
+			color = CR_RED;
+			patchName = terminator ? "TERMINAT" : "HELLSTON";
+			text.Format( "%s" TEXTCOLOR_NORMAL ": ", g_pArtifactCarrier ? g_pArtifactCarrier->userinfo.GetName( ) : "-" );
 
-			screen->DrawText( SmallFont, CR_GRAY,
-				( SCREENWIDTH ) - ( TexMan[szPatchName]->GetWidth( )) - ( SmallFont->StringWidth( szString )),
-				(LONG)ulYPos,
-				szString,
-				TAG_DONE );
+			// [AK] Use the carrier's team colors in the string if applicable.
+			if (( g_pArtifactCarrier ) && ( teampossession ) && ( TEAM_CheckIfValid( g_pArtifactCarrier->Team )))
+			{
+				color = TEAM_GetTextColor( g_pArtifactCarrier->Team );
+				text.Format( "%s" TEXTCOLOR_NORMAL ": ", g_pArtifactCarrier->userinfo.GetName( ));
+			}
 		}
+
+		// Now, draw it.
+		ULONG ulXPos = HUD_GetWidth( ) - TexMan[patchName]->GetWidth( );
+		ulYPos = ST_Y - g_ulTextHeight * 3 + 1;
+
+		HUD_DrawTexture( TexMan[patchName], ulXPos, static_cast<int>( ulYPos * g_rYScale ), g_bScale );
+		HUD_DrawText( SmallFont, color, ulXPos - SmallFont->StringWidth( text ), static_cast<int>( ulYPos * g_rYScale ), text, g_bScale );
 	}
 
 	// Draw the carrier information for TWO objects (ST, CTF).
@@ -644,57 +598,52 @@ void SCOREBOARD_RenderStats_Holders( void )
 	{
 		ulYPos = ST_Y - g_ulTextHeight * 3 + 1;
 
-		for ( LONG i = teams.Size( ) - 1; i >= 0; i-- )
+		for ( LONG lTeam = teams.Size( ) - 1; lTeam >= 0; lTeam-- )
 		{
-			if ( TEAM_ShouldUseTeam( i ) == false )
+			if ( TEAM_ShouldUseTeam( lTeam ) == false )
 				continue;
 
-			sprintf( szPatchName, "%s", TEAM_GetSmallHUDIcon( i ));
-		
-			if ( g_bScale )
-			{
-				screen->DrawTexture( TexMan[szPatchName],
-					( g_ValWidth.Int ) - ( TexMan[szPatchName]->GetWidth( )),
-					(LONG)( ulYPos * g_rYScale ),
-					DTA_VirtualWidth, g_ValWidth.Int,
-					DTA_VirtualHeight, g_ValHeight.Int,
-					TAG_DONE );
+			// [AK] Get the player carrying this team's flag or skull.
+			player_t *carrier = TEAM_GetCarrier( lTeam );
+			patchName = TEAM_GetSmallHUDIcon( lTeam );
+			color = TEAM_GetTextColor( lTeam );
 
-				sprintf( szString, "\\cC%s \\c%c:", TEAM_GetCarrier( i ) ? TEAM_GetCarrier( i )->userinfo.GetName() : TEAM_GetReturnTicks( i ) ? "?" : "-", V_GetColorChar( TEAM_GetTextColor( i )));
-				V_ColorizeString( szString );
-
-				screen->DrawText( SmallFont, CR_GRAY,
-					( g_ValWidth.Int ) - ( TexMan[szPatchName]->GetWidth( )) - ( SmallFont->StringWidth( szString )),
-					(LONG)( ulYPos * g_rYScale ),
-					szString,
-					DTA_VirtualWidth, g_ValWidth.Int,
-					DTA_VirtualHeight, g_ValHeight.Int,
-					TAG_DONE );
-			}
+			if ( carrier )
+				text.Format( "%s", carrier->userinfo.GetName( ));
 			else
-			{
-				screen->DrawTexture( TexMan[szPatchName],
-					( SCREENWIDTH ) - ( TexMan[szPatchName]->GetWidth( )),
-					ulYPos,
-					TAG_DONE );
+				text.Format( TEXTCOLOR_GRAY "%s", TEAM_GetReturnTicks( lTeam ) ? "?" : "-" );
 
-				sprintf( szString, "\\cC%s \\c%c:", TEAM_GetCarrier( i ) ? TEAM_GetCarrier( i )->userinfo.GetName() : TEAM_GetReturnTicks( i ) ? "?" : "-", V_GetColorChar( TEAM_GetTextColor( i )));
-				V_ColorizeString( szString );
+			text += TEXTCOLOR_NORMAL ": ";
 
-				screen->DrawText( SmallFont, CR_GRAY,
-					( SCREENWIDTH ) - ( TexMan[szPatchName]->GetWidth( )) - ( SmallFont->StringWidth( szString )),
-					ulYPos,
-					szString,
-					TAG_DONE );
-			}
+			// Now, draw it.
+			ULONG ulXPos = HUD_GetWidth( ) - TexMan[patchName]->GetWidth( );
+			HUD_DrawTexture( TexMan[patchName], ulXPos, static_cast<int>( ulYPos * g_rYScale ), g_bScale );
 
+			HUD_DrawText( SmallFont, color, ulXPos - SmallFont->StringWidth( text ), static_cast<int>( ulYPos * g_rYScale ), text, g_bScale );
 			ulYPos -= g_ulTextHeight;
 		}
 	}
 	//Domination can have an indefinite amount
 	else if ( domination )
 	{
-		DOMINATION_DrawHUD(g_bScale);
+		int numPoints = DOMINATION_NumPoints( );
+		unsigned int *pointOwners = DOMINATION_PointOwners( );
+
+		for ( int i = numPoints - 1; i >= 0; i-- )
+		{
+			if ( TEAM_CheckIfValid( pointOwners[i] ))
+			{
+				color = TEAM_GetTextColor( pointOwners[i] );
+				text = TEAM_GetName( pointOwners[i] );
+			}
+			else
+			{
+				text = "-";
+			}
+		
+			text.AppendFormat( ": " TEXTCOLOR_GRAY "%s", level.info->SectorInfo.PointNames[i]->GetChars( ));
+			HUD_DrawTextAligned( color, static_cast<int>( ST_Y * g_rYScale ) - ( numPoints - i ) * SmallFont->GetHeight( ), text, false, g_bScale );
+		}
 	}
 }
 
@@ -703,113 +652,77 @@ void SCOREBOARD_RenderStats_Holders( void )
 
 void SCOREBOARD_RenderStats_TeamScores( void )
 {	
-	ULONG		ulYPos;
-	char		szString[160];
-	LONG		lTeamScore[MAX_TEAMS];
-	
-	// The classic sbar HUD for Doom, Heretic, and Hexen has its own display for CTF and Skulltag scores.
-	if( (gameinfo.gametype == GAME_Doom) || ( gameinfo.gametype == GAME_Heretic) || ( gameinfo.gametype == GAME_Hexen) )
-		if ( HUD_IsFullscreen( ))
-			if( ctf || skulltag || oneflagctf)
-				return;
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
+	LONG lTeamScore = 0;
 
-	ulYPos = ST_Y - ( g_ulTextHeight * 2 ) + 1;
+	// [AK] Don't render anything if there's no teams.
+	if (( ulFlags & GMF_PLAYERSONTEAMS ) == false )
+		return;
 
-	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
+	// [AK] Don't render anything if we can't earn frags, points, or wins.
+	if (( ulFlags & ( GMF_PLAYERSEARNFRAGS | GMF_PLAYERSEARNPOINTS | GMF_PLAYERSEARNWINS )) == false )
+		return;
+
+	if ( HUD_IsFullscreen( ))
 	{
-		for ( ULONG i = 0; i < teams.Size( ); i++ )
-		{
-			if ( TEAM_ShouldUseTeam( i ) == false )
-				continue;
+		// The classic sbar HUD for Doom, Heretic, and Hexen has its own display for CTF and Skulltag scores.
+		if ((( gameinfo.gametype == GAME_Doom ) || ( gameinfo.gametype == GAME_Raven )) && ( ctf || oneflagctf || skulltag ))
+			return;
+	}
 
-			if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-				lTeamScore[i] = TEAM_GetWinCount( i );
-			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
-				lTeamScore[i] = TEAM_GetScore( i );
-			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
-				lTeamScore[i] = TEAM_GetFragCount( i );
-			else
-				return;
-		}
+	ULONG ulYPos = ST_Y - ( g_ulTextHeight * 2 ) + 1;
+	FString text;
 
-		for ( LONG i = teams.Size( ) - 1; i >= 0; i-- )
-		{
-			if ( TEAM_CountPlayers( i ) < 1 )
-				continue;
+	for ( ULONG ulTeam = 0; ulTeam < teams.Size( ); ulTeam++ )
+	{
+		if (( TEAM_ShouldUseTeam( ulTeam ) == false ) || ( TEAM_CountPlayers( ulTeam ) < 1 ))
+			continue;
 
-			sprintf( szString , "\\c%c%s: \\cC%d", V_GetColorChar( TEAM_GetTextColor ( i )), TEAM_GetName( i ), static_cast<int>( lTeamScore[i] ));
-			V_ColorizeString ( szString );
+		// [AK] Get this team's win, point, or frag count.
+		if ( ulFlags & GMF_PLAYERSEARNWINS )
+			lTeamScore = TEAM_GetWinCount( ulTeam );
+		else if ( ulFlags & GMF_PLAYERSEARNPOINTS )
+			lTeamScore = TEAM_GetScore( ulTeam );
+		else
+			lTeamScore = TEAM_GetFragCount( ulTeam );
 
-			ulYPos -= g_ulTextHeight;
-
-			if ( g_bScale )
-			{
-				screen->DrawText( SmallFont, CR_GRAY,
-					0,
-					(LONG)( ulYPos * g_rYScale ),
-					szString,
-					DTA_VirtualWidth, g_ValWidth.Int,
-					DTA_VirtualHeight, g_ValHeight.Int,
-					TAG_DONE );
-			}
-			else
-			{
-				screen->DrawText( SmallFont, CR_GRAY,
-					0,
-					ulYPos,
-					szString,
-					TAG_DONE );
-			}
-		}
+		// Now, draw it.
+		text.Format( "%s: " TEXTCOLOR_GRAY "%d", TEAM_GetName( ulTeam ), static_cast<int>( lTeamScore ));
+		HUD_DrawText( SmallFont, TEAM_GetTextColor( ulTeam ), 0, static_cast<int>( ulYPos * g_rYScale ), text, g_bScale );
+		ulYPos -= g_ulTextHeight;
 	}
 }
 //*****************************************************************************
 //
 void SCOREBOARD_RenderStats_RankSpread( void )
 {
-	ULONG		ulYPos;
-	char		szString[160];
-
-	ulYPos = ST_Y - ( g_ulTextHeight * 2 ) + 1;
-
-	// [RC] Move this up to make room for armor on the fullscreen, classic display.
-	if ( !st_scale && screenblocks > 10 )
-		ulYPos -= ( g_ulTextHeight * 2 );
-
 	// [RC] Don't draw this if there aren't any competitors.
 	if ( g_ulNumPlayers <= 1 )
 		return;
 
-	sprintf( szString, "\\cGRANK: \\cC%d/%s%d", static_cast<unsigned int> (g_ulRank + 1), g_bIsTied ? "\\cG" : "", static_cast<unsigned int> (g_ulNumPlayers) );
-	V_ColorizeString( szString );
+	ULONG ulYPos = ST_Y - g_ulTextHeight * 2 + 1;
+	FString text;
 
-	HUD_DrawText( SmallFont, CR_GRAY,
-		0,
-		(LONG)( ulYPos * g_rYScale ),
-		szString );
+	// [RC] Move this up to make room for armor on the fullscreen, classic display.
+	if (( st_scale == false ) && ( screenblocks > 10 ))
+		ulYPos -= g_ulTextHeight * 2;
+
+	// [AK] Draw this player's rank.
+	text.Format( "Rank: " TEXTCOLOR_GRAY "%d/%s%d", static_cast<unsigned int>( g_ulRank + 1 ), g_bIsTied ? TEXTCOLOR_RED : "", static_cast<unsigned int>( g_ulNumPlayers ));
+	HUD_DrawText( SmallFont, CR_RED, 0, static_cast<int>( ulYPos * g_rYScale ), text, g_bScale );
 
 	ulYPos += g_ulTextHeight;
 
-	sprintf( szString, "\\cGSPREAD: \\cC%s%d", g_lSpread > 0 ? "+" : "", static_cast<int> (g_lSpread) );
-	V_ColorizeString( szString );
-
-	HUD_DrawText( SmallFont, CR_GRAY,
-		0,
-		(LONG)( ulYPos * g_rYScale ),
-		szString );
+	// [AK] Draw this player's spread.
+	text.Format( "Spread: %s%d", g_lSpread > 0 ? TEXTCOLOR_BOLD : TEXTCOLOR_GRAY, static_cast<int>( g_lSpread ));
+	HUD_DrawText( SmallFont, CR_RED, 0, static_cast<int>( ulYPos * g_rYScale ), text, g_bScale );
 
 	// 'Wins' isn't an entry on the statusbar, so we have to draw this here.
-	// [BB] Note: SCOREBOARD_RenderStats_RankSpread is not called in LMS, so the LMS check can be removed...
 	unsigned int viewplayerwins = static_cast<unsigned int>( players[HUD_GetViewPlayer( )].ulWins );
-	if (( duel || lastmanstanding ) && ( viewplayerwins > 0 ))
+	if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNWINS ) && ( viewplayerwins > 0 ))
 	{
-		sprintf( szString, "\\cGWINS: \\cC%d", viewplayerwins );
-		V_ColorizeString( szString );
-
-		HUD_DrawText( SmallFont, CR_GRAY,
-			HUD_GetWidth() - SmallFont->StringWidth( szString ),
-			(LONG)( ulYPos * g_rYScale ),
-			szString );
+		text.Format( "Wins: " TEXTCOLOR_GRAY "%u", viewplayerwins );
+		HUD_DrawText( SmallFont, CR_RED, HUD_GetWidth( ) - SmallFont->StringWidth( text ), static_cast<int>( ulYPos * g_rYScale ), text, g_bScale );
 	}
 }
 
@@ -823,13 +736,11 @@ void SCOREBOARD_RenderInvasionStats( void )
 
 	if ( HUD_IsVisible( ))
 	{
-		char			szString[128];
-		DHUDMessage		*pMsg;
+		FString text;
+		text.Format( "Wave: %d  Monsters: %d  Arch-Viles: %d", static_cast<unsigned int>( INVASION_GetCurrentWave( )), static_cast<unsigned int>( INVASION_GetNumMonstersLeft( )), static_cast<unsigned int>( INVASION_GetNumArchVilesLeft( )));
 
-		sprintf( szString, "WAVE: %d  MONSTERS: %d  ARCH-VILES: %d", static_cast<unsigned int> (INVASION_GetCurrentWave( )), static_cast<unsigned int> (INVASION_GetNumMonstersLeft( )), static_cast<unsigned int> (INVASION_GetNumArchVilesLeft( )));
-		pMsg = new DHUDMessage( SmallFont, szString, 0.5f, 0.075f, 0, 0, CR_RED, 0.1f );
-
-		StatusBar->AttachMessage( pMsg, MAKE_ID('I','N','V','S') );
+		DHUDMessage *pMsg = new DHUDMessage( SmallFont, text, 0.5f, 0.075f, 0, 0, CR_RED, 0.1f );
+		StatusBar->AttachMessage( pMsg, MAKE_ID( 'I', 'N', 'V', 'S' ));
 	}
 }
 
@@ -1805,50 +1716,27 @@ void SCOREBOARD_DisplayFraggedMessage( player_t *pFraggingPlayer )
 //
 void SCOREBOARD_RefreshHUD( void )
 {
-	ULONG	ulIdx;
-
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
 
-	g_ulNumPlayers = 0;
-	g_pTerminatorArtifactCarrier = NULL;
-	g_pPossessionArtifactCarrier = NULL;
+	// [AK] Determine which player is carrying the terminator sphere, possession hellstone, or white flag.
+	g_pArtifactCarrier = GAMEMODE_GetArtifactCarrier( );
 
-	for ( ULONG i = 0; i < teams.Size( ); i++ )
-		TEAM_SetCarrier ( i, NULL );
-
-	g_pWhiteCarrier = NULL;
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	// [AK] Determine which players are carrying a team's item.
+	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
 	{
-		if ( lastmanstanding || teamlms )
+		for ( ULONG ulTeam = 0; ulTeam < teams.Size( ); ulTeam++ )
 		{
-			if ( playeringame[ulIdx] == false )
-				continue;
+			TEAM_SetCarrier( ulTeam, NULL );
 
-			if ( PLAYER_IsTrueSpectator( &players[ulIdx] ) == false )
-				g_ulNumPlayers++;
-		}
-		else
-		{
-			if ( playeringame[ulIdx] && ( players[ulIdx].bSpectating == false ))
+			for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 			{
-				g_ulNumPlayers++;
+				// [AK] Ignore invalid players.
+				if (( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )) || ( players[ulIdx].mo == NULL ))
+					continue;
 
-				if ( players[ulIdx].cheats2 & CF2_TERMINATORARTIFACT )
-					g_pTerminatorArtifactCarrier = &players[ulIdx];
-				else if ( players[ulIdx].cheats2 & CF2_POSSESSIONARTIFACT )
-					g_pPossessionArtifactCarrier = &players[ulIdx];
-				else if ( players[ulIdx].mo )
-				{
-					for ( ULONG i = 0; i < teams.Size( ); i++ )
-					{
-						if ( players[ulIdx].mo->FindInventory( TEAM_GetItem( i )))
-							TEAM_SetCarrier( i, &players[ulIdx] );
-					}
-
-					if ( players[ulIdx].mo->FindInventory( PClass::FindClass( "WhiteFlag" ), true ))
-						g_pWhiteCarrier = &players[ulIdx];
-				}
+				if ( players[ulIdx].mo->FindInventory( TEAM_GetItem( ulTeam )))
+					TEAM_SetCarrier( ulTeam, &players[ulIdx] );
 			}
 		}
 	}
@@ -1858,6 +1746,9 @@ void SCOREBOARD_RefreshHUD( void )
 	g_ulRank = SCOREBOARD_CalcRank( player - players );
 	g_lSpread = SCOREBOARD_CalcSpread( player - players );
 	g_bIsTied = SCOREBOARD_IsTied( player - players );
+
+	// [AK] Count how many players are in the game.
+	g_ulNumPlayers = SERVER_CalcNumNonSpectatingPlayers( MAXPLAYERS );
 
 	// "x opponents left", "x allies alive", etc
 	if ( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS )
