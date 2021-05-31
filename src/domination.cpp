@@ -241,32 +241,4 @@ void DOMINATION_EnterSector(player_t *toucher)
 	}
 }
 
-void DOMINATION_DrawHUD(bool scaled)
-{
-	if(!domination)
-		return;
-
-	UCVarValue ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	UCVarValue ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-	float YScale = static_cast<float> (ValHeight.Int) / SCREENHEIGHT;
-	for(int i = NumPoints-1;i >= 0;i--)
-	{
-		FString str;
-		if( TEAM_CheckIfValid ( PointOwners[i] ) )
-			str << "\\c" << V_GetColorChar( TEAM_GetTextColor( PointOwners[i] )) << TEAM_GetName(PointOwners[i]);
-		else
-			str << "-";
-		str << "\\c- :" << *level.info->SectorInfo.PointNames[i];
-		V_ColorizeString(str);
-		if(scaled)
-			screen->DrawText(SmallFont, CR_GRAY, ValWidth.Int - SmallFont->StringWidth(str),
-							static_cast<int> (ST_Y * YScale) - (NumPoints-i)*SmallFont->GetHeight(), str,
-							DTA_VirtualWidth, ValWidth.Int, DTA_VirtualHeight, ValHeight.Int, TAG_DONE);
-		else
-			screen->DrawText(SmallFont, CR_GRAY, SCREENWIDTH - SmallFont->StringWidth(str),
-							ST_Y  - (NumPoints-i)*SmallFont->GetHeight(), str,
-							TAG_DONE);
-	}
-}
-
 //END_GAMEMODE(DOMINATION)

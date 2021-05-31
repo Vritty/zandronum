@@ -73,7 +73,6 @@ void DOMINATION_Tick(void);
 void DOMINATION_SetOwnership(unsigned int point, player_t *toucher);
 void DOMINATION_EnterSector(player_t *toucher);
 void DOMINATION_Init(void);
-void DOMINATION_DrawHUD(bool scaled);
 unsigned int DOMINATION_NumPoints(void);
 unsigned int* DOMINATION_PointOwners(void);
 void DOMINATION_Reset(void);
