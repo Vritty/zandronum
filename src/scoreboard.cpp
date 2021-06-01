@@ -179,6 +179,8 @@ static	void			scoreboard_DoRankingListPass( ULONG ulPlayer, LONG lSpectators, LO
 static	void			scoreboard_DrawRankings( ULONG ulPlayer );
 static	void			scoreboard_DrawBottomString( ULONG ulPlayer );
 static	void			scoreboard_RenderCountdown( ULONG ulTimeLeft );
+static	void			scoreboard_DrawText( const char *pszString, EColorRange Color, ULONG &ulXPos, ULONG ulOffset, bool bOffsetRight = false );
+static	void			scoreboard_DrawIcon( const char *pszPatchName, ULONG &ulXPos, ULONG ulYPos, ULONG ulOffset, bool bOffsetRight = false );
 
 //*****************************************************************************
 //	CONSOLE VARIABLES
@@ -1502,435 +1504,158 @@ static int STACK_ARGS scoreboard_WinsCompareFunc( const void *arg1, const void *
 
 //*****************************************************************************
 //
+static void scoreboard_DrawText( const char *pszString, EColorRange Color, ULONG &ulXPos, ULONG ulOffset, bool bOffsetRight )
+{
+	ulXPos += SmallFont->StringWidth( pszString ) * ( bOffsetRight ? 1 : -1 );
+	HUD_DrawText( SmallFont, Color, ulXPos, g_ulCurYPos, pszString, g_bScale );
+	ulXPos += ulOffset * ( bOffsetRight ? 1 : -1 );
+}
+
+//*****************************************************************************
+//
+static void scoreboard_DrawIcon( const char *pszPatchName, ULONG &ulXPos, ULONG ulYPos, ULONG ulOffset, bool bOffsetRight )
+{
+	ulXPos += TexMan[pszPatchName]->GetWidth( ) * ( bOffsetRight ? 1 : -1 );
+	ulYPos -= (( TexMan[pszPatchName]->GetHeight( ) - SmallFont->GetHeight( )) >> 1 );
+
+	HUD_DrawTexture( TexMan[pszPatchName], ulXPos, ulYPos, g_bScale );
+	ulXPos += ulOffset * ( bOffsetRight ? 1 : -1 );
+}
+
+//*****************************************************************************
+//
 static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPlayer )
 {
-	ULONG	ulIdx;
-	ULONG	ulColor;
-	LONG	lXPosOffset;
-	char	szPatchName[9];
-	char	szString[64];
+	ULONG ulColor = CR_GRAY;
+	FString text;
+
+	// [AK] Change the text color if we're carrying a terminator sphere or on a team.
+	if (( terminator ) && ( players[ulPlayer].cheats2 & CF2_TERMINATORARTIFACT ))
+		ulColor = CR_RED;
+	else if ( players[ulPlayer].bOnTeam )
+		ulColor = TEAM_GetTextColor( players[ulPlayer].Team );
+	else if ( ulDisplayPlayer == ulPlayer )
+		ulColor = demoplayback ? CR_GOLD : CR_GREEN;
 
 	// Draw the data for each column.
-	for( ulIdx = 0; ulIdx < g_ulNumColumnsUsed; ulIdx++ )
+	for ( ULONG ulColumn = 0; ulColumn < g_ulNumColumnsUsed; ulColumn++ )
 	{
-		szString[0] = 0;
+		// [AK] Determine the x-position of the text for this column.
+		ULONG ulXPos = static_cast<ULONG>( g_aulColumnX[ulColumn] * g_fXScale );
 
-		ulColor = CR_GRAY;
-		if (( terminator ) && ( players[ulPlayer].cheats2 & CF2_TERMINATORARTIFACT ))
-			ulColor = CR_RED;
-		else if ( players[ulPlayer].bOnTeam == true )
-			ulColor = TEAM_GetTextColor( players[ulPlayer].Team );
-		else if ( ulDisplayPlayer == ulPlayer )
-			ulColor = demoplayback ? CR_GOLD : CR_GREEN;
-
-		// Determine what needs to be displayed in this column.
-		switch ( g_aulColumnType[ulIdx] )
+		// [AK] We need to display icons and some extra text in the name column.
+		if ( g_aulColumnType[ulColumn] == COLUMN_NAME )
 		{
-			case COLUMN_NAME:
+			// Track where we are to draw multiple icons.
+			ULONG ulXPosOffset = ulXPos - SmallFont->StringWidth( "  " );
 
-				sprintf( szString, "%s", players[ulPlayer].userinfo.GetName() );
+			// [TP] If this player is in the join queue, display the position.
+			int position = JOINQUEUE_GetPositionInLine( ulPlayer );
+			if ( position != -1 )
+			{
+				text.Format( "%d.", position + 1 );
+				scoreboard_DrawText( text, position == 0 ? CR_RED : CR_GOLD, ulXPosOffset, 4 );
+			}
 
-				// Track where we are to draw multiple icons.
-				lXPosOffset = -SmallFont->StringWidth( "  " );
+			// Draw the user's handicap, if any.
+			int handicap = players[ulPlayer].userinfo.GetHandicap( );
+			if ( handicap > 0 )
+			{
+				if (( lastmanstanding ) || ( teamlms ))
+					text.Format( "(%d)", deh.MaxSoulsphere - handicap < 1 ? 1 : deh.MaxArmor - handicap );
+				else
+					text.Format( "(%d)", deh.StartHealth - handicap < 1 ? 1 : deh.StartHealth - handicap );
 
-				// [TP] If this player is in the join queue, display the position.
+				scoreboard_DrawText( text, static_cast<EColorRange>( ulColor ), ulXPosOffset, 4 );
+			}
+
+			// Draw an icon if this player is a ready to go on.
+			if ( players[ulPlayer].bReadyToGoOn )
+				scoreboard_DrawIcon( "RDYTOGO", ulXPosOffset, g_ulCurYPos, 4 );
+
+			// Draw a bot icon if this player is a bot.
+			if ( players[ulPlayer].bIsBot )
+			{
+				FString patchName;
+				patchName.Format( "BOTSKIL%d", botskill.GetGenericRep( CVAR_Int ).Int );
+				scoreboard_DrawIcon( patchName, ulXPosOffset, g_ulCurYPos, 4 );
+			}
+
+			// Draw a chat icon if this player is chatting.
+			// [Cata] Also shows who's in the console.
+			if (( players[ulPlayer].bChatting ) || ( players[ulPlayer].bInConsole ))
+				scoreboard_DrawIcon( players[ulPlayer].bInConsole ? "CONSMINI" : "TLKMINI", ulXPosOffset, g_ulCurYPos, 4 );
+
+			// [AK] Also show an icon if the player is lagging to the server.
+			if (( players[ulPlayer].bLagging ) && ( players[ulPlayer].bSpectating == false ) && ( gamestate == GS_LEVEL ))
+				scoreboard_DrawIcon( "LAGMINI", ulXPosOffset, g_ulCurYPos, 4 );
+
+			// Draw text if there's a vote on and this player voted.
+			if ( CALLVOTE_GetVoteState( ) == VOTESTATE_INVOTE )
+			{
+				ULONG ulVoteChoice = CALLVOTE_GetPlayerVoteChoice( ulPlayer );
+
+				// [AK] Check if this player either voted yes or no.
+				if ( ulVoteChoice != VOTE_UNDECIDED )
 				{
-					int position = JOINQUEUE_GetPositionInLine( ulPlayer );
-					if ( position != -1 )
-					{
-						FString text;
-						text.Format( "%d.", position + 1 );
-						lXPosOffset -= SmallFont->StringWidth ( text );
-						if ( g_bScale )
-						{
-							screen->DrawText( SmallFont, ( position == 0 ) ? CR_RED : CR_GOLD,
-								(LONG)( g_aulColumnX[ulIdx] * g_fXScale ) + lXPosOffset,
-								g_ulCurYPos,
-								text.GetChars(),
-								DTA_VirtualWidth, g_ValWidth.Int,
-								DTA_VirtualHeight, g_ValHeight.Int,
-								TAG_DONE );
-						}
-						else
-						{
-							screen->DrawText( SmallFont, ( position == 0 ) ? CR_RED : CR_GOLD,
-								(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ) + lXPosOffset,
-								g_ulCurYPos,
-								text.GetChars(),
-								DTA_Clean,
-								g_bScale,
-								TAG_DONE );
-						}
-						lXPosOffset -= 4;
-					}
+					text.Format( "(%s)", ulVoteChoice == VOTE_YES ? "Yes" : "No" );
+					scoreboard_DrawText( text, CALLVOTE_GetVoteCaller( ) == ulPlayer ? CR_RED : CR_GOLD, ulXPosOffset, 4 );
 				}
+			}
 
-				// Draw the user's handicap, if any.
-				if ( players[ulPlayer].userinfo.GetHandicap() > 0 )
-				{
-					char	szHandicapString[8];
+			text = players[ulPlayer].userinfo.GetName( );
+		}
+		else if ( g_aulColumnType[ulColumn] == COLUMN_TIME )
+		{
+			text.Format( "%d", static_cast<unsigned int>( players[ulPlayer].ulTime / ( TICRATE * 60 )));
+		}
+		else if ( g_aulColumnType[ulColumn] == COLUMN_PING )
+		{
+			text.Format( "%d", static_cast<unsigned int>( players[ulPlayer].ulPing ));
+		}
+		else if ( g_aulColumnType[ulColumn] == COLUMN_DEATHS )
+		{
+			text.Format( "%d", static_cast<unsigned int>( players[ulPlayer].ulDeathCount ));
+		}
+		else
+		{
+			switch ( g_aulColumnType[ulColumn] )
+			{
+				case COLUMN_FRAGS:
+					text.Format( "%d", players[ulPlayer].fragcount );
+					break;
 
-					if ( lastmanstanding || teamlms )
-					{
-						if (( deh.MaxSoulsphere - (LONG)players[ulPlayer].userinfo.GetHandicap() ) < 1 )
-							sprintf( szHandicapString, "(1)" );
-						else
-							sprintf( szHandicapString, "(%d)", static_cast<int> (deh.MaxArmor - (LONG)players[ulPlayer].userinfo.GetHandicap()) );
-					}
-					else
-					{
-						if (( deh.StartHealth - (LONG)players[ulPlayer].userinfo.GetHandicap() ) < 1 )
-							sprintf( szHandicapString, "(1)" );
-						else
-							sprintf( szHandicapString, "(%d)", static_cast<int> (deh.StartHealth - (LONG)players[ulPlayer].userinfo.GetHandicap()) );
-					}
-					
-					lXPosOffset -= SmallFont->StringWidth ( szHandicapString );
-					if ( g_bScale )
-					{
-						screen->DrawText( SmallFont, ulColor,
-							(LONG)( g_aulColumnX[ulIdx] * g_fXScale ) + lXPosOffset,
-							g_ulCurYPos,
-							szHandicapString,
-							DTA_VirtualWidth, g_ValWidth.Int,
-							DTA_VirtualHeight, g_ValHeight.Int,
-							TAG_DONE );
-					}
-					else
-					{
-						screen->DrawText( SmallFont, ulColor,
-							(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ) + lXPosOffset,
-							g_ulCurYPos,
-							szHandicapString,
-							DTA_Clean,
-							g_bScale,
-							TAG_DONE );
-					}
-					lXPosOffset -= 4;
-				}
+				case COLUMN_POINTS:
+					text.Format( "%d", static_cast<int>( players[ulPlayer].lPointCount ));
+					break;
 
-				// Draw an icon if this player is a ready to go on.
-				if ( players[ulPlayer].bReadyToGoOn )
-				{
-					sprintf( szPatchName, "RDYTOGO" );
-					lXPosOffset -= TexMan[szPatchName]->GetWidth();
-					if ( g_bScale )
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] * g_fXScale ) + lXPosOffset,
-							g_ulCurYPos - (( TexMan[szPatchName]->GetHeight( ) - SmallFont->GetHeight( )) / 2 ),
-							DTA_VirtualWidth, g_ValWidth.Int,
-							DTA_VirtualHeight, g_ValHeight.Int,
-							TAG_DONE );
-					}
-					else
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ) + lXPosOffset,
-							g_ulCurYPos - (( TexMan[szPatchName]->GetHeight( ) - SmallFont->GetHeight( )) / 2 ),
-							TAG_DONE );
-					}
-					lXPosOffset -= 4;
-				}
+				case COLUMN_POINTSASSISTS:
+					text.Format( "%d / %d", static_cast<int>( players[ulPlayer].lPointCount ), static_cast<unsigned int>( players[ulPlayer].ulMedalCount[14] ));
+					break;
 
-				// Draw a bot icon if this player is a bot.
-				if ( players[ulPlayer].bIsBot )
-				{
-					sprintf( szPatchName, "BOTSKIL%d", botskill.GetGenericRep( CVAR_Int ).Int);
+				case COLUMN_WINS:
+					text.Format( "%d", static_cast<unsigned int>( players[ulPlayer].ulWins ));
+					break;
 
-					lXPosOffset -= TexMan[szPatchName]->GetWidth();
-					if ( g_bScale )
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] * g_fXScale ) + lXPosOffset,
-							g_ulCurYPos,
-							DTA_VirtualWidth, g_ValWidth.Int,
-							DTA_VirtualHeight, g_ValHeight.Int,
-							TAG_DONE );
-					}
-					else
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ) + lXPosOffset,
-							g_ulCurYPos,
-							DTA_Clean,
-							g_bScale,
-							TAG_DONE );
-					}
-					lXPosOffset -= 4;
-				}
+				case COLUMN_KILLS:
+					text.Format( "%d", players[ulPlayer].killcount );
+					break;
 
-				// Draw a chat icon if this player is chatting.
-				// [Cata] Also shows who's in the console.
-				if (( players[ulPlayer].bChatting ) || ( players[ulPlayer].bInConsole ))
-				{
-					if ( players[ulPlayer].bInConsole )
-						sprintf( szPatchName, "CONSMINI" );
-					else
-						sprintf( szPatchName, "TLKMINI" );
+				case COLUMN_SECRETS:
+					text.Format( "%d", players[ulPlayer].secretcount );
+					break;
+			}
 
-					lXPosOffset -= TexMan[szPatchName]->GetWidth();
-					if ( g_bScale )
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] * g_fXScale ) + lXPosOffset,
-							g_ulCurYPos - 1,
-							DTA_VirtualWidth, g_ValWidth.Int,
-							DTA_VirtualHeight, g_ValHeight.Int,
-							TAG_DONE );
-					}
-					else
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ) + lXPosOffset,
-							g_ulCurYPos - 1,
-							DTA_Clean,
-							g_bScale,
-							TAG_DONE );
-					}
-					lXPosOffset -= 4;
-				}
-
-				// [AK] Also show an icon if the player is lagging to the server.
-				if (( players[ulPlayer].bLagging ) && ( players[ulPlayer].bSpectating == false ) && ( gamestate == GS_LEVEL ))
-				{
-					sprintf( szPatchName, "LAGMINI" );
-
-					lXPosOffset -= TexMan[szPatchName]->GetWidth();
-					if ( g_bScale )
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] * g_fXScale ) + lXPosOffset,
-							g_ulCurYPos - 1,
-							DTA_VirtualWidth, g_ValWidth.Int,
-							DTA_VirtualHeight, g_ValHeight.Int,
-							TAG_DONE );
-					}
-					else
-					{
-						screen->DrawTexture( TexMan[szPatchName],
-							(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ) + lXPosOffset,
-							g_ulCurYPos - 1,
-							DTA_Clean,
-							g_bScale,
-							TAG_DONE );
-					}
-					lXPosOffset -= 4;
-				}
-
-				// Draw text if there's a vote on and this player voted.
-				if ( CALLVOTE_GetVoteState() == VOTESTATE_INVOTE )
-				{
-					ULONG				*pulPlayersWhoVotedYes;
-					ULONG				*pulPlayersWhoVotedNo;
-					ULONG				ulNumYes = 0;
-					ULONG				ulNumNo = 0;
-					bool				bWeVotedYes = false;
-					bool				bWeVotedNo = false;
-
-					// Get how many players voted for what.
-					pulPlayersWhoVotedYes = CALLVOTE_GetPlayersWhoVotedYes( );
-					pulPlayersWhoVotedNo = CALLVOTE_GetPlayersWhoVotedNo( );
-
-					for ( ULONG ulidx2 = 0; ulidx2 < ( MAXPLAYERS / 2 ) + 1; ulidx2++ )
-					{
-						
-						if ( pulPlayersWhoVotedYes[ulidx2] != MAXPLAYERS )
-						{
-							ulNumYes++;
-							if( pulPlayersWhoVotedYes[ulidx2] == ulPlayer )
-								bWeVotedYes = true;
-						}
-
-						if ( pulPlayersWhoVotedNo[ulidx2] != MAXPLAYERS )
-						{
-							ulNumNo++;
-							if( pulPlayersWhoVotedNo[ulidx2] == ulPlayer)
-								bWeVotedNo = true;
-						}
-						
-					}
-
-					if( bWeVotedYes || bWeVotedNo )
-					{
-						char	szVoteString[8];
-
-						sprintf( szVoteString, "(%s)", bWeVotedYes ? "yes" : "no" );
-						lXPosOffset -= SmallFont->StringWidth ( szVoteString );
-						if ( g_bScale )
-						{
-							screen->DrawText( SmallFont, ( CALLVOTE_GetVoteCaller() == ulPlayer ) ? CR_RED : CR_GOLD,
-								(LONG)( g_aulColumnX[ulIdx] * g_fXScale ) + lXPosOffset,
-								g_ulCurYPos,
-								szVoteString,
-								DTA_VirtualWidth, g_ValWidth.Int,
-								DTA_VirtualHeight, g_ValHeight.Int,
-								TAG_DONE );
-						}
-						else
-						{
-							screen->DrawText( SmallFont, ( static_cast<signed> (CALLVOTE_GetVoteCaller()) == consoleplayer ) ? CR_RED : CR_GOLD,
-								(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ) + lXPosOffset,
-								g_ulCurYPos,
-								szVoteString,
-								DTA_Clean,
-								g_bScale,
-								TAG_DONE );
-						}
-						lXPosOffset -= 4;
-					}
-				}
-
-				break;
-			case COLUMN_TIME:	
-
-				sprintf( szString, "%d", static_cast<unsigned int> (players[ulPlayer].ulTime / ( TICRATE * 60 )));
-				break;
-			case COLUMN_PING:
-
-				sprintf( szString, "%d", static_cast<unsigned int> (players[ulPlayer].ulPing) );
-				break;
-			case COLUMN_FRAGS:
-
-				sprintf( szString, "%d", players[ulPlayer].fragcount );
-
-				// If the player isn't really playing, change this.
-				if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) &&
-					( players[ulPlayer].bOnTeam == false ))
-				{
-					sprintf( szString, "NO TEAM" );
-				}
-				if(PLAYER_IsTrueSpectator( &players[ulPlayer] ))
-					sprintf(szString, "SPECT");
-
-				if (( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) &&
-					(( players[ulPlayer].health <= 0 ) || ( players[ulPlayer].bDeadSpectator )) &&
-					( gamestate != GS_INTERMISSION ))
-				{
-					sprintf( szString, "DEAD" );
-				}
-				break;
-			case COLUMN_POINTS:
-
-				sprintf( szString, "%d", static_cast<int> (players[ulPlayer].lPointCount) );
-				
-				// If the player isn't really playing, change this.
-				if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) &&
-					( players[ulPlayer].bOnTeam == false ))
-				{
-					sprintf( szString, "NO TEAM" );
-				}
-				if(PLAYER_IsTrueSpectator( &players[ulPlayer] ))
-					sprintf(szString, "SPECT");
-
-				if (( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) &&
-					(( players[ulPlayer].health <= 0 ) || ( players[ulPlayer].bDeadSpectator )) &&
-					( gamestate != GS_INTERMISSION ))
-				{
-					sprintf( szString, "DEAD" );
-				}
-				break;
-
-			case COLUMN_POINTSASSISTS:
-				sprintf(szString, "%d / %d", static_cast<int> (players[ulPlayer].lPointCount), static_cast<unsigned int> (players[ulPlayer].ulMedalCount[14]));
-
-				// If the player isn't really playing, change this.
-				if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) &&
-					( players[ulPlayer].bOnTeam == false ))
-				{
-					sprintf( szString, "NO TEAM" );
-				}
-				if(PLAYER_IsTrueSpectator( &players[ulPlayer] ))
-					sprintf(szString, "SPECT");
-
-				if (( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) &&
-					(( players[ulPlayer].health <= 0 ) || ( players[ulPlayer].bDeadSpectator )) &&
-					( gamestate != GS_INTERMISSION ))
-				{
-					sprintf( szString, "DEAD" );
-				}
-				break;
-
-			case COLUMN_DEATHS:
-				sprintf(szString, "%d", static_cast<unsigned int> (players[ulPlayer].ulDeathCount));
-				break;
-
-			case COLUMN_WINS:
-				sprintf(szString, "%d", static_cast<unsigned int> (players[ulPlayer].ulWins));
-
-				// If the player isn't really playing, change this.
-				if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) &&
-					( players[ulPlayer].bOnTeam == false ))
-				{
-					sprintf( szString, "NO TEAM" );
-				}
-				if(PLAYER_IsTrueSpectator( &players[ulPlayer] ))
-					sprintf(szString, "SPECT");
-
-				if (( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) &&
-					(( players[ulPlayer].health <= 0 ) || ( players[ulPlayer].bDeadSpectator )) &&
-					( gamestate != GS_INTERMISSION ))
-				{
-					sprintf( szString, "DEAD" );
-				}
-				break;
-
-			case COLUMN_KILLS:
-				sprintf(szString, "%d", players[ulPlayer].killcount);
-
-				// If the player isn't really playing, change this.
-				if(PLAYER_IsTrueSpectator( &players[ulPlayer] ))
-					sprintf(szString, "SPECT");
-
-				if (( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) &&
-					(( players[ulPlayer].health <= 0 ) || ( players[ulPlayer].bDeadSpectator )) &&
-					( gamestate != GS_INTERMISSION ))
-				{
-					sprintf( szString, "DEAD" );
-				}
-				break;
-			case COLUMN_SECRETS:
-				sprintf(szString, "%d", players[ulPlayer].secretcount);
-				// If the player isn't really playing, change this.
-				if(PLAYER_IsTrueSpectator( &players[ulPlayer] ))
-					sprintf(szString, "SPECT");
-				if(((players[ulPlayer].health <= 0) || ( players[ulPlayer].bDeadSpectator ))
-					&& (gamestate != GS_INTERMISSION))
-				{
-					sprintf(szString, "DEAD");
-				}
-
-				if (( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) &&
-					(( players[ulPlayer].health <= 0 ) || ( players[ulPlayer].bDeadSpectator )) &&
-					( gamestate != GS_INTERMISSION ))
-				{
-					sprintf( szString, "DEAD" );
-				}
-				break;
-				
+			// If the player isn't really playing, change this.
+			if ( PLAYER_IsTrueSpectator( &players[ulPlayer] ))
+				text = "Spect";
+			else if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) && ( players[ulPlayer].bOnTeam == false ))
+				text = "No Team";
+			else if (( GAMEMODE_GetCurrentFlags( ) & GMF_DEADSPECTATORS ) && (( players[ulPlayer].health <= 0 ) || ( players[ulPlayer].bDeadSpectator )) && ( gamestate != GS_INTERMISSION ))
+				text = "Dead";
 		}
 
-		if ( szString[0] != 0 )
-		{
-			if ( g_bScale )
-			{
-				screen->DrawText( SmallFont, ulColor,
-						(LONG)( g_aulColumnX[ulIdx] * g_fXScale ),
-						g_ulCurYPos,
-						szString,
-						DTA_VirtualWidth, g_ValWidth.Int,
-						DTA_VirtualHeight, g_ValHeight.Int,
-						TAG_DONE );
-			}
-			else
-			{
-				screen->DrawText( SmallFont, ulColor,
-						(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ),
-						g_ulCurYPos,
-						szString,
-						TAG_DONE );
-			}
-		}
+		HUD_DrawText( SmallFont, ulColor, ulXPos, g_ulCurYPos, text, g_bScale );
 	}
 }
 
