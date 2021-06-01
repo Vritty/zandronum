@@ -672,118 +672,71 @@ void SCOREBOARD_RenderInvasionStats( void )
 //
 void SCOREBOARD_RenderInVoteClassic( void )
 {
-	char				szString[128];
-	ULONG				ulCurYPos = 0;
-	ULONG				ulIdx;
-	ULONG				ulNumYes;
-	ULONG				ulNumNo;
-	ULONG				*pulPlayersWhoVotedYes;
-	ULONG				*pulPlayersWhoVotedNo;
+	ULONG ulNumYes = CALLVOTE_CountPlayersWhoVotedYes( );
+	ULONG ulNumNo = CALLVOTE_CountPlayersWhoVotedNo( );
+	ULONG *pulPlayersWhoVotedYes = CALLVOTE_GetPlayersWhoVotedYes( );
+	ULONG *pulPlayersWhoVotedNo = CALLVOTE_GetPlayersWhoVotedNo( );
+	ULONG ulMaxYesOrNoVoters = ( MAXPLAYERS / 2 ) + 1;
+	FString text;
 
 	// Start with the "VOTE NOW!" title.
-	ulCurYPos = 16;
-
-	// Render the title.
-	sprintf( szString, "VOTE NOW!" );
-	screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-		160 - ( BigFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
+	ULONG ulYPos = 16;
+	HUD_DrawTextCleanCentered( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED, ulYPos, "VOTE NOW!" );
 
 	// Render who called the vote.
-	ulCurYPos += 24;
-	sprintf( szString, "Vote called by: %s", players[CALLVOTE_GetVoteCaller( )].userinfo.GetName() );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
+	ulYPos += 24;
+	text.Format( "Vote called by: %s", players[CALLVOTE_GetVoteCaller( )].userinfo.GetName( ));
+	HUD_DrawTextCleanCentered( SmallFont, CR_UNTRANSLATED, ulYPos, text );
 
 	// Render the command being voted on.
-	ulCurYPos += 16;
-	sprintf( szString, "%s", CALLVOTE_GetVoteMessage( ));
-	screen->DrawText( SmallFont, CR_WHITE,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
+	ulYPos += 16;
+	HUD_DrawTextCleanCentered( SmallFont, CR_WHITE, ulYPos, CALLVOTE_GetVoteMessage( ));
 
 	// Render the reason for the vote being voted on.
 	if ( strlen( CALLVOTE_GetReason( )) > 0 )
 	{
-		ulCurYPos += 16;
-		sprintf( szString, "Reason: %s", CALLVOTE_GetReason( ));
-		screen->DrawText( SmallFont, CR_ORANGE,
-			160 - ( SmallFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean, true, TAG_DONE );
+		ulYPos += 16;
+		text.Format( "Reason: %s", CALLVOTE_GetReason( ));
+		HUD_DrawTextCleanCentered( SmallFont, CR_ORANGE, ulYPos, text );
 	}
 
 	// Render how much time is left to vote.
-	ulCurYPos += 16;
-	sprintf( szString, "Vote ends in: %d", static_cast<unsigned int> (( CALLVOTE_GetCountdownTicks( ) + TICRATE ) / TICRATE) );
-	screen->DrawText( SmallFont, CR_RED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
-
-	pulPlayersWhoVotedYes = CALLVOTE_GetPlayersWhoVotedYes( );
-	pulPlayersWhoVotedNo = CALLVOTE_GetPlayersWhoVotedNo( );
-	ulNumYes = 0;
-	ulNumNo = 0;
-
-	// Count how many players voted for what.
-	for ( ulIdx = 0; ulIdx < ( MAXPLAYERS / 2 ) + 1; ulIdx++ )
-	{
-		if ( pulPlayersWhoVotedYes[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( pulPlayersWhoVotedYes[ulIdx] ))
-			ulNumYes++;
-
-		if ( pulPlayersWhoVotedNo[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( pulPlayersWhoVotedNo[ulIdx] ))
-			ulNumNo++;
-	}
+	ulYPos += 16;
+	text.Format( "Vote ends in: %d", static_cast<unsigned int>(( CALLVOTE_GetCountdownTicks( ) + TICRATE ) / TICRATE ));
+	HUD_DrawTextCleanCentered( SmallFont, CR_RED, ulYPos, text );
 
 	// Display how many have voted for "Yes" and "No".
-	ulCurYPos += 16;
-	sprintf( szString, "YES: %d", static_cast<unsigned int> (ulNumYes) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		32,
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
+	ulYPos += 16;
+	text.Format( "Yes: %d", static_cast<unsigned int>( ulNumYes ));
+	HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 32, ulYPos, text );
 
-	sprintf( szString, "NO: %d", static_cast<unsigned int> (ulNumNo) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		320 - 32 - SmallFont->StringWidth( szString ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
+	text.Format( "No: %d", static_cast<unsigned int>( ulNumNo ));
+	HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 320 - 32 - SmallFont->StringWidth( text ), ulYPos, text );
 
-	// Show all the players who have voted, and what they voted for.
-	ulCurYPos += 8;
-	for ( ulIdx = 0; ulIdx < MAX( ulNumYes, ulNumNo ); ulIdx++ )
+	ulYPos += 8;
+	ULONG ulOldYPos = ulYPos;
+
+	// [AK] Show a list of all the players who voted yes.
+	for ( ULONG ulIdx = 0; ulIdx < ulMaxYesOrNoVoters; ulIdx++ )
 	{
-		ulCurYPos += 8;
-		if ( pulPlayersWhoVotedYes[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( pulPlayersWhoVotedYes[ulIdx] ))
+		if ( pulPlayersWhoVotedYes[ulIdx] != MAXPLAYERS )
 		{
-			sprintf( szString, "%s", players[pulPlayersWhoVotedYes[ulIdx]].userinfo.GetName() );
-			screen->DrawText( SmallFont, CR_UNTRANSLATED,
-				32,
-				ulCurYPos,
-				szString,
-				DTA_Clean, true, TAG_DONE );
+			ulYPos += 8;
+			text.Format( "%s", players[ulIdx].userinfo.GetName( ));
+			HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 32, ulYPos, text );
 		}
+	}
 
-		if ( pulPlayersWhoVotedNo[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( pulPlayersWhoVotedNo[ulIdx] ))
+	ulYPos = ulOldYPos;
+
+	// [AK] Next, show another list with all the players who voted no.
+	for ( ULONG ulIdx = 0; ulIdx < ulMaxYesOrNoVoters; ulIdx++ )
+	{
+		if ( pulPlayersWhoVotedNo[ulIdx] != MAXPLAYERS )
 		{
-			sprintf( szString, "%s", players[pulPlayersWhoVotedNo[ulIdx]].userinfo.GetName() );
-			screen->DrawText( SmallFont, CR_UNTRANSLATED,
-				320 - 32 - SmallFont->StringWidth( szString ),
-				ulCurYPos,
-				szString,
-				DTA_Clean, true, TAG_DONE );
+			ulYPos += 8;
+			text.Format( "%s", players[ulIdx].userinfo.GetName( ));
+			HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 320 - 32 - SmallFont->StringWidth( text ), ulYPos, text );
 		}
 	}
 }
@@ -794,157 +747,49 @@ void SCOREBOARD_RenderInVoteClassic( void )
 //
 void SCOREBOARD_RenderInVote( void )
 {
-	char				szString[128];
-	char				szKeyYes[16];
-	char				szKeyNo[16];
-	ULONG				ulCurYPos = 0;
-	ULONG				ulIdx;
-	ULONG				ulNumYes = 0;
-	ULONG				ulNumNo = 0;
-	ULONG				*pulPlayersWhoVotedYes;
-	ULONG				*pulPlayersWhoVotedNo;
-	bool				bWeVotedYes = false;
-	bool				bWeVotedNo = false;
-
-	// Get how many players voted for what.
-	pulPlayersWhoVotedYes = CALLVOTE_GetPlayersWhoVotedYes( );
-	pulPlayersWhoVotedNo = CALLVOTE_GetPlayersWhoVotedNo( );
-	for ( ulIdx = 0; ulIdx < ( MAXPLAYERS / 2 ) + 1; ulIdx++ )
-	{
-		if ( pulPlayersWhoVotedYes[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( pulPlayersWhoVotedYes[ulIdx] ))
-		{
-			ulNumYes++;
-			if( static_cast<signed> (pulPlayersWhoVotedYes[ulIdx]) == consoleplayer )
-				bWeVotedYes = true;
-		}
-
-		if ( pulPlayersWhoVotedNo[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( pulPlayersWhoVotedNo[ulIdx] ))
-		{
-			ulNumNo++;
-			if( static_cast<signed> (pulPlayersWhoVotedNo[ulIdx]) == consoleplayer)
-				bWeVotedNo = true;
-		}
-	}
-
-	// Start at the top of the screen
-	ulCurYPos = 8;	
+	ULONG ulNumYes = CALLVOTE_CountPlayersWhoVotedYes( );
+	ULONG ulNumNo = CALLVOTE_CountPlayersWhoVotedNo( );
+	ULONG ulVoteChoice = CALLVOTE_GetPlayerVoteChoice( consoleplayer );
+	FString text;
 
 	// Render the title and time left.
-	sprintf( szString, "VOTE NOW! ( %d )", static_cast<unsigned int> (( CALLVOTE_GetCountdownTicks( ) + TICRATE ) / TICRATE) );
+	ULONG ulYPos = 8;
+	text.Format( "VOTE NOW! ( %d )", static_cast<unsigned int>(( CALLVOTE_GetCountdownTicks( ) + TICRATE ) / TICRATE ));
+	HUD_DrawTextCentered( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED, ulYPos, text, g_bScale );
 
-	if(g_bScale)
-	{
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			(LONG)(160 * g_fXScale) - (BigFont->StringWidth( szString ) / 2),
-			ulCurYPos,	szString, 
-			DTA_VirtualWidth, g_ValWidth.Int,
-			DTA_VirtualHeight, g_ValHeight.Int,
-			TAG_DONE );
-	}
-	else
-	{
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			SCREENWIDTH/2 - ( BigFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean,	g_bScale,	TAG_DONE );
-	}						
 	// Render the command being voted on.
-	ulCurYPos += 14;
-	sprintf( szString, "%s", CALLVOTE_GetVoteMessage( ));
-	if(g_bScale)
-	{
-		screen->DrawText( SmallFont, CR_WHITE,
-			(LONG)(160 * g_fXScale) - ( SmallFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,	szString,
-			DTA_VirtualWidth, g_ValWidth.Int,
-			DTA_VirtualHeight, g_ValHeight.Int,
-			TAG_DONE );
-	}
-	else
-	{
-		screen->DrawText( SmallFont, CR_WHITE,
-			SCREENWIDTH/2 - ( SmallFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean,	g_bScale,	TAG_DONE );
-	}
+	ulYPos += 14;
+	HUD_DrawTextCentered( SmallFont, CR_WHITE, ulYPos, CALLVOTE_GetVoteMessage( ), g_bScale );
 
-	ulCurYPos += 4;
+	ulYPos += 4;
 
 	// Render the reason of the vote being voted on.
 	if ( strlen( CALLVOTE_GetReason( )) > 0 )
 	{
-		ulCurYPos += 8;
-		sprintf( szString, "Reason: %s", CALLVOTE_GetReason( ));
-		if ( g_bScale )
-		{
-			screen->DrawText( SmallFont, CR_ORANGE,
-				(LONG)(160 * g_fXScale) - ( SmallFont->StringWidth( szString ) / 2 ),
-				ulCurYPos,	szString,
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( SmallFont, CR_ORANGE,
-				SCREENWIDTH/2 - ( SmallFont->StringWidth( szString ) / 2 ),
-				ulCurYPos,
-				szString,
-				DTA_Clean,	g_bScale,	TAG_DONE );
-		}
+		ulYPos += 8;
+		text.Format( "Reason: %s", CALLVOTE_GetReason( ));
+		HUD_DrawTextCentered( SmallFont, CR_ORANGE, ulYPos, text, g_bScale );
 	}
+
+	ulYPos += 8;
 
 	// Render the number of votes.
-	ulCurYPos += 8;
-	sprintf( szString, "\\c%sYes: %d, \\c%sNo: %d",  bWeVotedYes ? "k" : "s",  static_cast<unsigned int> (ulNumYes), bWeVotedNo ? "k" : "s", static_cast<unsigned int> (ulNumNo) );
-	V_ColorizeString( szString );
-	if(g_bScale)
-	{
-		screen->DrawText( SmallFont, CR_DARKBROWN,
-			(LONG)(160 * g_fXScale) - ( SmallFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,	szString,
-			DTA_VirtualWidth, g_ValWidth.Int,
-			DTA_VirtualHeight, g_ValHeight.Int,
-			TAG_DONE );
-	}
-	else
-	{
-		screen->DrawText( SmallFont, CR_DARKBROWN,
-			SCREENWIDTH/2 - ( SmallFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean,	g_bScale,	TAG_DONE );
-	}
-	if( !bWeVotedYes && !bWeVotedNo )
-	{
-		// Render the explanation of keys.
-		ulCurYPos += 8;
+	text.Format( "%sYes: %d", ulVoteChoice == VOTE_YES ? TEXTCOLOR_YELLOW : "", static_cast<unsigned int>( ulNumYes ));
+	text.AppendFormat( TEXTCOLOR_NORMAL ", %sNo: %d", ulVoteChoice == VOTE_NO ? TEXTCOLOR_YELLOW : "", static_cast<unsigned int>( ulNumNo ));
+	HUD_DrawTextCentered( SmallFont, CR_DARKBROWN, ulYPos, text, g_bScale );
 
-		static char vote_yes[] = "vote_yes";
-		static char vote_no[] = "vote no";
-		C_FindBind( vote_yes, szKeyYes );
-		C_FindBind( vote_no, szKeyNo );
-		sprintf( szString, "%s | %s", szKeyYes, szKeyNo);
-		if(g_bScale)
-		{
-			screen->DrawText( SmallFont, CR_BLACK,
-				(LONG)(160 * g_fXScale) - ( SmallFont->StringWidth( szString ) / 2 ),
-				ulCurYPos,	szString,
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( SmallFont, CR_BLACK,
-				SCREENWIDTH/2 - ( SmallFont->StringWidth( szString ) / 2 ),
-				ulCurYPos,
-				szString,
-				DTA_Clean,	g_bScale,	TAG_DONE );
-		}
+	// Render the explanation of keys.
+	if ( ulVoteChoice == VOTE_UNDECIDED )
+	{
+		char keyVoteYes[16];
+		C_FindBind( "vote_yes", keyVoteYes );
 
+		char keyVoteNo[16];
+		C_FindBind( "vote_no", keyVoteNo );
+
+		ulYPos += 8;
+		text.Format( "%s | %s", keyVoteYes, keyVoteNo );
+		HUD_DrawTextCentered( SmallFont, CR_BLACK, ulYPos, text, g_bScale );
 	}
 }
 
