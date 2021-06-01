@@ -84,6 +84,7 @@ void	SERVERCONSOLE_UpdateScoreboard( );
 //	PROTOTYPES
 
 static	ULONG		invasion_GetNumThingsThisWave( ULONG ulNumOnFirstWave, ULONG ulWave, bool bMonster );
+static	void		invasion_BuildCurrentWaveString( void ); // [AK]
 
 //*****************************************************************************
 //	VARIABLES
@@ -95,6 +96,7 @@ static	unsigned int		g_InvasionCountdownTicks = 0;
 static	INVASIONSTATE_e		g_InvasionState;
 static	unsigned int		g_NumBossMonsters = 0;
 static	bool				g_bIncreaseNumMonstersOnSpawn = true;
+static	FString				g_CurrentWaveString; // [AK]
 static	std::vector<AActor*> g_MonsterCorpsesFromPreviousWave;
 
 //*****************************************************************************
@@ -747,6 +749,10 @@ void INVASION_StartFirstCountdown( ULONG ulTicks )
 	// Set the invasion countdown ticks.
 	INVASION_SetCountdownTicks( ulTicks );
 
+	// [AK] Build the string of the current wave (e.g. "Second Wave", "Third Wave", "Final Wave", etc).
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+		invasion_BuildCurrentWaveString( );
+
 	// Announce that the fight will soon start.
 	ANNOUNCER_PlayEntry( cl_announcer, "PrepareToFight" );
 
@@ -786,6 +792,10 @@ void INVASION_StartCountdown( ULONG ulTicks )
 
 	// Set the invasion countdown ticks.
 	INVASION_SetCountdownTicks( ulTicks );
+
+	// [AK] Build the string of the current wave (e.g. "Second Wave", "Third Wave", "Final Wave", etc).
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+		invasion_BuildCurrentWaveString( );
 
 	// Also, clear out dead bodies from two rounds ago.
 //	if ( g_ulCurrentWave > 1 )
@@ -1330,6 +1340,14 @@ void INVASION_SetCurrentWave( ULONG ulWave )
 }
 
 //*****************************************************************************
+// [AK]
+//
+FString INVASION_GetCurrentWaveString( void )
+{
+	return ( g_CurrentWaveString );
+}
+
+//*****************************************************************************
 //
 bool INVASION_GetIncreaseNumMonstersOnSpawn( void )
 {
@@ -1535,6 +1553,92 @@ static ULONG invasion_GetNumThingsThisWave( ULONG ulNumOnFirstWave, ULONG ulWave
 
 	return ( ulNumThingsThisWave );
 */
+}
+
+//*****************************************************************************
+//
+static void invasion_BuildCurrentWaveString( void )
+{
+	int wave = g_CurrentWave + 1;
+
+	// [AK] If this is the first wave, create a "preparation" kind of string.
+	if ( wave == 1 )
+	{
+		g_CurrentWaveString = sv_maxlives > 0 ? "Survival Invasion" : "Prepare for Invasion";
+		return;
+	}
+
+	// [AK] If this is the final wave, indicate that.
+	if ( wave == wavelimit )
+	{
+		g_CurrentWaveString = "Final Wave!";
+		return;
+	}
+
+	// [AK] Create the string using an ordinal naming scheme based on the current wave.
+	switch ( wave )
+	{
+		case 2:
+			g_CurrentWaveString = "Second";
+			break;
+
+		case 3:
+			g_CurrentWaveString = "Third";
+			break;
+
+		case 4:
+			g_CurrentWaveString = "Fourth";
+			break;
+
+		case 5:
+			g_CurrentWaveString = "Fifth";
+			break;
+
+		case 6:
+			g_CurrentWaveString = "Sixth";
+			break;
+
+		case 7:
+			g_CurrentWaveString = "Seventh";
+			break;
+
+		case 8:
+			g_CurrentWaveString = "Eighth";
+			break;
+
+		case 9:
+			g_CurrentWaveString = "Ninth";
+			break;
+
+		case 10:
+			g_CurrentWaveString = "Tenth";
+			break;
+
+		default:
+		{
+			g_CurrentWaveString.Format( "%d", wave );
+
+			// xx11-13 are exceptions; they're always "th".
+			if ((( wave % 100 ) >= 11 ) && (( wave % 100 ) <= 13 ))
+			{
+				g_CurrentWaveString += "th";
+			}
+			else
+			{
+				if (( wave % 10 ) == 1 )
+					g_CurrentWaveString += "st";
+				else if (( wave % 10 ) == 2 )
+					g_CurrentWaveString += "nd";
+				else if (( wave % 10 ) == 3 )
+					g_CurrentWaveString += "rd";
+				else
+					g_CurrentWaveString += "th";
+			}
+		}
+		break;
+	}
+
+	g_CurrentWaveString += " Wave";
 }
 
 //*****************************************************************************

@@ -156,6 +156,8 @@ void	INVASION_SetNumArchVilesLeft( ULONG ulLeft );
 ULONG	INVASION_GetCurrentWave( void );
 void	INVASION_SetCurrentWave( ULONG ulWave );
 
+FString	INVASION_GetCurrentWaveString( void ); // [AK]
+
 bool	INVASION_GetIncreaseNumMonstersOnSpawn( void );
 void	INVASION_SetIncreaseNumMonstersOnSpawn( bool bIncrease );
 
