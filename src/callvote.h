@@ -60,6 +60,11 @@
 #define	VOTE_COUNTDOWN_TIME				15
 #define	VOTE_PASSED_TIME				4
 
+// [AK] Definitions for whether we (the local player) voted yes or no.
+#define VOTE_UNDECIDED					0
+#define VOTE_YES						1
+#define VOTE_NO							2
+
 //*****************************************************************************
 enum
 {
@@ -136,6 +141,7 @@ ULONG			CALLVOTE_GetCountdownTicks( void );
 ULONG			*CALLVOTE_GetPlayersWhoVotedYes( void );
 ULONG			*CALLVOTE_GetPlayersWhoVotedNo( void );
 bool			CALLVOTE_ShouldShowVoteScreen( void );
+ULONG			CALLVOTE_GetPlayerVoteChoice( ULONG ulPlayer );
 
 //*****************************************************************************
 //	EXTERNAL CONSOLE VARIABLES

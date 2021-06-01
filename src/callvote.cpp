@@ -85,6 +85,7 @@ static	ULONG					g_ulPlayersWhoVotedYes[(MAXPLAYERS / 2) + 1];
 static	ULONG					g_ulPlayersWhoVotedNo[(MAXPLAYERS / 2) + 1];
 static	NETADDRESS_s			g_KickVoteVictimAddress;
 static	std::list<VOTE_s>		g_PreviousVotes;
+static	ULONG					g_ulPlayerVoteChoice[MAXPLAYERS]; // [AK]
 
 //*****************************************************************************
 //	PROTOTYPES
@@ -289,6 +290,10 @@ void CALLVOTE_ClearVote( void )
 		g_ulPlayersWhoVotedNo[ulIdx] = MAXPLAYERS;
 	}
 
+	// [AK] Reset the choices of all players.
+	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+		g_ulPlayerVoteChoice[ulIdx] = VOTE_UNDECIDED;
+
 	g_bVoteCancelled = false;
 }
 
@@ -352,6 +357,9 @@ bool CALLVOTE_VoteYes( ULONG ulPlayer )
 			break;
 		}
 	}
+
+	// [AK] Update this player's choice to "yes".
+	g_ulPlayerVoteChoice[ulPlayer] = VOTE_YES;
 
 	// Display the message in the console.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -446,6 +454,9 @@ bool CALLVOTE_VoteNo( ULONG ulPlayer )
 			break;
 		}
 	}
+
+	// [AK] Update this player's choice to "no".
+	g_ulPlayerVoteChoice[ulPlayer] = VOTE_NO;
 
 	// Display the message in the console.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -557,6 +568,17 @@ ULONG *CALLVOTE_GetPlayersWhoVotedNo( void )
 bool CALLVOTE_ShouldShowVoteScreen( void )
 {
 	return (( CALLVOTE_GetVoteState( ) == VOTESTATE_INVOTE ) && g_ulShowVoteScreenTicks );
+}
+
+//*****************************************************************************
+//
+ULONG CALLVOTE_GetPlayerVoteChoice( ULONG ulPlayer )
+{
+	// [AK] Sanity check.
+	if ( ulPlayer > MAXPLAYERS )
+		return VOTE_UNDECIDED;
+
+	return ( g_ulPlayerVoteChoice[ulPlayer] );
 }
 
 //*****************************************************************************
