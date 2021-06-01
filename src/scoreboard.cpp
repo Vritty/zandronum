@@ -344,21 +344,22 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 	g_ValWidth	= con_virtualwidth.GetGenericRep( CVAR_Int );
 	g_ValHeight	= con_virtualheight.GetGenericRep( CVAR_Int );
 
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
+	g_bScale = HUD_IsScaled( );
+	g_ulTextHeight = SmallFont->GetHeight( ) + 1;
+
+	if ( g_bScale )
 	{
-		g_bScale		= true;
-		g_fXScale		= (float)g_ValWidth.Int / 320.0f;
-		g_fYScale		= (float)g_ValHeight.Int / 200.0f;
-		g_rXScale		= (float)g_ValWidth.Int / SCREENWIDTH;
-		g_rYScale		= (float)g_ValHeight.Int / SCREENHEIGHT;
-		g_ulTextHeight	= Scale( SCREENHEIGHT, SmallFont->GetHeight( ) + 1, con_virtualheight );
+		g_fXScale = static_cast<float>( g_ValWidth.Int ) / 320.0f;
+		g_fYScale = static_cast<float>( g_ValHeight.Int ) / 200.0f;
+		g_rXScale = static_cast<float>( g_ValWidth.Int ) / SCREENWIDTH;
+		g_rYScale = static_cast<float>( g_ValHeight.Int ) / SCREENHEIGHT;
+		g_ulTextHeight = Scale( SCREENHEIGHT, g_ulTextHeight, con_virtualheight );
 	}
 	else
 	{
-		g_bScale		= false;
-		g_rXScale		= 1;
-		g_rYScale		= 1;
-		g_ulTextHeight	= SmallFont->GetHeight( ) + 1;
+		g_fXScale = static_cast<float>( SCREENWIDTH ) / 320.0f;
+		g_fYScale = static_cast<float>( SCREENHEIGHT ) / 200.0f;
+		g_rXScale = g_rYScale = 1.0f;
 	}
 
 	// Draw the main scoreboard.
@@ -395,16 +396,15 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 			if ( !players[ulDisplayPlayer].bSpectating )
 			{
 				// Draw the player's rank and spread in FFA modes.
-				if( !(GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ))
-					if( (GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS ))
-						SCOREBOARD_RenderStats_RankSpread( );
+				if ((( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) == false ) && ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNFRAGS ))
+					SCOREBOARD_RenderStats_RankSpread( );
 
 				// [BB] Draw number of lives left.
 				if ( GAMEMODE_AreLivesLimited ( ) )
 				{
-					char szString[64];
-					sprintf( szString, "Lives: %d / %d", static_cast<unsigned int> (players[ulDisplayPlayer].ulLivesLeft+1), GAMEMODE_GetMaxLives() );
-					HUD_DrawText ( SmallFont, CR_RED, 0, static_cast<int> ( g_rYScale * ( ST_Y - g_ulTextHeight + 1 ) ), szString );
+					FString text;
+					text.Format( "Lives: %d / %d", static_cast<unsigned int>( players[ulDisplayPlayer].ulLivesLeft + 1 ), GAMEMODE_GetMaxLives( ));
+					HUD_DrawText ( SmallFont, CR_RED, 0, static_cast<int> ( g_rYScale * ( ST_Y - g_ulTextHeight + 1 ) ), text );
 				}
 			}
 
