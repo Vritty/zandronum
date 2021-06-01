@@ -105,6 +105,9 @@ static	LONG	g_lNumAlliesLeft = 0;
 // [AK] Who has the terminator sphere, hellstone, or white flag?
 static	player_t	*g_pArtifactCarrier = NULL;
 
+// [AK] Who are the two duelers?
+static	player_t	*g_pDuelers[2];
+
 // Current position of our "pen".
 static	ULONG		g_ulCurYPos;
 
@@ -175,6 +178,7 @@ static	void			scoreboard_Prepare3ColumnDisplay( void );
 static	void			scoreboard_DoRankingListPass( ULONG ulPlayer, LONG lSpectators, LONG lDead, LONG lNotPlaying, LONG lNoTeam, LONG lWrongTeam, ULONG ulDesiredTeam );
 static	void			scoreboard_DrawRankings( ULONG ulPlayer );
 static	void			scoreboard_DrawBottomString( ULONG ulPlayer );
+static	void			scoreboard_RenderCountdown( ULONG ulTimeLeft );
 
 //*****************************************************************************
 //	CONSOLE VARIABLES
@@ -370,93 +374,13 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 			SCOREBOARD_RenderInVote( );
 	}
 
-	if ( duel )
-	{
-		// Determine what to draw based on the duel state.
-		switch ( DUEL_GetState( ))
-		{
-		case DS_COUNTDOWN:
+	// [AK] Render the countdown screen when we're in the countdown.
+	if ( GAMEMODE_GetState( ) == GAMESTATE_COUNTDOWN )
+		scoreboard_RenderCountdown( GAMEMODE_GetCountdownTicks( ) + TICRATE );
+	// [AK] Render the invasion stats while the game is in progress.
+	else if (( invasion) && ( GAMEMODE_GetState( ) == GAMESTATE_INPROGRESS ))
+		SCOREBOARD_RenderInvasionStats( );
 
-			// Render "x vs. x" text.
-			SCOREBOARD_RenderDuelCountdown( DUEL_GetCountdownTicks( ) + TICRATE );
-			break;
-		default:
-			break;
-		}
-	}
-
-	if ( lastmanstanding || teamlms )
-	{
-		// Determine what to draw based on the duel state.
-		switch ( LASTMANSTANDING_GetState( ))
-		{
-		case LMSS_COUNTDOWN:
-
-			// Render title text.
-			SCOREBOARD_RenderLMSCountdown( LASTMANSTANDING_GetCountdownTicks( ) + TICRATE );
-			break;
-		default:
-			break;
-		}
-	}
-
-	if ( possession || teampossession )
-	{
-		// Determine what to draw based on the duel state.
-		switch ( POSSESSION_GetState( ))
-		{
-		case PSNS_COUNTDOWN:
-		case PSNS_NEXTROUNDCOUNTDOWN:
-
-			// Render title text.
-			SCOREBOARD_RenderPossessionCountdown(( POSSESSION_GetState( ) == PSNS_COUNTDOWN ) ? (( possession ) ? "POSSESSION" : "TEAM POSSESSION" ) : "NEXT ROUND IN...", POSSESSION_GetCountdownTicks( ) + TICRATE );
-			break;
-		default:
-			break;
-		}
-	}
-
-	if ( survival )
-	{
-		// Determine what to draw based on the survival state.
-		switch ( SURVIVAL_GetState( ))
-		{
-		case SURVS_COUNTDOWN:
-
-			// Render title text.
-			SCOREBOARD_RenderSurvivalCountdown( SURVIVAL_GetCountdownTicks( ) + TICRATE );
-			break;
-		default:
-			break;
-		}
-	}
-
-	if ( invasion )
-	{
-		// Determine what to draw based on the invasion state.
-		switch ( INVASION_GetState( ))
-		{
-		case IS_FIRSTCOUNTDOWN:
-
-			// Render title text.
-			SCOREBOARD_RenderInvasionFirstCountdown( INVASION_GetCountdownTicks( ) + TICRATE );
-			break;
-		case IS_COUNTDOWN:
-
-			// Render title text.
-			SCOREBOARD_RenderInvasionCountdown( INVASION_GetCountdownTicks( ) + TICRATE );
-			break;
-		case IS_INPROGRESS:
-		case IS_BOSSFIGHT:
-
-			// Render the number of monsters left, etc.
-			SCOREBOARD_RenderInvasionStats( );
-			break;
-		default:
-			break;
-		}
-	}
-	
 	if ( HUD_IsVisible( ))
 	{
 		// Draw the item holders (hellstone, flags, skulls, etc).
@@ -1026,300 +950,52 @@ void SCOREBOARD_RenderInVote( void )
 
 //*****************************************************************************
 //
-void SCOREBOARD_RenderDuelCountdown( ULONG ulTimeLeft )
+static void scoreboard_RenderCountdown( ULONG ulTimeLeft )
 {
-	char				szString[128];
-	LONG				lDueler1 = -1;
-	LONG				lDueler2 = -1;
-	ULONG				ulCurYPos = 0;
-	ULONG				ulIdx;
-
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-	{
-		if ( playeringame[ulIdx] && ( players[ulIdx].bSpectating == false ))
-		{
-			if ( lDueler1 == -1 )
-				lDueler1 = ulIdx;
-			else if ( lDueler2 == -1 )
-				lDueler2 = ulIdx;
-		}
-	}
-
-	// This really should not happen, because if we can't find two duelers, we're shouldn't be
-	// in the countdown phase.
-	if (( lDueler1 == -1 ) || ( lDueler2 == -1 ))
+	// [AK] Don't draw anything if we're on the intermission screen.
+	if ( gamestate != GS_LEVEL )
 		return;
 
-	// Start by drawing the "RANKINGS" patch 4 pixels from the top. Don't draw it if we're in intermission.
-	ulCurYPos = 16;
-	if ( gamestate == GS_LEVEL )
+	ULONG ulTitleColor = gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED;
+	ULONG ulYPos = 32;
+	FString text;
+
+	if ( duel )
 	{
-		sprintf( szString, "%s", players[lDueler1].userinfo.GetName() );
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			160 - ( BigFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean, true, TAG_DONE );
+		// This really should not happen, because if we can't find two duelers, we're shouldn't be
+		// in the countdown phase.
+		if (( g_pDuelers[0] == NULL ) || ( g_pDuelers[1] == NULL ))
+			return;
 
-		ulCurYPos += 16;
-		sprintf( szString, "vs." );
-		screen->DrawText( BigFont, CR_UNTRANSLATED,
-			160 - ( BigFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean, true, TAG_DONE );
+		// [AK] Draw the versus message that appears between the two names.
+		HUD_DrawTextCleanCentered( BigFont, CR_UNTRANSLATED, ulYPos, "vs." );
 
-		ulCurYPos += 16;
-		sprintf( szString, "%s", players[lDueler2].userinfo.GetName() );
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			160 - ( BigFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean, true, TAG_DONE );
+		// [AK] Next, draw the names of the two duelers.
+		HUD_DrawTextCleanCentered( BigFont, ulTitleColor, ulYPos - 16, g_pDuelers[0]->userinfo.GetName( ));
+		HUD_DrawTextCleanCentered( BigFont, ulTitleColor, ulYPos + 16, g_pDuelers[1]->userinfo.GetName( ));
+		ulYPos += 40;
+	}
+	else
+	{
+		// [AK] TLMS and team possession should still keep "team" in the title for consistency.
+		text = invasion ? INVASION_GetCurrentWaveString( ) : GAMEMODE_GetName( GAMEMODE_GetCurrentMode( ));
+
+		// [AK] Append "co-op" to the end of "survival".
+		if ( survival )
+			text += " Co-op";
+
+		HUD_DrawTextCleanCentered( BigFont, ulTitleColor, ulYPos, text );
+		ulYPos += 24;
 	}
 
-	ulCurYPos += 24;
-	sprintf( szString, "Match begins in: %d", static_cast<unsigned int> (ulTimeLeft / TICRATE) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
-}
+	// [AK] Draw the actual countdown message.
+	if ( invasion )
+		text = INVASION_GetState( ) == IS_FIRSTCOUNTDOWN ? "First wave begins" : "Begins";
+	else
+		text = "Match begins";
 
-//*****************************************************************************
-//
-void SCOREBOARD_RenderLMSCountdown( ULONG ulTimeLeft )
-{
-	char				szString[128];
-	ULONG				ulCurYPos = 0;
-
-	if ( lastmanstanding )
-	{
-		// Start the "LAST MAN STANDING" title.
-		ulCurYPos = 32;
-		if ( gamestate == GS_LEVEL )
-		{
-			sprintf( szString, "LAST MAN STANDING" );
-			screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-				160 - ( BigFont->StringWidth( szString ) / 2 ),
-				ulCurYPos,
-				szString,
-				DTA_Clean, true, TAG_DONE );
-		}
-	}
-	else if ( teamlms )
-	{
-		ulCurYPos = 32;
-		if ( gamestate == GS_LEVEL )
-		{
-			sprintf( szString, "TEAM LAST MAN STANDING" );
-			screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-				160 - ( BigFont->StringWidth( szString ) / 2 ),
-				ulCurYPos,
-				szString,
-				DTA_Clean, true, TAG_DONE );
-		}
-	}
-
-	ulCurYPos += 24;
-	sprintf( szString, "Match begins in: %d", static_cast<unsigned int> (ulTimeLeft / TICRATE) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
-}
-
-//*****************************************************************************
-//
-void SCOREBOARD_RenderPossessionCountdown( const char *pszString, ULONG ulTimeLeft )
-{
-	char				szString[128];
-	ULONG				ulCurYPos = 0;
-
-	if ( possession || teampossession )
-	{
-		// Start the "POSSESSION" title.
-		ulCurYPos = 32;
-		if ( gamestate == GS_LEVEL )
-		{
-			sprintf( szString, "%s", pszString );
-			screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-				160 - ( BigFont->StringWidth( szString ) / 2 ),
-				ulCurYPos,
-				szString,
-				DTA_Clean, true, TAG_DONE );
-		}
-	}
-
-	ulCurYPos += 24;
-	sprintf( szString, "Match begins in: %d", static_cast<unsigned int> (ulTimeLeft / TICRATE) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
-}
-
-//*****************************************************************************
-//
-void SCOREBOARD_RenderSurvivalCountdown( ULONG ulTimeLeft )
-{
-	char				szString[128];
-	ULONG				ulCurYPos = 0;
-
-	// Start the "SURVIVAL CO-OP" title.
-	ulCurYPos = 32;
-	if ( gamestate == GS_LEVEL )
-	{
-		sprintf( szString, "SURVIVAL CO-OP" );
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			160 - ( BigFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean, true, TAG_DONE );
-	}
-
-	ulCurYPos += 24;
-	sprintf( szString, "Match begins in: %d", static_cast<unsigned int> (ulTimeLeft / TICRATE) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
-}
-
-//*****************************************************************************
-//
-void SCOREBOARD_RenderInvasionFirstCountdown( ULONG ulTimeLeft )
-{
-	char				szString[128];
-	ULONG				ulCurYPos = 0;
-
-	// Start the "PREPARE FOR INVASION!" title.
-	ulCurYPos = 32;
-	if ( gamestate == GS_LEVEL )
-	{
-		if ( sv_maxlives > 0 )
-			sprintf( szString, "SURVIVAL INVASION" );
-		else
-			sprintf( szString, "PREPARE FOR INVASION!" );
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			160 - ( BigFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean, true, TAG_DONE );
-	}
-
-	ulCurYPos += 24;
-	sprintf( szString, "First wave begins in: %d", static_cast<unsigned int> (ulTimeLeft / TICRATE) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
-}
-
-//*****************************************************************************
-//
-void SCOREBOARD_RenderInvasionCountdown( ULONG ulTimeLeft )
-{
-	char				szString[128];
-	ULONG				ulCurYPos = 0;
-
-	// Start the title.
-	ulCurYPos = 32;
-	if ( gamestate == GS_LEVEL )
-	{
-		// Build the string to use.
-		if ((LONG)( INVASION_GetCurrentWave( ) + 1 ) == wavelimit )
-			sprintf( szString, "FINAL WAVE!" );
-		else
-		{
-			switch ( INVASION_GetCurrentWave( ) + 1 )
-			{
-			case 2:
-
-				sprintf( szString, "Second wave" );
-				break;
-			case 3:
-
-				sprintf( szString, "Third wave" );
-				break;
-			case 4:
-
-				sprintf( szString, "Fourth wave" );
-				break;
-			case 5:
-
-				sprintf( szString, "Fifth wave" );
-				break;
-			case 6:
-
-				sprintf( szString, "Sixth wave" );
-				break;
-			case 7:
-
-				sprintf( szString, "Seventh wave" );
-				break;
-			case 8:
-
-				sprintf( szString, "Eighth wave" );
-				break;
-			case 9:
-
-				sprintf( szString, "Ninth wave" );
-				break;
-			case 10:
-
-				sprintf( szString, "Tenth wave" );
-				break;
-			default:
-
-				{
-					ULONG	ulWave;
-					char	szSuffix[3];
-
-					ulWave = INVASION_GetCurrentWave( ) + 1;
-
-					// xx11-13 are exceptions; they're always "th".
-					if ((( ulWave % 100 ) >= 11 ) && (( ulWave % 100 ) <= 13 ))
-					{
-						sprintf( szSuffix, "th" );
-					}
-					else
-					{
-						if (( ulWave % 10 ) == 1 )
-							sprintf( szSuffix, "st" );
-						else if (( ulWave % 10 ) == 2 )
-							sprintf( szSuffix, "nd" );
-						else if (( ulWave % 10 ) == 3 )
-							sprintf( szSuffix, "rd" );
-						else
-							sprintf( szSuffix, "th" );
-					}
-
-					sprintf( szString, "%d%s wave", static_cast<unsigned int> (ulWave), szSuffix );
-				}
-				break;
-			}
-		}
-
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			160 - ( BigFont->StringWidth( szString ) / 2 ),
-			ulCurYPos,
-			szString,
-			DTA_Clean, true, TAG_DONE );
-	}
-
-	ulCurYPos += 24;
-	sprintf( szString, "begins in: %d", static_cast<unsigned int> (ulTimeLeft / TICRATE) );
-	screen->DrawText( SmallFont, CR_UNTRANSLATED,
-		160 - ( SmallFont->StringWidth( szString ) / 2 ),
-		ulCurYPos,
-		szString,
-		DTA_Clean, true, TAG_DONE );
+	text.AppendFormat( " in: %d", static_cast<unsigned int>( ulTimeLeft / TICRATE ));
+	HUD_DrawTextCleanCentered( SmallFont, CR_UNTRANSLATED, ulYPos, text );
 }
 
 //*****************************************************************************
@@ -1718,6 +1394,23 @@ void SCOREBOARD_RefreshHUD( void )
 {
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
+
+	// [AK] Reset the dueler pointers.
+	ULONG ulNumDuelers = 0;
+	g_pDuelers[0] = g_pDuelers[1] = NULL;
+
+	// [AK] Determine which players are currently dueling.
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	{
+		if ( DUEL_IsDueler( ulIdx ))
+		{
+			g_pDuelers[ulNumDuelers] = &players[ulIdx];
+
+			// [AK] We only need to check for two duelers.
+			if ( ++ulNumDuelers == 2 )
+				break;
+		}
+	}
 
 	// [AK] Determine which player is carrying the terminator sphere, possession hellstone, or white flag.
 	g_pArtifactCarrier = GAMEMODE_GetArtifactCarrier( );
