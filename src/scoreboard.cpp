@@ -167,10 +167,7 @@ static	int	STACK_ARGS	scoreboard_PointsCompareFunc( const void *arg1, const void
 static	int	STACK_ARGS	scoreboard_KillsCompareFunc( const void *arg1, const void *arg2 );
 static	int	STACK_ARGS	scoreboard_WinsCompareFunc( const void *arg1, const void *arg2 );
 static	void			scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPlayer );
-static	void			scoreboard_DrawHeader( void );
-static	void			scoreboard_DrawLimits( void );
-static	void			scoreboard_DrawTeamScores( ULONG ulPlayer );
-static	void			scoreboard_DrawMyRank( ULONG ulPlayer );
+static	void			scoreboard_DrawHeader( ULONG ulPlayer );
 static	void			scoreboard_ClearColumns( void );
 static	void			scoreboard_Prepare5ColumnDisplay( void );
 static	void			scoreboard_Prepare4ColumnDisplay( void );
@@ -426,19 +423,8 @@ void SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer )
 	if ( ulDisplayPlayer >= MAXPLAYERS )
 		return;
 
-	// Draw the "RANKINGS" text at the top.
-	scoreboard_DrawHeader( );
-
-	// Draw the time, frags, points, or kills we have left until the level ends.
-	if ( gamestate == GS_LEVEL )
-		scoreboard_DrawLimits( );
-
-	// Draw the team scores and their relation (tied, red leads, etc).
-	scoreboard_DrawTeamScores( ulDisplayPlayer );
-
-	// Draw my rank and my frags, points, etc.
-	if ( gamestate == GS_LEVEL )
-		scoreboard_DrawMyRank( ulDisplayPlayer );
+	// [AK] Draw the scoreboard header at the top.
+	scoreboard_DrawHeader( ulDisplayPlayer );
 
 	// Draw the player list and its data.
 	// First, determine how many columns we can use, based on our screen resolution.
@@ -1619,34 +1605,46 @@ static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPl
 
 //*****************************************************************************
 //
-static void scoreboard_DrawHeader( void )
+static void scoreboard_DrawHeader( ULONG ulPlayer )
 {
 	g_ulCurYPos = 4;
 
-	// Don't draw it if we're in intermission.
+	// Draw the "RANKINGS" text at the top. Don't draw it if we're in the intermission.
+	if ( gamestate == GS_LEVEL )
+		HUD_DrawTextCentered( BigFont, CR_RED, g_ulCurYPos, "RANKINGS", g_bScale );
+
+	g_ulCurYPos += 22;
+
+	// Draw the time, frags, points, or kills we have left until the level ends.
 	if ( gamestate == GS_LEVEL )
 	{
-		if ( g_bScale )
+		// Generate the limit strings.
+		std::list<FString> lines;
+		SCOREBOARD_BuildLimitStrings( lines, true );
+
+		// Now, draw them.
+		for ( std::list<FString>::iterator i = lines.begin( ); i != lines.end( ); i++ )
 		{
-			screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-				(LONG)(( g_ValWidth.Int / 2 ) - ( BigFont->StringWidth( "RANKINGS" ) / 2 )),
-				g_ulCurYPos,
-				"RANKINGS",
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-				( SCREENWIDTH / 2 ) - ( BigFont->StringWidth( "RANKINGS" ) / 2 ),
-				g_ulCurYPos,
-				"RANKINGS",
-				TAG_DONE );
+			HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, *i, g_bScale );
+			g_ulCurYPos += 10;
 		}
 	}
 
-	g_ulCurYPos += 22;
+	// Draw the team scores and their relation (tied, red leads, etc).
+	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+	{
+		if ( gamestate != GS_LEVEL )
+			g_ulCurYPos += 10;
+
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPointString( ), g_bScale );
+		g_ulCurYPos += 10;
+	}
+	// Draw my rank and my frags, points, etc. Don't draw it if we're in the intermission.
+	else if (( gamestate == GS_LEVEL ) && ( SCOREBOARD_ShouldDrawRank( ulPlayer )))
+	{
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPlaceString( ulPlayer ), g_bScale );
+		g_ulCurYPos += 10;
+	}
 }
 
 //*****************************************************************************
@@ -1743,55 +1741,6 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 			sprintf( szString, "damage factor %.2f", static_cast<float> (sv_coop_damagefactor) );
 			lines.push_back( szString );
 		}
-	}
-}
-
-//*****************************************************************************
-//
-static void scoreboard_DrawLimits( void )
-{
-	// Generate the strings.
-	std::list<FString> lines;
-	SCOREBOARD_BuildLimitStrings( lines, true );
-
-	// Now, draw them.
-	for ( std::list<FString>::iterator i = lines.begin(); i != lines.end(); ++i )
-	{
-		if ( g_bScale )
-		{
-			screen->DrawText( SmallFont, CR_GREY, (LONG)(( g_ValWidth.Int / 2 ) - ( SmallFont->StringWidth( *i ) / 2 )),
-				g_ulCurYPos, *i, DTA_VirtualWidth, g_ValWidth.Int, DTA_VirtualHeight, g_ValHeight.Int, TAG_DONE );
-		}
-		else
-			screen->DrawText( SmallFont, CR_GREY, ( SCREENWIDTH / 2 ) - ( SmallFont->StringWidth( *i ) / 2 ), g_ulCurYPos, *i, TAG_DONE );
-
-		g_ulCurYPos += 10;
-	}
-}
-
-//*****************************************************************************
-//
-static void scoreboard_DrawTeamScores( ULONG ulPlayer )
-{
-	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
-	{
-		if ( gamestate != GS_LEVEL )
-			g_ulCurYPos += 10;
-
-		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPointString( ), g_bScale );
-		g_ulCurYPos += 10;
-	}
-}
-
-//*****************************************************************************
-//
-static void scoreboard_DrawMyRank( ULONG ulPlayer )
-{
-	// Render the current ranking string.
-	if ( SCOREBOARD_ShouldDrawRank( ulPlayer ))
-	{
-		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPlaceString( ulPlayer ), g_bScale );
-		g_ulCurYPos += 10;
 	}
 }
 
