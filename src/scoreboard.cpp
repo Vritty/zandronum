@@ -203,13 +203,16 @@ static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 	// If the console player is looking through someone else's eyes, draw the following message.
 	else if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
 	{
-		char cColor = V_GetColorChar( CR_RED );
+		FString color = TEXTCOLOR_RED;
 
 		// [RC] Or draw this in their team's color.
 		if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
-			cColor = V_GetColorChar( TEAM_GetTextColor( players[ulDisplayPlayer].Team ));
+		{
+			color = TEXTCOLOR_ESCAPE;
+			color += V_GetColorChar( TEAM_GetTextColor( players[ulDisplayPlayer].Team ));
+		}
 
-		bottomString.AppendFormat( "\\c%cFollowing - %s\\c%c", cColor, players[ulDisplayPlayer].userinfo.GetName( ), cColor );
+		bottomString.AppendFormat( "%sFollowing - %s%s", color.GetChars( ), players[ulDisplayPlayer].userinfo.GetName( ), color.GetChars( ));
 	}
 
 	// Print the totals for living and dead allies/enemies.
@@ -227,16 +230,14 @@ static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 			}
 			else
 			{
-				bottomString += TEXTCOLOR_GRAY;
-				bottomString.AppendFormat( "%d ", static_cast<int>( g_lNumAlliesLeft ));
+				bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumAlliesLeft ));
 				bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
 			}
 		}
 		// Last Man Standing, TLMS, etc
 		else
 		{
-			bottomString += TEXTCOLOR_GRAY;
-			bottomString.AppendFormat( "%d ", static_cast<int>( g_lNumOpponentsLeft ));
+			bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumOpponentsLeft ));
 			bottomString.AppendFormat( TEXTCOLOR_RED "opponent%s", g_lNumOpponentsLeft != 1 ? "s" : "" );
 
 			if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
@@ -247,8 +248,7 @@ static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 				}
 				else
 				{
-					bottomString += ", ";
-					bottomString.AppendFormat( TEXTCOLOR_GRAY " %d ", static_cast<int>( g_lNumAlliesLeft ));
+					bottomString.AppendFormat( ", " TEXTCOLOR_GRAY " %d ", static_cast<int>( g_lNumAlliesLeft ));
 					bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
 				}
 			}
@@ -300,7 +300,6 @@ static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 	// [RC] Draw the centered bottom message (spectating, following, waiting, etc).
 	if ( bottomString.Len( ) > 0 )
 	{
-		V_ColorizeString( bottomString );
 		DHUDMessageFadeOut *pMsg = new DHUDMessageFadeOut( SmallFont, bottomString, 1.5f, 1.0f, 0, 0, CR_WHITE, 0.10f, 0.15f );
 		StatusBar->AttachMessage( pMsg, MAKE_ID( 'W', 'A', 'I', 'T' ));
 	}
