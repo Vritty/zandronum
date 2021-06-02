@@ -77,6 +77,7 @@
 #include "c_bind.h"	// [RC] To tell user what key to press to vote.
 #include "domination.h"
 #include "st_hud.h"
+#include "wi_stuff.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -107,6 +108,9 @@ static	player_t	*g_pArtifactCarrier = NULL;
 
 // [AK] Who are the two duelers?
 static	player_t	*g_pDuelers[2];
+
+// [AK] The level we are entering, to be shown on the intermission screen.
+static	level_info_t *g_pNextLevel;
 
 // Current position of our "pen".
 static	ULONG		g_ulCurYPos;
@@ -183,6 +187,9 @@ static	void			scoreboard_DrawIcon( const char *pszPatchName, ULONG &ulXPos, ULON
 //	CONSOLE VARIABLES
 
 CVAR (Bool, r_drawspectatingstring, true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG );
+// [JS] Display the amount of time left on the intermission screen.
+CVAR( Bool, cl_intermissiontimer, false, CVAR_ARCHIVE );
+
 EXTERN_CVAR( Int, screenblocks );
 EXTERN_CVAR( Bool, st_scale );
 
@@ -1605,6 +1612,12 @@ static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPl
 }
 
 //*****************************************************************************
+void SCOREBOARD_SetNextLevel( const char *pszMapName )
+{
+	g_pNextLevel = ( pszMapName != NULL ) ? FindLevelInfo( pszMapName ) : NULL;
+}
+
+//*****************************************************************************
 //
 static void scoreboard_DrawHeader( ULONG ulPlayer )
 {
@@ -1644,6 +1657,22 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 	else if (( gamestate == GS_LEVEL ) && ( SCOREBOARD_ShouldDrawRank( ulPlayer )))
 	{
 		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPlaceString( ulPlayer ), g_bScale );
+		g_ulCurYPos += 10;
+	}
+
+	// [JS] Intermission countdown display.
+	if (( gamestate == GS_INTERMISSION ) && ( NETWORK_GetState( ) == NETSTATE_CLIENT ) && ( cl_intermissiontimer ))
+	{
+		FString countdownMessage = "Entering ";
+
+		// [AK] Display the name of the level we're entering if possible.
+		if ( g_pNextLevel != NULL )
+			countdownMessage.AppendFormat( "%s: %s", g_pNextLevel->mapname, g_pNextLevel->LookupLevelName( ));
+		else
+			countdownMessage += "next map";
+
+		countdownMessage.AppendFormat( " in %d seconds", MAX( static_cast<int>( WI_GetStopWatch( )) / TICRATE + 1, 1 ));
+		HUD_DrawTextCentered( SmallFont, CR_GREEN, g_ulCurYPos, countdownMessage, HUD_IsScaled( ));
 		g_ulCurYPos += 10;
 	}
 }

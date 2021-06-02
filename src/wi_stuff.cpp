@@ -202,6 +202,9 @@ static bool bTakeIntermissionScreenshot = false; // [CK] If we want to get a scr
 
 #define SHOWNEXTLOCDELAY		4			// in seconds
 
+// [AK] How much time the server stays on the intermission screen.
+#define SERVERSTOPWATCHDELAY	15
+
 static int				acceleratestage;	// used to accelerate or skip a stage
 static int				me;					// wbs->pnum
 static stateenum_t		state;				// specifies current state
@@ -2498,6 +2501,10 @@ void WI_checkForAccelerate(void)
 	// [BC] Clients can't check for accelerate.
 	if ( NETWORK_InClientMode() )
 	{
+		// [AK] Let them still count down the intermission timer.
+		if ( g_lStopWatch > 0 )
+			g_lStopWatch--;
+
 		return;
 	}
 
@@ -2505,10 +2512,9 @@ void WI_checkForAccelerate(void)
 	// it's been 15 or more seconds, end intermission.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		g_lStopWatch++;
-		if ( g_lStopWatch >= ( 15 * TICRATE ))
+		if ( --g_lStopWatch <= 0 )
 		{
-			g_lStopWatch = 0;
+			g_lStopWatch = SERVERSTOPWATCHDELAY * TICRATE;
 			acceleratestage = 1;
 		}
 
@@ -2730,7 +2736,11 @@ void WI_initVariables (wbstartstruct_t *wbstartstruct)
 	plrs = wbs->plyr;
 
 	// [BC] Initialize the stopwatch.
-	g_lStopWatch = 0;
+	g_lStopWatch = SERVERSTOPWATCHDELAY * TICRATE;
+
+	// [AK] Add a few extra seconds to the stopwatch for clients.
+	if ( NETWORK_InClientMode( ))
+		g_lStopWatch += ( SHOWNEXTLOCDELAY + 1 ) * TICRATE;
 }
 
 void WI_Start (wbstartstruct_t *wbstartstruct)
@@ -2770,4 +2780,10 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 		if ( players[ulIdx].pSkullBot )
 			players[ulIdx].pSkullBot->PostEvent( BOTEVENT_INTERMISSION );
 	}
+}
+
+// [AK]
+LONG WI_GetStopWatch( void )
+{
+	return ( g_lStopWatch );
 }

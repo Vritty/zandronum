@@ -164,6 +164,9 @@ CVAR( Bool, cl_showwarnings, false, CVAR_ARCHIVE )
 // [Leo] Show how many packets we missed when we experience packet loss.
 CVAR( Bool, cl_showpacketloss, false, CVAR_ARCHIVE )
 
+// [JS] Always makes us ready when we are in intermission.
+CVAR( Bool, cl_autoready, false, CVAR_ARCHIVE )
+
 //*****************************************************************************
 //	PROTOTYPES
 
@@ -2460,11 +2463,12 @@ void CLIENT_SendCmd( void )
 	// If we're at intermission, and toggling our "ready to go" status, tell the server.
 	if ( gamestate == GS_INTERMISSION )
 	{
-		if (( players[consoleplayer].cmd.ucmd.buttons ^ players[consoleplayer].oldbuttons ) &&
-			(( players[consoleplayer].cmd.ucmd.buttons & players[consoleplayer].oldbuttons ) == players[consoleplayer].oldbuttons ))
-		{
+		DWORD buttons = players[consoleplayer].cmd.ucmd.buttons;
+		DWORD oldButtons = players[consoleplayer].oldbuttons;
+
+		// [AK] Also toggle our "ready to go" status if we have auto-ready enabled, but do this only once.
+		if (( players[consoleplayer].bReadyToGoOn == false ) && (( cl_autoready ) || (( buttons ^ oldButtons ) && ( buttons & oldButtons ) == oldButtons )))
 			CLIENTCOMMANDS_ReadyToGoOn( );
-		}
 
 		players[consoleplayer].oldbuttons = players[consoleplayer].cmd.ucmd.buttons;
 		return;
@@ -7013,6 +7017,8 @@ void ServerCommands::MapExit::Execute()
 		return;
 	}
 
+	// [AK] Display the next level on the scoreboard.
+	SCOREBOARD_SetNextLevel( nextMap );
 	G_ChangeLevel( nextMap, position, true );
 }
 

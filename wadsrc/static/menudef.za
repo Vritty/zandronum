@@ -51,6 +51,9 @@ OptionMenu ZA_MultiplayerOptions
 	Option		"Reset frags at join",		"cl_dontrestorefrags",		"YesNo"
 	Option		"Hide country",				"cl_hidecountry",			"YesNo"
 	Option		"Respawn using attack key",	"cl_respawnonfire",			"YesNo"
+	Option		"Show intermission timer",	"cl_intermissiontimer",		"YesNo"
+	Option		"Intermission auto-ready",	"cl_autoready",				"YesNo"
+
 	StaticText	" "
 	Option		"Skins",					"cl_skins",					"ZA_AllowSkins"
 	Option		"Taunts",					"cl_taunts",				"OnOff"

@@ -88,4 +88,7 @@ void WI_Drawer ();
 // Setup for an intermission screen.
 void WI_Start (wbstartstruct_t *wbstartstruct);
 
+// [AK] Get the amount of tics left to still display the intermission in online games.
+LONG WI_GetStopWatch( void );
+
 #endif
