@@ -2069,10 +2069,6 @@ static void scoreboard_DoRankingListPass( ULONG ulPlayer, LONG lSpectators, LONG
 //
 static void scoreboard_DrawRankings( ULONG ulPlayer )
 {
-	ULONG	ulIdx;
-	ULONG	ulTeamIdx;
-	char	szString[16];
-
 	// Nothing to do.
 	if ( g_ulNumColumnsUsed < 1 )
 		return;
@@ -2081,31 +2077,11 @@ static void scoreboard_DrawRankings( ULONG ulPlayer )
 
 	// Center this a little better in intermission
 	if ( gamestate != GS_LEVEL )
-		g_ulCurYPos = ( g_bScale == true ) ? (LONG)( 48 * g_fYScale ) : (LONG)( 48 * CleanYfac );
+		g_ulCurYPos = static_cast<LONG>( 48 * ( g_bScale ? g_fYScale : CleanYfac ));
 
 	// Draw the titles for the columns.
-	for ( ulIdx = 0; ulIdx < g_ulNumColumnsUsed; ulIdx++ )
-	{
-		sprintf( szString, "%s", g_pszColumnHeaders[g_aulColumnType[ulIdx]] );
-		if ( g_bScale )
-		{
-			screen->DrawText( g_pColumnHeaderFont, CR_RED,
-				(LONG)( g_aulColumnX[ulIdx] * g_fXScale ),
-				g_ulCurYPos,
-				szString,
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( g_pColumnHeaderFont, CR_RED,
-				(LONG)( g_aulColumnX[ulIdx] / 320.0f * SCREENWIDTH ),
-				g_ulCurYPos,
-				szString,
-				TAG_DONE );
-		}
-	}
+	for ( ULONG ulColumn = 0; ulColumn < g_ulNumColumnsUsed; ulColumn++ )
+		HUD_DrawText( g_pColumnHeaderFont, CR_RED, static_cast<LONG>( g_aulColumnX[ulColumn] * g_fXScale ), g_ulCurYPos, g_pszColumnHeaders[g_aulColumnType[ulColumn]] );
 
 	// Draw the player list.
 	g_ulCurYPos += 24;
@@ -2114,7 +2090,7 @@ static void scoreboard_DrawRankings( ULONG ulPlayer )
 	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
 	{
 		// Draw players on teams.
-		for ( ulTeamIdx = 0; ulTeamIdx < teams.Size( ); ulTeamIdx++ )
+		for ( ULONG ulTeamIdx = 0; ulTeamIdx < teams.Size( ); ulTeamIdx++ )
 		{
 			// In team LMS, separate the dead players from the living.
 			if (( teamlms ) && ( gamestate != GS_INTERMISSION ) && ( LASTMANSTANDING_GetState( ) != LMSS_COUNTDOWN ) && ( LASTMANSTANDING_GetState( ) != LMSS_WAITINGFORPLAYERS ))
