@@ -807,7 +807,7 @@ static void scoreboard_RenderCountdown( ULONG ulTimeLeft )
 			return;
 
 		// [AK] Draw the versus message that appears between the two names.
-		HUD_DrawTextCleanCentered( BigFont, CR_UNTRANSLATED, ulYPos, "vs." );
+		HUD_DrawTextCleanCentered( BigFont, ulTitleColor, ulYPos, "vs." );
 
 		// [AK] Next, draw the names of the two duelers.
 		HUD_DrawTextCleanCentered( BigFont, ulTitleColor, ulYPos - 16, g_pDuelers[0]->userinfo.GetName( ));
