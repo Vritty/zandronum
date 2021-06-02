@@ -1175,7 +1175,8 @@ void SCOREBOARD_DrawFragMessage( player_t *pPlayer, bool bFraggedBy )
 			message.Format( "%d opponent%s left standing", static_cast<unsigned int>( ulMenLeftStanding ), ulMenLeftStanding != 1 ? "s" : "" );
 	}
 
-	pMsg = new DHUDMessageFadeOut( SmallFont, message.GetChars( ), 1.5f, 0.375f, 0, 0, CR_RED, 2.5f, 0.5f );
+	// [AK] Changed the subtext color to grey to make it more neutral.
+	pMsg = new DHUDMessageFadeOut( SmallFont, message.GetChars( ), 1.5f, 0.375f, 0, 0, CR_GREY, 2.5f, 0.5f );
 	StatusBar->AttachMessage( pMsg, MAKE_ID( 'P', 'L', 'A', 'C' ));
 }
 
