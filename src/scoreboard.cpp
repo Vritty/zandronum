@@ -1627,7 +1627,18 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 	if ( gamestate == GS_LEVEL )
 		HUD_DrawTextCentered( BigFont, CR_RED, g_ulCurYPos, "RANKINGS", g_bScale );
 
-	g_ulCurYPos += 22;
+	g_ulCurYPos += 18;
+
+	// [AK] Draw the name of the server if we're in an online game.
+	if ( NETWORK_InClientMode( ))
+	{
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, sv_hostname, g_bScale );
+		g_ulCurYPos += 10;
+	}
+
+	// [AK] Draw the name of the current game mode.
+	HUD_DrawTextCentered( SmallFont, CR_GOLD, g_ulCurYPos, GAMEMODE_GetName( GAMEMODE_GetCurrentMode( )), g_bScale );
+	g_ulCurYPos += 10;
 
 	// Draw the time, frags, points, or kills we have left until the level ends.
 	if ( gamestate == GS_LEVEL )

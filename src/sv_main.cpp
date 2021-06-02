@@ -1304,6 +1304,9 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 	// Send consoleplayer number.
 	SERVERCOMMANDS_SetConsolePlayer( g_lCurrentClient );
 
+	// [AK] Send the name of the server.
+	SERVERCOMMANDS_SetCVar( sv_hostname, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+
 	// Send dmflags.
 	SERVERCOMMANDS_SetGameDMFlags( g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
