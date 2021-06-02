@@ -4040,8 +4040,8 @@ void ServerCommands::SetPlayerUserInfo::Execute()
 		// Player's name.
 		if ( name == NAME_Name )
 		{
-			if ( value.Len() > MAXPLAYERNAME )
-				value = value.Left( MAXPLAYERNAME );
+			if ( value.Len() > MAXPLAYERNAMEBUFFER )
+				value.Truncate( MAXPLAYERNAMEBUFFER );
 			player->userinfo.NameChanged ( value );
 		}
 		// Other info.

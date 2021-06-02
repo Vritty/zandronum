@@ -2001,8 +2001,8 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 		{
 			FString oldPlayerName = pPlayer->userinfo.GetName();
 
-			if ( value.Len() > MAXPLAYERNAME )
-				value.Truncate(MAXPLAYERNAME);
+			if ( value.Len() > MAXPLAYERNAMEBUFFER )
+				value.Truncate( MAXPLAYERNAMEBUFFER );
 
 			FString nameStringCopy = value;
 

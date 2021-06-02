@@ -93,8 +93,9 @@ bool FPlayerNameBox::SetString(int i, const char *s)
 {
 	if (i == 0)
 	{
-		strncpy(mPlayerName, s, MAXPLAYERNAME);
-		mPlayerName[MAXPLAYERNAME] = 0;
+		// [AK] Increased the size to MAXPLAYERNAMEBUFFER.
+		strncpy(mPlayerName, s, MAXPLAYERNAMEBUFFER);
+		mPlayerName[MAXPLAYERNAMEBUFFER] = 0;
 		return true;
 	}
 	return false;
@@ -135,6 +136,8 @@ void FPlayerNameBox::DrawBorder (int x, int y, int len)
 		}
 
 		screen->DrawTexture (right, x, y+7, DTA_Clean, true, TAG_DONE);
+		// [AK] Set the namebox width to the width of the border.
+		mNameboxWidth = 8 * len;
 	}
 	else
 	{
@@ -142,10 +145,14 @@ void FPlayerNameBox::DrawBorder (int x, int y, int len)
 		if (slot != NULL)
 		{
 			screen->DrawTexture (slot, x, y+1, DTA_Clean, true, TAG_DONE);
+			// [AK] Set the namebox width to the width of the slot.
+			mNameboxWidth = slot->GetWidth();
 		}
 		else
 		{
 			screen->Clear(x, y, x + len, y + SmallFont->GetHeight() * 3/2, -1, 0);
+			// [AK] Set the namebox width to whatever we passed into this function.
+			mNameboxWidth = len;
 		}
 	}
 }
@@ -179,8 +186,20 @@ void FPlayerNameBox::Drawer(bool selected)
 		mEditName[l] = SmallFont->GetCursor();
 		mEditName[l+1] = 0;
 
-		screen->DrawText (SmallFont, CR_UNTRANSLATED, x + mFrameSize, mYpos, mEditName,
-			DTA_Clean, true, TAG_DONE);
+		// [AK] Check if the edited name's width is greater than the width of the namebox.
+		int nameWidth = SmallFont->StringWidth(mEditName);
+		if (nameWidth > mNameboxWidth)
+		{
+			// [AK] Find where we need to clip the text on the left side.
+			int clipleft = (x + mFrameSize - 160) * CleanXfac + (screen->GetWidth() >> 1);
+			screen->DrawText (SmallFont, CR_UNTRANSLATED, x + mFrameSize + (mNameboxWidth - nameWidth), mYpos, mEditName,
+				DTA_Clean, true, DTA_ClipLeft, clipleft, TAG_DONE);
+		}
+		else
+		{
+			screen->DrawText (SmallFont, CR_UNTRANSLATED, x + mFrameSize, mYpos, mEditName,
+				DTA_Clean, true, TAG_DONE);
+		}
 		
 		mEditName[l] = 0;
 	}
@@ -200,7 +219,8 @@ bool FPlayerNameBox::MenuEvent(int mkey, bool fromcontroller)
 		strcpy(mEditName, mPlayerName);
 		mEntering = true;
 		// [TP] Pass allowcolors=true to support colors in player names.
-		DMenu *input = new DTextEnterMenu(DMenu::CurrentMenu, mEditName, MAXPLAYERNAME, 2, fromcontroller, true);
+		// [AK] Increased the size to MAXPLAYERNAMEBUFFER.
+		DMenu *input = new DTextEnterMenu(DMenu::CurrentMenu, mEditName, MAXPLAYERNAMEBUFFER, 2, fromcontroller, true);
 		M_ActivateMenu(input);
 		return true;
 	}
@@ -869,9 +889,10 @@ void DPlayerMenu::UpdateSkins()
 
 void DPlayerMenu::PlayerNameChanged(FListMenuItem *li)
 {
-	char pp[MAXPLAYERNAME+1];
+	// [AK] Increased the size to MAXPLAYERNAMEBUFFER.
+	char pp[MAXPLAYERNAMEBUFFER+1];
 	const char *p;
-	if (li->GetString(0, pp, MAXPLAYERNAME))
+	if (li->GetString(0, pp, MAXPLAYERNAMEBUFFER))
 	{
 		FString command("name \"");
 

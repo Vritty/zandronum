@@ -598,6 +598,7 @@ bool v_IsCharacterWhitespace ( char c )
 // [RC] Conforms names to meet standards.
 void V_CleanPlayerName( FString &String )
 {
+	ULONG ulNumActualCharacters = 0;
 	ULONG ulNonWhitespace = 0;
 
 	// The name must be longer than three characters.
@@ -644,17 +645,36 @@ void V_CleanPlayerName( FString &String )
 	// Hence, we have to re-add "\\c-" here.
 	if ( ( tempString.IndexOf ( "\\c" ) != -1 ) )
 	{
-		// [BB] In the uncolorized string, color codes need one additional char, take this
-		// into account when checking whether the name is too long.
+		// [AK] We want to check the length of the player's name to make sure it isn't too
+		// long, but we also don't want to add color codes to the length.
 		FString tempColorizedString = tempString.GetChars();
 		V_ColorizeString ( tempColorizedString );
-		const unsigned int numColorCodes = tempString.Len() - tempColorizedString.Len();
 
-		if ( tempString.Len() > MAXPLAYERNAME - 3 + numColorCodes )
+		for ( size_t j = 0; j < tempColorizedString.Len( ); j++ )
 		{
-			tempString = tempString.Left ( MAXPLAYERNAME - 3 + numColorCodes );
-			V_RemoveTrailingCrapFromFString ( tempString );
+			// [AK] Ignore color codes, also taking into account those that use square brackets.
+			if ( tempColorizedString[j] == TEXTCOLOR_ESCAPE )
+			{
+				if (( String[++j] != '\0' ) && ( String[j] == '[' ))
+				{
+					while (( String[j] != '\0') && ( String[j] != ']' ))
+					{
+						j++;
+					}
+				}
+			}
+			// [AK] If the name exceeds the limit then truncate the string.
+			else if ( ++ulNumActualCharacters > MAXPLAYERNAME )
+			{
+				tempColorizedString.Truncate( j );
+				V_UnColorizeString( tempColorizedString );
+				V_RemoveTrailingCrapFromFString( tempColorizedString );
+
+				tempString = tempColorizedString;
+				break;
+			}
 		}
+
 		tempString += "\\c-";
 	}
 	V_ColorizeString ( tempString );

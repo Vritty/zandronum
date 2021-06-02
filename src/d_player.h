@@ -281,8 +281,9 @@ enum
 
 
 // [BC] Allow longer names since we can now colorize them and stuff.
-// [BB] "+3" so that playernames can always be terminated by "\\c-"
-#define MAXPLAYERNAME	31+3
+#define MAXPLAYERNAME	32
+// [AK] The maximum length of the buffer used to send a player's name over the network.
+#define MAXPLAYERNAMEBUFFER		96
 
 // [GRB] Custom player classes
 enum

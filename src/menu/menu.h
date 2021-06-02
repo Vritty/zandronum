@@ -431,9 +431,11 @@ class FPlayerNameBox : public FListMenuItemSelectable
 	FFont *mFont;
 	EColorRange mFontColor;
 	int mFrameSize;
-	char mPlayerName[MAXPLAYERNAME+1];
-	char mEditName[MAXPLAYERNAME+2];
+	// [AK] Increased the size to MAXPLAYERNAMEBUFFER.
+	char mPlayerName[MAXPLAYERNAMEBUFFER+1];
+	char mEditName[MAXPLAYERNAMEBUFFER+2];
 	bool mEntering;
+	int mNameboxWidth; // [AK]
 
 	void DrawBorder (int x, int y, int len);
 

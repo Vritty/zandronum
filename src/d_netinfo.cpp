@@ -738,9 +738,9 @@ uint32 userinfo_t::ColorChanged(uint32 colorval)
 void userinfo_t::NameChanged(const char *name)
 {
 	FString cleanedName = name;
-	// [BB] Don't allow the CVAR to be longer than MAXPLAYERNAME, userinfo_t::netname
-	// can't be longer anyway. Note: The length limit needs to be applied in colorized form.
-	cleanedName = cleanedName.Left(MAXPLAYERNAME);
+	// [AK] Ideally, we don't want the CVar to be longer than MAXPLAYERNAMEBUFER, especially
+	// if sent across the network. Note: the length limit needs to be applied in colorized form.
+	cleanedName = cleanedName.Left( MAXPLAYERNAMEBUFFER );
 	V_CleanPlayerName ( cleanedName );
 	*static_cast<FStringCVar *>((*this)[NAME_Name]) = cleanedName;
 }
@@ -857,9 +857,16 @@ void D_UserInfoChanged (FBaseCVar *cvar)
 		// To clean the name, we first convert the color codes, clean the name and
 		// then restore the color codes again.
 		V_ColorizeString ( cleanedName );
-		// [BB] Don't allow the CVAR to be longer than MAXPLAYERNAME, userinfo_t::netname
-		// can't be longer anyway. Note: The length limit needs to be applied in colorized form.
-		cleanedName = cleanedName.Left(MAXPLAYERNAME);
+		// [AK] Ideally, we don't want the CVar to be longer than MAXPLAYERNAMEBUFER, especially
+		// if sent across the network. Note: the length limit needs to be applied in colorized form.
+		if ( cleanedName.Len() > MAXPLAYERNAMEBUFFER )
+		{
+			// [AK] Print a warning message to the user.
+			Printf( PRINT_MEDIUM, "Your name is %d characters long and can't be sent in networked games! "
+				"The maximum length is %d characters.\n", cleanedName.Len(), MAXPLAYERNAMEBUFFER );
+			cleanedName.Truncate( MAXPLAYERNAMEBUFFER );
+		}
+
 		V_CleanPlayerName ( cleanedName );
 		V_UnColorizeString ( cleanedName );
 		// [BB] The name needed to be cleaned. Update the CVAR name with the cleaned
@@ -1458,7 +1465,7 @@ void D_ReadUserInfoStrings (int pnum, BYTE **stream, bool update)
 
 void ReadCompatibleUserInfo(FArchive &arc, userinfo_t &info)
 {
-	char netname[MAXPLAYERNAME + 1];
+	char netname[MAXPLAYERNAMEBUFFER + 1];
 	BYTE team;
 	int aimdist, color, colorset, skin, gender;
 	bool neverswitch;
