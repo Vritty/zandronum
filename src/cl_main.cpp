@@ -3902,10 +3902,10 @@ void ServerCommands::KillPlayer::Execute()
 		{
 			// Display a large "You were fragged by <name>." message in the middle of the screen.
 			if ( player == &players[consoleplayer] )
-				SCOREBOARD_DisplayFraggedMessage( &players[ulSourcePlayer] );
+				SCOREBOARD_DrawFragMessage( &players[ulSourcePlayer], true );
 			// Display a large "You fragged <name>!" message in the middle of the screen.
 			else if ( ulSourcePlayer == static_cast<ULONG>(consoleplayer) )
-				SCOREBOARD_DisplayFragMessage( player );
+				SCOREBOARD_DrawFragMessage( player, false );
 		}
 	}
 

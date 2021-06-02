@@ -937,82 +937,113 @@ bool SCOREBOARD_IsTied( ULONG ulPlayerNum )
 
 //*****************************************************************************
 //
-void SCOREBOARD_BuildPointString( char *pszString, const char *pszPointName, bool (*CheckAllEqual) ( void ), LONG (*GetHighestCount) ( void ), LONG (*GetCount) ( ULONG ulTeam ) )
+FString SCOREBOARD_BuildPointString( void )
 {
-	// Build the score message.
-	if ( CheckAllEqual( ))
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
+	ULONG ulNumAvailableTeams = 0;
+	ULONG ulNumTeamsWithHighestScore = 0;
+	LONG lHighestScore = LONG_MIN;
+	LONG lLowestScore = LONG_MAX;
+
+	FString scoreName, teamName;
+	FString lastTeamName;
+	LONG (*scoreFunction)( ULONG );
+
+	// [AK] Determine what kind of score we are interested in (wins, points, frags).
+	if ( ulFlags & GMF_PLAYERSEARNWINS )
 	{
-		sprintf( pszString, "Teams are tied at %d", static_cast<int>( GetCount( 0 )));
+		scoreName = "win";
+		scoreFunction = &TEAM_GetWinCount;
+	}
+	else if ( ulFlags & GMF_PLAYERSEARNPOINTS )
+	{
+		scoreName = "point";
+		scoreFunction = &TEAM_GetScore;
+	}
+	else if ( ulFlags & GMF_PLAYERSEARNFRAGS )
+	{
+		scoreName = "frag";
+		scoreFunction = &TEAM_GetFragCount;
+	}
+
+	// [AK] Get the score of any available teams;
+	for ( ULONG ulTeam = 0; ulTeam < teams.Size( ); ulTeam++ )
+	{
+		if ( TEAM_ShouldUseTeam( ulTeam ) == false )
+			continue;
+
+		// [AK] Get this team's score and keep track of how many teams are actually available.
+		// Simply returning TEAM_GetNumAvailableTeams doesn't always work in this case.
+		LONG lTeamScore = scoreFunction( ulTeam );
+		ulNumAvailableTeams++;
+
+		// [AK] Is this team's score greater than the highest score we got?
+		if ( lTeamScore > lHighestScore )
+		{
+			lHighestScore = lTeamScore;
+
+			// [AK] Reset the list of team names, starting with this team.
+			teamName = TEXTCOLOR_ESCAPE;
+			teamName.AppendFormat( "%c%s", V_GetColorChar( TEAM_GetTextColor( ulTeam )), TEAM_GetName( ulTeam ));
+			ulNumTeamsWithHighestScore = 1;
+		}
+		// [AK] If this team's score is equal to the current highest score, add their name to the end of the list.
+		else if (( lTeamScore == lHighestScore ) && ( ulNumTeamsWithHighestScore > 0 ))
+		{
+			// [AK] If there's more than two teams with the highest score, add a comma and the
+			// name of the team we got last.
+			if (( ulNumTeamsWithHighestScore >= 2 ) && ( lastTeamName.IsNotEmpty( )))
+				teamName.AppendFormat( TEXTCOLOR_NORMAL ", %s", lastTeamName.GetChars( ));
+
+			// [AK] Store this team's name and text color into a string, we'll need it later.
+			lastTeamName = TEXTCOLOR_ESCAPE;
+			lastTeamName.AppendFormat( "%c%s", V_GetColorChar( TEAM_GetTextColor( ulTeam )), TEAM_GetName( ulTeam ));
+			ulNumTeamsWithHighestScore++;
+		}
+		
+		// [AK] Is this team's score less than the lowest score we got?
+		if ( lTeamScore < lLowestScore )
+			lLowestScore = lTeamScore;
+	}
+
+	FString text;
+	scoreName.AppendFormat( "%s", (( ulNumAvailableTeams == 2 ) || ( lHighestScore != 1 )) ? "s" : "" );
+
+	// Build the score message.
+	if ( ulNumAvailableTeams == ulNumTeamsWithHighestScore )
+	{
+		text.Format( "Teams are tied at %d %s", static_cast<int>( lHighestScore ), scoreName );
 	}
 	else
 	{
-		LONG lHighestCount = GetHighestCount( );
-		LONG lFirstTeamCount = LONG_MIN;
-		ULONG ulNumberOfTeams = 0;
-		FString OutString;
-
-		for ( ULONG i = 0; i < teams.Size( ); i++ )
+		if ( ulNumAvailableTeams > 2 )
 		{
-			if ( TEAM_ShouldUseTeam( i ) == false )
-				continue;
-
-			if ( lHighestCount == GetCount( i ) )
+			if ( ulNumTeamsWithHighestScore == 1 )
 			{
-				ulNumberOfTeams++;
-
-				if ( lFirstTeamCount == LONG_MIN )
-				{
-					OutString = "\\c";
-					OutString += V_GetColorChar( TEAM_GetTextColor( i ));
-					OutString += TEAM_GetName( i );
-
-					lFirstTeamCount = GetCount( i );
-				}
-				else
-				{
-					OutString += "\\c-, ";
-					OutString += "\\c";
-					OutString += V_GetColorChar( TEAM_GetTextColor( i ));
-					OutString += TEAM_GetName( i );
-				}
-			}
-		}
-
-		if ( TEAM_GetNumAvailableTeams( ) > 2 )
-		{
-			if ( gamestate == GS_LEVEL )
-			{
-				if ( ulNumberOfTeams == 1 )
-					sprintf( pszString, "%s\\c- leads with %d %s%s", OutString.GetChars( ), static_cast<int>( lHighestCount ), pszPointName, static_cast<int>( lHighestCount ) != 1 ? "s" : "" );
-				else
-					sprintf( pszString, "Teams leading with %d %s%s: %s", static_cast<int>( lHighestCount ), pszPointName, static_cast<int>( lHighestCount ) != 1 ? "s" : "", OutString.GetChars( ));
+				// [AK] Show the team with the highest score and how much they have.
+				text.Format( "%s" TEXTCOLOR_NORMAL " %s with ", teamName.GetChars( ), gamestate == GS_LEVEL ? "leads" : "has won" );
+				text.AppendFormat( "%d %s", static_cast<int>( lHighestScore ), scoreName.GetChars( ));
 			}
 			else
 			{
-				if (ulNumberOfTeams != 1)
-					sprintf( pszString, "Teams that won with %d %s%s: %s", static_cast<int>( lHighestCount ), pszPointName, static_cast<int>( lHighestCount ) != 1 ? "s" : "", OutString.GetChars( ) );
-				else
-					sprintf( pszString, "%s\\c- has won with %d %s%s", OutString.GetChars( ), static_cast<int>( lHighestCount ), pszPointName, static_cast<int>( lHighestCount ) != 1 ? "s" : "" );
+				// [AK] Add the word "and" before the name of the last team on the list.
+				if ( lastTeamName.IsNotEmpty( ))
+					teamName.AppendFormat( TEXTCOLOR_NORMAL "%s and %s", ulNumTeamsWithHighestScore > 2 ? "," : "", lastTeamName.GetChars( ));
+
+				// [AK] Show a list of all teams who currently have the highest score and how much they have.
+				text.Format( "Teams %s with ", gamestate == GS_LEVEL ? "leading" : "that won" );
+				text.AppendFormat( "%d %s: %s", static_cast<int>( lHighestScore ), scoreName.GetChars( ), teamName.GetChars( ));
 			}
 		}
 		else
 		{
-			if ( gamestate == GS_LEVEL )
-			{
-				if ( GetCount( 1 ) > GetCount( 0 ))
-					sprintf( pszString, "\\c%c%s\\c- leads %d to %d", V_GetColorChar( TEAM_GetTextColor( 1 )), TEAM_GetName( 1 ), static_cast<int>( GetCount( 1 )), static_cast<int>( GetCount( 0 )));
-				else
-					sprintf( pszString, "\\c%c%s\\c- leads %d to %d", V_GetColorChar( TEAM_GetTextColor( 0 )), TEAM_GetName( 0 ), static_cast<int>( GetCount( 0 )), static_cast<int>( GetCount( 1 )));
-			}
-			else
-			{
-				if ( GetCount( 1 ) > GetCount( 0 ))
-					sprintf( pszString, "\\c%c%s\\c- has won %d to %d", V_GetColorChar( TEAM_GetTextColor( 1 )), TEAM_GetName( 1 ), static_cast<int>( GetCount( 1 )), static_cast<int>( GetCount( 0 )));
-				else
-					sprintf( pszString, "\\c%c%s\\c- has won %d to %d", V_GetColorChar( TEAM_GetTextColor( 0 )), TEAM_GetName( 0 ), static_cast<int>( GetCount( 0 )), static_cast<int>( GetCount( 1 )));
-			}
+			// [AK] Also indicate the type of score we're comparing in this string (frags, points, wins).
+			text.Format( "%s" TEXTCOLOR_NORMAL " %s ", teamName.GetChars( ), gamestate == GS_LEVEL ? "leads" : "has won" );
+			text.AppendFormat( "%d to %d in %s", static_cast<int>( lHighestScore ), static_cast<int>( lLowestScore ), scoreName.GetChars( ));
 		}
 	}
+
+	return text;
 }
 
 //*****************************************************************************
@@ -1074,163 +1105,92 @@ FString SCOREBOARD_SpellOrdinal( int ranknum, bool bColored )
 
 //*****************************************************************************
 //
-void SCOREBOARD_BuildPlaceString ( char* pszString )
+FString SCOREBOARD_BuildPlaceString( ULONG ulPlayer )
 {
-	if ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS ) )
-	{
-		// Build the score message.
-		SCOREBOARD_BuildPointString( pszString, "frag", &TEAM_CheckAllTeamsHaveEqualFrags, &TEAM_GetHighestFragCount, &TEAM_GetFragCount );
-	}
-	else if ( ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS ) )
-	{
-		// Build the score message.
-		SCOREBOARD_BuildPointString( pszString, "score", &TEAM_CheckAllTeamsHaveEqualScores, &TEAM_GetHighestScoreCount, &TEAM_GetScore );
-	}
-	else if ( !( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( GAMEMODE_GetCurrentFlags() & (GMF_PLAYERSEARNFRAGS|GMF_PLAYERSEARNPOINTS) ) )
-	{
-		// If the player is tied with someone else, add a "tied for" to their string.
-		if ( SCOREBOARD_IsTied( consoleplayer ) )
-			sprintf( pszString, "Tied for " );
-		else
-			pszString[0] = 0;
+	FString text;
 
-		strcpy( pszString + strlen ( pszString ), SCOREBOARD_SpellOrdinal( g_ulRank, true ));
-
-		// Tack on the rest of the string.
-		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
-			sprintf( pszString + strlen ( pszString ), "\\c- place with %d point%s", static_cast<int> (players[consoleplayer].lPointCount), players[consoleplayer].lPointCount == 1 ? "" : "s" );
+	// [AK] Only build the string in game modes for which we can earn frags, points, or wins in.
+	if ( GAMEMODE_GetCurrentFlags( ) & ( GMF_PLAYERSEARNFRAGS | GMF_PLAYERSEARNPOINTS | GMF_PLAYERSEARNWINS ))
+	{
+		if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+ 		{
+			// [AK] Show which team(s) have the highest score and how much.
+			text = SCOREBOARD_BuildPointString( );
+		}
 		else
-			sprintf( pszString + strlen ( pszString ), "\\c- place with %d frag%s", players[consoleplayer].fragcount, players[consoleplayer].fragcount == 1 ? "" : "s" );
+		{
+			// If the player is tied with someone else, add a "tied for" to their string.
+			if ( SCOREBOARD_IsTied( ulPlayer ))
+				text = "Tied for ";
+
+			// [AK] Get the rank of this player, though it isn't always equivalent to g_ulRank. Particularly,
+			// when we (the local player) get a frag or get fragged while spying on another player.
+			ULONG ulRank = ( ulPlayer == HUD_GetViewPlayer( )) ? g_ulRank : SCOREBOARD_CalcRank( ulPlayer );
+			text.AppendFormat( "%s" TEXTCOLOR_NORMAL " place with ", SCOREBOARD_SpellOrdinal( ulRank, true ));
+
+			// Tack on the rest of the string.
+			if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNWINS )
+				text.AppendFormat( "%d win%s", static_cast<unsigned int>( players[ulPlayer].ulWins ), players[ulPlayer].ulWins != 1 ? "s" : "" );
+			else if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNPOINTS )
+				text.AppendFormat( "%d point%s", static_cast<int>( players[ulPlayer].lPointCount ), players[ulPlayer].lPointCount != 1 ? "s" : "" );
+			else
+				text.AppendFormat( "%d frag%s", players[ulPlayer].fragcount, players[ulPlayer].fragcount != 1 ? "s" : "" );
+		}
 	}
+
+	return text;
 }
 
 //*****************************************************************************
 //
-void SCOREBOARD_DisplayFragMessage( player_t *pFraggedPlayer )
+void SCOREBOARD_DrawFragMessage( player_t *pPlayer, bool bFraggedBy )
 {
-	char	szString[128];
-	DHUDMessageFadeOut	*pMsg;
-	FString message = GStrings( "GM_YOUFRAGGED" );
-
+	FString message = GStrings( bFraggedBy ? "GM_YOUWEREFRAGGED" : "GM_YOUFRAGGED" );
 	message.StripLeftRight( );
 
 	// [AK] Don't print the message if the string is empty.
 	if ( message.Len( ) == 0 )
 		return;
 
-	// [AK] Substitute the fragged player's name into the message if we can.
-	message.Substitute( "%s", pFraggedPlayer->userinfo.GetName( ));
-	message += '\n';
+	// [AK] Substitute the fragged/fragging player's name into the message if we can.
+	message.Substitute( "%s", pPlayer->userinfo.GetName( ));
 
 	// Print the frag message out in the console.
-	Printf( "%s", message.GetChars( ));
+	Printf( "%s\n", message.GetChars( ));
 
-	pMsg = new DHUDMessageFadeOut( BigFont, message.GetChars( ),
-		1.5f,
-		0.325f,
-		0,
-		0,
-		CR_RED,
-		2.5f,
-		0.5f );
+	DHUDMessageFadeOut *pMsg = new DHUDMessageFadeOut( BigFont, message.GetChars( ), 1.5f, 0.325f, 0, 0, CR_RED, 2.5f, 0.5f );
+	StatusBar->AttachMessage( pMsg, MAKE_ID( 'F', 'R', 'A', 'G'));
 
-	StatusBar->AttachMessage( pMsg, MAKE_ID('F','R','A','G') );
+	// [AK] Build the place string.
+	message = SCOREBOARD_BuildPlaceString( consoleplayer );
 
-	szString[0] = 0;
-
-	if ( lastmanstanding )
+	if ( bFraggedBy == false )
 	{
-		LONG	lMenLeftStanding;
+		ULONG ulMenLeftStanding = 0;
 
-		lMenLeftStanding = GAME_CountLivingAndRespawnablePlayers( ) - 1;
-		sprintf( szString, "%d opponent%s left standing", static_cast<int> (lMenLeftStanding), ( lMenLeftStanding != 1 ) ? "s" : "" );
-	}
-	else if (( teamlms ) && ( players[consoleplayer].bOnTeam ))
-	{
-		LONG	lMenLeftStanding = 0;
-
-		for ( ULONG i = 0; i < teams.Size( ); i++ )
+		// [AK] Count how many opponents are currently left.
+		if ( lastmanstanding )
 		{
-			if ( TEAM_ShouldUseTeam( i ) == false )
-				continue;
+			ulMenLeftStanding = GAME_CountLivingAndRespawnablePlayers( ) - 1;
+		}
+		else if (( teamlms ) && ( players[consoleplayer].bOnTeam ))
+		{
+			for ( ULONG ulIdx = 0; ulIdx < teams.Size( ); ulIdx++ )
+			{
+				if (( TEAM_ShouldUseTeam( ulIdx ) == false ) || ( ulIdx == players[consoleplayer].Team ))
+					continue;
 
-			if ( i == players[consoleplayer].Team )
-				continue;
-
-			lMenLeftStanding += TEAM_CountLivingAndRespawnablePlayers( i );
+				ulMenLeftStanding += TEAM_CountLivingAndRespawnablePlayers( ulIdx );
+			}
 		}
 
-		sprintf( szString, "%d opponent%s left standing", static_cast<int> (lMenLeftStanding), ( lMenLeftStanding != 1 ) ? "s" : "" );
+		// [AK] If there are any opponents left, display that instead of the place string.
+		if ( ulMenLeftStanding > 0 )
+			message.Format( "%d opponent%s left standing", static_cast<unsigned int>( ulMenLeftStanding ), ulMenLeftStanding != 1 ? "s" : "" );
 	}
-	else
-		SCOREBOARD_BuildPlaceString ( szString );
 
-	if ( szString[0] != 0 )
-	{
-		V_ColorizeString( szString );
-		pMsg = new DHUDMessageFadeOut( SmallFont, szString,
-			1.5f,
-			0.375f,
-			0,
-			0,
-			CR_RED,
-			2.5f,
-			0.5f );
-
-		StatusBar->AttachMessage( pMsg, MAKE_ID('P','L','A','C') );
-	}
-}
-
-//*****************************************************************************
-//
-void SCOREBOARD_DisplayFraggedMessage( player_t *pFraggingPlayer )
-{
-	char	szString[128];
-	DHUDMessageFadeOut	*pMsg;
-	FString message = GStrings( "GM_YOUWEREFRAGGED" );
-
-	message.StripLeftRight( );
-
-	// [AK] Don't print the message if the string is empty.
-	if ( message.Len( ) == 0 )
-		return;
-
-	// [AK] Substitute the fragging player's name into the message if we can.
-	message.Substitute( "%s", pFraggingPlayer->userinfo.GetName( ));
-	message += '\n';
-
-	// Print the frag message out in the console.
-	Printf( "%s", message.GetChars( ));
-
-	pMsg = new DHUDMessageFadeOut( BigFont, message.GetChars( ),
-		1.5f,
-		0.325f,
-		0,
-		0,
-		CR_RED,
-		2.5f,
-		0.5f );
-
-	StatusBar->AttachMessage( pMsg, MAKE_ID('F','R','A','G') );
-
-	szString[0] = 0;
-
-	SCOREBOARD_BuildPlaceString ( szString );
-
-	if ( szString[0] != 0 )
-	{
-		V_ColorizeString( szString );
-		pMsg = new DHUDMessageFadeOut( SmallFont, szString,
-			1.5f,
-			0.375f,
-			0,
-			0,
-			CR_RED,
-			2.5f,
-			0.5f );
-
-		StatusBar->AttachMessage( pMsg, MAKE_ID('P','L','A','C') );
-	}
+	pMsg = new DHUDMessageFadeOut( SmallFont, message.GetChars( ), 1.5f, 0.375f, 0, 0, CR_RED, 2.5f, 0.5f );
+	StatusBar->AttachMessage( pMsg, MAKE_ID( 'P', 'L', 'A', 'C' ));
 }
 
 //*****************************************************************************
@@ -1813,41 +1773,12 @@ static void scoreboard_DrawLimits( void )
 //
 static void scoreboard_DrawTeamScores( ULONG ulPlayer )
 {
-	char	szString[128];
-
-	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
+	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
 	{
 		if ( gamestate != GS_LEVEL )
 			g_ulCurYPos += 10;
 
-		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
-			SCOREBOARD_BuildPointString( szString, "frag", &TEAM_CheckAllTeamsHaveEqualFrags, &TEAM_GetHighestFragCount, &TEAM_GetFragCount );
-		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-			SCOREBOARD_BuildPointString( szString, "win", &TEAM_CheckAllTeamsHaveEqualWins, &TEAM_GetHighestWinCount, &TEAM_GetWinCount );
-		else
-			SCOREBOARD_BuildPointString( szString, "score", &TEAM_CheckAllTeamsHaveEqualScores, &TEAM_GetHighestScoreCount, &TEAM_GetScore );
-
-		V_ColorizeString ( szString );
-
-		if ( g_bScale )
-		{
-			screen->DrawText( SmallFont, CR_GREY,
-				(LONG)(( g_ValWidth.Int / 2 ) - ( SmallFont->StringWidth( szString ) / 2 )),
-				g_ulCurYPos,
-				szString,
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( SmallFont, CR_GREY,
-				( SCREENWIDTH / 2 ) - ( SmallFont->StringWidth( szString ) / 2 ),
-				g_ulCurYPos,
-				szString,
-				TAG_DONE );
-		}
-
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPointString( ), g_bScale );
 		g_ulCurYPos += 10;
 	}
 }
@@ -1856,51 +1787,10 @@ static void scoreboard_DrawTeamScores( ULONG ulPlayer )
 //
 static void scoreboard_DrawMyRank( ULONG ulPlayer )
 {
-	char	szString[128];
-	bool	bIsTied;
-
 	// Render the current ranking string.
-	if ( deathmatch && !( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && ( PLAYER_IsTrueSpectator( &players[ulPlayer] ) == false ))
+	if ( SCOREBOARD_ShouldDrawRank( ulPlayer ))
 	{
-		bIsTied	= SCOREBOARD_IsTied( ulPlayer );
-
-		// If the player is tied with someone else, add a "tied for" to their string.
-		if ( bIsTied )
-			sprintf( szString, "Tied for " );
-		else
-			szString[0] = 0;
-
-		// Determine  what color and number to print for their rank.
-		strcpy( szString + strlen ( szString ), SCOREBOARD_SpellOrdinal( g_ulRank, true ));
-
-		// Tack on the rest of the string.
-		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-			sprintf( szString + strlen ( szString ), "\\c- place with %d win%s",  static_cast<unsigned int> (players[ulPlayer].ulWins), players[ulPlayer].ulWins == 1 ? "" : "s" );
-		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
-			sprintf( szString + strlen ( szString ), "\\c- place with %d point%s", static_cast<int> (players[ulPlayer].lPointCount), players[ulPlayer].lPointCount == 1 ? "" : "s" );
-		else
-			sprintf( szString + strlen ( szString ), "\\c- place with %d frag%s", players[ulPlayer].fragcount, players[ulPlayer].fragcount == 1 ? "" : "s" );
-		V_ColorizeString( szString );
-
-		if ( g_bScale )
-		{
-			screen->DrawText( SmallFont, CR_GREY,
-				(LONG)(( g_ValWidth.Int / 2 ) - ( SmallFont->StringWidth( szString ) / 2 )),
-				g_ulCurYPos,
-				szString,
-				DTA_VirtualWidth, g_ValWidth.Int,
-				DTA_VirtualHeight, g_ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( SmallFont, CR_GREY,
-				( SCREENWIDTH / 2 ) - ( SmallFont->StringWidth( szString ) / 2 ),
-				g_ulCurYPos,
-				szString,
-				TAG_DONE );
-		}
-
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPlaceString( ulPlayer ), g_bScale );
 		g_ulCurYPos += 10;
 	}
 }
