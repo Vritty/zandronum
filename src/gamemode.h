@@ -175,6 +175,7 @@ ULONG		GAMEMODE_GetFlags( GAMEMODE_e GameMode );
 ULONG		GAMEMODE_GetCurrentFlags( void );
 char		*GAMEMODE_GetShortName( GAMEMODE_e GameMode );
 char		*GAMEMODE_GetName( GAMEMODE_e GameMode );
+char		*GAMEMODE_GetCurrentName( void );
 char		*GAMEMODE_GetF1Texture( GAMEMODE_e GameMode );
 int			GAMEMODE_GetFlagsetMask( GAMEMODE_e GameMode, FIntCVar *Flagset, bool bLocked = false );
 int			GAMEMODE_GetCurrentFlagsetMask( FIntCVar *Flagset, bool bLocked = false );

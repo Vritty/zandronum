@@ -409,6 +409,13 @@ char *GAMEMODE_GetName( GAMEMODE_e GameMode )
 
 //*****************************************************************************
 //
+char *GAMEMODE_GetCurrentName( void )
+{
+	return ( g_GameModes[g_CurrentGameMode].szName );
+}
+
+//*****************************************************************************
+//
 char *GAMEMODE_GetF1Texture( GAMEMODE_e GameMode )
 {
 	if ( GameMode >= NUM_GAMEMODES )
