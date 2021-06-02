@@ -1485,60 +1485,6 @@ void TEAM_CancelAssistsOfPlayer( ULONG ulPlayer )
 
 //*****************************************************************************
 //
-bool TEAM_CheckAllTeamsHaveEqualFrags( void )
-{
-	LONG lPointsToCompare = teams[0].lFragCount;
-
-	for ( ULONG i = 0; i < teams.Size( ); i++ )
-	{
-		if ( TEAM_ShouldUseTeam( i ) == false )
-			continue;
-
-		if ( TEAM_GetFragCount( i ) != lPointsToCompare )
-			return false;
-	}
-
-	return ( true );
-}
-
-//*****************************************************************************
-//
-bool TEAM_CheckAllTeamsHaveEqualWins( void )
-{
-	LONG lPointsToCompare = teams[0].lWinCount;
-
-	for ( ULONG i = 0; i < teams.Size( ); i++ )
-	{
-		if ( TEAM_ShouldUseTeam( i ) == false )
-			continue;
-
-		if ( TEAM_GetWinCount( i ) != lPointsToCompare )
-			return false;
-	}
-
-	return ( true );
-}
-
-//*****************************************************************************
-//
-bool TEAM_CheckAllTeamsHaveEqualScores( void )
-{
-	LONG lPointsToCompare = teams[0].lScore;
-
-	for ( ULONG i = 0; i < teams.Size( ); i++ )
-	{
-		if ( TEAM_ShouldUseTeam( i ) == false )
-			continue;
-
-		if ( TEAM_GetScore( i ) != lPointsToCompare )
-			return false;
-	}
-
-	return ( true );
-}
-
-//*****************************************************************************
-//
 unsigned int TEAM_GetNumAvailableTeams( void )
 {
 	return MIN<unsigned int>(teams.Size(), sv_maxteams);
