@@ -1020,9 +1020,29 @@ void SCOREBOARD_BuildPointString( char *pszString, const char *pszPointName, boo
 //
 // [TP] Now in a function
 //
-FString SCOREBOARD_SpellOrdinal( int ranknum )
+FString SCOREBOARD_SpellOrdinal( int ranknum, bool bColored )
 {
 	FString result;
+
+	// Determine  what color and number to print for their rank.
+	if ( bColored )
+	{
+		switch ( ranknum )
+		{
+			case 0:
+				result = TEXTCOLOR_BLUE;
+				break;
+
+			case 1:
+				result = TEXTCOLOR_RED;
+				break;
+
+			case 2:
+				result = TEXTCOLOR_GREEN;
+				break;
+		}
+	}
+
 	result.AppendFormat( "%d", ranknum + 1 );
 
 	//[ES] This way all ordinals are correctly written.
@@ -1030,47 +1050,26 @@ FString SCOREBOARD_SpellOrdinal( int ranknum )
 	{
 		switch ( ranknum % 10 )
 		{
-		case 0:
-			result += "st";
-			break;
+			case 0:
+				result += "st";
+				break;
 
-		case 1:
-			result += "nd";
-			break;
+			case 1:
+				result += "nd";
+				break;
 
-		case 2:
-			result += "rd";
-			break;
+			case 2:
+				result += "rd";
+				break;
 
-		default:
-			result += "th";
-			break;
+			default:
+				result += "th";
+				break;
 		}
 	}
 	else
 		result += "th";
 
-	return result;
-}
-
-//*****************************************************************************
-//
-// [TP]
-//
-
-FString SCOREBOARD_SpellOrdinalColored( int ranknum )
-{
-	FString result;
-
-	// Determine  what color and number to print for their rank.
-	switch ( g_ulRank )
-	{
-	case 0: result = "\\cH"; break;
-	case 1: result = "\\cG"; break;
-	case 2: result = "\\cD"; break;
-	}
-
-	result += SCOREBOARD_SpellOrdinal( ranknum );
 	return result;
 }
 
@@ -1096,7 +1095,7 @@ void SCOREBOARD_BuildPlaceString ( char* pszString )
 		else
 			pszString[0] = 0;
 
-		strcpy( pszString + strlen ( pszString ), SCOREBOARD_SpellOrdinalColored( g_ulRank ));
+		strcpy( pszString + strlen ( pszString ), SCOREBOARD_SpellOrdinal( g_ulRank, true ));
 
 		// Tack on the rest of the string.
 		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
@@ -1873,7 +1872,7 @@ static void scoreboard_DrawMyRank( ULONG ulPlayer )
 			szString[0] = 0;
 
 		// Determine  what color and number to print for their rank.
-		strcpy( szString + strlen ( szString ), SCOREBOARD_SpellOrdinalColored( g_ulRank ));
+		strcpy( szString + strlen ( szString ), SCOREBOARD_SpellOrdinal( g_ulRank, true ));
 
 		// Tack on the rest of the string.
 		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )

@@ -288,14 +288,7 @@ static void DrawStatus(player_t * CPlayer, int x, int y)
 
 		// [TP] Let's use the scoreboard's color here, I guess?
 		// I suppose the scoreboard and hud should always show the same player.
-		switch ( SCOREBOARD_GetRank() )
-		{
-			case 0: stat = TEXTCOLOR_BLUE; break;
-			case 1: stat = TEXTCOLOR_RED; break;
-			case 2: stat = TEXTCOLOR_GREEN; break;
-		}
-
-		stat += SCOREBOARD_SpellOrdinal( SCOREBOARD_GetRank() );
+		stat = SCOREBOARD_SpellOrdinal( SCOREBOARD_GetRank(), true );
 
 		// [TP] Indicate tied status with an asterisk
 		if ( SCOREBOARD_IsTied( CPlayer - players ))

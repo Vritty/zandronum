@@ -113,7 +113,6 @@ ULONG	SCOREBOARD_GetRank( void );
 LONG	SCOREBOARD_GetSpread( void );
 LONG	SCOREBOARD_GetLeftToLimit( void );
 bool	SCOREBOARD_IsTied( void );
-FString	SCOREBOARD_SpellOrdinal( int ranknum );
-FString	SCOREBOARD_SpellOrdinalColored( int ranknum );
+FString	SCOREBOARD_SpellOrdinal( int ranknum, bool bColored = false );
 
 #endif // __SCOREBOARD_H__
