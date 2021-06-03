@@ -86,6 +86,8 @@ static	ULONG					g_ulPlayersWhoVotedNo[(MAXPLAYERS / 2) + 1];
 static	NETADDRESS_s			g_KickVoteVictimAddress;
 static	std::list<VOTE_s>		g_PreviousVotes;
 static	ULONG					g_ulPlayerVoteChoice[MAXPLAYERS]; // [AK]
+static	ULONG					g_ulNumYesVotes = 0; // [AK]
+static	ULONG					g_ulNumNoVotes = 0; // [AK]
 
 //*****************************************************************************
 //	PROTOTYPES
@@ -172,7 +174,7 @@ void CALLVOTE_Tick( void )
 							g_VoteCommand.Format( "addban %s 10min \"Vote kick", g_KickVoteVictimAddress.ToString() );
 						else
 							g_VoteCommand.Format( "forcespec_idx %d \"Vote forcespec", static_cast<int>(SERVER_FindClientByAddress ( g_KickVoteVictimAddress )) );
-						g_VoteCommand.AppendFormat( ", %u to %u", CALLVOTE_CountPlayersWhoVotedYes( ), CALLVOTE_CountPlayersWhoVotedNo( ) );
+						g_VoteCommand.AppendFormat( ", %u to %u", g_ulNumYesVotes, g_ulNumNoVotes );
 						if ( g_VoteReason.IsNotEmpty() )
 							g_VoteCommand.AppendFormat ( " (%s)", g_VoteReason.GetChars( ) );
 						g_VoteCommand += ".\"";
@@ -283,6 +285,8 @@ void CALLVOTE_ClearVote( void )
 	g_ulVoteCaller = MAXPLAYERS;
 	g_ulVoteCountdownTicks = 0;
 	g_ulShowVoteScreenTicks = 0;
+	g_ulNumYesVotes = 0;
+	g_ulNumNoVotes = 0;
 
 	for ( ulIdx = 0; ulIdx < (( MAXPLAYERS / 2 ) + 1 ); ulIdx++ )
 	{
@@ -358,8 +362,9 @@ bool CALLVOTE_VoteYes( ULONG ulPlayer )
 		}
 	}
 
-	// [AK] Update this player's choice to "yes".
+	// [AK] Update this player's choice to "yes" and increment the tally.
 	g_ulPlayerVoteChoice[ulPlayer] = VOTE_YES;
+	g_ulNumYesVotes++;
 
 	// Display the message in the console.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -455,8 +460,9 @@ bool CALLVOTE_VoteNo( ULONG ulPlayer )
 		}
 	}
 
-	// [AK] Update this player's choice to "no".
+	// [AK] Update this player's choice to "no" and increment the tally.
 	g_ulPlayerVoteChoice[ulPlayer] = VOTE_NO;
+	g_ulNumNoVotes++;
 
 	// Display the message in the console.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -619,24 +625,17 @@ void CALLVOTE_DisconnectedVoter( ULONG ulPlayer )
 //
 void CALLVOTE_TallyVotes( void )
 {
-	ULONG ulNumYes;
-	ULONG ulNumNo;
-
-	// Count up all the Yes/No votes.
-	ulNumYes = CALLVOTE_CountPlayersWhoVotedYes();
-	ulNumNo = CALLVOTE_CountPlayersWhoVotedNo();
-
 	// If More than half of the total eligible voters have voted, we must have a majority!
-	if ( MAX( ulNumYes, ulNumNo ) > ( CALLVOTE_CountNumEligibleVoters( ) / 2 ))
+	if ( MAX( g_ulNumYesVotes, g_ulNumNoVotes ) > ( CALLVOTE_CountNumEligibleVoters( ) / 2 ))
 	{
-		g_bVotePassed = ( ulNumYes > ulNumNo );
+		g_bVotePassed = ( g_ulNumYesVotes > g_ulNumNoVotes );
 		callvote_EndVote();
 	}
 
 	// This will serve as the final tally.
 	if ( g_ulVoteCountdownTicks == 0 )
 	{
-		if (( ulNumYes > 0 ) && ( ulNumYes > ulNumNo ))
+		if (( g_ulNumYesVotes > 0 ) && ( g_ulNumYesVotes > g_ulNumNoVotes ))
 			g_bVotePassed = true;
 		else
 			g_bVotePassed = false;
@@ -694,36 +693,16 @@ static void callvote_EndVote( void )
 
 //*****************************************************************************
 //
-ULONG CALLVOTE_CountPlayersWhoVotedYes( void )
+ULONG CALLVOTE_GetYesVoteCount( void )
 {
-	ULONG	ulIdx;
-	ULONG	ulNumYes;
-
-	ulNumYes = 0;
-	for ( ulIdx = 0; ulIdx < ( MAXPLAYERS / 2 ) + 1; ulIdx++ )
-	{
-		if ( g_ulPlayersWhoVotedYes[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( g_ulPlayersWhoVotedYes[ulIdx] ))
-			ulNumYes++;
-	}
-
-	return ( ulNumYes );
+	return ( g_ulNumYesVotes );
 }
 
 //*****************************************************************************
 //
-ULONG CALLVOTE_CountPlayersWhoVotedNo( void )
+ULONG CALLVOTE_GetNoVoteCount( void )
 {
-	ULONG	ulIdx;
-	ULONG	ulNumNo;
-
-	ulNumNo = 0;
-	for ( ulIdx = 0; ulIdx < ( MAXPLAYERS / 2 ) + 1; ulIdx++ )
-	{
-		if ( g_ulPlayersWhoVotedNo[ulIdx] != MAXPLAYERS && SERVER_IsValidClient( g_ulPlayersWhoVotedNo[ulIdx] ))
-			ulNumNo++;
-	}
-
-	return ( ulNumNo );
+	return ( g_ulNumNoVotes );
 }
 
 //*****************************************************************************

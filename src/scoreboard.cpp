@@ -666,8 +666,6 @@ void SCOREBOARD_RenderInvasionStats( void )
 //
 void SCOREBOARD_RenderInVoteClassic( void )
 {
-	ULONG ulNumYes = CALLVOTE_CountPlayersWhoVotedYes( );
-	ULONG ulNumNo = CALLVOTE_CountPlayersWhoVotedNo( );
 	ULONG *pulPlayersWhoVotedYes = CALLVOTE_GetPlayersWhoVotedYes( );
 	ULONG *pulPlayersWhoVotedNo = CALLVOTE_GetPlayersWhoVotedNo( );
 	ULONG ulMaxYesOrNoVoters = ( MAXPLAYERS / 2 ) + 1;
@@ -701,10 +699,10 @@ void SCOREBOARD_RenderInVoteClassic( void )
 
 	// Display how many have voted for "Yes" and "No".
 	ulYPos += 16;
-	text.Format( "Yes: %d", static_cast<unsigned int>( ulNumYes ));
+	text.Format( "Yes: %d", static_cast<unsigned int>( CALLVOTE_GetYesVoteCount( )));
 	HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 32, ulYPos, text );
 
-	text.Format( "No: %d", static_cast<unsigned int>( ulNumNo ));
+	text.Format( "No: %d", static_cast<unsigned int>( CALLVOTE_GetNoVoteCount( )));
 	HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 320 - 32 - SmallFont->StringWidth( text ), ulYPos, text );
 
 	ulYPos += 8;
@@ -741,8 +739,6 @@ void SCOREBOARD_RenderInVoteClassic( void )
 //
 void SCOREBOARD_RenderInVote( void )
 {
-	ULONG ulNumYes = CALLVOTE_CountPlayersWhoVotedYes( );
-	ULONG ulNumNo = CALLVOTE_CountPlayersWhoVotedNo( );
 	ULONG ulVoteChoice = CALLVOTE_GetPlayerVoteChoice( consoleplayer );
 	FString text;
 
@@ -768,8 +764,8 @@ void SCOREBOARD_RenderInVote( void )
 	ulYPos += 8;
 
 	// Render the number of votes.
-	text.Format( "%sYes: %d", ulVoteChoice == VOTE_YES ? TEXTCOLOR_YELLOW : "", static_cast<unsigned int>( ulNumYes ));
-	text.AppendFormat( TEXTCOLOR_NORMAL ", %sNo: %d", ulVoteChoice == VOTE_NO ? TEXTCOLOR_YELLOW : "", static_cast<unsigned int>( ulNumNo ));
+	text.Format( "%sYes: %d", ulVoteChoice == VOTE_YES ? TEXTCOLOR_YELLOW : "", static_cast<unsigned int>( CALLVOTE_GetYesVoteCount( )));
+	text.AppendFormat( TEXTCOLOR_NORMAL ", %sNo: %d", ulVoteChoice == VOTE_NO ? TEXTCOLOR_YELLOW : "", static_cast<unsigned int>( CALLVOTE_GetNoVoteCount( )));
 	HUD_DrawTextCentered( SmallFont, CR_DARKBROWN, ulYPos, text, g_bScale );
 
 	// Render the explanation of keys.
