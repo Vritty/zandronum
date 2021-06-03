@@ -1693,9 +1693,9 @@ void scoreboard_AddSingleLimit( std::list<FString> &lines, bool condition, int r
 {
 	if ( condition && remaining > 0 )
 	{
-		char	szString[128];
-		sprintf( szString, "%d %s%s remain%s", static_cast<int> (remaining), pszUnitName, ( remaining == 1 ) ? "" : "s", ( remaining == 1 ) ? "s" : "" );
-		lines.push_back( szString );
+		FString limitString;
+		limitString.Format( "%d %s%s remain%s", static_cast<int>( remaining ), pszUnitName, remaining == 1 ? "" : "s", remaining == 1 ? "s" : "" );
+		lines.push_back( limitString );
 	}
 }
 
@@ -1705,80 +1705,86 @@ void scoreboard_AddSingleLimit( std::list<FString> &lines, bool condition, int r
 //
 void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors )
 {
-	char	szString[128];
-
 	if ( gamestate != GS_LEVEL )
 		return;
 
-	LONG remaining = SCOREBOARD_GetLeftToLimit( );
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
+	LONG lRemaining = SCOREBOARD_GetLeftToLimit( );
+	FString text;
 
-	// Build the fraglimit and/or duellimit strings.
-	scoreboard_AddSingleLimit( lines, ( fraglimit && GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS ), remaining, "frag" );
-	// [TL] The number of duels left is the maximum number of duels less the number of duels fought.
-	scoreboard_AddSingleLimit( lines, ( duellimit && duel ), duellimit - DUEL_GetNumDuels( ), "duel" );
+	// Build the fraglimit string.
+	scoreboard_AddSingleLimit( lines, fraglimit && ( ulFlags & GMF_PLAYERSEARNFRAGS ), lRemaining, "frag" );
 
-	// Build the "wins" string.
+	// Build the duellimit and "wins" string.
 	if ( duel && duellimit )
 	{
-		LONG lWinner = -1;
+		ULONG ulWinner = MAXPLAYERS;
+		bool bDraw = true;
+
+		// [TL] The number of duels left is the maximum number of duels less the number of duels fought.
+		// [AK] We already confirmed we're using duel limits, so we can now add this string unconditionally.
+		scoreboard_AddSingleLimit( lines, true, duellimit - DUEL_GetNumDuels( ), "duel" );
+
 		for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 		{
-			if ( playeringame[ulIdx] && players[ulIdx].ulWins )
+			if (( playeringame[ulIdx] ) && ( players[ulIdx].ulWins > 0 ))
 			{
-				lWinner = ulIdx;
+				ulWinner = ulIdx;
 				break;
 			}
 		}
 
-		bool bDraw = true;
-		if ( lWinner == -1 )
+		if ( ulWinner == MAXPLAYERS )
 		{
 			if ( DUEL_CountActiveDuelers( ) == 2 )
-				sprintf( szString, "First match between the two" );
+				text = "First match between the two";
 			else
 				bDraw = false;
 		}
 		else
-			sprintf( szString, "Champion is %s \\c-with %d win%s", players[lWinner].userinfo.GetName(), static_cast<unsigned int> (players[lWinner].ulWins), players[lWinner].ulWins == 1 ? "" : "s" );
+		{
+			text.Format( "Champion is %s", players[ulWinner].userinfo.GetName( ));
+			text.AppendFormat( " with %d win%s", static_cast<unsigned int>( players[ulWinner].ulWins ), players[ulWinner].ulWins == 1 ? "" : "s" );
+		}
 
 		if ( bDraw )
 		{
-			V_ColorizeString( szString );
 			if ( !bAcceptColors )
-				V_StripColors( szString );
-			lines.push_back( szString );
+				V_RemoveColorCodes( text );
+
+			lines.push_back( text );
 		}
 	}
 
 	// Build the pointlimit, winlimit, and/or wavelimit strings.
-	scoreboard_AddSingleLimit( lines, ( pointlimit && GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS ), remaining, "point" );
-	scoreboard_AddSingleLimit( lines, ( winlimit && GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS ), remaining, "win" );
-	scoreboard_AddSingleLimit( lines, ( invasion && wavelimit ), wavelimit - INVASION_GetCurrentWave( ), "wave" );
+	scoreboard_AddSingleLimit( lines, pointlimit && ( ulFlags & GMF_PLAYERSEARNPOINTS ), lRemaining, "point" );
+	scoreboard_AddSingleLimit( lines, winlimit && ( ulFlags & GMF_PLAYERSEARNWINS ), lRemaining, "win" );
+	scoreboard_AddSingleLimit( lines, invasion && wavelimit, wavelimit - INVASION_GetCurrentWave( ), "wave" );
 
 	// Render the timelimit string. - [BB] if the gamemode uses it.
 	if ( GAMEMODE_IsTimelimitActive() )
 	{
 		FString TimeLeftString;
 		GAMEMODE_GetTimeLeftString ( TimeLeftString );
-		const char *szRound = ( lastmanstanding || teamlms ) ? "Round" : "Level";
-		sprintf( szString, "%s ends in %s", szRound, TimeLeftString.GetChars() );
-		lines.push_back( szString );
+		text.Format( "%s ends in %s", ulFlags & GMF_PLAYERSEARNWINS ? "Round" : "Level", TimeLeftString.GetChars( ));
+		lines.push_back( text );
 	}
 
 	// Render the number of monsters left in coop.
-	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNKILLS )
+	if ( ulFlags & GMF_PLAYERSEARNKILLS )
 	{
 		if ( dmflags2 & DF2_KILL_MONSTERS )
-			sprintf( szString, "%d%% remaining", static_cast<int> (remaining) );		
+			text.Format( "%d%% remaining", static_cast<int>( lRemaining ));	
 		else
-			sprintf( szString, "%d monster%s remaining", static_cast<int> (remaining), remaining == 1 ? "" : "s" );
-		lines.push_back( szString );
+			text.Format( "%d monster%s remaining", static_cast<int>( lRemaining ), lRemaining == 1 ? "" : "s" );
+
+		lines.push_back( text );
 
 		// [WS] Show the damage factor.
 		if ( sv_coop_damagefactor != 1.0f )
 		{
-			sprintf( szString, "damage factor %.2f", static_cast<float> (sv_coop_damagefactor) );
-			lines.push_back( szString );
+			text.Format( "Damage factor %.2f", static_cast<float>( sv_coop_damagefactor ));
+			lines.push_back( text );
 		}
 	}
 }
