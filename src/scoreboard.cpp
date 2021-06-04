@@ -1694,7 +1694,7 @@ void scoreboard_AddSingleLimit( std::list<FString> &lines, bool condition, int r
 	if ( condition && remaining > 0 )
 	{
 		FString limitString;
-		limitString.Format( "%d %s%s remain%s", static_cast<int>( remaining ), pszUnitName, remaining == 1 ? "" : "s", remaining == 1 ? "s" : "" );
+		limitString.Format( "%d %s%s left", static_cast<int>( remaining ), pszUnitName, remaining == 1 ? "" : "s" );
 		lines.push_back( limitString );
 	}
 }
@@ -1770,20 +1770,33 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 		lines.push_back( text );
 	}
 
-	// Render the number of monsters left in coop.
-	if ( ulFlags & GMF_PLAYERSEARNKILLS )
+	// [AK] Build the coop strings.
+	if ( ulFlags & GMF_COOPERATIVE )
 	{
-		if ( dmflags2 & DF2_KILL_MONSTERS )
-			text.Format( "%d%% remaining", static_cast<int>( lRemaining ));	
-		else
-			text.Format( "%d monster%s remaining", static_cast<int>( lRemaining ), lRemaining == 1 ? "" : "s" );
+		// Render the number of monsters left in coop.
+		// [AK] Unless we're playing invasion, only do this when there are actually monsters on the level.
+		if (( ulFlags & GMF_PLAYERSEARNKILLS ) && (( invasion ) || ( level.total_monsters > 0 )))
+		{
+			if (( invasion ) || (( dmflags2 & DF2_KILL_MONSTERS ) == false ))
+				text.Format( "%d monster%s left", static_cast<int>( lRemaining ), lRemaining == 1 ? "" : "s" );
+			else
+				text.Format( "%d% monsters left", static_cast<int>( lRemaining ));
 
-		lines.push_back( text );
+			lines.push_back( text );
+		}
+
+		// [AK] Render the number of secrets left.
+		if ( level.total_secrets > 0 )
+		{
+			lRemaining = level.total_secrets - level.found_secrets;
+			text.Format( "%d secret%s left", static_cast<int>( lRemaining ), lRemaining == 1 ? "" : "s" );
+			lines.push_back( text );
+		}
 
 		// [WS] Show the damage factor.
 		if ( sv_coop_damagefactor != 1.0f )
 		{
-			text.Format( "Damage factor %.2f", static_cast<float>( sv_coop_damagefactor ));
+			text.Format( "Damage factor is %.2f", static_cast<float>( sv_coop_damagefactor ));
 			lines.push_back( text );
 		}
 	}
