@@ -1658,7 +1658,8 @@ void G_DoWorldDone (void)
 		if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( sv_maprotation ) && (( level.flags & LEVEL_CHANGEMAPCHEAT ) == false ))
 		{
 			ULONG ulMapEntry = MAPROTATION_GetCurrentPosition();
-			if ( stricmp( MAPROTATION_GetMap( ulMapEntry )->mapname, nextlevel.GetChars()) == 0 )
+			level_info_t* map = MAPROTATION_GetMap( ulMapEntry );
+			if ( map && ( stricmp( map->mapname, nextlevel.GetChars()) == 0 ) )
 			{
 				ULONG ulPlayerCount = 0;
 
