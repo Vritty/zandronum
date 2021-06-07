@@ -202,46 +202,60 @@ static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 		bottomString.AppendFormat( "%sFollowing - %s%s", color.GetChars( ), players[ulDisplayPlayer].userinfo.GetName( ), color.GetChars( ));
 	}
 
-	// Print the totals for living and dead allies/enemies.
-	if (( players[ulDisplayPlayer].bSpectating == false ) && ( GAMEMODE_GetCurrentFlags( ) & GMF_DEADSPECTATORS ) && ( GAMEMODE_GetState( ) == GAMESTATE_INPROGRESS ))
+	// [AK] Draw the "waiting for players" or "x allies/opponents left" messages when viewing through a non-spectating player.
+	if ( players[ulDisplayPlayer].bSpectating == false )
 	{
-		if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
-			bottomString += " - ";
+		GAMESTATE_e gamestate = GAMEMODE_GetState( );
 
-		// Survival, Survival Invasion, etc
-		if ( GAMEMODE_GetCurrentFlags( ) & GMF_COOPERATIVE )
+		// [AK] Draw a message showing that we're waiting for players if we are.
+		if ( gamestate == GAMESTATE_WAITFORPLAYERS )
 		{
-			if ( g_lNumAlliesLeft < 1 )
-			{
-				bottomString += TEXTCOLOR_RED "Last Player Alive"; // Uh-oh.
-			}
-			else
-			{
-				bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumAlliesLeft ));
-				bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
-			}
+			if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
+				bottomString += " - ";
+
+			bottomString += TEXTCOLOR_RED "Waiting for players";
 		}
-		// Last Man Standing, TLMS, etc
-		else
+		// Print the totals for living and dead allies/enemies.
+		else if (( gamestate == GAMESTATE_INPROGRESS ) && ( GAMEMODE_GetCurrentFlags( ) & GMF_DEADSPECTATORS ))
 		{
-			bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumOpponentsLeft ));
-			bottomString.AppendFormat( TEXTCOLOR_RED "opponent%s", g_lNumOpponentsLeft != 1 ? "s" : "" );
+			if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
+				bottomString += " - ";
 
-			if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+			// Survival, Survival Invasion, etc
+			if ( GAMEMODE_GetCurrentFlags( ) & GMF_COOPERATIVE )
 			{
 				if ( g_lNumAlliesLeft < 1 )
 				{
-					bottomString += " left - allies dead";
+					bottomString += TEXTCOLOR_RED "Last Player Alive"; // Uh-oh.
 				}
 				else
 				{
-					bottomString.AppendFormat( ", " TEXTCOLOR_GRAY " %d ", static_cast<int>( g_lNumAlliesLeft ));
+					bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumAlliesLeft ));
 					bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
 				}
 			}
+			// Last Man Standing, TLMS, etc
 			else
 			{
-				bottomString += " left";
+				bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumOpponentsLeft ));
+				bottomString.AppendFormat( TEXTCOLOR_RED "opponent%s", g_lNumOpponentsLeft != 1 ? "s" : "" );
+
+				if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+				{
+					if ( g_lNumAlliesLeft < 1 )
+					{
+						bottomString += " left - allies dead";
+					}
+					else
+					{
+						bottomString.AppendFormat( ", " TEXTCOLOR_GRAY " %d ", static_cast<int>( g_lNumAlliesLeft ));
+						bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
+					}
+				}
+				else
+				{
+					bottomString += " left";
+				}
 			}
 		}
 	}
@@ -273,15 +287,6 @@ static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 
 			bottomString += "' to join";
 		}
-	}
-
-	// [AK] Draw a message showing that we're waiting for players if we are.
-	if (( GAMEMODE_GetState( ) == GAMESTATE_WAITFORPLAYERS ) && ( players[ulDisplayPlayer].bSpectating == false ))
-	{
-		if ( ulDisplayPlayer != static_cast<ULONG>( consoleplayer ))
-			bottomString += '\n';
-
-		bottomString += TEXTCOLOR_RED "Waiting for players";
 	}
 
 	// [RC] Draw the centered bottom message (spectating, following, waiting, etc).
