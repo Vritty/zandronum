@@ -248,7 +248,7 @@ static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
 					}
 					else
 					{
-						bottomString.AppendFormat( ", " TEXTCOLOR_GRAY " %d ", static_cast<int>( g_lNumAlliesLeft ));
+						bottomString.AppendFormat( ", " TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumAlliesLeft ));
 						bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
 					}
 				}
