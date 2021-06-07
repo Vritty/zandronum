@@ -1564,7 +1564,7 @@ static void invasion_BuildCurrentWaveString( void )
 	// [AK] If this is the first wave, create a "preparation" kind of string.
 	if ( wave == 1 )
 	{
-		g_CurrentWaveString = sv_maxlives > 0 ? "Survival Invasion" : "Prepare for Invasion";
+		g_CurrentWaveString = sv_maxlives > 0 ? "Survival Invasion" : "Prepare for Invasion!";
 		return;
 	}
 
