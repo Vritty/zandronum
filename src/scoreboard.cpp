@@ -161,8 +161,8 @@ static	void			scoreboard_Prepare4ColumnDisplay( void );
 static	void			scoreboard_Prepare3ColumnDisplay( void );
 static	void			scoreboard_DoRankingListPass( ULONG ulPlayer, LONG lSpectators, LONG lDead, LONG lNotPlaying, LONG lNoTeam, LONG lWrongTeam, ULONG ulDesiredTeam );
 static	void			scoreboard_DrawRankings( ULONG ulPlayer );
-static	void			scoreboard_DrawBottomString( ULONG ulPlayer );
-static	void			scoreboard_RenderCountdown( ULONG ulTimeLeft );
+static	void			HUD_DrawBottomString( ULONG ulPlayer );
+static	void			HUD_RenderCountdown( ULONG ulTimeLeft );
 static	void			scoreboard_DrawText( const char *pszString, EColorRange Color, ULONG &ulXPos, ULONG ulOffset, bool bOffsetRight = false );
 static	void			scoreboard_DrawIcon( const char *pszPatchName, ULONG &ulXPos, ULONG ulYPos, ULONG ulOffset, bool bOffsetRight = false );
 
@@ -180,7 +180,7 @@ EXTERN_CVAR( Bool, st_scale );
 //*****************************************************************************
 //	FUNCTIONS
 
-static void scoreboard_DrawBottomString( ULONG ulDisplayPlayer )
+static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 {
 	FString bottomString;
 
@@ -355,7 +355,7 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 
 	// [AK] Render the countdown screen when we're in the countdown.
 	if ( GAMEMODE_GetState( ) == GAMESTATE_COUNTDOWN )
-		scoreboard_RenderCountdown( GAMEMODE_GetCountdownTicks( ) + TICRATE );
+		HUD_RenderCountdown( GAMEMODE_GetCountdownTicks( ) + TICRATE );
 	// [AK] Render the invasion stats while the game is in progress.
 	else if (( invasion) && ( GAMEMODE_GetState( ) == GAMESTATE_INPROGRESS ))
 		HUD_RenderInvasionStats( );
@@ -390,7 +390,7 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 	}
 	
 	// Display the bottom message.
-	scoreboard_DrawBottomString( ulDisplayPlayer );
+	HUD_DrawBottomString( ulDisplayPlayer );
 }
 
 //*****************************************************************************
@@ -749,7 +749,7 @@ void SCOREBOARD_RenderInVote( void )
 
 //*****************************************************************************
 //
-static void scoreboard_RenderCountdown( ULONG ulTimeLeft )
+static void HUD_RenderCountdown( ULONG ulTimeLeft )
 {
 	// [AK] Don't draw anything if we're on the intermission screen.
 	if ( gamestate != GS_LEVEL )
