@@ -56,6 +56,7 @@
 //	PROTOTYPES
 
 int HUD_GetWidth( void );
+int HUD_GetHeight( void );
 void HUD_DrawTexture( FTexture *Img, int X, int Y, const bool Scale );
 void HUD_DrawTexture( FTexture *Img, int X, int Y );
 void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *String, const bool Scale );

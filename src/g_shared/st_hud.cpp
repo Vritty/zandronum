@@ -74,6 +74,11 @@ int HUD_GetWidth( void )
 	return ( g_bScale ? con_virtualwidth : SCREENWIDTH );
 }
 
+int HUD_GetHeight( void )
+{
+	return ( g_bScale ? con_virtualheight : SCREENHEIGHT );
+}
+
 //*****************************************************************************
 //
 void HUD_DrawTexture( FTexture *Img, int X, int Y, const bool Scale )
