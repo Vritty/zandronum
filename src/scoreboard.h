@@ -93,10 +93,10 @@ enum
 
 void	SCOREBOARD_Render( ULONG ulDisplayPlayer );
 void	SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer );
-void	SCOREBOARD_RenderStats_Holders( void );
-void	SCOREBOARD_RenderStats_TeamScores( void );
-void	SCOREBOARD_RenderStats_RankSpread( void );
-void	SCOREBOARD_RenderInvasionStats( void );
+void	HUD_RenderHolders( void );
+void	HUD_RenderTeamScores( void );
+void	HUD_RenderRankAndSpread( void );
+void	HUD_RenderInvasionStats( void );
 void	SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors );
 void	SCOREBOARD_RenderInVote( void );
 void	SCOREBOARD_RenderInVoteClassic( void );

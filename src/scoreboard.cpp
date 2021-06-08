@@ -358,24 +358,24 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 		scoreboard_RenderCountdown( GAMEMODE_GetCountdownTicks( ) + TICRATE );
 	// [AK] Render the invasion stats while the game is in progress.
 	else if (( invasion) && ( GAMEMODE_GetState( ) == GAMESTATE_INPROGRESS ))
-		SCOREBOARD_RenderInvasionStats( );
+		HUD_RenderInvasionStats( );
 
 	if ( HUD_IsVisible( ))
 	{
 		// Draw the item holders (hellstone, flags, skulls, etc).
-		SCOREBOARD_RenderStats_Holders( );
+		HUD_RenderHolders( );
 
 		if (( HUD_IsUsingNewHud( ) && HUD_IsFullscreen( )) == false )
 		{
 			// Are we in a team game? Draw scores.
 			if( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-				SCOREBOARD_RenderStats_TeamScores( );
+				HUD_RenderTeamScores( );
 
 			if ( !players[ulDisplayPlayer].bSpectating )
 			{
 				// Draw the player's rank and spread in FFA modes.
 				if ((( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) == false ) && ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNFRAGS ))
-					SCOREBOARD_RenderStats_RankSpread( );
+					HUD_RenderRankAndSpread( );
 
 				// [BB] Draw number of lives left.
 				if ( GAMEMODE_AreLivesLimited ( ) )
@@ -432,7 +432,7 @@ void SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer )
 
 //*****************************************************************************
 //
-void SCOREBOARD_RenderStats_Holders( void )
+void HUD_RenderHolders( void )
 {
 	ULONG ulYPos;
 	ULONG color = CR_GRAY;
@@ -532,7 +532,7 @@ void SCOREBOARD_RenderStats_Holders( void )
 //*****************************************************************************
 //
 
-void SCOREBOARD_RenderStats_TeamScores( void )
+void HUD_RenderTeamScores( void )
 {	
 	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
 	LONG lTeamScore = 0;
@@ -576,7 +576,7 @@ void SCOREBOARD_RenderStats_TeamScores( void )
 }
 //*****************************************************************************
 //
-void SCOREBOARD_RenderStats_RankSpread( void )
+void HUD_RenderRankAndSpread( void )
 {
 	// [RC] Don't draw this if there aren't any competitors.
 	if ( g_ulNumPlayers <= 1 )
@@ -611,7 +611,7 @@ void SCOREBOARD_RenderStats_RankSpread( void )
 //*****************************************************************************
 //
 
-void SCOREBOARD_RenderInvasionStats( void )
+void HUD_RenderInvasionStats( void )
 {
 	if (( HUD_IsUsingNewHud( )) && ( HUD_IsFullscreen( )))
 		return;
