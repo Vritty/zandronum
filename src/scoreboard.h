@@ -113,6 +113,6 @@ LONG	HUD_GetSpread( void );
 LONG	SCOREBOARD_GetLeftToLimit( void );
 bool	HUD_IsTied( void );
 void	SCOREBOARD_SetNextLevel( const char *pszMapName );
-FString	SCOREBOARD_SpellOrdinal( int ranknum, bool bColored = false );
+FString	HUD_SpellOrdinal( int ranknum, bool bColored = false );
 
 #endif // __SCOREBOARD_H__

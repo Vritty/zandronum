@@ -270,7 +270,7 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 		if ( players[consoleplayer].bDeadSpectator )
 			bottomString += "Spectating - Waiting to respawn";
 		else if ( lPosition != -1 )
-			bottomString.AppendFormat( "Waiting to play - %s in line", SCOREBOARD_SpellOrdinal( lPosition ));
+			bottomString.AppendFormat( "Waiting to play - %s in line", HUD_SpellOrdinal( lPosition ));
 		else
 		{
 			int key1 = 0, key2 = 0;
@@ -1003,7 +1003,7 @@ FString SCOREBOARD_BuildPointString( void )
 //
 // [TP] Now in a function
 //
-FString SCOREBOARD_SpellOrdinal( int ranknum, bool bColored )
+FString HUD_SpellOrdinal( int ranknum, bool bColored )
 {
 	FString result;
 
@@ -1079,7 +1079,7 @@ FString SCOREBOARD_BuildPlaceString( ULONG ulPlayer )
 			// [AK] Get the rank of this player, though it isn't always equivalent to g_ulRank. Particularly,
 			// when we (the local player) get a frag or get fragged while spying on another player.
 			ULONG ulRank = ( ulPlayer == HUD_GetViewPlayer( )) ? g_ulRank : HUD_CalcRank( ulPlayer );
-			text.AppendFormat( "%s" TEXTCOLOR_NORMAL " place with ", SCOREBOARD_SpellOrdinal( ulRank, true ));
+			text.AppendFormat( "%s" TEXTCOLOR_NORMAL " place with ", HUD_SpellOrdinal( ulRank, true ));
 
 			// Tack on the rest of the string.
 			if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNWINS )
