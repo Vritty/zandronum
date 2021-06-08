@@ -69,14 +69,9 @@ EXTERN_CVAR( Int, screenblocks )
 //*****************************************************************************
 //	FUNCTIONS
 
-bool HUD_IsScaled( void )
-{
-	return ( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 );
-}
-
 int HUD_GetWidth( void )
 {
-	return ( HUD_IsScaled() ? con_virtualwidth : SCREENWIDTH );
+	return ( g_bScale ? con_virtualwidth : SCREENWIDTH );
 }
 
 //*****************************************************************************
@@ -88,7 +83,7 @@ void HUD_DrawTexture( FTexture *Img, int X, int Y, const bool Scale )
 
 void HUD_DrawTexture( FTexture *Img, int X, int Y )
 {
-	HUD_DrawTexture( Img, X, Y, HUD_IsScaled() );
+	HUD_DrawTexture( Img, X, Y, g_bScale );
 }
 
 //*****************************************************************************
@@ -100,7 +95,7 @@ void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *Strin
 
 void HUD_DrawText( FFont* Font, int Normalcolor, int X, int Y, const char *String )
 {
-	HUD_DrawText( Font, Normalcolor, X, Y, String, HUD_IsScaled() );
+	HUD_DrawText( Font, Normalcolor, X, Y, String, g_bScale );
 }
 
 void HUD_DrawText( int Normalcolor, int X, int Y, const char *String, const bool Scale )
@@ -163,8 +158,6 @@ void HUD_DrawCoopInfo( void )
 	if ( !( GAMEMODE_GetCurrentFlags() & ( GMF_COOPERATIVE | GMF_PLAYERSONTEAMS )) || ( NETWORK_GetState() == NETSTATE_SINGLE ))
 		return;
 
-	const bool bScale = HUD_IsScaled();
-
 	FString drawString;
 
 	// [BB] We may not draw in the first 4 lines, this is reserved for chat messages.
@@ -202,7 +195,7 @@ void HUD_DrawCoopInfo( void )
 		// [BB] If the player is on a team, use the team's text color.
 		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
 			nameColor = static_cast<EColorRange> ( TEAM_GetTextColor ( players[i].Team ) );
-		HUD_DrawTextAligned ( nameColor, curYPos, drawString.GetChars(), drawLeft, bScale );
+		HUD_DrawTextAligned ( nameColor, curYPos, drawString.GetChars(), drawLeft, g_bScale );
 		curYPos += SmallFont->GetHeight( ) + 1;
 
 		// [BL] Draw the player's location, [BB] but only if the map has any SectorInfo.
@@ -210,7 +203,7 @@ void HUD_DrawCoopInfo( void )
 		{
 			drawString = SECTINFO_GetPlayerLocation( i );
 			V_ColorizeString( drawString );
-			HUD_DrawTextAligned ( CR_GREY, curYPos, drawString.GetChars(), drawLeft, bScale );
+			HUD_DrawTextAligned ( CR_GREY, curYPos, drawString.GetChars(), drawLeft, g_bScale );
 			curYPos += SmallFont->GetHeight( ) + 1;
 		}
 
@@ -235,7 +228,7 @@ void HUD_DrawCoopInfo( void )
 		}
 		else
 			drawString = "??? / ???";
-		HUD_DrawTextAligned ( healthColor, curYPos, drawString.GetChars(), drawLeft, bScale );
+		HUD_DrawTextAligned ( healthColor, curYPos, drawString.GetChars(), drawLeft, g_bScale );
 		curYPos += SmallFont->GetHeight( ) + 1;
 
 		// [BB] Draw player weapon and Ammo1/Ammo2, but only if the player is alive.
@@ -250,7 +243,7 @@ void HUD_DrawCoopInfo( void )
 			if ( players[i].ReadyWeapon->Ammo2 && ( ( dmflags & DF_INFINITE_AMMO ) == false ) )
 				drawString.AppendFormat( " \\cf%d", players[i].ReadyWeapon->Ammo2->Amount );
 			V_ColorizeString( drawString );
-			HUD_DrawTextAligned ( CR_GREEN, curYPos, drawString.GetChars(), drawLeft, bScale );
+			HUD_DrawTextAligned ( CR_GREEN, curYPos, drawString.GetChars(), drawLeft, g_bScale );
 		}
 
 		playersDrawn++;

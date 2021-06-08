@@ -55,7 +55,6 @@
 //*****************************************************************************
 //	PROTOTYPES
 
-bool HUD_IsScaled( void );
 int HUD_GetWidth( void );
 void HUD_DrawTexture( FTexture *Img, int X, int Y, const bool Scale );
 void HUD_DrawTexture( FTexture *Img, int X, int Y );

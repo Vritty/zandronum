@@ -1645,7 +1645,7 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 			countdownMessage += "next map";
 
 		countdownMessage.AppendFormat( " in %d seconds", MAX( static_cast<int>( WI_GetStopWatch( )) / TICRATE + 1, 1 ));
-		HUD_DrawTextCentered( SmallFont, CR_GREEN, g_ulCurYPos, countdownMessage, HUD_IsScaled( ));
+		HUD_DrawTextCentered( SmallFont, CR_GREEN, g_ulCurYPos, countdownMessage, g_bScale );
 		g_ulCurYPos += 10;
 	}
 }
