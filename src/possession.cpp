@@ -484,7 +484,7 @@ void POSSESSION_DoFight( void )
 		GAME_SpawnPossessionArtifact( );
 	}
 
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 }
 
 //*****************************************************************************
@@ -511,7 +511,7 @@ void POSSESSION_ScorePossessionPoint( player_t *pPlayer )
 		TEAM_SetScore( pPlayer->Team, TEAM_GetScore( pPlayer->Team ) + 1, true );
 
 	// Refresh the HUD since there's bound to be changes.
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 
 	// Determine if the pointlimit has been reached.
 	if (( teampossession ) && ( pPlayer->bOnTeam ))

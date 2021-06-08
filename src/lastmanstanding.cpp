@@ -414,7 +414,7 @@ void LASTMANSTANDING_DoFight( void )
 	GAME_ResetMap( );
 	GAMEMODE_RespawnAllPlayers( BOTEVENT_LMS_FIGHT );
 
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 }
 
 //*****************************************************************************

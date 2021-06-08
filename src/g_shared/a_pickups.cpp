@@ -1258,7 +1258,7 @@ void AInventory::Touch (AActor *toucher)
 
 	// [BC] Finally, refresh the HUD.
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-		SCOREBOARD_RefreshHUD( );
+		HUD_Refresh( );
 
 	// [Dusk] If it's a key, share it to others if sv_sharekeys is on. Note:
 	// we store the key as having been found even if shared keys is off. This

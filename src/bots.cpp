@@ -664,7 +664,7 @@ void BOTS_RemoveBot( ULONG ulPlayerIdx, bool bExitMsg )
 	}
 
 	// Refresh the HUD since the number of players in the game is potentially changing.
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 
 	// [K6] If there are no more bots left, clear the bot nodes.
 	if ( BOTS_CountBots( ) == 0 && ASTAR_IsInitialized( ) )
@@ -1974,7 +1974,7 @@ CSkullBot::CSkullBot( char *pszName, char *pszTeamName, ULONG ulPlayerNum )
 		PostEvent( BOTEVENT_SPECTATING );
 
 	// Refresh the HUD since a new player is now here (this affects the number of players in the game).
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 }
 
 //*****************************************************************************

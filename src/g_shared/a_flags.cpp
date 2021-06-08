@@ -183,7 +183,7 @@ bool ATeamItem::TryPickup( AActor *&pToucher )
 			SERVERCOMMANDS_TeamFlagReturned( TEAM_GetTeamFromItem( this ) );
 		}
 		else
-			SCOREBOARD_RefreshHUD( );
+			HUD_Refresh( );
 
 		return ( false );
 	}
@@ -213,7 +213,7 @@ bool ATeamItem::TryPickup( AActor *&pToucher )
 		ResetReturnTicks( );
 
 		// Also, refresh the HUD.
-		SCOREBOARD_RefreshHUD( );
+		HUD_Refresh( );
 	}
 
 	pCopy = CreateCopy( pToucher );
@@ -552,7 +552,7 @@ bool AFlag::HandlePickup( AInventory *pItem )
 
 
 			// Also, refresh the HUD.
-			SCOREBOARD_RefreshHUD( );
+			HUD_Refresh( );
 		}
 
 		return ( true );
@@ -960,7 +960,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 		this->ReturnFlag( NULL );
 
 		// Also, refresh the HUD.
-		SCOREBOARD_RefreshHUD( );
+		HUD_Refresh( );
 	
 		return ( true );
 	}

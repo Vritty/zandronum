@@ -5831,7 +5831,7 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 		D_UpdatePlayerColors( joinedgame ? MAXPLAYERS : p - players );
 	}
 
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 
 	// [Spleen] Reset reconciliation buffer when player gets spawned
 	UNLAGGED_ResetPlayer( p );

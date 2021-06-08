@@ -2181,7 +2181,7 @@ void PLAYER_SetFragcount( player_t *pPlayer, LONG lFragCount, bool bAnnounce, bo
 	}
 
 	// Refresh the HUD since a score has changed.
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 }
 
 //*****************************************************************************
@@ -2224,7 +2224,7 @@ void PLAYER_ResetAllPlayersFragcount( void )
 	}
 
 	// Refresh the HUD since a score has changed.
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 }
 
 //*****************************************************************************
@@ -2807,7 +2807,7 @@ void PLAYER_SetPoints( player_t *pPlayer, ULONG ulPoints )
 	pPlayer->lPointCount = ulPoints;
 
 	// Refresh the HUD since a score has changed.
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
@@ -2828,7 +2828,7 @@ void PLAYER_SetWins( player_t *pPlayer, ULONG ulWins )
 	pPlayer->ulWins = ulWins;
 
 	// Refresh the HUD since a score has changed.
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{

@@ -2100,7 +2100,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 				if (( bLeavingGame == false ) && ( NETWORK_GetState( ) == NETSTATE_SERVER ))
 					SERVERCOMMANDS_TakeInventory( player - players, TEAM_GetItem( i ), 0 );
 				if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-					SCOREBOARD_RefreshHUD( );
+					HUD_Refresh( );
 
 				// Spawn a new flag.
 				pTeamItem = Spawn( TEAM_GetItem( i ), x, y, z, NO_REPLACE );
@@ -2153,7 +2153,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 			if (( bLeavingGame == false ) && ( NETWORK_GetState( ) == NETSTATE_SERVER ))
 				SERVERCOMMANDS_TakeInventory( player - players, pInventory->GetClass( ), 0 );
 			if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-				SCOREBOARD_RefreshHUD( );
+				HUD_Refresh( );
 
 			// Spawn a new flag.
 			pTeamItem = Spawn( PClass::FindClass( "WhiteFlag" ), x, y, z, ALLOW_REPLACE );
@@ -2203,7 +2203,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				SERVERCOMMANDS_TakeInventory( player - players, PClass::FindClass( "PowerTerminatorArtifact" ), 0 );
 			else
-				SCOREBOARD_RefreshHUD( );
+				HUD_Refresh( );
 		}
 	}
 
@@ -2219,7 +2219,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				SERVERCOMMANDS_TakeInventory( player - players, PClass::FindClass( "PowerPossessionArtifact" ), 0 );
 			else
-				SCOREBOARD_RefreshHUD( );
+				HUD_Refresh( );
 
 			// Tell the possession module that the artifact has been dropped.
 			if ( possession || teampossession )

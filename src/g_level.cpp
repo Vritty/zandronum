@@ -1382,7 +1382,7 @@ void G_DoLoadLevel (int position, bool autosave)
 	level.maptime = 0;
 
 	// Refresh the HUD.
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 
 	// Set number of duels to 0.
 	DUEL_SetNumDuels( 0 );

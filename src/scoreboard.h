@@ -106,7 +106,7 @@ LONG	SCOREBOARD_CalcSpread( ULONG ulPlayerNum );
 ULONG	SCOREBOARD_CalcRank( ULONG ulPlayerNum );
 bool	SCOREBOARD_IsTied( ULONG ulPlayerNum );
 void	SCOREBOARD_DrawFragMessage( player_t *pFraggedPlayer, bool bFraggedBy );
-void	SCOREBOARD_RefreshHUD( void );
+void	HUD_Refresh( void );
 ULONG	SCOREBOARD_GetNumPlayers( void );
 ULONG	SCOREBOARD_GetRank( void );
 LONG	SCOREBOARD_GetSpread( void );

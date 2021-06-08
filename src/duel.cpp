@@ -260,7 +260,7 @@ void DUEL_DoFight( void )
 	GAME_ResetMap( );
 	GAMEMODE_RespawnAllPlayers( BOTEVENT_DUEL_FIGHT );
 
-	SCOREBOARD_RefreshHUD( );
+	HUD_Refresh( );
 }
 
 //*****************************************************************************

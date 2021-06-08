@@ -1149,7 +1149,7 @@ void SCOREBOARD_DrawFragMessage( player_t *pPlayer, bool bFraggedBy )
 
 //*****************************************************************************
 //
-void SCOREBOARD_RefreshHUD( void )
+void HUD_Refresh( void )
 {
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
