@@ -1038,7 +1038,7 @@ drawfullconsole:
 				POSSESSION_Render( );
 
 				// [BC] Render the scoreboard [BB] respecting free spectate mode.
-				SCOREBOARD_Render( CLIENTDEMO_IsInFreeSpectateMode( ) == false ? HUD_GetViewPlayer( ) : consoleplayer );
+				HUD_Render( CLIENTDEMO_IsInFreeSpectateMode( ) == false ? HUD_GetViewPlayer( ) : consoleplayer );
 
 				// Render any medals the player might have been awarded.
 				MEDAL_Render( );

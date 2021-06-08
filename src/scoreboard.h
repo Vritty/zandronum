@@ -91,7 +91,7 @@ enum
 //*****************************************************************************
 //	PROTOTYPES
 
-void	SCOREBOARD_Render( ULONG ulDisplayPlayer );
+void	HUD_Render( ULONG ulDisplayPlayer );
 void	SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer );
 void	HUD_RenderHolders( void );
 void	HUD_RenderTeamScores( void );

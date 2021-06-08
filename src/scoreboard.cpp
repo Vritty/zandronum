@@ -334,7 +334,7 @@ bool HUD_ShouldDrawRank( ULONG ulPlayer )
 //*****************************************************************************
 // Renders some HUD strings, and the main board if the player is pushing the keys.
 //
-void SCOREBOARD_Render( ULONG ulDisplayPlayer )
+void HUD_Render( ULONG ulDisplayPlayer )
 {
 	// Make sure the display player is valid.
 	if ( ulDisplayPlayer >= MAXPLAYERS )
