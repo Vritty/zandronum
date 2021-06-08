@@ -282,7 +282,7 @@ static void DrawStatus(player_t * CPlayer, int x, int y)
 	}
 
 	// [TP] Draw rank and spread
-	if (( hud_showdmstats ) && ( SCOREBOARD_ShouldDrawRank( CPlayer - players )))
+	if (( hud_showdmstats ) && ( HUD_ShouldDrawRank( CPlayer - players )))
 	{
 		FString stat;
 

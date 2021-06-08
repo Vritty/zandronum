@@ -101,11 +101,11 @@ void	SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 void	SCOREBOARD_RenderInVote( void );
 void	SCOREBOARD_RenderInVoteClassic( void );
 bool	SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer );
-bool	SCOREBOARD_ShouldDrawRank( ULONG ulPlayer );
+bool	HUD_ShouldDrawRank( ULONG ulPlayer );
 LONG	HUD_CalcSpread( ULONG ulPlayerNum );
 ULONG	HUD_CalcRank( ULONG ulPlayerNum );
 bool	HUD_IsTied( ULONG ulPlayerNum );
-void	SCOREBOARD_DrawFragMessage( player_t *pFraggedPlayer, bool bFraggedBy );
+void	HUD_DrawFragMessage( player_t *pFraggedPlayer, bool bFraggedBy );
 void	HUD_Refresh( void );
 ULONG	HUD_GetNumPlayers( void );
 ULONG	HUD_GetRank( void );

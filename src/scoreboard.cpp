@@ -319,7 +319,7 @@ bool SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer )
 //
 // [TP]
 //
-bool SCOREBOARD_ShouldDrawRank( ULONG ulPlayer )
+bool HUD_ShouldDrawRank( ULONG ulPlayer )
 {
 	if ( PLAYER_IsTrueSpectator( &players[ulPlayer] ))
 		return false;
@@ -1096,7 +1096,7 @@ FString SCOREBOARD_BuildPlaceString( ULONG ulPlayer )
 
 //*****************************************************************************
 //
-void SCOREBOARD_DrawFragMessage( player_t *pPlayer, bool bFraggedBy )
+void HUD_DrawFragMessage( player_t *pPlayer, bool bFraggedBy )
 {
 	FString message = GStrings( bFraggedBy ? "GM_YOUWEREFRAGGED" : "GM_YOUFRAGGED" );
 	message.StripLeftRight( );
@@ -1627,7 +1627,7 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 		g_ulCurYPos += 10;
 	}
 	// Draw my rank and my frags, points, etc. Don't draw it if we're in the intermission.
-	else if (( gamestate == GS_LEVEL ) && ( SCOREBOARD_ShouldDrawRank( ulPlayer )))
+	else if (( gamestate == GS_LEVEL ) && ( HUD_ShouldDrawRank( ulPlayer )))
 	{
 		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPlaceString( ulPlayer ), g_bScale );
 		g_ulCurYPos += 10;
