@@ -291,7 +291,7 @@ static void DrawStatus(player_t * CPlayer, int x, int y)
 		stat = SCOREBOARD_SpellOrdinal( SCOREBOARD_GetRank(), true );
 
 		// [TP] Indicate tied status with an asterisk
-		if ( SCOREBOARD_IsTied( CPlayer - players ))
+		if ( HUD_IsTied( CPlayer - players ))
 			stat += "*";
 
 		stat.AppendFormat (" (%s%ld)", ( SCOREBOARD_GetSpread() > 0 ? "+" : "" ),

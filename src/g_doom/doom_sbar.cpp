@@ -852,7 +852,7 @@ void DrawFullHUD_GameInformation()
 		if ( !duel )
 		{
 			ulCurYPos += ConFont->GetHeight( ) + 4;
-			sprintf( szString, "rank: \\cC%d/%s%d", static_cast<unsigned int> (SCOREBOARD_GetRank( ) + 1), SCOREBOARD_IsTied( ) ? "\\cG" : "", static_cast<unsigned int> (SCOREBOARD_GetNumPlayers( )));
+			sprintf( szString, "rank: \\cC%d/%s%d", static_cast<unsigned int> (SCOREBOARD_GetRank( ) + 1), HUD_IsTied( ) ? "\\cG" : "", static_cast<unsigned int> (SCOREBOARD_GetNumPlayers( )));
 			V_ColorizeString( szString );
 			HUD_DrawText( ConFont, CR_RED,
 				ulCurXPos,

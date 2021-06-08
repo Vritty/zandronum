@@ -2509,7 +2509,7 @@ static void botcmd_GetSpread( CSkullBot *pBot )
 			g_iReturnInt = TEAM_GetWinCountSpread( pBot->GetPlayer( )->Team );
 	}
 	else
-		g_iReturnInt = SCOREBOARD_CalcSpread( pBot->GetPlayer( ) - players );
+		g_iReturnInt = HUD_CalcSpread( pBot->GetPlayer( ) - players );
 }
 
 //*****************************************************************************

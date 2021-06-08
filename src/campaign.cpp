@@ -244,7 +244,7 @@ bool CAMPAIGN_DidPlayerBeatMap( void )
 	// If it's a deathmatch, check the player's spread.
 	else if ( deathmatch )
 	{
-		if ( SCOREBOARD_CalcSpread( consoleplayer ) < 0 )
+		if ( HUD_CalcSpread( consoleplayer ) < 0 )
 			return ( false );
 	}
 

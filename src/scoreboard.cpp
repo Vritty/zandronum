@@ -799,7 +799,7 @@ static void HUD_RenderCountdown( ULONG ulTimeLeft )
 
 //*****************************************************************************
 //
-LONG SCOREBOARD_CalcSpread( ULONG ulPlayerNum )
+LONG HUD_CalcSpread( ULONG ulPlayerNum )
 {
 	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
 	LONG lHighestScore = 0;
@@ -845,7 +845,7 @@ LONG SCOREBOARD_CalcSpread( ULONG ulPlayerNum )
 
 //*****************************************************************************
 //
-ULONG SCOREBOARD_CalcRank( ULONG ulPlayerNum )
+ULONG HUD_CalcRank( ULONG ulPlayerNum )
 {
 	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
 	ULONG ulRank = 0;
@@ -868,7 +868,7 @@ ULONG SCOREBOARD_CalcRank( ULONG ulPlayerNum )
 
 //*****************************************************************************
 //
-bool SCOREBOARD_IsTied( ULONG ulPlayerNum )
+bool HUD_IsTied( ULONG ulPlayerNum )
 {
 	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
 
@@ -1073,12 +1073,12 @@ FString SCOREBOARD_BuildPlaceString( ULONG ulPlayer )
 		else
 		{
 			// If the player is tied with someone else, add a "tied for" to their string.
-			if ( SCOREBOARD_IsTied( ulPlayer ))
+			if ( HUD_IsTied( ulPlayer ))
 				text = "Tied for ";
 
 			// [AK] Get the rank of this player, though it isn't always equivalent to g_ulRank. Particularly,
 			// when we (the local player) get a frag or get fragged while spying on another player.
-			ULONG ulRank = ( ulPlayer == HUD_GetViewPlayer( )) ? g_ulRank : SCOREBOARD_CalcRank( ulPlayer );
+			ULONG ulRank = ( ulPlayer == HUD_GetViewPlayer( )) ? g_ulRank : HUD_CalcRank( ulPlayer );
 			text.AppendFormat( "%s" TEXTCOLOR_NORMAL " place with ", SCOREBOARD_SpellOrdinal( ulRank, true ));
 
 			// Tack on the rest of the string.
@@ -1195,9 +1195,9 @@ void HUD_Refresh( void )
 
 	player_t *player = &players[HUD_GetViewPlayer( )];
 
-	g_ulRank = SCOREBOARD_CalcRank( player - players );
-	g_lSpread = SCOREBOARD_CalcSpread( player - players );
-	g_bIsTied = SCOREBOARD_IsTied( player - players );
+	g_ulRank = HUD_CalcRank( player - players );
+	g_lSpread = HUD_CalcSpread( player - players );
+	g_bIsTied = HUD_IsTied( player - players );
 
 	// [AK] Count how many players are in the game.
 	g_ulNumPlayers = SERVER_CalcNumNonSpectatingPlayers( MAXPLAYERS );
@@ -1361,7 +1361,7 @@ LONG SCOREBOARD_GetLeftToLimit( void )
 
 //*****************************************************************************
 //
-bool SCOREBOARD_IsTied( void )
+bool HUD_IsTied( void )
 {
 	return ( g_bIsTied );
 }
