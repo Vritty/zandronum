@@ -890,7 +890,7 @@ bool HUD_IsTied( ULONG ulPlayerNum )
 
 //*****************************************************************************
 //
-FString SCOREBOARD_BuildPointString( void )
+FString HUD_BuildPointString( void )
 {
 	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
 	ULONG ulNumAvailableTeams = 0;
@@ -1058,7 +1058,7 @@ FString HUD_SpellOrdinal( int ranknum, bool bColored )
 
 //*****************************************************************************
 //
-FString SCOREBOARD_BuildPlaceString( ULONG ulPlayer )
+FString HUD_BuildPlaceString( ULONG ulPlayer )
 {
 	FString text;
 
@@ -1068,7 +1068,7 @@ FString SCOREBOARD_BuildPlaceString( ULONG ulPlayer )
 		if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
  		{
 			// [AK] Show which team(s) have the highest score and how much.
-			text = SCOREBOARD_BuildPointString( );
+			text = HUD_BuildPointString( );
 		}
 		else
 		{
@@ -1115,7 +1115,7 @@ void HUD_DrawFragMessage( player_t *pPlayer, bool bFraggedBy )
 	StatusBar->AttachMessage( pMsg, MAKE_ID( 'F', 'R', 'A', 'G'));
 
 	// [AK] Build the place string.
-	message = SCOREBOARD_BuildPlaceString( consoleplayer );
+	message = HUD_BuildPlaceString( consoleplayer );
 
 	if ( bFraggedBy == false )
 	{
@@ -1623,13 +1623,13 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 		if ( gamestate != GS_LEVEL )
 			g_ulCurYPos += 10;
 
-		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPointString( ), g_bScale );
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, HUD_BuildPointString( ), g_bScale );
 		g_ulCurYPos += 10;
 	}
 	// Draw my rank and my frags, points, etc. Don't draw it if we're in the intermission.
 	else if (( gamestate == GS_LEVEL ) && ( HUD_ShouldDrawRank( ulPlayer )))
 	{
-		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, SCOREBOARD_BuildPlaceString( ulPlayer ), g_bScale );
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, HUD_BuildPlaceString( ulPlayer ), g_bScale );
 		g_ulCurYPos += 10;
 	}
 
