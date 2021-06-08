@@ -97,6 +97,7 @@ The FON2 header is followed by variable length data:
 #include "v_palette.h"
 // [BC] New #includes.
 #include "network.h"
+#include "c_console.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -2694,6 +2695,9 @@ void V_InitFonts()
 			IntermissionFont = BigFont;
 		}
 	}
+
+	// [AK] Now that the SmallFont is initialized, update the scaled text height.
+	C_UpdateVirtualScreen();
 }
 
 void V_ClearFonts()

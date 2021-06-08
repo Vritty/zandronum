@@ -78,6 +78,7 @@
 #include "domination.h"
 #include "st_hud.h"
 #include "wi_stuff.h"
+#include "c_console.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -114,24 +115,6 @@ static	level_info_t *g_pNextLevel;
 
 // Current position of our "pen".
 static	ULONG		g_ulCurYPos;
-
-// Is text scaling enabled?
-static	bool		g_bScale;
-
-// What are the virtual dimensions of our screen?
-static	UCVarValue	g_ValWidth;
-static	UCVarValue	g_ValHeight;
-
-// How much bigger is the virtual screen than the base 320x200 screen?
-static	float		g_fXScale;
-static	float		g_fYScale;
-
-// How much bigger or smaller is the virtual screen vs. the actual resolution?
-static	float		g_rXScale;
-static	float		g_rYScale;
-
-// How tall is the smallfont, scaling considered?
-static	ULONG		g_ulTextHeight;
 
 // How many columns are we using in our scoreboard display?
 static	ULONG		g_ulNumColumnsUsed = 0;
@@ -352,28 +335,6 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 	if ( ulDisplayPlayer >= MAXPLAYERS )
 		return;
 
-	// Initialization for text scaling.
-	g_ValWidth	= con_virtualwidth.GetGenericRep( CVAR_Int );
-	g_ValHeight	= con_virtualheight.GetGenericRep( CVAR_Int );
-
-	g_bScale = HUD_IsScaled( );
-	g_ulTextHeight = SmallFont->GetHeight( ) + 1;
-
-	if ( g_bScale )
-	{
-		g_fXScale = static_cast<float>( g_ValWidth.Int ) / 320.0f;
-		g_fYScale = static_cast<float>( g_ValHeight.Int ) / 200.0f;
-		g_rXScale = static_cast<float>( g_ValWidth.Int ) / SCREENWIDTH;
-		g_rYScale = static_cast<float>( g_ValHeight.Int ) / SCREENHEIGHT;
-		g_ulTextHeight = Scale( SCREENHEIGHT, g_ulTextHeight, con_virtualheight );
-	}
-	else
-	{
-		g_fXScale = static_cast<float>( SCREENWIDTH ) / 320.0f;
-		g_fYScale = static_cast<float>( SCREENHEIGHT ) / 200.0f;
-		g_rXScale = g_rYScale = 1.0f;
-	}
-
 	// Draw the main scoreboard.
 	if (SCOREBOARD_ShouldDrawBoard( ulDisplayPlayer ))
 		SCOREBOARD_RenderBoard( ulDisplayPlayer );
@@ -443,20 +404,11 @@ void SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer )
 	// Draw the player list and its data.
 	// First, determine how many columns we can use, based on our screen resolution.
 	ulNumIdealColumns = 3;
-	if ( g_bScale )
-	{
-		if ( g_ValWidth.Int >= 480 )
-			ulNumIdealColumns = 4;
-		if ( g_ValWidth.Int >= 600 )
-			ulNumIdealColumns = 5;
-	}
-	else
-	{
-		if ( SCREENWIDTH >= 480 )
-			ulNumIdealColumns = 4;
-		if ( SCREENWIDTH >= 600 )
-			ulNumIdealColumns = 5;
-	}
+
+	if ( HUD_GetWidth( ) >= 480 )
+		ulNumIdealColumns = 4;
+	else if ( HUD_GetWidth( ) >= 600 )
+		ulNumIdealColumns = 5;
 
 	// The 5 column display is only availible for modes that support it.
 	if (( ulNumIdealColumns == 5 ) && !( GAMEMODE_GetCurrentFlags() & (GMF_PLAYERSEARNPOINTS|GMF_PLAYERSEARNWINS) ))

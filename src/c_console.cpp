@@ -115,6 +115,17 @@ constate_e	ConsoleState = c_up;
 static bool g_IsCapturing = false;
 static FString g_CaptureBuffer;
 
+// [AK] A bunch of global variables that were originally defined in scoreboard.cpp but
+// are now used in other files which also deal with drawing HUD elements.
+// Is text scaling enabled?
+bool g_bScale;
+// How much bigger is the virtual screen than the base 320x200 screen?
+float g_fXScale, g_fYScale;
+// How much bigger or smaller is the virtual screen vs. the actual resolution?
+float g_rXScale, g_rYScale;
+// How tall is the smallfont, scaling considered?
+ULONG g_ulTextHeight;
+
 static char ConsoleBuffer[CONSOLESIZE];
 static char *Lines[CONSOLELINES];
 static char *TimeStamps[CONSOLELINES]; // [Leo]
@@ -172,7 +183,12 @@ static int HistSize;
 CVAR (Float, con_notifytime, 3.f, CVAR_ARCHIVE)
 CVAR (Bool, con_centernotify, false, CVAR_ARCHIVE)
 // [BC] con_scaletext is back to being a bool.
-CVAR (Bool, con_scaletext, 0, CVAR_ARCHIVE)		// Scale text at high resolutions?
+// [AK] Converted to a CUSTOM_CVAR.
+CUSTOM_CVAR(Bool, con_scaletext, 0, CVAR_ARCHIVE)		// Scale text at high resolutions?
+{
+	// [AK] Update the scaling of the virtual screen.
+	C_UpdateVirtualScreen();
+}
 
 CUSTOM_CVAR(Float, con_alpha, 0.75f, CVAR_ARCHIVE)
 {
@@ -189,6 +205,9 @@ CUSTOM_CVAR( Int, con_virtualwidth, 640, CVAR_ARCHIVE )
 	// [RC] Less than 4 crashes in the menu, less than 8 in game. Set to 32 to be safe.
 	if ( self < 32 )
 		self = 32;
+
+	// [AK] Update the scaling of the virtual screen.
+	C_UpdateVirtualScreen();
 }
 
 CUSTOM_CVAR( Int, con_virtualheight, 480, CVAR_ARCHIVE )
@@ -196,6 +215,9 @@ CUSTOM_CVAR( Int, con_virtualheight, 480, CVAR_ARCHIVE )
 	// [RC] Less than 4 crashes in the menu, less than 8 in game. Set to 32 to be safe.
 	if ( self < 32 )
 		self = 32;
+
+	// [AK] Update the scaling of the virtual screen.
+	C_UpdateVirtualScreen();
 }
 
 // [BC] Allow text colors?
@@ -2601,4 +2623,28 @@ bool C_IsCapturing()
 unsigned int C_GetMessageLevel()
 {
 	return msglevel;
+}
+
+//
+// [AK] Updates the scale of the screen's width and height, and the height of SmallFont.
+//
+void C_UpdateVirtualScreen()
+{
+	g_bScale = ( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 );
+	g_ulTextHeight = SmallFont ? SmallFont->GetHeight( ) + 1 : 0;
+
+	if ( g_bScale )
+	{
+		g_fXScale = static_cast<float>( con_virtualwidth ) / 320.0f;
+		g_fYScale = static_cast<float>( con_virtualheight ) / 200.0f;
+		g_rXScale = static_cast<float>( con_virtualwidth ) / SCREENWIDTH;
+		g_rYScale = static_cast<float>( con_virtualheight ) / SCREENHEIGHT;
+		g_ulTextHeight = Scale( SCREENHEIGHT, g_ulTextHeight, con_virtualheight );
+	}
+	else
+	{
+		g_fXScale = static_cast<float>( SCREENWIDTH ) / 320.0f;
+		g_fYScale = static_cast<float>( SCREENHEIGHT ) / 200.0f;
+		g_rXScale = g_rYScale = 1.0f;
+	}
 }

@@ -102,5 +102,11 @@ bool C_IsCapturing();
 
 // [AK]
 unsigned int C_GetMessageLevel();
+void C_UpdateVirtualScreen();
+
+// [AK] Externs to global variables used for text scaling and the virtual screen.
+extern bool g_bScale;
+extern float g_fXScale, g_fYScale, g_rXScale, g_rYScale;
+extern ULONG g_ulTextHeight;
 
 #endif
