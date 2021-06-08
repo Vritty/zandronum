@@ -1228,21 +1228,21 @@ void HUD_Refresh( void )
 
 //*****************************************************************************
 //
-ULONG SCOREBOARD_GetNumPlayers( void )
+ULONG HUD_GetNumPlayers( void )
 {
 	return ( g_ulNumPlayers );
 }
 
 //*****************************************************************************
 //
-ULONG SCOREBOARD_GetRank( void )
+ULONG HUD_GetRank( void )
 {
 	return ( g_ulRank );
 }
 
 //*****************************************************************************
 //
-LONG SCOREBOARD_GetSpread( void )
+LONG HUD_GetSpread( void )
 {
 	return ( g_lSpread );
 }

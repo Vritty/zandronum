@@ -835,12 +835,12 @@ void DrawFullHUD_GameInformation()
 	}
 
 	// Just simple deathmatch. Draw the individual rank/spread if there are competitors.
-	else if ( deathmatch && SCOREBOARD_GetNumPlayers( ) > 1 )
+	else if ( deathmatch && HUD_GetNumPlayers( ) > 1 )
 	{
 		ulCurXPos = 4;
 		ulCurYPos = screenHeight - 4 - ( TexMan["MEDIA0"]->GetHeight( ) + 4 ) *2 - ( TexMan["ARM1A0"]->GetHeight( ) + 4 ) - 14;
 		
-		sprintf( szString, "spread: \\cC%s%d", SCOREBOARD_GetSpread( ) > 0 ? "+" : "", static_cast<int> (SCOREBOARD_GetSpread( )));
+		sprintf( szString, "spread: \\cC%s%d", HUD_GetSpread( ) > 0 ? "+" : "", static_cast<int> (HUD_GetSpread( )));
 		V_ColorizeString( szString );
 
 		HUD_DrawText( ConFont, CR_RED,
@@ -852,7 +852,7 @@ void DrawFullHUD_GameInformation()
 		if ( !duel )
 		{
 			ulCurYPos += ConFont->GetHeight( ) + 4;
-			sprintf( szString, "rank: \\cC%d/%s%d", static_cast<unsigned int> (SCOREBOARD_GetRank( ) + 1), HUD_IsTied( ) ? "\\cG" : "", static_cast<unsigned int> (SCOREBOARD_GetNumPlayers( )));
+			sprintf( szString, "rank: \\cC%d/%s%d", static_cast<unsigned int> (HUD_GetRank( ) + 1), HUD_IsTied( ) ? "\\cG" : "", static_cast<unsigned int> (HUD_GetNumPlayers( )));
 			V_ColorizeString( szString );
 			HUD_DrawText( ConFont, CR_RED,
 				ulCurXPos,
