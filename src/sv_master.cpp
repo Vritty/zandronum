@@ -70,6 +70,7 @@
 #include "sv_ban.h"
 #include "version.h"
 #include "d_dehacked.h"
+#include "v_text.h"
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- VARIABLES -------------------------------------------------------------------------------------------------------------------------------------
@@ -382,7 +383,14 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 
 	// Send the server name.
 	if ( ulBits & SQF_NAME )
-		g_MasterServerBuffer.ByteStream.WriteString( sv_hostname );
+	{
+		// [AK] Remove any color codes in the server name first.
+		FString uncolorizedHostname = sv_hostname.GetGenericRep( CVAR_String ).String;
+		V_ColorizeString( uncolorizedHostname );
+		V_RemoveColorCodes( uncolorizedHostname );
+
+		g_MasterServerBuffer.ByteStream.WriteString( uncolorizedHostname );
+	}
 
 	// Send the website URL.
 	if ( ulBits & SQF_URL )

@@ -1620,10 +1620,13 @@ void SERVERCONSOLE_UpdateTitleString( const char *pszString )
 	if ( !g_bServerLoaded )
 		return;
 
-	char		szString[256];
-	strncpy( szString, pszString, 255 );
-	SetDlgItemText( g_hDlg, IDC_TITLEBOX, szString );
-	SetWindowText( g_hDlg, szString );
+	// [AK] Remove any color codes in the string first.
+	FString titleString = pszString;
+	V_ColorizeString( titleString );
+	V_RemoveColorCodes( titleString );
+
+	SetDlgItemText( g_hDlg, IDC_TITLEBOX, titleString );
+	SetWindowText( g_hDlg, titleString );
 }
 
 //*****************************************************************************
