@@ -1632,7 +1632,9 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 	// [AK] Draw the name of the server if we're in an online game.
 	if ( NETWORK_InClientMode( ))
 	{
-		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, sv_hostname, g_bScale );
+		FString hostName = sv_hostname.GetGenericRep( CVAR_String ).String;
+		V_ColorizeString( hostName );
+		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, hostName, g_bScale );
 		g_ulCurYPos += 10;
 	}
 
