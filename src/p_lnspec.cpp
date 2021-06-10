@@ -2504,7 +2504,9 @@ FUNC(LS_Sector_SetColor)
 	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
 	{
 		// [BB] Don't update the clients for each sector separately.
-		sectors[secnum].SetColor(arg1, arg2, arg3, arg4, false);
+		// [AK] Allow clients to set the color since this is purely a visual effect, but only
+		// if the special was called from a CLIENTSIDE ACS script.
+		sectors[secnum].SetColor(arg1, arg2, arg3, arg4, false, ACS_IsCalledFromScript( ));
 	}
 	// [BB] Tell clients to set the color for all sectors with tag arg0.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -2521,7 +2523,9 @@ FUNC(LS_Sector_SetFade)
 	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
 	{
 		// [BB] Don't update the clients for each sector separately.
-		sectors[secnum].SetFade(arg1, arg2, arg3, false);
+		// [AK] Allow clients to set the fade since this is purely a visual effect, but only
+		// if the special was called from a CLIENTSIDE ACS script.
+		sectors[secnum].SetFade(arg1, arg2, arg3, false, ACS_IsCalledFromScript( ));
 	}
 	// [BB] Tell clients to set the fade for all sectors with tag arg0.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )

@@ -306,6 +306,8 @@ inline int uallong(const int &foo)
 
 // [BC] When true, any console commands/line specials were executed via the ConsoleCommand p-code.
 static	bool	g_bCalledFromConsoleCommand = false;
+// [AK] When true, any action or line specials were executed from an ACS script.
+static	bool	g_bCalledFromACS = false;
 
 
 //============================================================================
@@ -7803,6 +7805,9 @@ int DLevelScript::RunScript ()
 	int optstart = -1;
 	int temp;
 
+	// [AK] Any action or line specials activated at this point are done from ACS so indicate that.
+	g_bCalledFromACS = true;
+
 	while (state == SCRIPT_Running)
 	{
 		if (++runaway > 2000000)
@@ -11589,6 +11594,9 @@ scriptwait:
 		assert (sp == 0);
 	}
 
+	// [AK] We're done running this script so any action or line specials activated now aren't done in ACS.
+	g_bCalledFromACS = false;
+
 	// [BB] Stop the net traffic measurement and add the result to this script's traffic.
 	NETTRAFFIC_AddACSScriptTraffic ( script, NETWORK_StopTrafficMeasurement ( ) );
 
@@ -12169,6 +12177,13 @@ CCMD(acsprofile)
 bool ACS_IsCalledFromConsoleCommand( void )
 {
 	return ( g_bCalledFromConsoleCommand );
+}
+
+//*****************************************************************************
+//
+bool ACS_IsCalledFromScript( void )
+{
+	return ( g_bCalledFromACS );
 }
 
 //*****************************************************************************
