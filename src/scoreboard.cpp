@@ -333,7 +333,14 @@ bool SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer )
 //
 bool SCOREBOARD_ShouldDrawRank( ULONG ulPlayer )
 {
-	return (( deathmatch ) && (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) == 0 ) && ( PLAYER_IsTrueSpectator( &players[ulPlayer] ) == false ));
+	if ( PLAYER_IsTrueSpectator( &players[ulPlayer] ))
+		return false;
+
+	// [AK] Don't draw the rank if we're also on the lobbby map.
+	if (( deathmatch == false ) || ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) || ( GAMEMODE_IsLobbyMap( )))
+		return false;
+
+	return true;
 }
 
 //*****************************************************************************
