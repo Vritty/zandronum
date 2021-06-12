@@ -448,6 +448,33 @@ OptionValue ZA_SwitchOnPickup
 	3, "Use PWO"
 }
 
+OptionValue "ZA_WeaponBobStyle"
+{
+	0, "Normal"
+	1, "Inversed normal"
+	2, "Alpha-style"
+	3, "Inversed alpha-style"
+	4, "Smooth"
+	5, "Inversed smooth"
+	6, "Quake-style"
+}
+
+OptionValue "ZA_WeaponSwayStyle"
+{
+	0, "Normal"
+	1, "Down only"
+	2, "Up only"
+	3, "Horizontally only"
+}
+
+OptionValue "ZA_WeaponPitchStyle"
+{
+	0, "Full"
+	1, "Lower-half only"
+	2, "Upper-half only"
+	3, "Both upper and lower"
+}
+
 OptionMenu ZA_WeaponSetup
 {
 	Title		"WEAPON SETUP"
@@ -456,6 +483,18 @@ OptionMenu ZA_WeaponSetup
 	Option		"Switch on pickup",		"switchonpickup",				"ZA_SwitchOnPickup"
 	Option		"Switch without ammo",	"cl_noammoswitch",				"YesNo"
 	Option		"Railgun color",		"railcolor",					"ZA_RailgunColors"
+	StaticText	" "
+	Option		"Always bob weapon",	"cl_alwaysbob",					"YesNo"
+	Option		"Allow screen bob",		"cl_viewbob",					"YesNo"
+	Option		"Use custom bob",		"cl_usecustombob",				"YesNo"
+	Option		"Bob style",			"cl_bobstyle",					"ZA_WeaponBobStyle"
+	Slider		"Bob speed",			"cl_bobspeed",					0.0, 2.0, 0.1
+	StaticText	" "
+	Option		"Sway weapon",			"cl_swaystyle",					"ZA_WeaponSwayStyle"
+	Slider		"Sway multiplier",		"cl_swayspeed",					-5.0, 5.0, 0.5
+	StaticText	" "
+	Option		"Offset weapon pitch",	"cl_viewpitchstyle",			"ZA_WeaponPitchStyle"
+	Slider		"Offset multiplier",	"cl_viewpitchoffset",			-16.0, 16.0, 1.0
 
 	Class WeaponSetupMenu
 }

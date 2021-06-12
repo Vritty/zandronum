@@ -52,6 +52,24 @@ typedef enum
 
 } psprnum_t;
 
+// [AK] Enums for all weapon sway styles (used for cl_swaystyle).
+enum
+{
+	WEAPON_SWAY_NORMAL,
+	WEAPON_SWAY_DOWNONLY,
+	WEAPON_SWAY_UPONLY,
+	WEAPON_SWAY_HORIZONTALONLY,
+};
+
+// [AK] Enums for all weapon pitch offset styles (used for cl_viewpitchstyle).
+enum
+{
+	WEAPON_PITCH_FULL,
+	WEAPON_PITCH_LOWERONLY,
+	WEAPON_PITCH_UPPERONLY,
+	WEAPON_PITCH_LOWERANDUPPER,
+};
+
 /*
 inline FArchive &operator<< (FArchive &arc, psprnum_t &i)
 {

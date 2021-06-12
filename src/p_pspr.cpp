@@ -37,6 +37,7 @@
 #include "sv_commands.h"
 #include "unlagged.h"
 #include "g_game.h"
+#include "p_tick.h"
 
 
 // MACROS ------------------------------------------------------------------
@@ -76,6 +77,40 @@ CUSTOM_CVAR( Int, sv_fastweapons, 0, CVAR_SERVERINFO )
 		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
 		SERVERCOMMANDS_SetGameModeLimits( );
 	}
+}
+
+// [AK] CVars that control how the weapon bobs, sways, or offsets based on the player's pitch. 
+CVAR( Bool, cl_alwaysbob, false, CVAR_ARCHIVE )
+CVAR( Bool, cl_usecustombob, false, CVAR_ARCHIVE )
+CVAR( Float, cl_bobspeed, 1.0f, CVAR_ARCHIVE )
+CVAR( Float, cl_swayspeed, 0.0f, CVAR_ARCHIVE )
+CVAR( Float, cl_viewpitchoffset, 0.0f, CVAR_ARCHIVE )
+
+// [AK] Allows a different bob style to be used than what the weapon uses.
+CUSTOM_CVAR( Int, cl_bobstyle, AWeapon::BobNormal, CVAR_ARCHIVE )
+{
+	if (self < AWeapon::BobNormal)
+		self = AWeapon::BobNormal;
+	else if ( self > AWeapon::BobQuake )
+		self = AWeapon::BobQuake;
+}
+
+// [AK] Specifies how to sway the weapon depending on how the player looks around.
+CUSTOM_CVAR( Int, cl_swaystyle, WEAPON_SWAY_NORMAL, CVAR_ARCHIVE )
+{
+	if (self < WEAPON_SWAY_NORMAL)
+		self = WEAPON_SWAY_NORMAL;
+	else if (self > WEAPON_SWAY_HORIZONTALONLY)
+		self = WEAPON_SWAY_HORIZONTALONLY;
+}
+
+// [AK] Controls which parts of the player's pitch affect the offset of the weapon and how.
+CUSTOM_CVAR( Int, cl_viewpitchstyle, WEAPON_PITCH_FULL, CVAR_ARCHIVE )
+{
+	if (self < WEAPON_PITCH_FULL)
+		self = WEAPON_PITCH_FULL;
+	else if (self > WEAPON_PITCH_LOWERANDUPPER)
+		self = WEAPON_PITCH_LOWERANDUPPER;
 }
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -447,6 +482,8 @@ void P_DropWeapon (player_t *player)
 void P_BobWeapon (player_t *player, pspdef_t *psp, fixed_t *x, fixed_t *y)
 {
 	static fixed_t curbob;
+	// [AK] The position of the weapon while it's swaying (0 = x, 1 = y).
+	static fixed_t swaypos[2];
 
 	AWeapon *weapon;
 	fixed_t bobtarget;
@@ -464,8 +501,9 @@ void P_BobWeapon (player_t *player, pspdef_t *psp, fixed_t *x, fixed_t *y)
 	}
 
 	// [XA] Get the current weapon's bob properties.
-	int bobstyle = weapon->BobStyle;
-	int bobspeed = (weapon->BobSpeed * 128) >> 16;
+	// [AK] Adjust the bob style and speed to the client's preference if cl_usecustombob is enabled.
+	int bobstyle = cl_usecustombob ? cl_bobstyle : weapon->BobStyle;
+	int bobspeed = ((cl_usecustombob ? FLOAT2FIXED(cl_bobspeed) : weapon->BobSpeed) * 128) >> 16;
 	fixed_t rangex = weapon->BobRangeX;
 	fixed_t rangey = weapon->BobRangeY;
 
@@ -475,7 +513,8 @@ void P_BobWeapon (player_t *player, pspdef_t *psp, fixed_t *x, fixed_t *y)
 	// [RH] Smooth transitions between bobbing and not-bobbing frames.
 	// This also fixes the bug where you can "stick" a weapon off-center by
 	// shooting it when it's at the peak of its swing.
-	bobtarget = (player->WeaponState & WF_WEAPONBOBBING) ? player->bob : 0;
+	// [AK] Keep bobbing the weapon while firing if cl_alwaysbob is enabled.
+	bobtarget = ((player->WeaponState & WF_WEAPONBOBBING) || (cl_alwaysbob)) ? player->bob : 0;
 	if (curbob != bobtarget)
 	{
 		if (abs (bobtarget - curbob) <= 1*FRACUNIT)
@@ -530,12 +569,89 @@ void P_BobWeapon (player_t *player, pspdef_t *psp, fixed_t *x, fixed_t *y)
 		case AWeapon::BobInverseSmooth:
 			*x = FixedMul(bobx, finecosine[angle]);
 			*y = (FixedMul(boby, finecosine[angle*2 & (FINEANGLES-1)]) + boby) / 2;
+			break;
+
+		// [AK] Quake-styled bobbing originally made by Dark-Assassin.
+		case AWeapon::BobQuake:
+			*x = 0;
+			*y = FixedMul(boby, finesine[angle & (FINEANGLES/2-1)]);
+			break;
 		}
 	}
 	else
 	{
 		*x = 0;
 		*y = 0;
+	}
+
+	// [AK] Sway the weapon if the multiplier is a non-zero value.
+	if (cl_swayspeed != 0.0f)
+	{
+		// [AK] Don't readjust the position of the sprite while the ticker is paused.
+		if ((paused == false) && (P_CheckTickerPaused() == false))
+		{
+			fixed_t nswaypos[2];
+			nswaypos[0] = FLOAT2FIXED(static_cast<float>(player->cmd.ucmd.yaw) / 128.0f / cl_swayspeed);
+			nswaypos[1] = FLOAT2FIXED(static_cast<float>(player->cmd.ucmd.pitch) / 128.0f / cl_swayspeed);
+
+			for (int i = 0; i <= 1; i++)
+			{
+				if (abs(nswaypos[i] - swaypos[i]) <= 1024)
+				{
+					swaypos[i] = nswaypos[i];
+				}
+				else
+				{
+					fixed_t zoom = MAX<fixed_t>(1024, abs(swaypos[i] - nswaypos[i]) / 40);
+					swaypos[i] += zoom * (swaypos[i] > nswaypos[i] ? -1 : 1);
+				}
+			}
+		}
+
+		*x += swaypos[0];
+
+		switch (cl_swaystyle)
+		{
+		case WEAPON_SWAY_NORMAL:
+			*y += swaypos[1];
+			break;
+
+		case WEAPON_SWAY_DOWNONLY:
+			*y += MAX<fixed_t>(0, swaypos[1]);
+			break;
+
+		case WEAPON_SWAY_UPONLY:
+			*y += MIN<fixed_t>(0, swaypos[1]);
+			break;
+		}
+	}
+
+	// [AK] Offset the weapon based on the player's pitch if the multiplier is a non-zero value.
+	if (cl_viewpitchoffset != 0.0f)
+	{
+		fixed_t halfmin = FIXED_MIN >> 1;
+		fixed_t value;
+
+		switch (cl_viewpitchstyle)
+		{
+		case WEAPON_PITCH_FULL:
+			value = FixedDiv(halfmin + player->mo->pitch, FIXED_MIN);
+			break;
+
+		case WEAPON_PITCH_LOWERONLY:
+			value = FixedDiv(MIN<fixed_t>(0, player->mo->pitch), halfmin);
+			break;
+
+		case WEAPON_PITCH_UPPERONLY:
+			value = -FixedDiv(MAX<fixed_t>(0, player->mo->pitch), halfmin);
+			break;
+
+		case WEAPON_PITCH_LOWERANDUPPER:
+			value = -FixedDiv(abs(player->mo->pitch), halfmin);
+			break;
+		}
+
+		*y -= FixedMul(value, FLOAT2FIXED(cl_viewpitchoffset)) + MIN<fixed_t>(0, FLOAT2FIXED(cl_viewpitchoffset));
 	}
 }
 

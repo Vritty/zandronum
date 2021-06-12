@@ -92,6 +92,9 @@ static TArray<sector_t *> PredictionTouchingSectorsBackup;
 static TArray<AActor *> PredictionSectorListBackup;
 static TArray<msecnode_t *> PredictionSector_sprev_Backup;
 
+// [Leo] Stops the screen from bobbing but not the weapon itself.
+CVAR (Bool, cl_viewbob, true, CVAR_ARCHIVE)
+
 // [Dusk] Determine speed spectators will move at
 CUSTOM_CVAR (Float, cl_spectatormove, 1.0, CVAR_ARCHIVE|CVAR_GLOBALCONFIG) {
 	if (self > 100.0)
@@ -2782,7 +2785,8 @@ void P_CalcHeight (player_t *player)
 	{
 		bob = 0;
 	}
-	player->viewz = player->mo->z + player->viewheight + bob;
+	// [AK] Don't bob the screen if cl_viewbob is disabled.
+	player->viewz = player->mo->z + player->viewheight + (cl_viewbob ? bob : 0);
 	if (player->mo->floorclip && player->playerstate != PST_DEAD
 		&& player->mo->z <= player->mo->floorz)
 	{

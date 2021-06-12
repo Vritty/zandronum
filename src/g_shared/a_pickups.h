@@ -333,7 +333,9 @@ public:
 		BobAlpha,
 		BobInverseAlpha,
 		BobSmooth,
-		BobInverseSmooth
+		BobInverseSmooth,
+		// [AK] Quake-styled bobbing originally made by Dark-Assassin.
+		BobQuake
 	};
 
 protected:
