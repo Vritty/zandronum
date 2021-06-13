@@ -50,8 +50,6 @@
 #ifndef __SCOREBOARD_H__
 #define __SCOREBOARD_H__
 
-#include "d_player.h"
-
 //*****************************************************************************
 //	DEFINES
 
@@ -91,7 +89,6 @@ enum
 //*****************************************************************************
 //	PROTOTYPES
 
-void	HUD_Render( ULONG ulDisplayPlayer );
 void	SCOREBOARD_Render( ULONG ulDisplayPlayer );
 void	HUD_RenderHolders( void );
 void	HUD_RenderTeamScores( void );
@@ -101,17 +98,7 @@ void	SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 void	SCOREBOARD_RenderInVote( void );
 void	SCOREBOARD_RenderInVoteClassic( void );
 bool	SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer );
-bool	HUD_ShouldDrawRank( ULONG ulPlayer );
-LONG	HUD_CalcSpread( ULONG ulPlayerNum );
-ULONG	HUD_CalcRank( ULONG ulPlayerNum );
-bool	HUD_IsTied( ULONG ulPlayerNum );
-void	HUD_DrawFragMessage( player_t *pFraggedPlayer, bool bFraggedBy );
-ULONG	HUD_GetNumPlayers( void );
-ULONG	HUD_GetRank( void );
-LONG	HUD_GetSpread( void );
 LONG	SCOREBOARD_GetLeftToLimit( void );
-bool	HUD_IsTied( void );
 void	SCOREBOARD_SetNextLevel( const char *pszMapName );
-FString	HUD_SpellOrdinal( int ranknum, bool bColored = false );
 
 #endif // __SCOREBOARD_H__

@@ -70,7 +70,7 @@
 #include "p_trace.h"
 #include "i_system.h"
 #include "sc_man.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "sv_commands.h"
 #include "sv_main.h"
 #include "team.h"

@@ -55,7 +55,7 @@
 #include "i_system.h"
 #include "network.h"
 #include "sc_man.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "team.h"
 #include "w_wad.h"
 

@@ -57,7 +57,7 @@
 #include "network.h"
 #include "gamemode.h"
 #include "sv_main.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "team.h"
 
 #define HUMETA_AltIcon 0x10f000
