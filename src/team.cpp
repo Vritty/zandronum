@@ -70,7 +70,7 @@
 #include "p_local.h"
 #include "s_sound.h"
 #include "sbar.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "sv_commands.h"
 #include "sv_main.h"
 #include "team.h"

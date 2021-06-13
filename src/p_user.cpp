@@ -70,7 +70,7 @@
 #include "sv_main.h"
 #include "cl_demo.h"
 #include "cl_main.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "p_acs.h"
 #include "possession.h"
 #include "cl_commands.h"

@@ -69,6 +69,7 @@ bool HUD_IsUsingNewHud( void );
 bool HUD_IsVisible( void );
 bool HUD_IsFullscreen( void );
 
+void HUD_Refresh( void );
 void HUD_DrawCoopInfo( void );
 ULONG HUD_GetViewPlayer( void );
 

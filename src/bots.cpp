@@ -75,7 +75,7 @@
 #include "r_sky.h"
 #include "s_sound.h"
 #include "sc_man.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "st_stuff.h"
 #include "stats.h"
 #include "sv_commands.h"

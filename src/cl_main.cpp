@@ -121,6 +121,7 @@
 #include "menu/menu.h"
 #include "v_text.h"
 #include "maprotation.h"
+#include "st_hud.h"
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING

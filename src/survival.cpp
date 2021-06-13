@@ -63,7 +63,7 @@
 #include "p_local.h"
 #include "p_setup.h"
 #include "sbar.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "survival.h"
 #include "sv_commands.h"
 #include "v_video.h"

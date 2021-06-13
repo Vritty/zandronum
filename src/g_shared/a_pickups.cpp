@@ -29,7 +29,7 @@
 #include "cl_commands.h"
 #include "cl_demo.h"
 #include "announcer.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "gamemode.h"
 #include "cooperative.h"
 #include "p_acs.h"

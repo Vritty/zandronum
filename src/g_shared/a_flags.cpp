@@ -57,7 +57,7 @@
 #include "network.h"
 #include "p_acs.h"
 #include "sbar.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "sv_commands.h"
 #include "team.h"
 #include "v_text.h"

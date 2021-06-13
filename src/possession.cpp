@@ -65,6 +65,7 @@
 #include "sbar.h"
 #include "scoreboard.h"
 #include "v_video.h"
+#include "st_hud.h"
 
 //*****************************************************************************
 //	PROTOTYPES

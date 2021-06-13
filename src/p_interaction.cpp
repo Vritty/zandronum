@@ -80,6 +80,7 @@
 #include "p_enemy.h"
 #include "r_data/colormaps.h"
 #include "v_video.h"
+#include "st_hud.h"
 
 // [BC] Ugh.
 void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags );

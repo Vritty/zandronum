@@ -98,7 +98,7 @@
 #include "callvote.h"
 #include "cooperative.h"
 #include "invasion.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "survival.h"
 #include "announcer.h"
 #include "p_acs.h"

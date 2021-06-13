@@ -93,7 +93,7 @@
 #include "campaign.h"
 #include "duel.h"
 #include "lastmanstanding.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "campaign.h"
 #include "joinqueue.h"
 #include "sv_save.h"

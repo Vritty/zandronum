@@ -78,7 +78,7 @@
 #include "cl_main.h"
 #include "cooperative.h"
 #include "invasion.h"
-#include "scoreboard.h"
+#include "st_hud.h"
 #include "team.h"
 #include "sv_commands.h"
 #include "cl_demo.h"
