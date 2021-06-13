@@ -351,6 +351,16 @@ void GAMEMODE_ParseGamemodeInfoLump ( FScanner &sc, const GAMEMODE_e GameMode )
 		else
 			sc.ScriptError ( "Unknown option '%s', on line %d in GAMEMODE.", sc.String, sc.Line );
 	}
+
+	// [AK] Get the type of "players earn" flag this game mode is currently using.
+	ULONG ulMask = GMF_PLAYERSEARNKILLS | GMF_PLAYERSEARNFRAGS | GMF_PLAYERSEARNPOINTS | GMF_PLAYERSEARNWINS;
+	ULONG ulEarnFlags = g_GameModes[GameMode].ulFlags & ulMask;
+
+	// [AK] If all of these flags were removed or if more than one was added, then throw an error.
+	if ( ulEarnFlags == 0 )
+		sc.ScriptError( "Players have no way of earning kills, frags, points, or wins in '%s'.", g_GameModes[GameMode].szName );
+	else if (( ulEarnFlags & ( ulEarnFlags - 1 )) != 0 )
+		sc.ScriptError( "There is more than one PLAYERSEARN flag enabled in '%s'.", g_GameModes[GameMode].szName );
 }
 
 //*****************************************************************************
