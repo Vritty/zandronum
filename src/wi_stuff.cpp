@@ -1875,7 +1875,7 @@ void WI_drawDeathmatchStats ()
 	// [RH] Draw heads-up scores display
 //	HU_DrawScores (&players[me]);
 	// [BC] Use this display instead.
-	SCOREBOARD_RenderBoard( me );
+	SCOREBOARD_Render( me );
 
 /*
 	int 		i;
@@ -2172,7 +2172,7 @@ void WI_drawNetgameStats ()
 	/*y =*/ WI_drawLF();
 
 	// [BC] In cooperative mode, just draw the scoreboard.
-	SCOREBOARD_RenderBoard( me );
+	SCOREBOARD_Render( me );
 /*
 	HU_GetPlayerWidths(maxnamewidth, maxscorewidth, maxiconheight);
 	height = SmallFont->GetHeight() * CleanYfac;

@@ -342,7 +342,7 @@ void HUD_Render( ULONG ulDisplayPlayer )
 
 	// Draw the main scoreboard.
 	if (SCOREBOARD_ShouldDrawBoard( ulDisplayPlayer ))
-		SCOREBOARD_RenderBoard( ulDisplayPlayer );
+		SCOREBOARD_Render( ulDisplayPlayer );
 
 	if ( CALLVOTE_ShouldShowVoteScreen( ))
 	{		
@@ -395,7 +395,7 @@ void HUD_Render( ULONG ulDisplayPlayer )
 
 //*****************************************************************************
 //
-void SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer )
+void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 {
 	ULONG	ulNumIdealColumns;
 

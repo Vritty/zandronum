@@ -1076,9 +1076,9 @@ drawfullconsole:
 			{
 				// Render the scoreboard.
 				if (( players[consoleplayer].camera != NULL ) && ( players[consoleplayer].camera->player != NULL ))
-					SCOREBOARD_RenderBoard( players[consoleplayer].camera->player - players );
+					SCOREBOARD_Render( players[consoleplayer].camera->player - players );
 				else
-					SCOREBOARD_RenderBoard( consoleplayer );
+					SCOREBOARD_Render( consoleplayer );
 			}
 
 			// Render chat prompt.

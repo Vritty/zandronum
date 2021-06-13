@@ -92,7 +92,7 @@ enum
 //	PROTOTYPES
 
 void	HUD_Render( ULONG ulDisplayPlayer );
-void	SCOREBOARD_RenderBoard( ULONG ulDisplayPlayer );
+void	SCOREBOARD_Render( ULONG ulDisplayPlayer );
 void	HUD_RenderHolders( void );
 void	HUD_RenderTeamScores( void );
 void	HUD_RenderRankAndSpread( void );
