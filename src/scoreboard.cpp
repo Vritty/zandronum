@@ -1572,6 +1572,7 @@ static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPl
 }
 
 //*****************************************************************************
+//
 void SCOREBOARD_SetNextLevel( const char *pszMapName )
 {
 	g_pNextLevel = ( pszMapName != NULL ) ? FindLevelInfo( pszMapName ) : NULL;
