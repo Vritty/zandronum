@@ -1683,6 +1683,8 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 	if ( duel && duellimit )
 	{
 		ULONG ulWinner = MAXPLAYERS;
+		LONG lHighestFrags = LONG_MIN;
+		const bool bInResults = GAMEMODE_IsGameInResultSequence( );
 		bool bDraw = true;
 
 		// [TL] The number of duels left is the maximum number of duels less the number of duels fought.
@@ -1693,8 +1695,21 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 		{
 			if (( playeringame[ulIdx] ) && ( players[ulIdx].ulWins > 0 ))
 			{
-				ulWinner = ulIdx;
-				break;
+				// [AK] In case both duelers have at least one win during the results sequence the,
+				// champion should be the one with the higher frag count.
+				if ( bInResults )
+				{
+					if ( players[ulIdx].fragcount > lHighestFrags )
+					{
+						ulWinner = ulIdx;
+						lHighestFrags = players[ulIdx].fragcount;
+					}
+				}
+				else
+				{
+					ulWinner = ulIdx;
+					break;
+				}
 			}
 		}
 
