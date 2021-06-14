@@ -1381,6 +1381,10 @@ void G_DoLoadLevel (int position, bool autosave)
 
 	level.maptime = 0;
 
+	// [AK] Update the team carriers if we're playing on a team-based game mode.
+	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+		TEAM_UpdateCarriers( );
+
 	// Refresh the HUD.
 	HUD_Refresh( );
 

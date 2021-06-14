@@ -911,6 +911,10 @@ void APlayerPawn::AddInventory (AInventory *item)
 	{
 		InvSel = item;
 	}
+
+	// [AK] Update the carriers if we added a team item to the player's inventory in a team-based game mode.
+	if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) && ( item->IsKindOf( RUNTIME_CLASS( ATeamItem ))))
+		TEAM_UpdateCarriers( );
 }
 
 //===========================================================================
@@ -967,6 +971,10 @@ void APlayerPawn::RemoveInventory (AInventory *item)
 	{
 		PickNewWeapon (NULL);
 	}
+
+	// [AK] Update the carriers if we removed a team item from the player's inventory in a team-based game mode.
+	if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) && ( item->IsKindOf( RUNTIME_CLASS( ATeamItem ))))
+		TEAM_UpdateCarriers( );
 }
 
 //===========================================================================

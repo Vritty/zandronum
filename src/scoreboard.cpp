@@ -1174,25 +1174,6 @@ void HUD_Refresh( void )
 	// [AK] Determine which player is carrying the terminator sphere, possession hellstone, or white flag.
 	g_pArtifactCarrier = GAMEMODE_GetArtifactCarrier( );
 
-	// [AK] Determine which players are carrying a team's item.
-	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
-	{
-		for ( ULONG ulTeam = 0; ulTeam < teams.Size( ); ulTeam++ )
-		{
-			TEAM_SetCarrier( ulTeam, NULL );
-
-			for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-			{
-				// [AK] Ignore invalid players.
-				if (( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )) || ( players[ulIdx].mo == NULL ))
-					continue;
-
-				if ( players[ulIdx].mo->FindInventory( TEAM_GetItem( ulTeam )))
-					TEAM_SetCarrier( ulTeam, &players[ulIdx] );
-			}
-		}
-	}
-
 	player_t *player = &players[HUD_GetViewPlayer( )];
 
 	g_ulRank = HUD_CalcRank( player - players );

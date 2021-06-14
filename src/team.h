@@ -128,6 +128,7 @@ void		TEAM_SetItem( ULONG ulTeamIdx, const PClass *pType, bool bFlag );
 
 AInventory	*TEAM_FindOpposingTeamsItemInPlayersInventory( player_t *pPlayer );
 
+void		TEAM_UpdateCarriers( void );
 player_t	*TEAM_GetCarrier( ULONG ulTeamIdx );
 void		TEAM_SetCarrier( ULONG ulTeamIdx, player_t *player );
 

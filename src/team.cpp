@@ -1211,6 +1211,26 @@ AInventory *TEAM_FindOpposingTeamsItemInPlayersInventory( player_t *pPlayer )
 
 //*****************************************************************************
 //
+void TEAM_UpdateCarriers( void )
+{
+	for ( ULONG ulTeam = 0; ulTeam < teams.Size( ); ulTeam++ )
+	{
+		TEAM_SetCarrier( ulTeam, NULL );
+
+		for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+		{
+			// [AK] Ignore invalid players.
+			if ( PLAYER_IsValidPlayerWithMo( ulIdx ) == false )
+				continue;
+
+			if ( players[ulIdx].mo->FindInventory( TEAM_GetItem( ulTeam )))
+				TEAM_SetCarrier( ulTeam, &players[ulIdx] );
+		}
+	}
+}
+
+//*****************************************************************************
+//
 player_t *TEAM_GetCarrier( ULONG ulTeamIdx )
 {
 	if ( TEAM_CheckIfValid( ulTeamIdx ))
