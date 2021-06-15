@@ -1722,15 +1722,6 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 	scoreboard_AddSingleLimit( lines, winlimit && ( ulFlags & GMF_PLAYERSEARNWINS ), lRemaining, "win" );
 	scoreboard_AddSingleLimit( lines, invasion && wavelimit, wavelimit - INVASION_GetCurrentWave( ), "wave" );
 
-	// Render the timelimit string. - [BB] if the gamemode uses it.
-	if ( GAMEMODE_IsTimelimitActive() )
-	{
-		FString TimeLeftString;
-		GAMEMODE_GetTimeLeftString ( TimeLeftString );
-		text.Format( "%s ends in %s", ulFlags & GMF_PLAYERSEARNWINS ? "Round" : "Level", TimeLeftString.GetChars( ));
-		lines.push_back( text );
-	}
-
 	// [AK] Build the coop strings.
 	if ( ulFlags & GMF_COOPERATIVE )
 	{
@@ -1760,6 +1751,15 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 			text.Format( "Damage factor is %.2f", static_cast<float>( sv_coop_damagefactor ));
 			lines.push_back( text );
 		}
+	}
+
+	// Render the timelimit string. - [BB] if the gamemode uses it.
+	if ( GAMEMODE_IsTimelimitActive( ))
+	{
+		FString TimeLeftString;
+		GAMEMODE_GetTimeLeftString ( TimeLeftString );
+		text.Format( "%s ends in %s", ulFlags & GMF_PLAYERSEARNWINS ? "Round" : "Level", TimeLeftString.GetChars( ));
+		lines.push_back( text );
 	}
 }
 
