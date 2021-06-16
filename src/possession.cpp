@@ -66,6 +66,7 @@
 #include "scoreboard.h"
 #include "v_video.h"
 #include "st_hud.h"
+#include "c_console.h"
 
 //*****************************************************************************
 //	PROTOTYPES
@@ -244,14 +245,6 @@ void POSSESSION_Tick( void )
 //
 void POSSESSION_Render( void )
 {
-	char		szString[16];
-	ULONG		ulColor;
-	bool		bScale;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-	float		fXScale;
-	float		fYScale = 0.0f;
-
 	// If the artifact isn't being held by anyone, just break out since we
 	// don't have a timer to draw.
 	if ( g_PSNState != PSNS_ARTIFACTHELD )
@@ -261,58 +254,22 @@ void POSSESSION_Render( void )
 	if ( automapactive )
 		return;
 
-	// Initialization.
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-	{
-		ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-		ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-
-		fXScale =  (float)ValWidth.Int / 320.0f;
-		fYScale =  (float)ValHeight.Int / 200.0f;
-		bScale = true;
-	}
-	else
-		bScale = false;
-
-	ulColor = ( g_ulPSNArtifactHoldTicks > ( 3 * TICRATE )) ? CR_GRAY : CR_RED;
-	sprintf( szString , "%02d:%02d", static_cast<unsigned int> (( g_ulPSNArtifactHoldTicks + TICRATE ) / ( TICRATE * 60 )), static_cast<unsigned int> ((( g_ulPSNArtifactHoldTicks + TICRATE ) - ((( g_ulPSNArtifactHoldTicks + TICRATE ) / ( TICRATE * 60 )) * ( TICRATE * 60 ))) / TICRATE) );
-	V_ColorizeString( szString );
-
 	// [RC] Hide this when the scoreboard is up to prevent overlapping.
-	if( SCOREBOARD_ShouldDrawBoard( consoleplayer ) )
+	if ( SCOREBOARD_ShouldDrawBoard( consoleplayer ))
 		return;
 
-	bool bUseBigFont = false;
-	// [RC] Use a bolder display, at resolutions large enough.
-	if ( bScale )
-	{
-		if ( con_virtualwidth.GetGenericRep( CVAR_Int ).Int >= 640 )
-			bUseBigFont = true;
-	}
-	else
-	{
-		if ( SCREENWIDTH >= 640 )
-			bUseBigFont = true;
-	}
+	ULONG ulColor = ( g_ulPSNArtifactHoldTicks > 3 * TICRATE ) ? CR_GRAY : CR_RED;
 
-	if ( bScale )
-	{
-		screen->DrawText( bUseBigFont ? BigFont : SmallFont, ulColor,
-			(LONG)(( con_virtualwidth / 2 ) - ( SmallFont->StringWidth( szString ) / 2 )),
-			(LONG)( 25 * fYScale ),
-			szString,
-			DTA_VirtualWidth, ValWidth.Int,
-			DTA_VirtualHeight, ValHeight.Int,
-			TAG_DONE );
-	}
-	else
-	{
-		screen->DrawText( bUseBigFont ? BigFont : SmallFont, ulColor,
-			( SCREENWIDTH / 2 ) - ( SmallFont->StringWidth( szString ) / 2 ),
-			25,
-			szString,
-			TAG_DONE );
-	}
+	// [AK] Get how many minutes and seconds are left in the possession timer.
+	ULONG ulMinutesLeft = ( g_ulPSNArtifactHoldTicks + TICRATE ) / ( TICRATE * 60 );
+	ULONG ulSecondsLeft = (( g_ulPSNArtifactHoldTicks + TICRATE ) - ( ulMinutesLeft * ( TICRATE * 60 ))) / TICRATE;
+
+	FString text;
+	text.Format( "%02d:%02d", static_cast<unsigned int>( ulMinutesLeft ), static_cast<unsigned int>( ulSecondsLeft ));
+
+	// [RC] Use a bolder display, at resolutions large enough.
+	bool bUseBigFont = HUD_GetWidth( ) >= 640;
+	HUD_DrawTextCentered( bUseBigFont ? BigFont : SmallFont, ulColor, static_cast<LONG>( 25 * ( g_bScale ? g_fYScale : 1.0f )), text, g_bScale );
 }
 
 //*****************************************************************************
