@@ -778,33 +778,29 @@ void CHAT_Render( void )
 	// [RC] Tell chatters about the iron curtain of LMS chat.
 	if ( GAMEMODE_AreSpectatorsFordiddenToChatToPlayers() )
 	{
-		FString note = "\\cdNOTE: \\cc";
+		FString note = "NOTE: " TEXTCOLOR_GRAY;
 		bool bDrawNote = true;
 
 		// Is this the spectator talking?
 		if ( players[consoleplayer].bSpectating )
 		{
 			if ( g_ulChatMode != CHATMODE_PRIVATE_SEND )
-				note += "\\ccPlayers cannot hear you chat";
+				note += "Players cannot hear you chat";
 			else if (( g_ulChatPlayer != MAXPLAYERS ) && ( players[g_ulChatPlayer].bSpectating == false ))
-				note.AppendFormat( "%s \\cccannot hear you chat", players[g_ulChatPlayer].userinfo.GetName());
+				note.AppendFormat( "%s " TEXTCOLOR_GRAY "cannot hear you chat", players[g_ulChatPlayer].userinfo.GetName());
 			else bDrawNote = false;
 		}
-
 		else
 		{
 			if ( g_ulChatMode != CHATMODE_PRIVATE_SEND )
-				note += "\\ccSpectators cannot talk to you";
+				note += "Spectators cannot talk to you";
 			else if (( g_ulChatPlayer != MAXPLAYERS ) && ( players[g_ulChatPlayer].bSpectating ))
-				note.AppendFormat( "%s \\cccannot talk to you", players[g_ulChatPlayer].userinfo.GetName() );
+				note.AppendFormat( "%s " TEXTCOLOR_GRAY "cannot talk to you", players[g_ulChatPlayer].userinfo.GetName() );
 			else bDrawNote = false;
 		}
 
 		if ( bDrawNote )
-		{
-			V_ColorizeString( note );
-			HUD_DrawTextCentered( SmallFont, CR_UNTRANSLATED, static_cast<LONG>( positionY * g_rYScale - SmallFont->GetHeight( ) * 2 + 1 ), note, g_bScale );
-		}
+			HUD_DrawTextCentered( SmallFont, CR_GREEN, static_cast<LONG>( positionY * g_rYScale - SmallFont->GetHeight( ) * 2 + 1 ), note, g_bScale );
 	}
 
 	BorderTopRefresh = screen->GetPageCount( );
