@@ -72,6 +72,7 @@
 #include "w_wad.h"
 #include "p_acs.h"
 #include "st_hud.h"
+#include "c_console.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -547,136 +548,41 @@ void MEDAL_RenderAllMedals( LONG lYOffset )
 //
 void MEDAL_RenderAllMedalsFullscreen( player_t *pPlayer )
 {
-	bool		bScale;
-	ULONG		ulCurXPos;
-	ULONG		ulCurYPos;
-	ULONG		ulIdx;
-	FString		string;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-	float		fXScale = 0.0f;
-	float		fYScale;
-	ULONG		ulMaxMedalHeight = 0;
-	ULONG		ulNumMedal;
-	ULONG		ulLastMedal = 0;
-
-	ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-	{
-		fXScale =  (float)ValWidth.Int / 320.0f;
-		fYScale =  (float)ValHeight.Int / 200.0f;
-		bScale = true;
-	}
-	else
-		bScale = false;
+	ULONG ulCurXPos;
+	ULONG ulCurYPos = 4;
+	FString string;
 
 	// Start by drawing "MEDALS" 4 pixels from the top.
-	ulCurYPos = 4;
-
-	if ( bScale )
-	{
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			(LONG)(( ValWidth.Int / 2 ) - ( BigFont->StringWidth( "MEDALS" ) / 2 )),
-			ulCurYPos,
-			"MEDALS",
-			DTA_VirtualWidth, ValWidth.Int,
-			DTA_VirtualHeight, ValHeight.Int,
-			TAG_DONE );
-	}
-	else
-	{
-		screen->DrawText( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED,
-			( SCREENWIDTH / 2 ) - ( BigFont->StringWidth( "MEDALS" ) / 2 ),
-			ulCurYPos,
-			"MEDALS",
-			TAG_DONE );
-	}
-
+	HUD_DrawTextCentered( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED, ulCurYPos, "MEDALS", g_bScale );
 	ulCurYPos += 42;
 
-	ulNumMedal = 0;
-	for ( ulIdx = 0; ulIdx < NUM_MEDALS; ulIdx++ )
+	ULONG ulNumMedal = 0;
+	ULONG ulMaxMedalHeight = 0;
+	ULONG ulLastHeight = 0;
+
+	for ( ULONG ulMedal = 0; ulMedal < NUM_MEDALS; ulMedal++ )
 	{
-		if ( pPlayer->ulMedalCount[ulIdx] == 0 )
+		if ( pPlayer->ulMedalCount[ulMedal] == 0 )
 			continue;
+
+		ULONG ulHeight = TexMan[g_Medals[ulMedal].szLumpName]->GetHeight( );
 
 		if (( ulNumMedal % 2 ) == 0 )
 		{
-			ulCurXPos = 40;
-			if ( bScale )
-				ulCurXPos = (ULONG)( (float)ulCurXPos * fXScale );
-			else
-				ulCurXPos = (ULONG)( (float)ulCurXPos * CleanXfac );
-
-			ulLastMedal = ulIdx;
+			ulCurXPos = static_cast<ULONG>( 40.0f * ( g_bScale ? g_fXScale : CleanXfac ));
+			ulLastHeight = ulHeight;
 		}
 		else
 		{
-			if ( bScale )
-				ulCurXPos = (ULONG)(( ValWidth.Int / 2 ) + ( 40 * fXScale ));
-			else
-				ulCurXPos = (ULONG)(( SCREENWIDTH / 2 ) + ( 40 * CleanXfac ));
-
-			ulMaxMedalHeight = MAX( TexMan[g_Medals[ulIdx].szLumpName]->GetHeight( ), TexMan[g_Medals[ulLastMedal].szLumpName]->GetHeight( ));
+			ulCurXPos += HUD_GetWidth( ) / 2;
+			ulMaxMedalHeight = MAX( ulHeight, ulLastHeight );
 		}
 
-		if ( bScale )
-		{
-			screen->DrawTexture( TexMan[g_Medals[ulIdx].szLumpName],
-				ulCurXPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetWidth( ) / 2 ),
-				ulCurYPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetHeight( )),
-				DTA_VirtualWidth, ValWidth.Int,
-				DTA_VirtualHeight, ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawTexture( TexMan[g_Medals[ulIdx].szLumpName],
-				ulCurXPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetWidth( ) / 2 ),
-				ulCurYPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetHeight( )),
-				TAG_DONE );
-		}
+		HUD_DrawTexture( TexMan[g_Medals[ulMedal].szLumpName], ulCurXPos + TexMan[g_Medals[ulMedal].szLumpName]->GetWidth( ) / 2, ulCurYPos + ulHeight, g_bScale );
+		HUD_DrawText( SmallFont, CR_RED, ulCurXPos + 48, ulCurYPos + ( ulHeight - SmallFont->GetHeight( )) / 2, "X" );
 
-		if ( bScale )
-		{
-			screen->DrawText( SmallFont, CR_RED,
-				ulCurXPos + 48,
-				ulCurYPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetHeight( )) / 2 - SmallFont->GetHeight( ) / 2,
-				"X",
-				DTA_VirtualWidth, ValWidth.Int,
-				DTA_VirtualHeight, ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( SmallFont, CR_RED,
-				ulCurXPos + 48,
-				ulCurYPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetHeight( )) / 2 - SmallFont->GetHeight( ) / 2,
-				"X",
-				TAG_DONE );
-		}
-
-		string.Format( "%lu", pPlayer->ulMedalCount[ulIdx] );
-		if ( bScale )
-		{
-			screen->DrawText( BigFont, CR_RED,
-				ulCurXPos + 64,
-				ulCurYPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetHeight( )) / 2 - BigFont->GetHeight( ) / 2,
-				string,
-				DTA_VirtualWidth, ValWidth.Int,
-				DTA_VirtualHeight, ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( BigFont, CR_RED,
-				ulCurXPos + 64,
-				ulCurYPos + ( TexMan[g_Medals[ulIdx].szLumpName]->GetHeight( )) / 2 - BigFont->GetHeight( ) / 2,
-				string,
-				TAG_DONE );
-		}
+		string.Format( "%lu", pPlayer->ulMedalCount[ulMedal] );
+		HUD_DrawText( BigFont, CR_RED, ulCurXPos + 64, ulCurYPos + ( ulHeight - BigFont->GetHeight( )) / 2, string );
 
 		if ( ulNumMedal % 2 )
 			ulCurYPos += ulMaxMedalHeight;
@@ -685,68 +591,18 @@ void MEDAL_RenderAllMedalsFullscreen( player_t *pPlayer )
 	}
 
 	// [CK] Update the names as well
-	std::string medalStatusString = "";
-	bool isConsolePlayer = (pPlayer - &players[consoleplayer] == 0);
+	if ( pPlayer - &players[consoleplayer] == 0 )
+		string = "You have";
+	else
+		string.Format( "%s has", pPlayer->userinfo.GetName( ));
 
 	// The player has not earned any medals, so nothing was drawn.
 	if ( ulNumMedal == 0 )
-	{
-		if ( isConsolePlayer )
-			medalStatusString += "YOU HAVE NOT YET EARNED ANY MEDALS.";
-		else
-		{
-			medalStatusString += pPlayer->userinfo.GetName();
-			medalStatusString += " HAS NOT YET EARNED ANY MEDALS.";
-		}
-
-		if ( bScale )
-		{
-			screen->DrawText( SmallFont, CR_WHITE,
-				(LONG)(( ValWidth.Int / 2 ) - ( SmallFont->StringWidth( medalStatusString.c_str() ) / 2 )),
-				26,
-				medalStatusString.c_str(),
-				DTA_VirtualWidth, ValWidth.Int,
-				DTA_VirtualHeight, ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( SmallFont, CR_WHITE,
-				( SCREENWIDTH / 2 ) - ( SmallFont->StringWidth( medalStatusString.c_str() ) / 2 ),
-				26,
-				medalStatusString.c_str(),
-				TAG_DONE );
-		}
-	}
+		string += " not yet earned any medals.";
 	else
-	{
-		if ( isConsolePlayer )
-			medalStatusString += "YOU HAVE EARNED THE FOLLOWING MEDALS:";
-		else
-		{
-			medalStatusString += pPlayer->userinfo.GetName();
-			medalStatusString += " HAS EARNED THE FOLLOWING MEDALS:";
-		}
+		string += " earned the following medals:";
 
-		if ( bScale )
-		{
-			screen->DrawText( SmallFont, CR_WHITE,
-				(LONG)(( ValWidth.Int / 2 ) - ( SmallFont->StringWidth( medalStatusString.c_str() ) / 2 )),
-				26,
-				medalStatusString.c_str(),
-				DTA_VirtualWidth, ValWidth.Int,
-				DTA_VirtualHeight, ValHeight.Int,
-				TAG_DONE );
-		}
-		else
-		{
-			screen->DrawText( SmallFont, CR_WHITE,
-				( SCREENWIDTH / 2 ) - ( SmallFont->StringWidth( medalStatusString.c_str() ) / 2 ),
-				26,
-				medalStatusString.c_str(),
-				TAG_DONE );
-		}
-	}
+	HUD_DrawTextCentered( SmallFont, CR_WHITE, 26, string, g_bScale );
 }
 
 //*****************************************************************************
