@@ -228,22 +228,14 @@ void MEDAL_Tick( void )
 //
 void MEDAL_Render( void )
 {
-	player_t	*pPlayer;
-	ULONG		ulPlayer;
-	ULONG		ulMedal;
-	ULONG		ulTick;
-	FString		string;
-	FString		patchName;
-	long		lAlpha = OPAQUE;
-
 	if ( players[consoleplayer].camera == NULL )
 		return;
 
-	pPlayer = players[consoleplayer].camera->player;
+	player_t *pPlayer = players[consoleplayer].camera->player;
 	if ( pPlayer == NULL )
 		return;
 
-	ulPlayer = ULONG( pPlayer - players );
+	ULONG ulPlayer = pPlayer - players;
 
 	// [TP] Sanity check
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
@@ -253,87 +245,49 @@ void MEDAL_Render( void )
 	if ( g_MedalQueue[ulPlayer][0].ulTick == 0 )
 		return;
 
-	ulMedal	= g_MedalQueue[ulPlayer][0].ulMedal;
-	ulTick	= g_MedalQueue[ulPlayer][0].ulTick;
+	ULONG ulMedal = g_MedalQueue[ulPlayer][0].ulMedal;
+	ULONG ulTick = g_MedalQueue[ulPlayer][0].ulTick;
+	LONG lAlpha = OPAQUE;
 
-	if ( ulTick > ( 1 * TICRATE ))
-		lAlpha = static_cast<long> ( OPAQUE * ((float) ulTick / TICRATE ) );
+	if ( ulTick > TICRATE )
+		lAlpha = static_cast<LONG>( OPAQUE * (static_cast<float>( ulTick ) / TICRATE ));
 
-	// Get the graphic from the global array.
-	patchName = g_Medals[ulMedal].szLumpName;
-	if ( patchName.IsNotEmpty() )
+	// Get the graphic and text name from the global array.
+	FString patchName = g_Medals[ulMedal].szLumpName;
+	FString string = g_Medals[ulMedal].szStr;
+
+	ULONG ulCurXPos = SCREENWIDTH / 2;
+	ULONG ulCurYPos = ( viewheight <= ST_Y ? ST_Y : SCREENHEIGHT ) - 11 * CleanYfac;
+
+	// Determine how much actual screen space it will take to render the amount of
+	// medals the player has received up until this point.
+	ULONG ulNumMedals = pPlayer->ulMedalCount[ulMedal];
+	ULONG ulLength = ulNumMedals * TexMan[patchName]->GetWidth( );
+
+	// If that length is greater then the screen width, display the medals as "<icon> <name> X <num>"
+	if ( ulLength >= 320 )
 	{
-		ULONG	ulCurXPos;
-		ULONG	ulCurYPos;
-		ULONG	ulNumMedals = pPlayer->ulMedalCount[ulMedal];
-		ULONG	ulLength;
+		const char *szSecondColor = g_Medals[ulMedal].ulTextColor == CR_RED ? TEXTCOLOR_GRAY : TEXTCOLOR_RED;
 
-		// Determine how much actual screen space it will take to render the amount of
-		// medals the player has received up until this point.
-		ulLength = ulNumMedals * TexMan[patchName]->GetWidth( );
+		string.AppendFormat( "%s X %lu", szSecondColor, ulNumMedals );
+		screen->DrawTexture( TexMan[patchName], ulCurXPos, ulCurYPos, DTA_CleanNoMove, true, DTA_Alpha, lAlpha, TAG_DONE );
 
-		if ( viewheight <= ST_Y )
-			ulCurYPos = ((int)( ST_Y - 11 * CleanYfac ));
-		else
-			ulCurYPos = ((int)( SCREENHEIGHT - 11 * CleanYfac ));
+		ulCurXPos -= CleanXfac * ( SmallFont->StringWidth( string ) / 2 );
+		screen->DrawText( SmallFont, g_Medals[ulMedal].ulTextColor, ulCurXPos, ulCurYPos, string, DTA_CleanNoMove, true, DTA_Alpha, lAlpha, TAG_DONE );
+	}
+	// Display the medal icon <usNumMedals> times centered on the screen.
+	else
+	{
+		ulCurXPos -= ( CleanXfac * ulLength ) / 2;
 
-		// If that length is greater then the screen width, display the medals as "<icon> <name> X <num>"
-		if ( ulLength >= 320 )
+		for ( ULONG ulMedal = 0; ulMedal < ulNumMedals; ulMedal++ )
 		{
-			ulCurXPos = SCREENWIDTH / 2;
-
-			const char* szColor1 = TEXTCOLOR_WHITE,
-				*szColor2 = TEXTCOLOR_RED;
-
-			if ( g_Medals[ulMedal].ulTextColor == CR_RED )
-			{
-				szColor1 = TEXTCOLOR_RED;
-				szColor2 = TEXTCOLOR_WHITE;
-			}
-			else if ( g_Medals[ulMedal].ulTextColor == CR_GREEN )
-				szColor1 = TEXTCOLOR_GREEN;
-
-			string.Format( "%s%s%s X %lu", szColor1, g_Medals[ulMedal].szStr, szColor2, ulNumMedals );
-
-			screen->DrawTexture( TexMan[patchName], ulCurXPos, ulCurYPos,
-				DTA_CleanNoMove, true,
-				DTA_Alpha, lAlpha,
-				TAG_DONE );
-
-			ulCurXPos = SCREENWIDTH / 2 - CleanXfac * ( SmallFont->StringWidth( string ) / 2 );
-
-			screen->DrawText( SmallFont, g_Medals[ulMedal].ulTextColor, ulCurXPos, ulCurYPos, string,
-				DTA_CleanNoMove, true,
-				DTA_Alpha, lAlpha,
-				TAG_DONE );
+			screen->DrawTexture( TexMan[patchName], ulCurXPos + CleanXfac * ( TexMan[patchName]->GetWidth( ) / 2 ), ulCurYPos, DTA_CleanNoMove, true, DTA_Alpha, lAlpha, TAG_DONE );
+			ulCurXPos += CleanXfac * TexMan[patchName]->GetWidth( );
 		}
-		// Display the medal icon <usNumMedals> times centered on the screen.
-		else
-		{
-			ULONG	ulIdx;
 
-			ulCurXPos = SCREENWIDTH / 2 - ( CleanXfac * ulLength ) / 2;
-			string = g_Medals[ulMedal].szStr;
-
-			for ( ulIdx = 0; ulIdx < ulNumMedals; ulIdx++ )
-			{
-				screen->DrawTexture( TexMan[patchName],
-					ulCurXPos + CleanXfac * ( TexMan[patchName]->GetWidth( ) / 2 ),
-					ulCurYPos,
-					DTA_CleanNoMove, true,
-					DTA_Alpha, lAlpha,
-					TAG_DONE );
-
-				ulCurXPos += CleanXfac * TexMan[patchName]->GetWidth( );
-			}
-
-			ulCurXPos = SCREENWIDTH / 2 - CleanXfac * ( SmallFont->StringWidth( string ) / 2 );
-
-			screen->DrawText( SmallFont, g_Medals[ulMedal].ulTextColor, ulCurXPos, ulCurYPos, string,
-				DTA_CleanNoMove, true,
-				DTA_Alpha, lAlpha,
-				TAG_DONE );
-		}
+		ulCurXPos = SCREENWIDTH / 2 - CleanXfac * ( SmallFont->StringWidth( string ) / 2 );
+		screen->DrawText( SmallFont, g_Medals[ulMedal].ulTextColor, ulCurXPos, ulCurYPos, string, DTA_CleanNoMove, true, DTA_Alpha, lAlpha, TAG_DONE );
 	}
 }
 
