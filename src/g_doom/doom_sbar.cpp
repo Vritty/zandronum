@@ -1211,11 +1211,8 @@ void DrawFullHUD_GameInformation()
 	}
 
 	// [BC] Skulltag's new fullscreen HUD.
-	bool			bScale;
 	int				screenWidth;
 	int				screenHeight;
-	float			fXScale;
-	float			fYScale;
 	ULONG			ulCurYPos;
 	ULONG			ulCurXPos;
 	char			szString[32];
@@ -1234,21 +1231,9 @@ void DrawFullHUD_GameInformation()
 		if ( CPlayer->bSpectating )
 			return;
 
-		const UCVarValue ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-		const UCVarValue ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-
-		if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-		{
-			fXScale =  (float)ValWidth.Int / 320.0f;
-			fYScale =  (float)ValHeight.Int / 200.0f;
-			bScale = true;
-		}
-		else
-			bScale = false;
-
 		// [BB] Store the screen width / height taking into account user selected scaling.
-		screenWidth = bScale ? ValWidth.Int : SCREENWIDTH;
-		screenHeight = bScale ? ValHeight.Int : SCREENHEIGHT;
+		screenWidth = HUD_GetWidth( );
+		screenHeight = HUD_GetHeight( );
 
 		/*=========================================================
 		Draw the bottom parts of the HUD - health, armor, and ammo.
