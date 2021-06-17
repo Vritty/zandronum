@@ -433,112 +433,72 @@ void MEDAL_GiveMedal( ULONG ulPlayer, ULONG ulMedal )
 //
 void MEDAL_RenderAllMedals( LONG lYOffset )
 {
-	player_t	*pPlayer;
-	ULONG		ulPlayer;
-	ULONG		ulCurXPos;
-	ULONG		ulCurYPos;
-	ULONG		ulLength;
-	ULONG		ulIdx;
-	FString		patchName;
+	ULONG ulCurXPos;
+	FString patchName;
 
 	if ( players[consoleplayer].camera == NULL )
 		return;
 
-	pPlayer = players[consoleplayer].camera->player;
+	player_t *pPlayer = players[consoleplayer].camera->player;
 	if ( pPlayer == NULL )
 		return;
 
-	ulPlayer = ULONG( pPlayer - players );
-
-	{
-		int y0 = ( viewheight <= ST_Y ) ? ST_Y : SCREENHEIGHT;
-		ulCurYPos = (LONG)((( y0 - 11 * CleanYfac ) + lYOffset ) / CleanYfac );
-	}
+	int y0 = ( viewheight <= ST_Y ? ST_Y : SCREENHEIGHT );
+	ULONG ulCurYPos = static_cast<ULONG>(( y0 - 11 * CleanYfac + lYOffset ) / CleanYfac );
 
 	// Determine length of all medals strung together.
-	ulLength = 0;
-	for ( ulIdx = 0; ulIdx < NUM_MEDALS; ulIdx++ )
+	ULONG ulLength = 0;
+	for ( ULONG ulMedal = 0; ulMedal < NUM_MEDALS; ulMedal++ )
 	{
-		if ( pPlayer->ulMedalCount[ulIdx] )
-		{
-			patchName = g_Medals[ulIdx].szLumpName;
-			if ( patchName.IsNotEmpty() )
-				ulLength += ( TexMan[patchName]->GetWidth( ) * pPlayer->ulMedalCount[ulIdx] );
-		}
+		if ( pPlayer->ulMedalCount[ulMedal] > 0 )
+			ulLength += TexMan[g_Medals[ulMedal].szLumpName]->GetWidth( ) * pPlayer->ulMedalCount[ulMedal];
 	}
 
 	// Can't fit all the medals on the screen.
 	if ( ulLength >= 320 )
 	{
-		bool	bScale;
 		FString	string;
 
 		// Recalculate the length of all the medals strung together.
 		ulLength = 0;
-		for ( ulIdx = 0; ulIdx < NUM_MEDALS; ulIdx++ )
+		for ( ULONG ulMedal = 0; ulMedal < NUM_MEDALS; ulMedal++ )
 		{
-			if ( pPlayer->ulMedalCount[ulIdx] == 0 )
-				continue;
-
-			patchName = g_Medals[ulIdx].szLumpName;
-			if ( patchName.IsNotEmpty() )
-				ulLength += TexMan[patchName]->GetWidth( );
+			if ( pPlayer->ulMedalCount[ulMedal] > 0 )
+				ulLength += TexMan[g_Medals[ulMedal].szLumpName]->GetWidth( );
 		}
 
 		// If the length of all our medals goes beyond 320, we cannot scale them.
-		if ( ulLength >= 320 )
-		{
-			bScale = false;
-			ulCurYPos = (LONG)( ulCurYPos * CleanYfac );
-		}
-		else
-			bScale = true;
+		bool bScale = ( ulLength >= 320 );
 
-		ulCurXPos = ( bScale ? 160 : ( SCREENWIDTH / 2 )) - ( ulLength / 2 );
-		for ( ulIdx = 0; ulIdx < NUM_MEDALS; ulIdx++ )
+		if ( bScale )
+			ulCurYPos = static_cast<ULONG>( ulCurYPos * CleanYfac );
+
+		ulCurXPos = (( bScale ? 320 : SCREENWIDTH ) - ulLength ) / 2;
+		for ( ULONG ulMedal = 0; ulMedal < NUM_MEDALS; ulMedal++ )
 		{
-			if ( pPlayer->ulMedalCount[ulIdx] == 0 )
+			if ( pPlayer->ulMedalCount[ulMedal] == 0 )
 				continue;
 
-			patchName = g_Medals[ulIdx].szLumpName;
-			if ( patchName.IsNotEmpty() )
-			{
-				screen->DrawTexture( TexMan[patchName],
-					ulCurXPos + ( TexMan[patchName]->GetWidth( ) / 2 ),
-					ulCurYPos,
-					DTA_Clean, bScale,
-					TAG_DONE );
+			patchName = g_Medals[ulMedal].szLumpName;
+			screen->DrawTexture( TexMan[patchName], ulCurXPos + TexMan[patchName]->GetWidth( ) / 2, ulCurYPos, DTA_Clean, bScale, TAG_DONE );
 
-				string.Format( "%lu", pPlayer->ulMedalCount[ulIdx] );
-				screen->DrawText( SmallFont, CR_RED,
-					ulCurXPos - ( SmallFont->StringWidth( string ) / 2 ) + TexMan[patchName]->GetWidth( ) / 2,
-					ulCurYPos,
-					string,
-					DTA_Clean, bScale,
-					TAG_DONE );
-				ulCurXPos += TexMan[patchName]->GetWidth( );
-			}
+			ULONG ulXOffset = ( SmallFont->StringWidth( string ) + TexMan[patchName]->GetWidth( )) / 2;
+			string.Format( "%lu", pPlayer->ulMedalCount[ulMedal] );
+			screen->DrawText( SmallFont, CR_RED, ulCurXPos - ulXOffset, ulCurYPos, string, DTA_Clean, bScale, TAG_DONE );
+
+			ulCurXPos += TexMan[patchName]->GetWidth( );
 		}
 	}
 	else
 	{
-		ulCurXPos = 160 - ( ulLength / 2 );
-		for ( ulIdx = 0; ulIdx < NUM_MEDALS; ulIdx++ )
+		ulCurXPos = 160 - ulLength / 2;
+		for ( ULONG ulMedal = 0; ulMedal < NUM_MEDALS; ulMedal++ )
 		{
-			patchName = g_Medals[ulIdx].szLumpName;
-			if ( patchName.IsNotEmpty() )
+			patchName = g_Medals[ulMedal].szLumpName;
+			for ( ULONG ulMedalIdx = 0; ulMedalIdx < pPlayer->ulMedalCount[ulMedal]; ulMedalIdx++ )
 			{
-				ULONG	ulMedalIdx;
-
-				for ( ulMedalIdx = 0; ulMedalIdx < pPlayer->ulMedalCount[ulIdx]; ulMedalIdx++ )
-				{
-					screen->DrawTexture( TexMan[patchName],
-						ulCurXPos + ( TexMan[patchName]->GetWidth( ) / 2 ),
-						ulCurYPos,
-						DTA_Clean, true,
-						TAG_DONE );
-					ulCurXPos += TexMan[patchName]->GetWidth( );
-				}
+				screen->DrawTexture( TexMan[patchName], ulCurXPos + TexMan[patchName]->GetWidth( ) / 2, ulCurYPos, DTA_Clean, true, TAG_DONE );
+				ulCurXPos += TexMan[patchName]->GetWidth( );
 			}
 		}
 	}
