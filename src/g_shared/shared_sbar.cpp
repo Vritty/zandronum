@@ -1653,10 +1653,8 @@ void DBaseStatusBar::DrawPowerups ()
 
 	// [BB] Account for the space in the top right corner occupied by Skulltag's fullscreen HUD.
 	if ( cl_stfullscreenhud && gameinfo.gametype == GAME_Doom )
-	{
-		const float fYScale = ( ( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ) ) ? ( SCREENHEIGHT / static_cast<float>(con_virtualheight) ) : 1;
-		y += ConFont ? static_cast<int> ( fYScale * 1.5 * ConFont->GetHeight( ) ) : 0;
-	}
+		y += ConFont ? static_cast<int> ( 1.5 * ConFont->GetHeight( ) / g_rYScale ) : 0;
+
 	// [BB] In this case we have to account for DrawCornerScore.
 	else if ( (gameinfo.gametype != GAME_Strife) && !( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNKILLS ) )
 		y += BigFont ? static_cast<int> ( 1.5 * BigFont->GetHeight( ) ) : 0;
