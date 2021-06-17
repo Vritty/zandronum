@@ -43,6 +43,8 @@
 // [BC] New #includes.
 #include "deathmatch.h"
 #include "chat.h"
+#include "c_console.h"
+#include "st_hud.h"
 
 // [BC] This is just a boolean now.
 EXTERN_CVAR (Bool, con_scaletext)
@@ -287,10 +289,7 @@ void DHUDMessage::ResetText (const char *text)
 	{
 		// [BC] con_scaletext is handled differently. If we're choosing to scale the text,
 		// use the virtual screen width.
-		if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-			width = con_virtualwidth;
-		else
-			width = SCREENWIDTH;
+		width = HUD_GetWidth( );
 	}
 
 	if (Lines != NULL)
@@ -344,29 +343,7 @@ void DHUDMessage::Draw (int bottom, int visibility)
 	int i;
 	bool clean = false;
 	int hudheight;
-	// [BC] Are we using scaling?
-	bool	bScale;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-	float		fXScale;
-	float		fYScale;
-	LONG		lBottomDelta;
-
-	// [BC] Initialization.
-	ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-	{
-		fXScale = (float)con_virtualwidth / SCREENWIDTH;
-		fYScale = (float)con_virtualheight / SCREENHEIGHT;
-		bScale = true;
-	}
-	else
-	{
-		fXScale = 1.0f;
-		fYScale = 1.0f;//(float)bottom / SCREENHEIGHT;
-		bScale = false;
-	}
+	LONG lBottomDelta; // [BC]
 
 	// If any of the visibility flags match, do NOT draw this message.
 	if (VisibilityFlags & visibility)
@@ -384,26 +361,26 @@ void DHUDMessage::Draw (int bottom, int visibility)
 	if ( lBottomDelta < 0 )
 		lBottomDelta = 0;
 
-	if (HUDWidth == 0 && bScale)
+	if (HUDWidth == 0 && g_bScale)
 	{
 //		clean = true;
 		xscale = 1;
 		yscale = 1;
-		screen_width=ValWidth.Int;
-		screen_height=ValHeight.Int;
+		screen_width = con_virtualwidth;
+		screen_height = con_virtualheight;
 	}
 	else
 	{
 		xscale = yscale = 1;
-		if (HUDWidth==0 && bScale) 
+		if (HUDWidth==0 && g_bScale) 
 		{
-			screen_width/=ValWidth.Int;
-			screen_height/=ValHeight.Int;
+			screen_width/=con_virtualwidth;
+			screen_height/=con_virtualheight;
 //			bottom/=2;
 		}
 	}
 
-	lBottomDelta = static_cast<LONG> ( lBottomDelta * fYScale );
+	lBottomDelta = static_cast<LONG> ( lBottomDelta * g_rYScale );
 
 	if (HUDWidth == 0)
 	{
@@ -501,28 +478,9 @@ void DHUDMessage::DrawSetup ()
 
 void DHUDMessage::DoDraw (int linenum, int x, int y, bool clean, int hudheight)
 {
-	// [BC] Are we using scaling?
-	bool	bScale;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-	float		fXScale;
-	float		fYScale;
-
-	// [BC] Initialization.
-	ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-	{
-		fXScale = (float)con_virtualwidth / SCREENWIDTH;
-		fYScale = (float)con_virtualheight / SCREENHEIGHT;
-		bScale = true;
-	}
-	else
-		bScale = false;
-
 	if (hudheight == 0)
 	{
-		if (bScale == false)
+		if (g_bScale == false)
 		{
 			screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
 				DTA_CleanNoMove, clean,
@@ -533,8 +491,7 @@ void DHUDMessage::DoDraw (int linenum, int x, int y, bool clean, int hudheight)
 		else
 		{
 			screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
-				DTA_VirtualWidth, ValWidth.Int,
-				DTA_VirtualHeight, ValHeight.Int,
+				DTA_UseVirtualScreen, true, // [AK]
 				DTA_Alpha, Alpha,
 				DTA_RenderStyle, Style,
 				DTA_KeepRatio, true,
@@ -616,25 +573,6 @@ bool DHUDMessageFadeOut::Tick ()
 
 void DHUDMessageFadeOut::DoDraw (int linenum, int x, int y, bool clean, int hudheight)
 {
-	// [BC] Are we using scaling?
-	bool	bScale;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-	float		fXScale;
-	float		fYScale;
-
-	// [BC] Initialization.
-	ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-	{
-		fXScale = (float)con_virtualwidth / SCREENWIDTH;
-		fYScale = (float)con_virtualheight / SCREENHEIGHT;
-		bScale = true;
-	}
-	else
-		bScale = false;
-
 	if (State == 1)
 	{
 		DHUDMessage::DoDraw (linenum, x, y, clean, hudheight);
@@ -645,7 +583,7 @@ void DHUDMessageFadeOut::DoDraw (int linenum, int x, int y, bool clean, int hudh
 		trans = FixedMul(trans, Alpha);
 		if (hudheight == 0)
 		{
-			if (bScale == false)
+			if (g_bScale == false)
 			{
 				screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
 					DTA_CleanNoMove, clean,
@@ -656,8 +594,7 @@ void DHUDMessageFadeOut::DoDraw (int linenum, int x, int y, bool clean, int hudh
 			else
 			{
 				screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
-					DTA_VirtualWidth, ValWidth.Int,
-					DTA_VirtualHeight, ValHeight.Int,
+					DTA_UseVirtualScreen, true, // [AK]
 					DTA_Alpha, trans,
 					DTA_RenderStyle, Style,
 					DTA_KeepRatio, true,
@@ -740,32 +677,13 @@ bool DHUDMessageFadeInOut::Tick ()
 
 void DHUDMessageFadeInOut::DoDraw (int linenum, int x, int y, bool clean, int hudheight)
 {
-	// [BC] Are we using scaling?
-	bool	bScale;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-	float		fXScale;
-	float		fYScale;
-
-	// [BC] Initialization.
-	ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-	{
-		fXScale = (float)con_virtualwidth / SCREENWIDTH;
-		fYScale = (float)con_virtualheight / SCREENHEIGHT;
-		bScale = true;
-	}
-	else
-		bScale = false;
-
 	if (State == 0)
 	{
 		fixed_t trans = Tics * FRACUNIT / FadeInTics;
 		trans = FixedMul(trans, Alpha);
 		if (hudheight == 0)
 		{
-			if (bScale == false)
+			if (g_bScale == false)
 			{
 				screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
 					DTA_CleanNoMove, clean,
@@ -776,8 +694,7 @@ void DHUDMessageFadeInOut::DoDraw (int linenum, int x, int y, bool clean, int hu
 			else
 			{
 				screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
-					DTA_VirtualWidth, ValWidth.Int,
-					DTA_VirtualHeight, ValHeight.Int,
+					DTA_UseVirtualScreen, true, // [AK]
 					DTA_Alpha, trans,
 					DTA_RenderStyle, Style,
 					DTA_KeepRatio, true,
@@ -933,25 +850,6 @@ void DHUDMessageTypeOnFadeOut::ScreenSizeChanged ()
 
 void DHUDMessageTypeOnFadeOut::DoDraw (int linenum, int x, int y, bool clean, int hudheight)
 {
-	// [BC] Are we using scaling?
-	bool	bScale;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-	float		fXScale;
-	float		fYScale;
-
-	// [BC] Initialization.
-	ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-	{
-		fXScale = (float)con_virtualwidth / SCREENWIDTH;
-		fYScale = (float)con_virtualheight / SCREENHEIGHT;
-		bScale = true;
-	}
-	else
-		bScale = false;
-
 	if (State == 3)
 	{
 		if (linenum < CurrLine)
@@ -962,7 +860,7 @@ void DHUDMessageTypeOnFadeOut::DoDraw (int linenum, int x, int y, bool clean, in
 		{
 			if (hudheight == 0)
 			{
-				if (bScale == false)
+				if (g_bScale == false)
 				{
 					screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
 						DTA_CleanNoMove, clean,
@@ -974,8 +872,7 @@ void DHUDMessageTypeOnFadeOut::DoDraw (int linenum, int x, int y, bool clean, in
 				else
 				{
 					screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
-						DTA_VirtualWidth, ValWidth.Int,
-						DTA_VirtualHeight, ValHeight.Int,
+						DTA_UseVirtualScreen, true, // [AK]
 						DTA_KeepRatio, true,
 						DTA_TextLen, LineVisible,
 						DTA_Alpha, Alpha,
