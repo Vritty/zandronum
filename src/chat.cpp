@@ -705,9 +705,6 @@ void CHAT_Render( void )
 {
 	FString prompt = "Say: ";
 	FString cursor = gameinfo.gametype == GAME_Doom ? "_" : "[";
-	bool scale = ( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 );
-	float scaleX = 1.0f;
-	float scaleY = 1.0f;
 	int positionY = ( gamestate == GS_INTERMISSION ) ? SCREENHEIGHT : ST_Y;
 
 	if ( g_ulChatMode == CHATMODE_NONE )
@@ -717,20 +714,18 @@ void CHAT_Render( void )
 	else if ( g_ulChatMode == CHATMODE_PRIVATE_SEND )
 		prompt.Format( "Say <to %s>: ", g_ulChatPlayer != MAXPLAYERS ? players[g_ulChatPlayer].userinfo.GetName() : "Server" );
 
-	if ( scale )
+	if ( g_bScale )
 	{
-		scaleX = static_cast<float>( *con_virtualwidth ) / SCREENWIDTH;
-		scaleY = static_cast<float>( *con_virtualheight ) / SCREENHEIGHT;
 		positionY = positionY - Scale( SCREENHEIGHT, SmallFont->GetHeight() + 1, con_virtualheight ) + 1;
-		positionY = static_cast<int> ( positionY * scaleY );
+		positionY = static_cast<int>( positionY * g_rYScale );
 	}
 	else
 	{
 		positionY = positionY - SmallFont->GetHeight() + 1;
 	}
 
-	int chatWidth = static_cast<int> ( SCREENWIDTH * scaleX );
-	chatWidth -= static_cast<int> ( round( SmallFont->GetCharWidth( '_' ) * scaleX * 2 + SmallFont->StringWidth( prompt )) );
+	int chatWidth = static_cast<int>( SCREENWIDTH * g_rXScale );
+	chatWidth -= static_cast<int>( round( SmallFont->GetCharWidth( '_' ) * g_rXScale * 2 + SmallFont->StringWidth( prompt )) );
 
 	// [AK] Also blink the cursor between dark gray and white.
 	if ( g_ulChatTicker >= C_BLINKRATE )
@@ -808,10 +803,7 @@ void CHAT_Render( void )
 		if ( bDrawNote )
 		{
 			V_ColorizeString( note );
-			HUD_DrawText( SmallFont, CR_UNTRANSLATED,
-				(LONG)(( ( scale ? *con_virtualwidth : SCREENWIDTH )/ 2 ) - ( SmallFont->StringWidth( note ) / 2 )),
-				(LONG)(( positionY * scaleY ) - ( SmallFont->GetHeight( ) * 2 ) + 1 ),
-				note );
+			HUD_DrawTextCentered( SmallFont, CR_UNTRANSLATED, static_cast<LONG>( positionY * g_rYScale - SmallFont->GetHeight( ) * 2 + 1 ), note, g_bScale );
 		}
 	}
 
