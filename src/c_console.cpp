@@ -76,6 +76,7 @@
 #include "win32/g15/g15.h"
 #include "gi.h"
 #include "sv_rcon.h"
+#include "st_hud.h"
 
 #define CONSOLESIZE	16384	// Number of characters to store in console
 #define CONSOLELINES 256	// Max number of lines of console text
@@ -1291,19 +1292,6 @@ void C_Ticker ()
 
 static void C_DrawNotifyText ()
 {
-	// [BC] Some variables for text scaling.
-	bool		bScale;
-	UCVarValue	ValWidth;
-	UCVarValue	ValHeight;
-
-	// [BC] Initialization.
-	ValWidth = con_virtualwidth.GetGenericRep( CVAR_Int );
-	ValHeight = con_virtualheight.GetGenericRep( CVAR_Int );
-	if (( con_scaletext ) && ( con_virtualwidth > 0 ) && ( con_virtualheight > 0 ))
-		bScale = true;
-	else
-		bScale = false;
-
 	// [BC] We have no need to do this in server mode.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
@@ -1360,13 +1348,13 @@ static void C_DrawNotifyText ()
 			// [BC] If we want scaling, handle that here.
 			if (!center)
 				screen->DrawText (SmallFont, color, 0, line, NotifyStrings[i].Text,
-					DTA_UseVirtualScreen, bScale, // [BB]
+					DTA_UseVirtualScreen, g_bScale, // [BB]
 					DTA_Alpha, alpha, TAG_DONE);
 			else
-				screen->DrawText (SmallFont, color, ( ( bScale ? ValWidth.Int : SCREENWIDTH ) -
+				screen->DrawText (SmallFont, color, ( HUD_GetWidth( ) -
 					SmallFont->StringWidth (NotifyStrings[i].Text))/2,
 					line, NotifyStrings[i].Text,
-					DTA_UseVirtualScreen, bScale, // [BB]
+					DTA_UseVirtualScreen, g_bScale, // [BB]
 					DTA_Alpha, alpha, TAG_DONE);
 
 			line += lineadv;
