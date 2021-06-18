@@ -74,6 +74,7 @@
 #include "duel.h"
 #include "invasion.h"
 #include "lastmanstanding.h"
+#include "st_hud.h"
 
 static void M_StartSkirmishGame();
 static void M_ClearBotSlots();
@@ -475,30 +476,11 @@ public:
 		Super::Drawer();
 
 		// [TP] Ported here from the old m_options.cpp
-		FString text = "This is clean text.";
-		screen->DrawText( SmallFont, CR_WHITE,
-			160 - ( SmallFont->StringWidth( text ) / 2 ),
-			96,
-			text.GetChars(),
-			DTA_Clean, true,
-			TAG_DONE );
+		HUD_DrawTextCleanCentered( SmallFont, CR_WHITE, 96, "This is clean text." );
+		HUD_DrawTextCentered( SmallFont, CR_WHITE, static_cast<int>( screen->GetHeight() / 200.0f ) * 112, "This is unscaled text.", false );
 
-		text = "This is unscaled text.";
-		screen->DrawText( SmallFont, CR_WHITE,
-			int ( (float)screen->GetWidth() / 320.0f ) * 160 - ( SmallFont->StringWidth( text ) / 2 ),
-			int ( (float)screen->GetHeight() / 200.0f ) * 112,
-			text.GetChars(),
-			TAG_DONE );
-
-		float yscale =  con_virtualheight / 200.0f;
-		text = "This is scaled text.\n";
-		screen->DrawText( SmallFont, CR_WHITE,
-			int (( con_virtualwidth / 2 ) - ( SmallFont->StringWidth( text ) / 2 )),
-			int ( 128 * yscale ) - ( SmallFont->GetHeight() / 2 ),
-			text.GetChars(),
-			DTA_VirtualWidth, *con_virtualwidth,
-			DTA_VirtualHeight, *con_virtualheight,
-			TAG_DONE );
+		float yscale = con_virtualheight / 200.0f;
+		HUD_DrawTextCentered( SmallFont, CR_WHITE, static_cast<int>( 128 * yscale ) - SmallFont->GetHeight() / 2, "This is scaled text.", true );
 	}
 };
 
