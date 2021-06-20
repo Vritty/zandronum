@@ -4058,6 +4058,7 @@ void SERVER_UpdateLoopingChannels( AActor *pActor, int channel, FSoundID soundid
 {
 	FSoundChan chan;
 
+	chan.NextChan = NULL;
 	chan.Actor = pActor;
 	chan.EntChannel = channel & 7;
 	chan.ChanFlags = channel & ~7;
