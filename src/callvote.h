@@ -121,7 +121,8 @@ typedef struct
 
 void			CALLVOTE_Construct( void );
 void			CALLVOTE_Tick( void );
-//void			CALLVOTE_Render( void );
+void			CALLVOTE_Render( void );
+void			CALLVOTE_RenderClassic( void );
 void			CALLVOTE_BeginVote( FString Command, FString Parameters, FString Reason, ULONG ulPlayer );
 void			CALLVOTE_ClearVote( void );
 bool			CALLVOTE_VoteYes( ULONG ulPlayer );

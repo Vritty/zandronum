@@ -219,9 +219,9 @@ void HUD_Render( ULONG ulDisplayPlayer )
 	{		
 		// [RC] Display either the fullscreen or minimized vote screen.
 		if ( cl_showfullscreenvote )
-			SCOREBOARD_RenderInVoteClassic( );
+			CALLVOTE_RenderClassic( );
 		else
-			SCOREBOARD_RenderInVote( );
+			CALLVOTE_Render( );
 	}
 
 	// [AK] Render the countdown screen when we're in the countdown.

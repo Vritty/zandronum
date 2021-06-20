@@ -202,7 +202,7 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 
 //*****************************************************************************
 //
-void SCOREBOARD_RenderInVoteClassic( void )
+void CALLVOTE_RenderClassic( void )
 {
 	ULONG *pulPlayersWhoVotedYes = CALLVOTE_GetPlayersWhoVotedYes( );
 	ULONG *pulPlayersWhoVotedNo = CALLVOTE_GetPlayersWhoVotedNo( );
@@ -275,7 +275,7 @@ void SCOREBOARD_RenderInVoteClassic( void )
 //
 // [RC] New compact version; RenderInVoteClassic is the fullscreen version
 //
-void SCOREBOARD_RenderInVote( void )
+void CALLVOTE_Render( void )
 {
 	ULONG ulVoteChoice = CALLVOTE_GetPlayerVoteChoice( consoleplayer );
 	FString text;

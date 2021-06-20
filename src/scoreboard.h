@@ -91,8 +91,6 @@ enum
 
 void	SCOREBOARD_Render( ULONG ulDisplayPlayer );
 void	SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors );
-void	SCOREBOARD_RenderInVote( void );
-void	SCOREBOARD_RenderInVoteClassic( void );
 bool	SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer );
 LONG	SCOREBOARD_GetLeftToLimit( void );
 void	SCOREBOARD_SetNextLevel( const char *pszMapName );
