@@ -511,7 +511,7 @@ CCMD( maplist )
 				message += ')';
 			}
 
-			Printf( "%s\n", message );
+			Printf( "%s\n", message.GetChars() );
 		}
 	}
 }

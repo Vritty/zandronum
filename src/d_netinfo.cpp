@@ -863,7 +863,7 @@ void D_UserInfoChanged (FBaseCVar *cvar)
 		{
 			// [AK] Print a warning message to the user.
 			Printf( PRINT_MEDIUM, "Your name is %d characters long and can't be sent in networked games! "
-				"The maximum length is %d characters.\n", cleanedName.Len(), MAXPLAYERNAMEBUFFER );
+				"The maximum length is %d characters.\n", static_cast<int>(cleanedName.Len()), MAXPLAYERNAMEBUFFER );
 			cleanedName.Truncate( MAXPLAYERNAMEBUFFER );
 		}
 
@@ -1003,7 +1003,7 @@ static bool IsValidNameChange()
 			&& ( (ULONG)gametic < ( g_ulLastNameChangeTime + ( TICRATE * CLIENT_NAMECHANGE_WAITTIME ))))
 		{
 			// [AK] Show the client how many more seconds they need to wait before they can change their name again.
-			Printf( "You must wait another %d seconds before changing your name again.\n", CLIENT_NAMECHANGE_WAITTIME - ( gametic - g_ulLastNameChangeTime ) / TICRATE );
+			Printf( "You must wait another %d seconds before changing your name again.\n", static_cast<int>(CLIENT_NAMECHANGE_WAITTIME - ( gametic - g_ulLastNameChangeTime ) / TICRATE) );
 			return false;
 		}
 	}

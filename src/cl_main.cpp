@@ -1173,7 +1173,7 @@ void CLIENT_CheckForMissingPackets( void )
 				{
 					char szString[64];
 					DHUDMessageFadeOut *pMsg;
-					sprintf( szString, "Client missed %d packets.", ( g_lHighestReceivedSequence - g_lLastParsedSequence ) );
+					sprintf( szString, "Client missed %d packets.", static_cast<int>( g_lHighestReceivedSequence - g_lLastParsedSequence ) );
 
 					pMsg = new DHUDMessageFadeOut( SmallFont, szString,
 						1.5f,

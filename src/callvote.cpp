@@ -178,7 +178,7 @@ void CALLVOTE_Tick( void )
 							g_VoteCommand.Format( "addban %s 10min \"Vote kick", g_KickVoteVictimAddress.ToString() );
 						else
 							g_VoteCommand.Format( "forcespec_idx %d \"Vote forcespec", static_cast<int>(SERVER_FindClientByAddress ( g_KickVoteVictimAddress )) );
-						g_VoteCommand.AppendFormat( ", %u to %u", g_ulNumYesVotes, g_ulNumNoVotes );
+						g_VoteCommand.AppendFormat( ", %u to %u", static_cast<unsigned int>(g_ulNumYesVotes), static_cast<unsigned int>(g_ulNumNoVotes) );
 						if ( g_VoteReason.IsNotEmpty() )
 							g_VoteCommand.AppendFormat ( " (%s)", g_VoteReason.GetChars( ) );
 						g_VoteCommand += ".\"";

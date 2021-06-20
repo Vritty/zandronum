@@ -587,7 +587,7 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 
 		// [AK] Display the name of the level we're entering if possible.
 		if ( g_pNextLevel != NULL )
-			countdownMessage.AppendFormat( "%s: %s", g_pNextLevel->mapname, g_pNextLevel->LookupLevelName( ));
+			countdownMessage.AppendFormat( "%s: %s", g_pNextLevel->mapname, g_pNextLevel->LookupLevelName( ).GetChars() );
 		else
 			countdownMessage += "next map";
 

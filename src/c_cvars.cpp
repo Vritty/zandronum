@@ -1754,7 +1754,7 @@ bool C_FindModCVar( FBaseCVar **cvar, const char *cvarname, bool userinfo = fals
 	if (( ACS_IsCalledFromConsoleCommand( ) == false ) || ( GameConfig->ModCVarsSetup( )))
 		return false;
 
-	section.Format( "%s.%s.Mod", gameinfo.ConfigName, userinfo ? "Player" : "LocalServerInfo" );
+	section.Format( "%s.%s.Mod", gameinfo.ConfigName.GetChars(), userinfo ? "Player" : "LocalServerInfo" );
 	if ( GameConfig->SetSection( section.GetChars( )))
 	{
 		while ( GameConfig->NextInSection( key, value ))
