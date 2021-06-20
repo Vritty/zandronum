@@ -1196,7 +1196,7 @@ void bots_ParseBotInfoLump( FScanner &sc )
 			else if ( stricmp( szKey, "colorset" ) == 0 )
 			{
 				strncpy( BotInfo.szColorSet, szValue, 31 );
-				BotInfo.szColor[31] = 0;
+				BotInfo.szColorSet[31] = 0;
 			}
 			else if ( stricmp( szKey, "gender" ) == 0 )
 			{
