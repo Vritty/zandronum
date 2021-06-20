@@ -286,7 +286,7 @@ void MEDAL_Render( void )
 			ulCurXPos += CleanXfac * TexMan[patchName]->GetWidth( );
 		}
 
-		ulCurXPos = SCREENWIDTH / 2 - CleanXfac * ( SmallFont->StringWidth( string ) / 2 );
+		ulCurXPos = ( SCREENWIDTH - CleanXfac * SmallFont->StringWidth( string )) / 2;
 		screen->DrawText( SmallFont, g_Medals[ulMedal].ulTextColor, ulCurXPos, ulCurYPos, string, DTA_CleanNoMove, true, DTA_Alpha, lAlpha, TAG_DONE );
 	}
 }
