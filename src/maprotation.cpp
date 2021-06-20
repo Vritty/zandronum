@@ -252,7 +252,7 @@ static void MAPROTATION_CalcNextMap( void )
 				// [AK] Find the next map in the list with the lowest min player or highest max player limit.
 				while ( MAPROTATION_MapHasLowestOrHighestLimit( g_ulNextMapInList, ulLowestLimit, ulHighestLimit, bUseMaxLimit ) == false )
 				{
-					g_ulNextMapInList = ++g_ulNextMapInList % g_MapRotationEntries.size( );
+					g_ulNextMapInList = (g_ulNextMapInList + 1) % g_MapRotationEntries.size( );
 					if ( g_ulNextMapInList == ulOldMapInList )
 						break;
 				}
