@@ -95,7 +95,7 @@ void C_SetDefaultBindings ();
 void C_UnbindAll ();
 
 // [RC] Returns the key used for a command
-void C_FindBind(char *Command, char *Key);
+void C_FindBind(const char *Command, char *Key);
 
 extern const char *KeyNames[];
 

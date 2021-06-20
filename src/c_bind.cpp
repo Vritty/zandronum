@@ -943,7 +943,7 @@ bool C_DoKey (event_t *ev, FKeyBindings *binds, FKeyBindings *doublebinds)
 
 
 // [RC] Returns the (first) key name, if any, used for a command 
-void C_FindBind(char *Command, char *Key) {
+void C_FindBind(const char *Command, char *Key) {
 	int key1 = -1; int key2 = -1;
 	Bindings.GetKeysForCommand(Command, &key1, &key2);
 	if(key1 <= 0)
