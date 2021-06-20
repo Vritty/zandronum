@@ -1769,7 +1769,7 @@ static int ExecuteClientScript ( AActor* activator, int script, int client, int*
 		for ( int i = 0; i < MIN( argCount, 4 ); i++ )
 			scriptArgs[i] = args[i];
 
-		SERVERCOMMANDS_ACSScriptExecute( script, activator, NULL, NULL, NULL, scriptArgs, 4, true, client, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_ACSScriptExecute( script, activator, 0, 0, 0, scriptArgs, 4, true, client, SVCF_ONLYTHISCLIENT );
 		return 1;
 	}
 
@@ -9603,9 +9603,9 @@ scriptwait:
 						if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 						{
 							if (( pcd == PCD_ENDHUDMESSAGEBOLD ) || ( screen == NULL ))
-								SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, NULL, NULL, alpha, serverId );
+								SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, 0., 0., alpha, serverId );
 							else if ( screen->player )
-								SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, NULL, NULL, alpha, serverId, screen->player - players, SVCF_ONLYTHISCLIENT );
+								SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, 0., 0., alpha, serverId, screen->player - players, SVCF_ONLYTHISCLIENT );
 						}
 						else
 							msg = new DHUDMessage (activefont, work, x, y, hudwidth, hudheight, color, holdTime);
@@ -9619,9 +9619,9 @@ scriptwait:
 							if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 							{
 								if (( pcd == PCD_ENDHUDMESSAGEBOLD ) || ( screen == NULL ))
-									SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, NULL, fadeTime, alpha, serverId );
+									SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, 0., fadeTime, alpha, serverId );
 								else if ( screen->player )
-									SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, NULL, fadeTime, alpha, serverId, screen->player - players, SVCF_ONLYTHISCLIENT );
+									SERVERCOMMANDS_PrintACSHUDMessage( this, work.GetChars( ), x, y, type, color, holdTime, 0., fadeTime, alpha, serverId, screen->player - players, SVCF_ONLYTHISCLIENT );
 							}
 							else
 								msg = new DHUDMessageFadeOut (activefont, work, x, y, hudwidth, hudheight, color, holdTime, fadeTime);
