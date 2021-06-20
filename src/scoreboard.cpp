@@ -697,7 +697,7 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 			if (( invasion ) || (( dmflags2 & DF2_KILL_MONSTERS ) == false ))
 				text.Format( "%d monster%s left", static_cast<int>( lRemaining ), lRemaining == 1 ? "" : "s" );
 			else
-				text.Format( "%d% monsters left", static_cast<int>( lRemaining ));
+				text.Format( "%d%% monsters left", static_cast<int>( lRemaining ));
 
 			lines.push_back( text );
 		}
