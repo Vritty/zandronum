@@ -233,7 +233,7 @@ static void MAPROTATION_CalcNextMap( void )
 			do
 			{
 				// [AK] Cycle through the entire list until we find a map that can be entered.
-				g_ulNextMapInList = ++g_ulNextMapInList % g_MapRotationEntries.size( );
+				g_ulNextMapInList = (g_ulNextMapInList + 1) % g_MapRotationEntries.size( );
 
 				// [AK] We went through the entire list and couldn't find a valid map.
 				if ( g_ulNextMapInList == ulOldMapInList )
