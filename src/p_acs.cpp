@@ -7305,7 +7305,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				GAMEMODE_e newmode;
 
 				// [AK] Only the server should change the gamemode, but not during the result sequence.
-				if ( NETWORK_InClientMode() || state == GAMESTATE_INRESULTSEQUENCE )
+				if ( NETWORK_InClientMode() || GAMEMODE_GetState() == GAMESTATE_INRESULTSEQUENCE )
 					return 0;
 
 				// [AK] No need to change the gamemode if we're already playing it.
