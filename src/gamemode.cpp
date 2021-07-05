@@ -253,6 +253,8 @@ int GAMEMODE_ParserMustGetEnumName ( FScanner &sc, const char *EnumName, const c
 	return flagNum;
 }
 
+//*****************************************************************************
+//
 FFlagCVar *GAMEMODE_ParserMustGetFlagset ( FScanner &sc, const GAMEMODE_e GameMode, LONG **GameModeFlagset )
 {
 	sc.MustGetString();
