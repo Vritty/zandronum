@@ -677,6 +677,13 @@ void V_CleanPlayerName( FString &String )
 
 		tempString += "\\c-";
 	}
+	// [AK] Even if the name doesn't use any color codes, still make sure that its length
+	// doesn't exceed the maximum allowed characters in a player's name.
+	else if ( tempString.Len( ) > MAXPLAYERNAME )
+	{
+		tempString.Truncate( MAXPLAYERNAME );
+	}
+
 	V_ColorizeString ( tempString );
 	String = tempString;
 
