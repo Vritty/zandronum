@@ -109,7 +109,7 @@ void DUEL_Tick( void )
 		}
 
 		// Two players are here now, begin the countdown!
-		if ( DUEL_CountActiveDuelers( ) == 2 )
+		if ( GAME_CountActivePlayers( ) == 2 )
 		{
 			// [BB] Skip countdown and map reset if the map is supposed to be a lobby.
 			if ( GAMEMODE_IsLobbyMap( ) )
@@ -144,23 +144,6 @@ void DUEL_Tick( void )
 	default: //Satisfy GCC
 		break;
 	}
-}
-
-//*****************************************************************************
-//
-ULONG DUEL_CountActiveDuelers( void )
-{
-	ULONG	ulIdx;
-	ULONG	ulDuelers;
-
-	ulDuelers = 0;
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-	{
-		if (( playeringame[ulIdx] ) && ( players[ulIdx].bSpectating == false ))
-			ulDuelers++;
-	}
-
-	return ( ulDuelers );
 }
 
 //*****************************************************************************

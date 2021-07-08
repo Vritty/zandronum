@@ -75,6 +75,7 @@
 #include "st_hud.h"
 #include "wi_stuff.h"
 #include "c_console.h"
+#include "g_game.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -662,7 +663,7 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 
 		if ( ulWinner == MAXPLAYERS )
 		{
-			if ( DUEL_CountActiveDuelers( ) == 2 )
+			if ( GAME_CountActivePlayers( ) == 2 )
 				text = "First match between the two";
 			else
 				bDraw = false;

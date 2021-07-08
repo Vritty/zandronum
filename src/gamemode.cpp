@@ -876,7 +876,7 @@ bool GAMEMODE_PreventPlayersFromJoining( ULONG ulExcludePlayer )
 		return true;
 
 	// [BB] Duel in progress.
-	if ( duel && ( DUEL_CountActiveDuelers( ) >= 2 ) )
+	if ( duel && ( GAME_CountActivePlayers( ) >= 2 ) )
 		return true;
 
 	// [BB] If lives are limited, players are not allowed to join most of the time.
