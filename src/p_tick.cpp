@@ -323,14 +323,16 @@ void P_Ticker (void)
 				if ( SERVER_IsValidClient( ulIdx ) == false )
 					continue;
 
-				while ( SERVER_GetClient( ulIdx )->MoveCMDs.Size( ) != 0 )
+				CLIENT_s *client = SERVER_GetClient( ulIdx );
+
+				while ( client->MoveCMDs.Size( ) != 0 )
 				{
 					// Process only one movement command.
-					const bool bMovement = SERVER_GetClient( ulIdx )->MoveCMDs[0]->isMoveCmd( );
-					SERVER_GetClient( ulIdx )->MoveCMDs[0]->process( ulIdx );
+					const bool bMovement = client->MoveCMDs[0]->isMoveCmd( );
+					client->MoveCMDs[0]->process( ulIdx );
 
-					delete SERVER_GetClient( ulIdx )->MoveCMDs[0];
-					SERVER_GetClient( ulIdx )->MoveCMDs.Delete(0);
+					delete client->MoveCMDs[0];
+					client->MoveCMDs.Delete(0);
 
 					if ( bMovement == true )
 						break;
