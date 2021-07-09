@@ -303,6 +303,9 @@ void S_StopAllChannels (void);
 // [BB] Stop sound of an actor for all channels
 void S_StopAllSoundsFromActor (AActor *ent);
 
+// [AK] Stops all positioned or unattached sounds.
+void S_StopAllUnattachedSounds (void);
+
 // Is the sound playing on one of the emitter's channels?
 bool S_GetSoundPlayingInfo (const AActor *actor, int sound_id);
 bool S_GetSoundPlayingInfo (const sector_t *sector, int sound_id);

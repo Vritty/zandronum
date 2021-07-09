@@ -1679,6 +1679,28 @@ void S_StopAllSoundsFromActor (AActor *ent)
 
 //==========================================================================
 //
+// [AK] S_StopAllUnattachedSounds
+//
+// Stops all positioned or unattached sounds that are still playing.
+//==========================================================================
+
+void S_StopAllUnattachedSounds ()
+{
+	FSoundChan *chan = Channels;
+	while (chan != NULL)
+	{
+		FSoundChan *next = chan->NextChan;
+		if ((chan->SourceType == SOURCE_None) || (chan->SourceType == SOURCE_Unattached))
+		{
+			S_StopChannel(chan);
+		}
+
+		chan = next;
+	}
+}
+
+//==========================================================================
+//
 // S_RelinkSound
 //
 // Moves all the sounds from one thing to another. If the destination is
