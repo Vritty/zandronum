@@ -90,6 +90,21 @@ struct MoveThingData
 	    angle ( actor->angle ),
 	    movedir ( actor->movedir ) {}
 
+	// [AK] Sets an actor's position, orientation, and velocity to the stored data.
+	void Restore( AActor *actor )
+	{
+		if ( actor == NULL )
+			return;
+
+		actor->SetOrigin( x, y, z );
+		actor->velx = velx;
+		actor->vely = vely;
+		actor->velz = velz;
+		actor->pitch = pitch;
+		actor->angle = angle;
+		actor->movedir = movedir;
+	}
+
 	fixed_t x, y, z;
 	fixed_t velx, vely, velz;
 	fixed_t pitch;
