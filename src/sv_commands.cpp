@@ -3913,6 +3913,18 @@ void SERVERCOMMANDS_FlashStealthMonster( AActor* pActor, ULONG ulPlayerExtra, Se
 
 //*****************************************************************************
 //
+void SERVERCOMMANDS_StopAllSoundsOnThing( AActor *pActor, ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	if ( EnsureActorHasNetID( pActor ) == false )
+		return;
+
+	NetCommand command ( SVC2_STOPALLSOUNDSONTHING );
+	command.addShort( pActor->NetID );
+	command.sendCommandToClients();
+}
+
+//*****************************************************************************
+//
 void SERVERCOMMANDS_FullUpdateCompleted( ULONG ulClient )
 {
 	ServerCommands::FullUpdateCompleted().sendCommandToClients( ulClient, SVCF_ONLYTHISCLIENT );

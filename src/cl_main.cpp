@@ -2233,6 +2233,17 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				}
 				break;
 
+			case SVC2_STOPALLSOUNDSONTHING:
+				{
+					AActor* actor = CLIENT_FindThingByNetID( pByteStream->ReadShort());
+
+					if ( actor )
+					{
+						S_StopAllSoundsFromActor( actor );
+					}
+				}
+				break;
+
 			case SVC2_SHOOTDECAL:
 				{
 					FName decalName = NETWORK_ReadName( pByteStream );

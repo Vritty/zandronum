@@ -232,6 +232,7 @@ void	SERVERCOMMANDS_SetThingScale( AActor* mobj, unsigned int scaleFlags, ULONG 
 void	SERVERCOMMANDS_SetThingSpecies( AActor *mobj, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 void	SERVERCOMMANDS_UpdateThingScaleNotAtDefault( AActor* pActor, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 void	SERVERCOMMANDS_FlashStealthMonster( AActor* pActor, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
+void	SERVERCOMMANDS_StopAllSoundsOnThing( AActor* pActor, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
 
 // Print commands. These print some sort of message to the screen.
 void	SERVERCOMMANDS_Print( const char *pszString, ULONG ulPrintLevel, ULONG ulPlayerExtra = MAXPLAYERS, ServerCommandFlags flags = 0 );
