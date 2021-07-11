@@ -329,8 +329,7 @@ void HUD_Refresh( void )
 void HUD_DrawCoopInfo( void )
 {
 	// [BB] Only draw the info if the user wishes to see it (cl_drawcoopinfo)
-	// [AK] Don't draw the info either if this game mode has the DONTUSECOOPINFO flag.
-	if (( cl_drawcoopinfo == false ) || ( zadmflags & ZADF_NO_COOP_INFO ) || ( GAMEMODE_GetCurrentFlags() & GMF_DONTUSECOOPINFO ))
+	if (( cl_drawcoopinfo == false ) || ( zadmflags & ZADF_NO_COOP_INFO ))
 		return;
 
 	// [BB] Only draw the info if this is a cooperative or team based game mode. Further don't draw this in single player.

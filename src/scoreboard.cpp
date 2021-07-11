@@ -151,9 +151,8 @@ CVAR( Bool, cl_intermissiontimer, false, CVAR_ARCHIVE );
 //
 bool SCOREBOARD_ShouldDrawBoard( ULONG ulDisplayPlayer )
 {
-	// [AK] If the user isn't pressing their scoreboard key or if the current game mode
-	// doesn't use the scoreboard then return false.
-	if (( Button_ShowScores.bDown == false ) || ( GAMEMODE_GetCurrentFlags( ) & GMF_DONTUSESCOREBOARD ))
+	// [AK] If the user isn't pressing their scoreboard key then return false.
+	if ( Button_ShowScores.bDown == false )
 		return false;
 
 	// [AK] We generally don't want to draw the scoreboard in singleplayer games unless we're
