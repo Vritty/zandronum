@@ -175,6 +175,7 @@ static	bool	server_CheckJoinPassword( const FString& clientPassword );
 static	bool	server_InfoCheat( BYTESTREAM_s* pByteStream );
 static	bool	server_CheckLogin( const ULONG ulClient );
 static	void	server_PrintWithIP( FString message, const NETADDRESS_s &address );
+static	void	server_ResetClientTicBuffer( ULONG ulClient );
 
 // [RC]
 #ifdef CREATE_PACKET_LOG
@@ -282,6 +283,18 @@ CVAR( Int, sv_afk2spec, 0, CVAR_ARCHIVE | CVAR_SERVERINFO ) // [K6]
 CVAR( Bool, sv_forcelogintojoin, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Bool, sv_useticbuffer, true, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_DEBUGONLY )
 CVAR( Int, sv_showcommands, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY )
+
+//*****************************************************************************
+// [AK] Smooths the movement of lagging players using extrapolation and correction.
+CUSTOM_CVAR( Bool, sv_smoothplayers, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO ) 
+{
+	// [AK] Reset the extrapolation for all clients if we disable the skip correction.
+	if ( !self )
+	{
+		for ( ULONG ulClient = 0; ulClient < MAXPLAYERS; ulClient++ )
+			SERVER_ResetClientExtrapolation( ulClient );
+	}
+}
 
 CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_SENSITIVESERVERSETTING|CVAR_NOSETBYACS )
 {
@@ -1913,6 +1926,9 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	// should be able to go back is the gametic they connected with.
 	g_aClients[lClient].lLastServerGametic = gametic;
 
+	// [AK] Reset the client's tic buffer.
+	server_ResetClientTicBuffer( lClient );
+
 	SERVER_InitClientSRPData ( lClient );
 
 	// [BB] Inform the client that he is connected and needs to authenticate the map.
@@ -2779,7 +2795,12 @@ void SERVER_WriteCommands( void )
 				continue;
 		}
 
-		SERVERCOMMANDS_MoveLocalPlayer( ulIdx );
+		// [AK] If this player's lagging and we're extrapolating their movement, don't send updates
+		// on their position. This helps keep the movement on their screen a little smoother until
+		// we receives commands from them again. After which, we'll send them them updates again
+		// and correct any discrepancies on their end.
+		if (( sv_smoothplayers == false ) || ( g_aClients[ulIdx].ulExtrapolatedTics == 0 ))
+			SERVERCOMMANDS_MoveLocalPlayer( ulIdx );
 	}
 
 	// Once every four seconds, update each player's ping.
@@ -5063,16 +5084,99 @@ template <typename CommandType>
 static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 {
 	CommandType *cmd = new CommandType ( pByteStream );
+	TArray<ClientCommand*> *buffer = &g_aClients[g_lCurrentClient].MoveCMDs;
 
 	if ( sv_useticbuffer )
 	{
-		g_aClients[g_lCurrentClient].MoveCMDs.Push ( cmd );
+		if (( sv_smoothplayers ) && ( cmd->isMoveCmd( )))
+		{
+			ULONG ulNewClientTic = cmd->getClientTic( );
+
+			// [AK] It's possible this was a command that arrived late and we already extrapolated
+			// the player's movement at this tic. In this case, we'll store these commands into a
+			// separate buffer so we can backtrace the player's actual movement.
+			if ( g_aClients[g_lCurrentClient].LastMoveCMD != NULL )
+			{
+				ULONG ulMaxClientTic = g_aClients[g_lCurrentClient].LastMoveCMD->getClientTic( ) + g_aClients[g_lCurrentClient].ulExtrapolatedTics;
+
+				// [AK] We want to try filling this buffer only when the client is suffering from a ping
+				// spike, not when they're experiencing packet loss.
+				if (( ulNewClientTic < ulMaxClientTic ) || (( g_aClients[g_lCurrentClient].ulExtrapolatedTics > 1 ) && ( ulNewClientTic == ulMaxClientTic )))
+					buffer = &g_aClients[g_lCurrentClient].LateMoveCMDs;
+
+				delete g_aClients[g_lCurrentClient].LastMoveCMD;
+			}
+
+			// [AK] This becomes the last movement command we received from the client.
+			g_aClients[g_lCurrentClient].LastMoveCMD = new CommandType( *cmd );
+		}
+
+		buffer->Push( cmd );
 		return false;
 	}
 
 	const bool retValue = cmd->process ( g_lCurrentClient );
 	delete cmd;
 	return retValue;
+}
+
+//*****************************************************************************
+//
+bool SERVER_ShouldBacktraceClientMovement( ULONG ulClient )
+{
+	// [AK] Don't backtrace the player's movement if they're not alive.
+	if ( players[ulClient].playerstate != PST_LIVE )
+		return false;
+
+	// [AK] If this client has no late movement commands in the buffer or if there's not old position
+	// state to use then we can't perform the backtrace!
+	if (( g_aClients[ulClient].LateMoveCMDs.Size( ) == 0 ) || ( g_aClients[ulClient].PositionData == NULL ))
+		return false;
+
+	// [AK] Compare the number of late commands in the buffer to the number of tics we extrapolated this
+	// player's movement. If the difference is too much, don't do the backtrace.
+	if ( abs( static_cast<int>( g_aClients[ulClient].LateMoveCMDs.Size( ) - g_aClients[ulClient].ulExtrapolatedTics )) > 1 )
+		return false;
+
+	return true;
+}
+
+//*****************************************************************************
+//
+static void server_ResetClientTicBuffer( ULONG ulClient )
+{
+	// [AK] Clear all stored commands in the tic buffer.
+	for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
+		delete g_aClients[ulClient].MoveCMDs[i];
+
+	g_aClients[ulClient].MoveCMDs.Clear( );
+
+	// [AK] Also delete the last processed movement command.
+	if ( g_aClients[ulClient].LastMoveCMD != NULL )
+	{
+		delete g_aClients[ulClient].LastMoveCMD;
+		g_aClients[ulClient].LastMoveCMD = NULL;
+	}
+
+	SERVER_ResetClientExtrapolation( ulClient );
+}
+
+//*****************************************************************************
+//
+void SERVER_ResetClientExtrapolation( ULONG ulClient )
+{
+	for ( unsigned int i = 0; i < g_aClients[ulClient].LateMoveCMDs.Size( ); i++ )
+		delete g_aClients[ulClient].LateMoveCMDs[i];
+
+	g_aClients[ulClient].LateMoveCMDs.Clear( );
+
+	if ( g_aClients[ulClient].PositionData != NULL )
+	{
+		delete g_aClients[ulClient].PositionData;
+		g_aClients[ulClient].PositionData = NULL;
+	}
+
+	g_aClients[ulClient].ulExtrapolatedTics = 0;
 }
 
 //*****************************************************************************
@@ -5320,6 +5424,11 @@ public:
 	virtual bool isMoveCmd ( ) const
 	{
 		return true;
+	}
+
+	virtual unsigned int getClientTic ( ) const
+	{
+		return moveCmd.ulGametic;
 	}
 };
 
@@ -6373,6 +6482,9 @@ static bool server_AuthenticateLevel( BYTESTREAM_s *pByteStream )
 	// [BB] Update the client's state according to the successful authenticaion.
 	if ( SERVER_GetClient( g_lCurrentClient )->State == CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION )
 		SERVER_GetClient( g_lCurrentClient )->State = CLS_SPAWNED;
+
+	// [AK] Reset the client's tic buffer.
+	server_ResetClientTicBuffer( g_lCurrentClient );
 
 	// Now that the level has been authenticated, send all the level data for the client.
 

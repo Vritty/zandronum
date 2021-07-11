@@ -316,6 +316,8 @@ void P_Ticker (void)
 	// [BB] Process up to two movement commands for each client.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
+		bool bAlreadySmoothed[MAXPLAYERS] = { false };
+
 		for ( int i = 0; i < ( ( gametic % 3 == 0 ) ? 2 : 1 ); i++ )
 		{
 			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
@@ -324,6 +326,75 @@ void P_Ticker (void)
 					continue;
 
 				CLIENT_s *client = SERVER_GetClient( ulIdx );
+
+				// [AK] When a player is experiencing ping spikes or packet loss and we don't have any commands
+				// left in their buffer, we will try to predict where they will be for at least the next few tics
+				// until we start receiveing commands from them again. In case the player suffers from a ping spike, we
+				// might eventually receive the commands we emulated. When this happens, we will move the player's body
+				// to where they were before we started extrapolating, then backtrace their movement by processing all
+				// these commands in the same tic.
+				// If our prediction was correct, the player should move to about where we extrapolated them, but
+				// sometimes we might be wrong. However, the skipping that may result from this discrepancy is usually
+				// not nearly as bad than if the player was lagging without any skip correction in place.
+				if (( sv_smoothplayers ) && ( players[ulIdx].mo != NULL ) && ( bAlreadySmoothed[ulIdx] == false ))
+				{
+					int numMoveCommands = 0;
+
+					// [AK] Count how many movement commands are inside the client's tic buffer.
+					for ( unsigned int i = 0; i < client->MoveCMDs.Size( ); i++ )
+					{
+						if ( client->MoveCMDs[i]->isMoveCmd( ))
+							numMoveCommands++;
+					}
+
+					// [AK] If we have any late commands in the buffer, process them all immediately. Ideally, we don't
+					// want to backtrace the player's movement if we don't have any enough commands to do so based on
+					// how many tics we extrapolated them. Otherwise, the skipping would look worse for the other players.
+					if ( SERVER_ShouldBacktraceClientMovement( ulIdx ))
+					{
+						MoveThingData oldPositionData( players[ulIdx].mo );
+						client->PositionData->Restore( players[ulIdx].mo );
+
+						// [AK] During the backtrace, the player shouldn't be solid so they don't stuck inside other
+						// objects, and they shouldn't be able to pick up any items.
+						int flags = players[ulIdx].mo->flags;
+						players[ulIdx].mo->flags &= ~( MF_SOLID | MF_PICKUP );
+
+						while ( client->LateMoveCMDs.Size( ) > 0 )
+						{
+							client->LateMoveCMDs[0]->process( ulIdx );
+	
+							delete client->LateMoveCMDs[0];
+							client->LateMoveCMDs.Delete( 0 );
+						}
+
+						players[ulIdx].mo->flags = flags;
+
+						// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
+						// hasn't moved into a spot that's blocking them or something else. If this check fails, we have
+						// to move the player back to their original position before the backtrace happened.
+						if ( P_TestMobjLocation( players[ulIdx].mo ) == false )
+							oldPositionData.Restore( players[ulIdx].mo );
+
+						SERVER_ResetClientExtrapolation( ulIdx );
+					}
+					// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing
+					// the last movement command we received from them, but we won't extrapolate more than we should.
+					else if (( numMoveCommands == 0 ) && ( client->LastMoveCMD != NULL ) && ( client->ulExtrapolatedTics < TICRATE ))
+					{
+						// [AK] Save the player's current position, velocity, and orientation before we start extrapolating.
+						if ( client->ulExtrapolatedTics++ == 0 )
+							client->PositionData = new MoveThingData( players[ulIdx].mo );
+
+						client->LastMoveCMD->process( ulIdx );
+					}
+
+					// [AK] Reset the client's extrapolation data if necessary.
+					if (( client->ulExtrapolatedTics > 0 ) && (( numMoveCommands > 0 ) || ( client->LateMoveCMDs.Size( ) > 0 )))
+						SERVER_ResetClientExtrapolation( ulIdx );
+
+					bAlreadySmoothed[ulIdx] = true;
+				}
 
 				while ( client->MoveCMDs.Size( ) != 0 )
 				{

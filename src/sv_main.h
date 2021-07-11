@@ -61,6 +61,8 @@
 #include <list>
 #include <queue>
 
+struct MoveThingData;
+
 //*****************************************************************************
 //	DEFINES
 
@@ -214,6 +216,11 @@ public:
 	{
 		return false;
 	}
+
+	virtual unsigned int getClientTic ( ) const
+	{
+		return 0;
+	}
 };
 
 //*****************************************************************************
@@ -329,6 +336,19 @@ struct CLIENT_s
 
 	// [BB] Buffer storing all movement commands received from the client we haven't executed yet.
 	TArray<ClientCommand*>	MoveCMDs;
+
+	// [AK] All the movement commands we received from this client that came too late (i.e. we tried
+	// predicting these commands through extrapolation).
+	TArray<ClientCommand*>	LateMoveCMDs;
+
+	// [AK] The last movement command we received from this client.
+	ClientCommand	*LastMoveCMD;
+
+	// [AK] The number of tics we extrapolated this player's movement.
+	ULONG			ulExtrapolatedTics;
+
+	// [AK] The player's position, velocity, and orientation from before we started extrapolating.
+	MoveThingData	*PositionData;
 
 	// [BB] Variables for the account system
 	FString username;
@@ -490,6 +510,8 @@ void		SERVER_SyncServerModCVars ( const int PlayerToSync );
 void		SERVER_KillCheat( const char* what );
 void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
 void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
+bool		SERVER_ShouldBacktraceClientMovement( ULONG ulClient );
+void		SERVER_ResetClientExtrapolation( ULONG ulClient );
 
 // From sv_master.cpp
 void		SERVER_MASTER_Construct( void );
@@ -539,6 +561,7 @@ EXTERN_CVAR( Bool, sv_minimizetosystray )
 EXTERN_CVAR( Int, sv_queryignoretime )
 EXTERN_CVAR( Bool, sv_forcelogintojoin )
 EXTERN_CVAR( Bool, sv_limitcommands )
+EXTERN_CVAR( Bool, sv_smoothplayers )
 
 // From sv_master.cpp
 EXTERN_CVAR( Bool, sv_updatemaster );
