@@ -1664,6 +1664,10 @@ void S_StopAllChannels ()
 
 void S_StopAllSoundsFromActor (AActor *ent)
 {
+	// [AK] The server doesn't play sounds.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		return;
+
 	for (FSoundChan *chan = Channels; chan != NULL; chan = chan->NextChan)
 	{
 		if ( chan->Actor == ent )
