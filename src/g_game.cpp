@@ -3371,6 +3371,10 @@ void GAME_ResetMap( bool bRunEnterScripts )
 	// [BB] If a PowerTimeFreezer was in effect, the sound could be paused. Make sure that it is resumed.
 	S_ResumeSound( false );
 
+	// [AK] Stop any unattached sounds that are still playing. The server doesn't need to do this.
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+		S_StopAllUnattachedSounds( );
+
 	// [BB] We are going to reset the map now, so any request for a reset is fulfilled.
 	g_bResetMap = false;
 
@@ -3414,7 +3418,12 @@ void GAME_ResetMap( bool bRunEnterScripts )
 				// [BB] This caused problems on the non-client code, so until we discover what
 				// exactly happnes there, just do the same workaround here.
 				if( !pActor->IsKindOf( RUNTIME_CLASS( ADynamicLight ) ) )
+				{
+					// [AK] Stop any sounds from this actor before destroying it.
+					S_StopAllSoundsFromActor( pActor );
 					pActor->Destroy( );
+				}
+
 				continue;
 			}
 
@@ -3954,13 +3963,22 @@ void GAME_ResetMap( bool bRunEnterScripts )
 				level.total_items--;
 
 			// If we're the server, tell clients to delete the actor.
+			// [AK] Also tell them to stop all sounds on the actor.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+			{
+				SERVERCOMMANDS_StopAllSoundsOnThing( pActor );
 				SERVERCOMMANDS_DestroyThing( pActor );
+			}
 
 			// [BB] Destroying lights here will result in crashes after the countdown
 			// of a duel ends in skirmish. Has to be investigated.
 			if( !pActor->IsKindOf( RUNTIME_CLASS( ADynamicLight ) ) )
+			{
+				// [AK] Stop any sounds from this actor before destroying it.
+				S_StopAllSoundsFromActor( pActor );
 				pActor->Destroy( );
+			}
+
 			continue;
 		}
 
@@ -4105,7 +4123,11 @@ void GAME_ResetMap( bool bRunEnterScripts )
 				// [BB] The server doesn't tell the clients about indefinitely hidden non-inventory actors during a full update.
 				&& ( ( pActor->IsKindOf( RUNTIME_CLASS( AInventory ) ) )
 					|| ( pActor->state != RUNTIME_CLASS( AInventory )->ActorInfo->FindState ("HideIndefinitely") ) ) )
+			{
+				// [AK] Also tell the clients to stop all sounds on the old actor.
+				SERVERCOMMANDS_StopAllSoundsOnThing( pActor );
 				SERVERCOMMANDS_DestroyThing( pActor );
+			}
 
 			// [BB] A voodoo doll needs to stay assigned to the corresponding player.
 			if ( pActor->IsKindOf( RUNTIME_CLASS( APlayerPawn )) )
@@ -4146,6 +4168,8 @@ void GAME_ResetMap( bool bRunEnterScripts )
 					SERVERCOMMANDS_SetThingProperty( pNewActor, APROP_RenderStyle );
 			}
 
+			// [AK] Stop any sounds from this actor before destroying it.
+			S_StopAllSoundsFromActor( pActor );
 			pActor->Destroy( );
 		}
 	}

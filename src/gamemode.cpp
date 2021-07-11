@@ -695,8 +695,14 @@ void GAMEMODE_RespawnAllPlayers( BOTEVENT_e BotEvent, playerstate_t PlayerState 
 			if ( pOldPlayerBody )
 			{
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				{
+					// [AK] Also tell the clients to stop all sounds on the player.
+					SERVERCOMMANDS_StopAllSoundsOnThing( pOldPlayerBody );
 					SERVERCOMMANDS_DestroyThing( pOldPlayerBody );
+				}
 
+				// [AK] Stop any sounds from this player before destroying them.
+				S_StopAllSoundsFromActor( pOldPlayerBody );
 				pOldPlayerBody->Destroy( );
 			}
 
