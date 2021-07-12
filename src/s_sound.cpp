@@ -1668,12 +1668,16 @@ void S_StopAllSoundsFromActor (AActor *ent)
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
 
-	for (FSoundChan *chan = Channels; chan != NULL; chan = chan->NextChan)
+	FSoundChan *chan = Channels;
+	while (chan != NULL)
 	{
+		FSoundChan *next = chan->NextChan;
 		if ( chan->Actor == ent )
 		{
 			S_StopChannel(chan);
 		}
+
+		chan = next;
 	}
 }
 
