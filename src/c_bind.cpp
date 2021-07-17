@@ -70,7 +70,7 @@ static const FBinding DefBindings[] =
 	{ "]", "invnext" },
 	{ "mwheelleft", "invprev" },
 	{ "mwheelright", "invnext" },
-	{ "enter", "invuse" },
+	{ "\\", "invuse" }, // [AK]
 	{ "-", "sizedown" },
 	{ "=", "sizeup" },
 	{ "ctrl", "+crouch" }, // [AK]
@@ -103,7 +103,7 @@ static const FBinding DefBindings[] =
 	{ "f9", "quickload" },
 	{ "f11", "bumpgamma" },
 	{ "f10", "menu_quit" },
-	{ "tab", "togglemap" },
+	{ "enter", "togglemap" }, // [AK]
 	{ "pause", "pause" },
 	{ "sysrq", "screenshot" },
 	// [AK] Added/changed binds for global, team, and private chat modes.
@@ -114,10 +114,11 @@ static const FBinding DefBindings[] =
 	{ "f12", "spynext" },
 	{ "mwheeldown", "weapnext" },
 	{ "mwheelup", "weapprev" },
-	// [AK] Added default binds for "weapswap" and "weapdrop".
+	// [AK] Added default binds for "weapswap", "weapdrop", and "reload".
 	{ "q", "weapswap" },
 	{ "g", "weapdrop" },
-	{ "m", "togglemap" }, // [AK]
+	{ "r", "+reload" },
+	{ "m", "+showmedals" }, // [BC] New buttons below for Skulltag.
 	{ "u", "taunt" },
 	{ "pgup", "vote_yes" },
 	{ "pgdn", "vote_no" },
