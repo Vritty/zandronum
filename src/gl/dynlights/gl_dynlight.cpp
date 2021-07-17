@@ -1110,6 +1110,10 @@ void gl_SetActorLights(AActor *actor)
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
 
+	// [AK] Don't display dynamic lights on spectators.
+	if (( actor->player != NULL ) && ( actor->player->bSpectating ))
+		return;
+
 	TArray<FInternalLightAssociation *> * l = gl_GetActorLights(actor);
 	unsigned int count = 0;
 
