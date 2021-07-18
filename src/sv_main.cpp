@@ -5100,7 +5100,19 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 				// [AK] We want to try filling this buffer only when the client is suffering from a ping
 				// spike, not when they're experiencing packet loss.
 				if ( cmd->getClientTic( ) <= ulMaxClientTic )
+				{
 					buffer = &g_aClients[g_lCurrentClient].LateMoveCMDs;
+
+					// [AK] Organize the late movement commands in case they arrived in the wrong order.
+					for ( unsigned int i = 0; i < buffer->Size( ); i++ )
+					{
+						if ( cmd->getClientTic( ) < ( *buffer )[i]->getClientTic( ))
+						{
+							buffer->Insert( i, cmd );
+							return false;
+						}
+					}
+				}
 			}
 		}
 
