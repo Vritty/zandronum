@@ -411,6 +411,15 @@ void P_Ticker (void)
 					const bool bMovement = client->MoveCMDs[0]->isMoveCmd( );
 					client->MoveCMDs[0]->process( ulIdx );
 
+					if ( bMovement )
+					{
+						if ( client->LastMoveCMD != NULL )
+							delete client->LastMoveCMD;
+
+						// [AK] This becomes the last movement command we received from the client.
+						client->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( client->MoveCMDs[0] ));
+					}
+
 					delete client->MoveCMDs[0];
 					client->MoveCMDs.Delete(0);
 

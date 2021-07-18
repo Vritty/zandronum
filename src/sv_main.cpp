@@ -5090,25 +5090,18 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 	{
 		if (( sv_smoothplayers ) && ( cmd->isMoveCmd( )))
 		{
-			ULONG ulNewClientTic = cmd->getClientTic( );
-
 			// [AK] It's possible this was a command that arrived late and we already extrapolated
 			// the player's movement at this tic. In this case, we'll store these commands into a
 			// separate buffer so we can backtrace the player's actual movement.
-			if ( g_aClients[g_lCurrentClient].LastMoveCMD != NULL )
+			if (( g_aClients[g_lCurrentClient].LastMoveCMD != NULL ) && ( g_aClients[g_lCurrentClient].ulExtrapolatedTics > 0 ))
 			{
 				ULONG ulMaxClientTic = g_aClients[g_lCurrentClient].LastMoveCMD->getClientTic( ) + g_aClients[g_lCurrentClient].ulExtrapolatedTics;
 
 				// [AK] We want to try filling this buffer only when the client is suffering from a ping
 				// spike, not when they're experiencing packet loss.
-				if (( ulNewClientTic < ulMaxClientTic ) || (( g_aClients[g_lCurrentClient].ulExtrapolatedTics > 1 ) && ( ulNewClientTic == ulMaxClientTic )))
+				if ( cmd->getClientTic( ) <= ulMaxClientTic )
 					buffer = &g_aClients[g_lCurrentClient].LateMoveCMDs;
-
-				delete g_aClients[g_lCurrentClient].LastMoveCMD;
 			}
-
-			// [AK] This becomes the last movement command we received from the client.
-			g_aClients[g_lCurrentClient].LastMoveCMD = new CommandType( *cmd );
 		}
 
 		buffer->Push( cmd );
