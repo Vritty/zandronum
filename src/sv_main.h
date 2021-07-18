@@ -224,6 +224,36 @@ public:
 };
 
 //*****************************************************************************
+class ClientMoveCommand : public ClientCommand
+{
+	CLIENT_MOVE_COMMAND_s moveCmd;
+public:
+	ClientMoveCommand ( BYTESTREAM_s *pByteStream );
+
+	bool process ( const ULONG ulClient ) const;
+
+	virtual bool isMoveCmd ( ) const
+	{
+		return true;
+	}
+
+	virtual unsigned int getClientTic ( ) const
+	{
+		return moveCmd.ulGametic;
+	}
+};
+
+//*****************************************************************************
+class ClientWeaponSelectCommand : public ClientCommand
+{
+	const USHORT usActorNetworkIndex;
+public:
+	ClientWeaponSelectCommand ( BYTESTREAM_s *pByteStream );
+
+	bool process ( const ULONG ulClient ) const;
+};
+
+//*****************************************************************************
 struct CLIENT_s
 {
 	// The network address of this client.

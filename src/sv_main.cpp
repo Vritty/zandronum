@@ -5413,26 +5413,6 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 }
 
 //*****************************************************************************
-class ClientMoveCommand : public ClientCommand
-{
-	CLIENT_MOVE_COMMAND_s moveCmd;
-public:
-	ClientMoveCommand ( BYTESTREAM_s *pByteStream );
-
-	bool process ( const ULONG ulClient ) const;
-
-	virtual bool isMoveCmd ( ) const
-	{
-		return true;
-	}
-
-	virtual unsigned int getClientTic ( ) const
-	{
-		return moveCmd.ulGametic;
-	}
-};
-
-//*****************************************************************************
 //
 static bool server_ClientMove( BYTESTREAM_s *pByteStream )
 {
@@ -5759,16 +5739,6 @@ static bool server_UpdateClientPing( BYTESTREAM_s *pByteStream )
 
 	return ( false );
 }
-
-//*****************************************************************************
-class ClientWeaponSelectCommand : public ClientCommand
-{
-	const USHORT usActorNetworkIndex;
-public:
-	ClientWeaponSelectCommand ( BYTESTREAM_s *pByteStream );
-
-	bool process ( const ULONG ulClient ) const;
-};
 
 //*****************************************************************************
 //
