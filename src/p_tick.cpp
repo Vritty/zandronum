@@ -347,9 +347,7 @@ void P_Ticker (void)
 							numMoveCommands++;
 					}
 
-					// [AK] If we have any late commands in the buffer, process them all immediately. Ideally, we don't
-					// want to backtrace the player's movement if we don't have any enough commands to do so based on
-					// how many tics we extrapolated them. Otherwise, the skipping would look worse for the other players.
+					// [AK] If we have any late commands in the buffer, process them all immediately.
 					if ( SERVER_ShouldBacktraceClientMovement( ulIdx ))
 					{
 						MoveThingData oldPositionData( players[ulIdx].mo );
@@ -360,12 +358,23 @@ void P_Ticker (void)
 						int flags = players[ulIdx].mo->flags;
 						players[ulIdx].mo->flags &= ~( MF_SOLID | MF_PICKUP );
 
-						while ( client->LateMoveCMDs.Size( ) > 0 )
+						ULONG ulExtrapolateStartTic = client->LastMoveCMD->getClientTic( );
+
+						// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
+						// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"
+						// by re-processing the command we last processed until every tic is accounted for.
+						for ( ULONG ulTic = 1; ulTic <= client->ulExtrapolatedTics; ulTic++ )
 						{
-							client->LateMoveCMDs[0]->process( ulIdx );
-	
-							delete client->LateMoveCMDs[0];
-							client->LateMoveCMDs.Delete( 0 );
+							if (( client->LateMoveCMDs.Size( ) > 0 ) && ( client->LateMoveCMDs[0]->getClientTic( ) == ulExtrapolateStartTic + ulTic ))
+							{
+								delete client->LastMoveCMD;
+								client->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( client->LateMoveCMDs[0] ));
+							
+								delete client->LateMoveCMDs[0];
+								client->LateMoveCMDs.Delete( 0 );
+							}
+
+							client->LastMoveCMD->process( ulIdx );
 						}
 
 						players[ulIdx].mo->flags = flags;

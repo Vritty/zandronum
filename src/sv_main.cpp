@@ -5133,11 +5133,6 @@ bool SERVER_ShouldBacktraceClientMovement( ULONG ulClient )
 	if (( g_aClients[ulClient].LateMoveCMDs.Size( ) == 0 ) || ( g_aClients[ulClient].PositionData == NULL ))
 		return false;
 
-	// [AK] Compare the number of late commands in the buffer to the number of tics we extrapolated this
-	// player's movement. If the difference is too much, don't do the backtrace.
-	if ( abs( static_cast<int>( g_aClients[ulClient].LateMoveCMDs.Size( ) - g_aClients[ulClient].ulExtrapolatedTics )) > 1 )
-		return false;
-
 	return true;
 }
 
