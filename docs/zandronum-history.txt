@@ -88,6 +88,7 @@
 -	- The console and chat no longer opens or closes while the user is holding down the grave or enter keys. This makes it extremely difficult to flicker the console or chat icons and trigger client command floods. [Kaminsky]
 -	- Fixed "####" and "----" in PlayerPawns. [Zandrewnum]
 -	- Fixed dormant sounds from still playing upon resetting the map. [Kaminsky]
+-	- Fixed a player's old body from being frozen and not finishing their animation when they become a dead spectator. [Kaminsky]
 !	- sv_forcegldefaults renamed to sv_forcevideodefaults. The old name still exists for compatibility. [Dusk]
 !	- r_3dfloors is now forced to be true when sv_forcevideodefaults is true. [Dusk]
 !	- When the wad authentication fails for a connecting client, the client only reports the missing and incompatible PWADS instead of all of them. [Pol Marcet]

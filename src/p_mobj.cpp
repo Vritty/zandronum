@@ -5835,6 +5835,12 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 	// [Spleen] Reset reconciliation buffer when player gets spawned
 	UNLAGGED_ResetPlayer( p );
 
+	// [AK] If the player is supposed to be a dead spectator, disassociate them
+	// from the old body. This prevents the old body from being frozen and not
+	// finishing their animation when they become a spectator.
+	if (( p->bDeadSpectator ) && ( oldactor != NULL ) && ( oldactor->player == p ))
+		oldactor->player = NULL;
+
 	return mobj;
 }
 
