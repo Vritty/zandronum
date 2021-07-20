@@ -88,6 +88,9 @@ static	LONG	g_lSpread = 0;
 // Is this player tied with another?
 static	bool	g_bIsTied = false;
 
+// [AK] Does this player's team have other players besides themselves?
+static	bool	g_bHasAllies = false;
+
 // How many opponents are left standing in LMS?
 static	LONG	g_lNumOpponentsLeft = 0;
 
@@ -310,13 +313,18 @@ void HUD_Refresh( void )
 	{
 		// Survival, Survival Invasion, etc
 		if ( GAMEMODE_GetCurrentFlags( ) & GMF_COOPERATIVE )
+		{
+			g_bHasAllies = g_ulNumPlayers > 1;
 			g_lNumAlliesLeft = GAME_CountLivingAndRespawnablePlayers( ) - PLAYER_IsAliveOrCanRespawn( player );
+		}
 
 		// Last Man Standing, TLMS, etc
 		if ( GAMEMODE_GetCurrentFlags( ) & GMF_DEATHMATCH )
 		{
 			if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
 			{
+				g_bHasAllies = TEAM_CountPlayers( player->Team ) > 1;
+
 				unsigned livingAndRespawnableTeammates = TEAM_CountLivingAndRespawnablePlayers( player->Team );
 				g_lNumOpponentsLeft = GAME_CountLivingAndRespawnablePlayers( ) - livingAndRespawnableTeammates;
 				g_lNumAlliesLeft = livingAndRespawnableTeammates - PLAYER_IsAliveOrCanRespawn( player );
@@ -478,16 +486,20 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 				bottomString += " - ";
 
 			// Survival, Survival Invasion, etc
+			// [AK] Only print how many allies are left if we had any to begin with.
 			if ( GAMEMODE_GetCurrentFlags( ) & GMF_COOPERATIVE )
 			{
-				if ( g_lNumAlliesLeft < 1 )
+				if ( g_bHasAllies )
 				{
-					bottomString += TEXTCOLOR_RED "Last Player Alive"; // Uh-oh.
-				}
-				else
-				{
-					bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumAlliesLeft ));
-					bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
+					if ( g_lNumAlliesLeft < 1 )
+					{
+						bottomString += TEXTCOLOR_RED "Last Player Alive"; // Uh-oh.
+					}
+					else
+					{
+						bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumAlliesLeft ));
+						bottomString.AppendFormat( TEXTCOLOR_RED "all%s left", g_lNumAlliesLeft != 1 ? "ies" : "y" );
+					}
 				}
 			}
 			// Last Man Standing, TLMS, etc
@@ -496,7 +508,8 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 				bottomString.AppendFormat( TEXTCOLOR_GRAY "%d ", static_cast<int>( g_lNumOpponentsLeft ));
 				bottomString.AppendFormat( TEXTCOLOR_RED "opponent%s", g_lNumOpponentsLeft != 1 ? "s" : "" );
 
-				if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+				// [AK] Only print how many teammates are left if we actually have any.
+				if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) && ( g_bHasAllies ))
 				{
 					if ( g_lNumAlliesLeft < 1 )
 					{
