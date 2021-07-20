@@ -81,6 +81,7 @@ bool HUD_IsTied( ULONG ulPlayerNum );
 bool HUD_IsTied( void );
 ULONG HUD_GetViewPlayer( void );
 ULONG HUD_GetNumPlayers( void );
+ULONG HUD_GetNumSpectators( void );
 ULONG HUD_GetRank( void );
 LONG HUD_GetSpread( void );
 FString	HUD_SpellOrdinal( int ranknum, bool bColored = false );

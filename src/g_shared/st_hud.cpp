@@ -76,6 +76,9 @@
 // How many players are currently in the game?
 static	ULONG	g_ulNumPlayers = 0;
 
+// [AK] How many true spectators are currently in the game?
+static	ULONG	g_ulNumSpectators = 0;
+
 // What is our current rank?
 static	ULONG	g_ulRank = 0;
 
@@ -300,6 +303,7 @@ void HUD_Refresh( void )
 
 	// [AK] Count how many players are in the game.
 	g_ulNumPlayers = SERVER_CalcNumNonSpectatingPlayers( MAXPLAYERS );
+	g_ulNumSpectators = SERVER_CountPlayers( true ) - g_ulNumPlayers;
 
 	// "x opponents left", "x allies alive", etc
 	if ( GAMEMODE_GetCurrentFlags( ) & GMF_DEADSPECTATORS )
@@ -979,6 +983,13 @@ ULONG HUD_GetViewPlayer( void )
 ULONG HUD_GetNumPlayers( void )
 {
 	return ( g_ulNumPlayers );
+}
+
+//*****************************************************************************
+//
+ULONG HUD_GetNumSpectators( void )
+{
+	return ( g_ulNumSpectators );
 }
 
 //*****************************************************************************
