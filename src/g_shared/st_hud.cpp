@@ -454,7 +454,8 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 	}
 
 	// [AK] Draw the "waiting for players" or "x allies/opponents left" messages when viewing through a non-spectating player.
-	if ( players[ulDisplayPlayer].bSpectating == false )
+	// Only do this if GMF_DONTPRINTPLAYERSLEFT isn't enabled in the current game mode.
+	if (( players[ulDisplayPlayer].bSpectating == false ) && (( GAMEMODE_GetCurrentFlags( ) & GMF_DONTPRINTPLAYERSLEFT ) == false ))
 	{
 		GAMESTATE_e gamestate = GAMEMODE_GetState( );
 
