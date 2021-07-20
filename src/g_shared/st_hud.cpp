@@ -292,10 +292,11 @@ void HUD_Refresh( void )
 	g_pArtifactCarrier = GAMEMODE_GetArtifactCarrier( );
 
 	player_t *player = &players[HUD_GetViewPlayer( )];
+	ULONG ulPlayer = player - players;
 
-	g_ulRank = HUD_CalcRank( player - players );
-	g_lSpread = HUD_CalcSpread( player - players );
-	g_bIsTied = HUD_IsTied( player - players );
+	g_ulRank = HUD_CalcRank( ulPlayer );
+	g_lSpread = HUD_CalcSpread( ulPlayer );
+	g_bIsTied = HUD_IsTied( ulPlayer );
 
 	// [AK] Count how many players are in the game.
 	g_ulNumPlayers = SERVER_CalcNumNonSpectatingPlayers( MAXPLAYERS );
