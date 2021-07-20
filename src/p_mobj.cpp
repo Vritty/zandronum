@@ -5562,12 +5562,14 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 	{
-		for (int ii = 0; ii < MAXPLAYERS; ++ii)
+		// [AK] Only check if the local player is looking at the player being spawned.
+		if (( playeringame[consoleplayer] ) && ( players[consoleplayer].camera == oldactor ))
 		{
-			if (playeringame[ii] && players[ii].camera == oldactor)
-			{
-				players[ii].camera = mobj;
-			}
+			// [AK] If this player is actually a dead spectator, switch the view back to ourselves.
+			if (( p->bDeadSpectator ) && ( players[consoleplayer].mo ))
+				CLIENT_ResetConsolePlayerCamera( );
+			else
+				players[consoleplayer].camera = mobj;
 		}
 	}
 

@@ -151,6 +151,7 @@ EXTERN_CVAR( Float, sv_aircontrol )
 EXTERN_CVAR( Bool, cl_hideaccount )
 EXTERN_CVAR( Int, cl_ticsperupdate )
 EXTERN_CVAR( String, name )
+EXTERN_CVAR( Bool, cl_telespy )
 
 //*****************************************************************************
 //	CONSOLE COMMANDS/VARIABLES
@@ -2989,6 +2990,20 @@ bool CLIENT_IsParsingPacket( void )
 //
 void CLIENT_ResetConsolePlayerCamera( void )
 {
+	// [AK] Check if we were looking through another player's eyes.
+	if (( players[consoleplayer].camera ) && ( players[consoleplayer].camera->player ))
+	{
+		// [AK] Teleport to the player's body if we want to.
+		if (( cl_telespy ) && ( players[consoleplayer].bSpectating ))
+		{
+			AActor *pActor = players[consoleplayer].camera;
+
+			P_TeleportMove( players[consoleplayer].mo, pActor->x, pActor->y, pActor->z, false );
+			players[consoleplayer].mo->angle = pActor->angle;
+			players[consoleplayer].mo->pitch = pActor->pitch;
+		}
+	}
+
 	players[consoleplayer].camera = players[consoleplayer].mo;
 	if ( players[consoleplayer].camera != NULL )
 		S_UpdateSounds( players[consoleplayer].camera );
