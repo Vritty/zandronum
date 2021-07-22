@@ -5424,10 +5424,9 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 		( deathmatch == false ) &&
 		( teamgame == false ) &&
 		( gameaction != ga_worlddone ) &&
-		( p->bSpawnOkay ) && 
 		( p->mo != NULL ) && 
-		( !(p->mo->Sector->Flags & SECF_NORESPAWN) ) &&
-		( (p->mo->Sector->special & 255) != Damage_InstantDeath ))
+		// [AK] Moved the SECF_NORESPAWN and Damage_InstantDeath checks into PLAYER_CanRespawnWhereDied.
+		( PLAYER_CanRespawnWhereDied( p )))
 	{
 		spawn_x = p->mo->x;
 		spawn_y = p->mo->y;

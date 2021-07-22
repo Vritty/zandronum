@@ -81,6 +81,7 @@
 #include "r_data/colormaps.h"
 #include "v_video.h"
 #include "st_hud.h"
+#include "p_terrain.h"
 
 // [BC] Ugh.
 void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags );
@@ -3323,6 +3324,67 @@ FString	PLAYER_GenerateUniqueName( void )
 		name.Format ( "Player %d", M_Random( 10000 ) );
 	} while ( PLAYER_NameUsed ( name ) == true );
 	return name;
+}
+
+//*****************************************************************************
+//
+bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
+{
+	// [AK] The player shouldn't respawn in any sectors that have damaging floors.
+	if (( pPlayer->mo->Sector->damage > 0 ) || ( Terrains[P_GetThingFloorType( pPlayer->mo )].DamageAmount > 0 ))
+		return false;
+
+	switch ( pPlayer->mo->Sector->special )
+	{
+		case dLight_Strobe_Hurt:
+		case dDamage_Hellslime:
+		case dDamage_Nukage:
+		case dDamage_End:
+		case dDamage_SuperHellslime:
+		case dDamage_LavaWimpy:
+		case dDamage_LavaHefty:
+		case dScroll_EastLavaDamage:
+		case hDamage_Sludge:
+		case sLight_Strobe_Hurt:
+		case sDamage_Hellslime:
+		case sDamage_SuperHellslime:
+			return false;
+	}
+
+	// [AK] Don't respawn the player in an instant death sector. Taken directly from P_PlayerSpawn.
+	if (( pPlayer->mo->Sector->Flags & SECF_NORESPAWN ) || (( pPlayer->mo->Sector->special & 255 ) == Damage_InstantDeath ))
+		return false;
+
+	// [AK] Make sure they're not going to be blocked by anything upon respawning where they died.
+	AActor *temp = Spawn( pPlayer->cls->TypeName.GetChars( ), pPlayer->mo->x, pPlayer->mo->y, pPlayer->mo->z, NO_REPLACE );
+	bool bCanSpawn = P_TestMobjLocation( temp );
+
+	temp->Destroy( );
+	if ( bCanSpawn == false )
+		return false;
+
+	DCeiling *pCeiling;
+	TThinkerIterator<DCeiling> CeilingIterator;
+
+	// [AK] The player shouldn't respawn in a sector that has any active crushers. We'll first iterate
+	// through all ceilings crushers and see if one is connected to the sector the player's body is in.
+	while (( pCeiling = CeilingIterator.Next( )) != NULL )
+	{
+		if (( pCeiling->GetSector( ) == pPlayer->mo->Sector ) && ( pCeiling->GetCrush( ) > -1 ))
+			return false;
+	}
+
+	DFloor *pFloor;
+	TThinkerIterator<DFloor> FloorIterator;
+
+	// [AK] Next, check all the floor crushers.	
+	while (( pFloor = FloorIterator.Next( )) != NULL )
+	{
+		if (( pFloor->GetSector( ) == pPlayer->mo->Sector ) && ( pFloor->GetCrush( ) > -1 ))
+			return false;
+	}
+
+	return true;
 }
 
 CCMD (kill)

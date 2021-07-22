@@ -804,6 +804,7 @@ void	PLAYER_ClearEnemySoundFields( const ULONG ulPlayer );
 bool	PLAYER_NameMatchesServer( const FString &Name );
 bool	PLAYER_NameUsed( const FString &Name, const ULONG ulIgnorePlayer = MAXPLAYERS );
 FString	PLAYER_GenerateUniqueName( void );
+bool	PLAYER_CanRespawnWhereDied( player_t *pPlayer );
 
 void P_CheckPlayerSprite(AActor *mo, int &spritenum, fixed_t &scalex, fixed_t &scaley);
 
