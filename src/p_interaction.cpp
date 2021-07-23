@@ -3367,8 +3367,15 @@ bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 	// through all ceilings crushers and see if one is connected to the sector the player's body is in.
 	while (( pCeiling = CeilingIterator.Next( )) != NULL )
 	{
-		if (( pCeiling->GetSector( ) == mo->Sector ) && ( pCeiling->GetCrush( ) > -1 ))
-			return false;
+		if ( pCeiling->GetCrush( ) <= 0 )
+			continue;
+
+		// [AK] Don't respawn the player where they died if their body is partially inside a crusher.
+		for ( msecnode_t *snode = mo->touching_sectorlist; snode; snode = snode->m_snext )
+		{
+			if ( snode->m_sector == pCeiling->GetSector( ))
+				return false;
+		}
 	}
 
 	DFloor *pFloor;
@@ -3377,8 +3384,15 @@ bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 	// [AK] Next, check all the floor crushers.	
 	while (( pFloor = FloorIterator.Next( )) != NULL )
 	{
-		if (( pFloor->GetSector( ) == mo->Sector ) && ( pFloor->GetCrush( ) > -1 ))
-			return false;
+		if ( pFloor->GetCrush( ) <= 0 )
+			continue;
+
+		// [AK] Don't respawn the player where they died if their body is partially inside a crusher.
+		for ( msecnode_t *snode = mo->touching_sectorlist; snode; snode = snode->m_snext )
+		{
+			if ( snode->m_sector == pFloor->GetSector( ))
+				return false;
+		}
 	}
 
 	return true;
