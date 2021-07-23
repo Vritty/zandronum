@@ -3310,6 +3310,9 @@ void P_DeathThink (player_t *player)
 
 
 
+// [AK] We'll need this if we need to assign a random class to a player.
+extern FRandom pr_classchoice;
+
 //*****************************************************************************
 //
 void PLAYER_JoinGameFromSpectators( int iChar )
@@ -3348,7 +3351,13 @@ void PLAYER_JoinGameFromSpectators( int iChar )
 
 	// [BB] In single player, allow the player to switch its class when changing from spectator to player.
 	if ( ( NETWORK_GetState( ) == NETSTATE_SINGLE ) || ( NETWORK_GetState( ) == NETSTATE_SINGLE_MULTIPLAYER ) )
+	{
 		SinglePlayerClass[consoleplayer] = players[consoleplayer].userinfo.GetPlayerClassNum();
+
+		// [AK] Assign a random class for the player if necessary.
+		if ( SinglePlayerClass[consoleplayer] < 0 )
+			SinglePlayerClass[consoleplayer] = ( pr_classchoice() ) % PlayerClasses.Size();
+	}
 
 	PLAYER_SpectatorJoinsGame( &players[consoleplayer] );
 	players[consoleplayer].camera = players[consoleplayer].mo;
