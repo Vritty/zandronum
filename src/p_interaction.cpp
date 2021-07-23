@@ -741,12 +741,6 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 				player->pSkullBot->PostEvent( BOTEVENT_KILLED_BYENVIORNMENT );
 		}
 
-		// [BC] Keep track of where we died for the "same spot respawn" dmflags.
-		player->SpawnX = x;
-		player->SpawnY = y;
-		player->SpawnAngle = angle;
-		player->bSpawnOkay = true;
-
 		// Death script execution, care of Skull Tag
 		FBehavior::StaticStartTypedScripts (SCRIPT_Death, this, true);
 
@@ -775,10 +769,6 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 		if (!source)
 		{
 			PLAYER_SetFragcount( player, player->fragcount - (( bPossessedTerminatorArtifact ) ? 10 : 1 ), true, true );	// [RH] Cumulative frag count
-
-			// Spawning in nukage or getting crushed is NOT
-			// somewhere where you would want to be at when you respawn again
-			player->bSpawnOkay = false;
 		}
 						
 		// [BC] Increment team deathcount.
@@ -2614,9 +2604,11 @@ void PLAYER_SetSpectator( player_t *pPlayer, bool bBroadcast, bool bDeadSpectato
 			pOldBody = pPlayer->mo;
 			// [BB] This also transfers the inventory from the old to the new body.
 			players[pPlayer - players].playerstate = ( zadmflags & ZADF_DEAD_PLAYERS_CAN_KEEP_INVENTORY ) ? PST_REBORN : PST_REBORNNOINVENTORY;
-			const bool bSpawnOkay = pPlayer->bSpawnOkay;	// [EP] Save the same-spot spawn information, since it'll be lost when GAMEMODE_SpawnPlayer is called.
 			GAMEMODE_SpawnPlayer( pPlayer - players );
-			pPlayer->bSpawnOkay = bSpawnOkay;	// [EP]
+
+			// [AK] Remember our old body when we become a dead spectator. This is so we can respawn back
+			// at our corpse in case DF2_SAME_SPAWN_SPOT is enabled.
+			pPlayer->pCorpse = pOldBody;
 
 			// Set the player's new body to the position of his or her old body.
 			if (( pPlayer->mo ) &&
@@ -3254,6 +3246,9 @@ void PLAYER_LeavesGame( const ULONG ulPlayer )
 	// [BB] Clear the players medals and the medal related counters. The former is something also clients need to do.
 	memset( players[ulPlayer].ulMedalCount, 0, sizeof( ULONG ) * NUM_MEDALS );
 	PLAYER_ResetSpecialCounters ( &players[ulPlayer] );
+
+	// [AK] We have no more use for our corpse since we left the game.
+	players[ulPlayer].pCorpse = NULL;
 }
 
 //*****************************************************************************
@@ -3330,11 +3325,13 @@ FString	PLAYER_GenerateUniqueName( void )
 //
 bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 {
+	AActor *mo = pPlayer->pCorpse ? pPlayer->pCorpse : pPlayer->mo;
+
 	// [AK] The player shouldn't respawn in any sectors that have damaging floors.
-	if (( pPlayer->mo->Sector->damage > 0 ) || ( Terrains[P_GetThingFloorType( pPlayer->mo )].DamageAmount > 0 ))
+	if (( mo->Sector->damage > 0 ) || ( Terrains[P_GetThingFloorType( mo )].DamageAmount > 0 ))
 		return false;
 
-	switch ( pPlayer->mo->Sector->special )
+	switch ( mo->Sector->special )
 	{
 		case dLight_Strobe_Hurt:
 		case dDamage_Hellslime:
@@ -3352,11 +3349,11 @@ bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 	}
 
 	// [AK] Don't respawn the player in an instant death sector. Taken directly from P_PlayerSpawn.
-	if (( pPlayer->mo->Sector->Flags & SECF_NORESPAWN ) || (( pPlayer->mo->Sector->special & 255 ) == Damage_InstantDeath ))
+	if (( mo->Sector->Flags & SECF_NORESPAWN ) || (( mo->Sector->special & 255 ) == Damage_InstantDeath ))
 		return false;
 
 	// [AK] Make sure they're not going to be blocked by anything upon respawning where they died.
-	AActor *temp = Spawn( pPlayer->cls->TypeName.GetChars( ), pPlayer->mo->x, pPlayer->mo->y, pPlayer->mo->z, NO_REPLACE );
+	AActor *temp = Spawn( pPlayer->cls->TypeName.GetChars( ), mo->x, mo->y, mo->z, NO_REPLACE );
 	bool bCanSpawn = P_TestMobjLocation( temp );
 
 	temp->Destroy( );
@@ -3370,7 +3367,7 @@ bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 	// through all ceilings crushers and see if one is connected to the sector the player's body is in.
 	while (( pCeiling = CeilingIterator.Next( )) != NULL )
 	{
-		if (( pCeiling->GetSector( ) == pPlayer->mo->Sector ) && ( pCeiling->GetCrush( ) > -1 ))
+		if (( pCeiling->GetSector( ) == mo->Sector ) && ( pCeiling->GetCrush( ) > -1 ))
 			return false;
 	}
 
@@ -3380,7 +3377,7 @@ bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 	// [AK] Next, check all the floor crushers.	
 	while (( pFloor = FloorIterator.Next( )) != NULL )
 	{
-		if (( pFloor->GetSector( ) == pPlayer->mo->Sector ) && ( pFloor->GetCrush( ) > -1 ))
+		if (( pFloor->GetSector( ) == mo->Sector ) && ( pFloor->GetCrush( ) > -1 ))
 			return false;
 	}
 

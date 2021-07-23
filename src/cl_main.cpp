@@ -3088,10 +3088,7 @@ void PLAYER_ResetPlayerData( player_t *pPlayer )
 	pPlayer->ulPing = 0;
 	pPlayer->ulPingAverages = 0;
 	pPlayer->bReadyToGoOn = 0;
-	pPlayer->bSpawnOkay = 0;
-	pPlayer->SpawnX = 0;
-	pPlayer->SpawnY = 0;
-	pPlayer->SpawnAngle = 0;
+	pPlayer->pCorpse = NULL;
 	pPlayer->OldPendingWeapon = 0;
 	pPlayer->bLagging = 0;
 	pPlayer->bSpawnTelefragged = 0;

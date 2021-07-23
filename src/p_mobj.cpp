@@ -5419,18 +5419,22 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 		p->cls = PlayerClasses[p->CurrentPlayerClass].Type;
 	}
 
+	// [AK] Make sure we can still respawn at our corpse if we're a dead spectator. This isn't always
+	// the same body that we're still using!
+	AActor *mo = p->pCorpse ? p->pCorpse : p->mo;
+
 	if (( dmflags2 & DF2_SAME_SPAWN_SPOT ) &&
 		(( p->playerstate == PST_REBORN ) || ( p->playerstate == PST_REBORNNOINVENTORY )) && 
 		( deathmatch == false ) &&
 		( teamgame == false ) &&
 		( gameaction != ga_worlddone ) &&
-		( p->mo != NULL ) && 
+		( mo != NULL ) && 
 		// [AK] Moved the SECF_NORESPAWN and Damage_InstantDeath checks into PLAYER_CanRespawnWhereDied.
 		( PLAYER_CanRespawnWhereDied( p )))
 	{
-		spawn_x = p->mo->x;
-		spawn_y = p->mo->y;
-		spawn_angle = p->mo->angle;
+		spawn_x = mo->x;
+		spawn_y = mo->y;
+		spawn_angle = mo->angle;
 	}
 	else
 	{
@@ -5842,6 +5846,9 @@ APlayerPawn *P_SpawnPlayer (FPlayerStart *mthing, int playernum, int flags)
 	// finishing their animation when they become a spectator.
 	if (( p->bDeadSpectator ) && ( oldactor != NULL ) && ( oldactor->player == p ))
 		oldactor->player = NULL;
+
+	// [AK] We've spawned now, so we don't need to remember our corpse anymore.
+	p->pCorpse = NULL;
 
 	return mobj;
 }

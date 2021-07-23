@@ -692,13 +692,8 @@ public:
 	// Is this player ready for the next map? (intermission)
 	bool		bReadyToGoOn;
 
-	// Is it alright to respawn in the same spot we died? (same spawn spot dmflag)
-	bool		bSpawnOkay;
-
-	// Position/angle we died at. This is for the same spawn spot dmflag.
-	fixed_t		SpawnX;
-	fixed_t		SpawnY;
-	angle_t		SpawnAngle;
+	// [AK] Pointer to our corpse in case we became a dead spectator. This is in case DF2_SAME_SPAWN_SPOT is enabled.
+	AActor		*pCorpse;
 
 	// Save the old pending weapon. If the current one differs, update some clients.
 	AWeapon		*OldPendingWeapon;

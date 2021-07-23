@@ -349,10 +349,7 @@ player_t::player_t()
   ulPing( 0 ),
   ulPingAverages( 0 ),
   bReadyToGoOn( 0 ),
-  bSpawnOkay( 0 ),
-  SpawnX( 0 ),
-  SpawnY( 0 ),
-  SpawnAngle( 0 ),
+  pCorpse( 0 ),
   OldPendingWeapon( 0 ),
   bLagging( 0 ),
   bSpawnTelefragged( 0 ),
@@ -517,10 +514,7 @@ player_t &player_t::operator=(const player_t &p)
 	ulPing = p.ulPing;
 	ulPingAverages = p.ulPingAverages;
 	bReadyToGoOn = p.bReadyToGoOn;
-	bSpawnOkay = p.bSpawnOkay;
-	SpawnX = p.SpawnX;
-	SpawnY = p.SpawnY;
-	SpawnAngle = p.SpawnAngle;
+	pCorpse = p.pCorpse;
 	OldPendingWeapon = p.OldPendingWeapon;
 	StartingWeaponName = p.StartingWeaponName;
 	bClientSelectedWeapon = p.bClientSelectedWeapon;
