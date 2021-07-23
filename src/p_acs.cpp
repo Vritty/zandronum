@@ -7228,6 +7228,10 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				if ( ( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) == false )
 					return 0;
 
+				// [AK] This should only work while the game is in progress.
+				if ( GAMEMODE_GetState( ) != GAMESTATE_INPROGRESS )
+					return 0;
+
 				if ( PLAYER_IsValidPlayer ( ulPlayer ) == false )
 					return 0;
 
