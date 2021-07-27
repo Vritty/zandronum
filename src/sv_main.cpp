@@ -6452,9 +6452,6 @@ static bool server_AuthenticateLevel( BYTESTREAM_s *pByteStream )
 	if ( SERVER_GetClient( g_lCurrentClient )->State == CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION )
 		SERVER_GetClient( g_lCurrentClient )->State = CLS_SPAWNED;
 
-	// [AK] Reset the client's tic buffer.
-	SERVER_ResetClientTicBuffer( g_lCurrentClient );
-
 	// Now that the level has been authenticated, send all the level data for the client.
 
 	// Send skill level.
