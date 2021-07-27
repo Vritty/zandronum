@@ -3851,7 +3851,9 @@ void P_PlayerThink (player_t *player)
 		}
 
 		// Cycle psprites
-		P_MovePsprites (player);
+		// [AK] Don't do this while we're backtracing the player's movement.
+		if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( SERVER_GetClient( player - players )->bIsBacktracing == false ))
+			P_MovePsprites (player);
 
 		// Other Counters
 		if (player->damagecount)

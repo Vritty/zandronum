@@ -359,6 +359,7 @@ void P_Ticker (void)
 						players[ulIdx].mo->flags &= ~( MF_SOLID | MF_PICKUP );
 
 						ULONG ulExtrapolateStartTic = client->LastMoveCMD->getClientTic( );
+						client->bIsBacktracing = true;
 
 						// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
 						// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"

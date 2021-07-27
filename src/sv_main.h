@@ -380,6 +380,9 @@ struct CLIENT_s
 	// [AK] The player's position, velocity, and orientation from before we started extrapolating.
 	MoveThingData	*PositionData;
 
+	// [AK] Are we in the middle of backtracing this player's movement via skip correction?
+	bool			bIsBacktracing;
+
 	// [BB] Variables for the account system
 	FString username;
 	unsigned int clientSessionID;
