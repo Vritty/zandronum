@@ -175,7 +175,6 @@ static	bool	server_CheckJoinPassword( const FString& clientPassword );
 static	bool	server_InfoCheat( BYTESTREAM_s* pByteStream );
 static	bool	server_CheckLogin( const ULONG ulClient );
 static	void	server_PrintWithIP( FString message, const NETADDRESS_s &address );
-static	void	server_ResetClientTicBuffer( ULONG ulClient );
 
 // [RC]
 #ifdef CREATE_PACKET_LOG
@@ -1927,7 +1926,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	g_aClients[lClient].lLastServerGametic = gametic;
 
 	// [AK] Reset the client's tic buffer.
-	server_ResetClientTicBuffer( lClient );
+	SERVER_ResetClientTicBuffer( lClient );
 
 	SERVER_InitClientSRPData ( lClient );
 
@@ -5143,7 +5142,7 @@ bool SERVER_ShouldBacktraceClientMovement( ULONG ulClient )
 
 //*****************************************************************************
 //
-static void server_ResetClientTicBuffer( ULONG ulClient )
+void SERVER_ResetClientTicBuffer( ULONG ulClient )
 {
 	// [AK] Clear all stored commands in the tic buffer.
 	for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
@@ -6454,7 +6453,7 @@ static bool server_AuthenticateLevel( BYTESTREAM_s *pByteStream )
 		SERVER_GetClient( g_lCurrentClient )->State = CLS_SPAWNED;
 
 	// [AK] Reset the client's tic buffer.
-	server_ResetClientTicBuffer( g_lCurrentClient );
+	SERVER_ResetClientTicBuffer( g_lCurrentClient );
 
 	// Now that the level has been authenticated, send all the level data for the client.
 
