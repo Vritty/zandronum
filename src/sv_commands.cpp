@@ -933,6 +933,19 @@ void SERVERCOMMANDS_UpdatePlayerTime( ULONG ulPlayer, ULONG ulPlayerExtra, Serve
 
 //*****************************************************************************
 //
+void SERVERCOMMANDS_UpdateLocalPlayerGameTics( ULONG ulPlayer )
+{
+	if ( SERVER_IsValidClient( ulPlayer ) == false )
+		return;
+
+	ServerCommands::UpdateLocalPlayerGameTics command;
+	command.SetClientTicOnServerEnd( SERVER_GetClient( ulPlayer )->ulClientGameTic );
+	command.SetLatestServerGametic( gametic );
+	command.sendCommandToClients( ulPlayer, SVCF_ONLYTHISCLIENT );
+}
+
+//*****************************************************************************
+//
 void SERVERCOMMANDS_MoveLocalPlayer( ULONG ulPlayer )
 {
 	if ( SERVER_IsValidClient( ulPlayer ) == false || players[ulPlayer].mo == NULL )
