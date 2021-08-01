@@ -365,7 +365,7 @@ E0 Pearlescent
 	#B9B8E4 #C5F1FF 168 225
 	#CCF3FF #FFFFEB 226 256
 Console:
-	#5F1FF #694151 0 256
+	#694151 #B9B8E4 0 256
 }
 
 E1 AcidRush "Acid Rush"
@@ -1524,7 +1524,7 @@ Q3 OxygenRich "Oxygen Rich"
 	#260000 #660000 0 160
 	#660000 #800B16 161 256
 Console:
-	#  #980614 0 256
+	#280000 #980614 0 256
 }
 
 Q4 QuakeBricks "Quake Bricks"
