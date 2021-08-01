@@ -1257,6 +1257,27 @@ CCMD( say )
 
 //*****************************************************************************
 //
+// [AK] Checks if the local player can use the team chat right now.
+//
+bool chat_CanUseTeamChat( void )
+{
+	// Make sure that we're playing on a game mode that supports teams.
+	if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) == false )
+	{
+		Printf( "You can't use the team chat in game modes that don't support teams.\n" );
+		return false;
+	}
+
+	// Not on a team. No one to talk to.
+	if (( players[consoleplayer].bOnTeam == false ) && ( PLAYER_IsTrueSpectator( &players[consoleplayer] ) == false ))
+	{
+		Printf( "You can't use the team chat if you're not on a team.\n" );
+		return false;
+	}
+
+	return true;
+}
+
 CCMD( say_team )
 {
 	ULONG		ulIdx;
@@ -1273,19 +1294,12 @@ CCMD( say_team )
 		return;
 	}
 
-	// Make sure we have teammates to talk to before we use team chat.
-	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-	{
-		// Not on a team. No one to talk to.
-		if ( ( players[consoleplayer].bOnTeam == false ) && ( PLAYER_IsTrueSpectator ( &players[consoleplayer] ) == false ) )
-			return;
-	}
-	// Not in any team mode. Nothing to do!
-	else
-		return;
-
 	// The server never should have a team!
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		return;
+
+	// Make sure we have teammates to talk to before we use team chat.
+	if ( chat_CanUseTeamChat( ) == false )
 		return;
 
 	if ( argv.argc( ) < 2 )
@@ -1696,6 +1710,10 @@ CCMD( messagemode2 )
 
 	if ( NETWORK_GetState() != NETSTATE_SERVER )
 	{
+		// Make sure we have teammates to talk to before we use team chat.
+		if ( chat_CanUseTeamChat( ) == false )
+			return;
+
 		CHAT_SetChatMode( CHATMODE_TEAM );
 		C_HideConsole( );
 		g_ChatBuffer.Clear();
