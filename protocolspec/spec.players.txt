@@ -219,7 +219,7 @@ Command UpdateLocalPlayerGameTics
 	ULong clientTicOnServerEnd
 	Long latestServerGametic
 EndCommand
-	
+
 Command MoveLocalPlayer
 	UnreliableCommand
 	ULong clientTicOnServerEnd
