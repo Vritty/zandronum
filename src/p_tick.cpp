@@ -322,10 +322,16 @@ void P_Ticker (void)
 		{
 			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 			{
-				if ( SERVER_IsValidClient( ulIdx ) == false )
+				// [AK] Don't process the client's tic buffer if they aren't alive.
+				if (( SERVER_IsValidClient( ulIdx ) == false ) || ( players[ulIdx].bSpectating ) || ( players[ulIdx].playerstate != PST_LIVE ))
 					continue;
 
 				CLIENT_s *client = SERVER_GetClient( ulIdx );
+
+				// [AK] Don't process two movement commands in a single tic if we didn't receive any new commands
+				// from this client in the current tic. Only do this when the skip correction is enabled.
+				if (( bAlreadySmoothed[ulIdx] ) && ( client->lLastMoveTick != gametic ))
+					continue;
 
 				// [AK] When a player is experiencing ping spikes or packet loss and we don't have any commands
 				// left in their buffer, we will try to predict where they will be for at least the next few tics
@@ -347,8 +353,8 @@ void P_Ticker (void)
 							numMoveCommands++;
 					}
 
-					// [AK] If we have any late commands in the buffer, process them all immediately.
-					if ( SERVER_ShouldBacktraceClientMovement( ulIdx ))
+					// [AK] If we have enough late commands in the buffer, process them all immediately.
+					if (( client->LateMoveCMDs.Size( ) > 0 ) && ( client->PositionData != NULL ))
 					{
 						MoveThingData oldPositionData( players[ulIdx].mo );
 						client->PositionData->Restore( players[ulIdx].mo );
@@ -359,6 +365,7 @@ void P_Ticker (void)
 						players[ulIdx].mo->flags &= ~( MF_SOLID | MF_PICKUP );
 
 						ULONG ulExtrapolateStartTic = client->LastMoveCMD->getClientTic( );
+						ULONG ulClientGameTic = client->ulClientGameTic + client->ulExtrapolatedTics;
 						client->bIsBacktracing = true;
 
 						// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
@@ -379,6 +386,7 @@ void P_Ticker (void)
 						}
 
 						players[ulIdx].mo->flags = flags;
+						client->ulClientGameTic = ulClientGameTic;
 
 						// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
 						// hasn't moved into a spot that's blocking them or out of sight. If this check fails, we have

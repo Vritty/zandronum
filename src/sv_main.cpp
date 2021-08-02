@@ -5109,29 +5109,32 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 	{
 		if (( sv_smoothplayers ) && ( cmd->isMoveCmd( )))
 		{
+			// [AK] Ignore commands that arrived too late, which we won't account for anymore.
+			if ( cmd->getClientTic( ) <= g_aClients[g_lCurrentClient].ulClientGameTic )
+			{
+				delete cmd;
+				return false;
+			}
+
 			// [AK] It's possible this was a command that arrived late and we already extrapolated
 			// the player's movement at this tic. In this case, we'll store these commands into a
 			// separate buffer so we can backtrace the player's actual movement.
 			if (( g_aClients[g_lCurrentClient].LastMoveCMD != NULL ) && ( g_aClients[g_lCurrentClient].ulExtrapolatedTics > 0 ))
 			{
-				ULONG ulMaxClientTic = g_aClients[g_lCurrentClient].LastMoveCMD->getClientTic( ) + g_aClients[g_lCurrentClient].ulExtrapolatedTics;
-
 				// [AK] We want to try filling this buffer only when the client is suffering from a ping
 				// spike, not when they're experiencing packet loss.
-				if ( cmd->getClientTic( ) <= ulMaxClientTic )
-				{
+				if ( cmd->getClientTic( ) <= g_aClients[g_lCurrentClient].ulClientGameTic + g_aClients[g_lCurrentClient].ulExtrapolatedTics )
 					buffer = &g_aClients[g_lCurrentClient].LateMoveCMDs;
+			}
+		}
 
-					// [AK] Organize the late movement commands in case they arrived in the wrong order.
-					for ( unsigned int i = 0; i < buffer->Size( ); i++ )
-					{
-						if ( cmd->getClientTic( ) < ( *buffer )[i]->getClientTic( ))
-						{
-							buffer->Insert( i, cmd );
-							return false;
-						}
-					}
-				}
+		// [AK] Organize the movement commands in case they arrived in the wrong order.
+		for ( unsigned int i = 0; i < buffer->Size( ); i++ )
+		{
+			if ( cmd->getClientTic( ) < ( *buffer )[i]->getClientTic( ))
+			{
+				buffer->Insert( i, cmd );
+				return false;
 			}
 		}
 
@@ -5142,22 +5145,6 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 	const bool retValue = cmd->process ( g_lCurrentClient );
 	delete cmd;
 	return retValue;
-}
-
-//*****************************************************************************
-//
-bool SERVER_ShouldBacktraceClientMovement( ULONG ulClient )
-{
-	// [AK] Don't backtrace the player's movement if they're not alive.
-	if ( players[ulClient].playerstate != PST_LIVE )
-		return false;
-
-	// [AK] If this client has no late movement commands in the buffer or if there's not old position
-	// state to use then we can't perform the backtrace!
-	if (( g_aClients[ulClient].LateMoveCMDs.Size( ) == 0 ) || ( g_aClients[ulClient].PositionData == NULL ))
-		return false;
-
-	return true;
 }
 
 //*****************************************************************************
