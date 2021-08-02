@@ -295,6 +295,24 @@ CUSTOM_CVAR( Bool, sv_smoothplayers, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SE
 	}
 }
 
+//*****************************************************************************
+// [AK] How many tics a player's movement will be extrapolated if there's no move commands left.
+CUSTOM_CVAR( Int, sv_extrapolatetics, 10, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
+{
+	// [AK] Always extrapolate for at least one tic.
+	if ( self < 1 )
+		self = 1;
+	
+	// [AK] Don't extrapolate for more than a second, it's too many tics and the longer
+	// the server has to predict a player's movement, the more likely that prediction errors
+	// will occur which may also become greater.
+	if ( self > TICRATE )
+	{
+		Printf( "The server will only extrapolate for up to one second (35 tics).\n" );
+		self = TICRATE;
+	}
+}
+
 CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_SENSITIVESERVERSETTING|CVAR_NOSETBYACS )
 {
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )

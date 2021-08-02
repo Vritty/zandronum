@@ -558,7 +558,11 @@ OptionMenu ZA_ServerSetupMenu
 	Option		"Use join password",		"sv_forcejoinpassword",		"YesNo"
 	TextField	"Join password",			"sv_joinpassword",			"sv_forcejoinpassword"
 	Option		"Require login to join",	"sv_forcelogintojoin",		"YesNo"
+	StaticText	" "
 	Option		"Smooth lagging players",	"sv_smoothplayers",			"YesNo"
+	Slider		"Extrapolation tics",		"sv_extrapolatetics",		1, 35, 1
+	StaticText	" "
+	
 	NumberField	"Max connected clients",	"sv_maxclients",			0, 64
 	NumberField	"Max players",				"sv_maxplayers",			0, 64
 	NumberField	"Max idle time (minutes)",	"sv_afk2spec",				0, 30

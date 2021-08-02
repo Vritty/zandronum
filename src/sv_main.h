@@ -596,6 +596,7 @@ EXTERN_CVAR( Int, sv_queryignoretime )
 EXTERN_CVAR( Bool, sv_forcelogintojoin )
 EXTERN_CVAR( Bool, sv_limitcommands )
 EXTERN_CVAR( Bool, sv_smoothplayers )
+EXTERN_CVAR( Int, sv_extrapolatetics )
 
 // From sv_master.cpp
 EXTERN_CVAR( Bool, sv_updatemaster );
