@@ -313,6 +313,14 @@ CUSTOM_CVAR( Int, sv_extrapolatetics, 10, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERV
 	}
 }
 
+//*****************************************************************************
+// [AK] How much error, in map units, is allowed after a backtrace for it to still be acceptable.
+CUSTOM_CVAR( Float, sv_backtracelimit, 32.0, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
+{
+	if ( self < 0 )
+		self = 0;
+}
+
 CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_SENSITIVESERVERSETTING|CVAR_NOSETBYACS )
 {
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
@@ -5145,6 +5153,32 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 	const bool retValue = cmd->process ( g_lCurrentClient );
 	delete cmd;
 	return retValue;
+}
+
+//*****************************************************************************
+//
+bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MoveThingData OldData )
+{
+	float fX = FIXED2FLOAT( players[ulClient].mo->x - OldData.x );
+	float fY = FIXED2FLOAT( players[ulClient].mo->y - OldData.y );
+	float fZ = FIXED2FLOAT( players[ulClient].mo->z - OldData.z );
+
+	// [AK] Don't accept the backtrace if the player ended up in a spot that's too far than where we
+	// extrapolated them to, depending on how much error we can accept with predicting their movement.
+	if ( TVector3<float>( fX, fY, fZ ).Length( ) > sv_backtracelimit )
+		return false;
+
+	// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
+	if ( P_TestMobjLocation( players[ulClient].mo ) == false )
+		return false;
+
+	// [AK] Also check if there's some line of sight between where we originally extrapolated them to
+	// and where they're located now. We'll spawn a dummy actor at their old position to determine this.
+	AActor *temp = Spawn( players[ulClient].mo->GetClass( ), OldData.x, OldData.y, OldData.z, ALLOW_REPLACE );
+	bool bCanSee = P_CheckSight( players[ulClient].mo, temp );
+	temp->Destroy( );
+
+	return bCanSee;
 }
 
 //*****************************************************************************

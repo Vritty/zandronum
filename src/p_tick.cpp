@@ -389,13 +389,11 @@ void P_Ticker (void)
 						client->ulClientGameTic = ulClientGameTic;
 
 						// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
-						// hasn't moved into a spot that's blocking them or out of sight. If this check fails, we have
-						// to move the player back to their original position before the backtrace happened.
-						AActor *temp = Spawn( players[ulIdx].mo->GetClass( ), oldPositionData.x, oldPositionData.y, oldPositionData.z, ALLOW_REPLACE );
-						if (( P_TestMobjLocation( players[ulIdx].mo ) == false ) || ( P_CheckSight( players[ulIdx].mo, temp ) == false ))
+						// didn't move too far away into a spot that's blocking them or out of sight. If this check fails,
+						// we have to move the player back to their original position before the backtrace happened.
+						if ( SERVER_ShouldAcceptBacktraceResult( ulIdx, oldPositionData ) == false )
 							oldPositionData.Restore( players[ulIdx].mo );
 
-						temp->Destroy( );
 						SERVER_ResetClientExtrapolation( ulIdx );
 					}
 					// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing

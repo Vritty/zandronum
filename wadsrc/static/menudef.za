@@ -561,6 +561,7 @@ OptionMenu ZA_ServerSetupMenu
 	StaticText	" "
 	Option		"Smooth lagging players",	"sv_smoothplayers",			"YesNo"
 	Slider		"Extrapolation tics",		"sv_extrapolatetics",		1, 35, 1
+	Slider		"Backtrace limit (mu)",		"sv_backtracelimit",		0.0, 64.0, 8.0
 	StaticText	" "
 	
 	NumberField	"Max connected clients",	"sv_maxclients",			0, 64

@@ -543,6 +543,7 @@ void		SERVER_SyncServerModCVars ( const int PlayerToSync );
 void		SERVER_KillCheat( const char* what );
 void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
 void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
+bool		SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MoveThingData OldData );
 void		SERVER_ResetClientTicBuffer( ULONG ulClient );
 void		SERVER_ResetClientExtrapolation( ULONG ulClient );
 
