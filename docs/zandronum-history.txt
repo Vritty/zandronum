@@ -110,6 +110,7 @@
 !	- A player's health on the coop info or target identification is now color coded based on percentage and not hardcoded numbers. Also added orange as a color to indicate when a player's health is between 26-50%. [Kaminsky]
 !	- The name of the server and the current game mode are now shown on the scoreboard's header. [Kaminsky]
 !	- Color codes are now omitted from the length of the player's name, allowing for more complex color schemes without reaching the limit. There's still a technical limitation so that names aren't too long when sent across the network. [Kaminsky]
+!	- The chasecam is temporarily disabled while the local player is in free spectate mode. [Kaminsky]
 
 
 3.0.1

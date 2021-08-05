@@ -880,6 +880,8 @@ void FGLRenderer::SetFixedColormap (player_t *player)
 //
 //-----------------------------------------------------------------------------
 
+extern bool CLIENTDEMO_IsInFreeSpectateMode(); // [AK]
+
 sector_t * FGLRenderer::RenderViewpoint (AActor * camera, GL_IRECT * bounds, float fov, float ratio, float fovratio, bool mainview, bool toscreen)
 {       
 	// [BB] Check if stereo rendering is supported.
@@ -901,7 +903,10 @@ sector_t * FGLRenderer::RenderViewpoint (AActor * camera, GL_IRECT * bounds, flo
 
 
 	// [BB] consoleplayer should be able to toggle the chase cam.
+	// [AK] Don't use the chase cam if they're in free spectate mode.
 	if (camera->player && /*camera->player-players==consoleplayer &&*/
+		(CLIENTDEMO_IsInFreeSpectateMode() == false) &&
+		(camera->player - players != consoleplayer || players[consoleplayer].bSpectating == false) &&
 		((/*camera->player->*/players[consoleplayer].cheats & CF_CHASECAM) || (r_deathcamera && camera->health <= 0)) && camera==camera->player->mo)
 	{
 		mViewActor=NULL;

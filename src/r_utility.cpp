@@ -790,7 +790,10 @@ void R_SetupFrame (AActor *actor)
 	}
 
 	// [BB] consoleplayer should be able to toggle the chase cam.
+	// [AK] Don't use the chase cam if they're in free spectate mode.
 	if (player != NULL && gamestate != GS_TITLELEVEL &&
+		(CLIENTDEMO_IsInFreeSpectateMode() == false) && 
+		(camera->player - players != consoleplayer || players[consoleplayer].bSpectating == false) &&
 		((/*player->*/players[consoleplayer].cheats & CF_CHASECAM) || (r_deathcamera && camera->health <= 0)))
 	{
 		// [RH] Use chasecam view
