@@ -406,7 +406,30 @@ void MAPROTATION_AddMap( const char *pszMapName, int iPosition, ULONG ulMinPlaye
 
 	MAPROTATION_SetPositionToMap( level.mapname );
 	if ( !bSilent )
-		Printf( "%s (%s) added to map rotation list at position %d.\n", pMap->mapname, pMap->LookupLevelName( ).GetChars( ), iPosition);
+	{
+		FString message;
+		message.Format( "%s (%s) added to map rotation list at position %d", pMap->mapname, pMap->LookupLevelName( ).GetChars( ), iPosition );
+
+		if (( newEntry.ulMinPlayers > 0 ) || ( newEntry.ulMaxPlayers < MAXPLAYERS ))
+		{
+			message += " (";
+
+			if ( newEntry.ulMinPlayers > 0 )
+				message.AppendFormat( "min = %lu", newEntry.ulMinPlayers );
+
+			if ( newEntry.ulMaxPlayers < MAXPLAYERS )
+			{
+				if ( newEntry.ulMinPlayers > 0 )
+					message += ", ";
+
+				message.AppendFormat( "max = %lu", newEntry.ulMaxPlayers );
+			}
+
+			message += ')';
+		}
+
+		Printf( "%s.\n", message );
+	}
 
 	// [AK] If we're the server, tell the clients to add the map on their end.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
