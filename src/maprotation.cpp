@@ -428,7 +428,7 @@ void MAPROTATION_AddMap( const char *pszMapName, int iPosition, ULONG ulMinPlaye
 			message += ')';
 		}
 
-		Printf( "%s.\n", message );
+		Printf( "%s.\n", message.GetChars( ));
 	}
 
 	// [AK] If we're the server, tell the clients to add the map on their end.
