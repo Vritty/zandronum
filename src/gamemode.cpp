@@ -717,7 +717,7 @@ void GAMEMODE_RespawnAllPlayers( BOTEVENT_e BotEvent, playerstate_t PlayerState 
 void GAMEMODE_SpawnPlayer( const ULONG ulPlayer, bool bClientUpdate )
 {
 	// [AK] If we're the server, reset the client's tic buffer every time they spawn.
-	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( players[ulPlayer].bSpectating == false ))
 		SERVER_ResetClientTicBuffer( ulPlayer );
 
 	// Spawn the player at their appropriate team start.
