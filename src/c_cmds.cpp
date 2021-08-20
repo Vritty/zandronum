@@ -761,7 +761,7 @@ static bool CheckOnlinePuke ( int script, int args[4], bool always )
 	// is done in P_StartScript, no need to check here.
 	if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) || ACS_IsScriptClientSide ( script ) )
 	{
-		P_StartScript( players[consoleplayer].mo, NULL, script, level.mapname,
+		P_StartScript( NETWORK_GetState( ) == NETSTATE_SERVER ? NULL : players[consoleplayer].mo, NULL, script, level.mapname,
 			args, 4, ( (script < 0 ) ? ACS_ALWAYS : 0 ) | ACS_NET );
 
 		// [BB] If the server (and not any ACS script via ConsoleCommand) calls puke, let the clients know.
