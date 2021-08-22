@@ -952,7 +952,7 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 
 	// [RH] Death messages
 	// [AK] Also check if we shouldn't print the obituary due to ZADF_NO_OBITUARIES.
-	if (( player ) && ( NETWORK_InClientMode() == false ) && ( zadmflags & ZADF_NO_OBITUARIES ) == false )
+	if (( player ) && ( NETWORK_InClientMode() == false ) && ( zacompatflags & ZACOMPATF_NO_OBITUARIES ) == false )
 		ClientObituary (this, inflictor, source, dmgflags, MeansOfDeath);
 
 }

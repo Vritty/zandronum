@@ -381,14 +381,11 @@ enum
 	// by closing doors that other players (or the same player) have opened.
 	ZADF_NODOORCLOSE = 1 << 19,
 
-	// [AK] Prevent obituary messages from being printed onto the server console when a player dies.
-	ZADF_NO_OBITUARIES = 1 << 20,
-
 	// [AK] Forces the player's pitch to be limited to what's allowed in the software renderer.
-	ZADF_FORCE_SOFTWARE_PITCH_LIMITS = 1 << 21,
+	ZADF_FORCE_SOFTWARE_PITCH_LIMITS = 1 << 20,
 
 	// [AK] No private messaging allowed on the server.
-	ZADF_NO_PRIVATE_CHAT = 1 << 22,
+	ZADF_NO_PRIVATE_CHAT = 1 << 21,
 };
 
 // [RH] Compatibility flags.
@@ -474,6 +471,8 @@ enum
 	ZACOMPATF_SKULLTAG_JUMPING		= 1 << 12,
 	// [AK] World and global-scope ACS variables/arrays will be reset upon resetting the map like in survival.
 	ZACOMPATF_RESET_GLOBALVARS_ON_MAPRESET = 1 << 13,
+	// [AK] Prevent obituary messages from being printed to the console when a player dies.
+	ZACOMPATF_NO_OBITUARIES = 1 << 14,
 
 	// Limited movement in the air.
 	ZACOMPATF_LIMITED_AIRMOVEMENT	= 1 << 17,

@@ -1297,7 +1297,6 @@ OptionMenu GameplayOptions
 	Option "Allow automap",			"sv_noautomap", "NoYes"
 	Option "Automap allies",		"sv_noautomapallies", "NoYes"
 	Option "Allow spying",			"sv_disallowspying", "NoYes"
-	Option "Allow obituaries",		"sv_noobituaries", "NoYes"
 	Option "Chasecam cheat",		"sv_chasecam", "YesNo"
 	Option "Check ammo for weapon switch",	"sv_dontcheckammo", "NoYes"
 	Option "Icon's death kills its spawns",	"sv_killbossmonst", "YesNo"
@@ -1468,6 +1467,7 @@ OptionMenu "CompatibilityOptions"
 	Option "West facing spawns are silent",				"compat_silentwestspawns", "YesNo"
 	Option "Use old Skulltag jumping behavior",			"compat_skulltagjumping", "YesNo"
 	Option "Reset global ACS variables upon map reset",		"compat_resetglobalvarsonmapreset", "YesNo"
+	Option "No obituaries",								"compat_noobituaries", "YesNo"
 	
 	Class "CompatibilityMenu"
 }

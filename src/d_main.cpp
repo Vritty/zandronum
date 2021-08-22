@@ -630,7 +630,6 @@ CVAR (Flag, sv_survival_nomapresetondeath, zadmflags, ZADF_SURVIVAL_NO_MAP_RESET
 CVAR (Flag, sv_deadplayerscankeepinventory, zadmflags, ZADF_DEAD_PLAYERS_CAN_KEEP_INVENTORY);
 CVAR (Flag, sv_nounlaggedbfgtracers, zadmflags, ZADF_NOUNLAGGED_BFG_TRACERS);
 CVAR (Flag, sv_nodoorclose, zadmflags, ZADF_NODOORCLOSE);
-CVAR (Flag, sv_noobituaries, zadmflags, ZADF_NO_OBITUARIES);
 CVAR (Flag, sv_forcesoftwarepitchlimits, zadmflags, ZADF_FORCE_SOFTWARE_PITCH_LIMITS);
 CVAR (Flag, sv_noprivatechat, zadmflags, ZADF_NO_PRIVATE_CHAT);
 
@@ -814,6 +813,7 @@ CVAR (Flag, compat_autoaim,		zacompatflags, ZACOMPATF_AUTOAIM);
 CVAR (Flag, compat_silentwestspawns,	zacompatflags, ZACOMPATF_SILENT_WEST_SPAWNS);
 CVAR (Flag, compat_skulltagjumping,	zacompatflags, ZACOMPATF_SKULLTAG_JUMPING);
 CVAR (Flag, compat_resetglobalvarsonmapreset, zacompatflags, ZACOMPATF_RESET_GLOBALVARS_ON_MAPRESET);
+CVAR (Flag, compat_noobituaries, zacompatflags, ZACOMPATF_NO_OBITUARIES);
 
 //==========================================================================
 //

@@ -22,7 +22,7 @@
 +	- The server can now broadcast the MD5 hashes of loaded PWADs to launchers. [Sean]
 +	- Added new console commands "demo_ticsplayed" to show the current position in demo playback and "demo_skipto" to skip to such a position.
 +	- Added new console variable "sv_nodoorclose" to prevent manual door closing, in order to prevent large numbers of players from blocking a door by continuously opening and closing it. [DoomJoshuaBoy]
-+	- Added new console variable "sv_noobituaries" to prevent obituaries from being printed to the server console when a player dies. [Kaminsky]
++	- Added new compatibility flag "compat_noobituaries" to prevent obituaries from being printed to the console when a player dies. [Kaminsky]
 +	- Added new compatibility flag "compat_resetglobalvarsonmapreset" to reset all global ACS variables upon resetting the map like in survival. [Kaminsky]
 +	- Added new ACS functions: SetGamemodeLimits(int limit, int value) to change gamemode limits, SetCurrentGamemode(str gamemode, bool reset) to switch gamemodes during a game, and GetCurrentGamemode() to get the gamemode being played. [Kaminsky]
 +	- Added ACS function: SetPlayerClass(int player, str class, bool respawn) to allow changing of a player's class. [Kaminsky]
