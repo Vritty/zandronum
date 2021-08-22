@@ -218,9 +218,13 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker, int dmgf
 	bool friendly;
 	int  gender;
 
+	// [AK] Check if we shouldn't print the obituary due to ZADF_NO_OBITUARIES or if the
+	// player was forced to dead spectators through ACS.
+	if ((zacompatflags & ZACOMPATF_NO_OBITUARIES) || MeansOfDeath == NAME_DeadSpectate)
+		return;
+
 	// No obituaries for non-players, voodoo dolls or when not wanted
-	// [AK] Added a check if the player was forced as a dead spectator through ACS.
-	if (self->player == NULL || self->player->mo != self || !show_obituaries || MeansOfDeath == NAME_DeadSpectate)
+	if (self->player == NULL || self->player->mo != self || !show_obituaries)
 		return;
 
 	gender = self->player->userinfo.GetGender();
@@ -951,8 +955,7 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 	}
 
 	// [RH] Death messages
-	// [AK] Also check if we shouldn't print the obituary due to ZADF_NO_OBITUARIES.
-	if (( player ) && ( NETWORK_InClientMode() == false ) && ( zacompatflags & ZACOMPATF_NO_OBITUARIES ) == false )
+	if (( player ) && ( NETWORK_InClientMode() == false ))
 		ClientObituary (this, inflictor, source, dmgflags, MeansOfDeath);
 
 }
