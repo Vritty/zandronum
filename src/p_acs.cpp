@@ -3818,7 +3818,9 @@ do_count:
 		while ( (actor = iterator.Next ()) )
 		{
 			if (actor->health > 0 &&
-				(kind == NULL || actor->IsA (kind)))
+				(kind == NULL || actor->IsA (kind)) &&
+				// [AK] Don't count actors hidden by HideOrDestroyIfSafe().
+				((actor->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED) == false))
 			{
 				if (actor->Sector->tag == tag || tag == -1)
 				{
