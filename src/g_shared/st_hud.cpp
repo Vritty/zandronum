@@ -656,6 +656,7 @@ static void HUD_RenderHolders( void )
 			}
 			else
 			{
+				color = CR_GRAY;
 				text = "-";
 			}
 		
