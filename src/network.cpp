@@ -1298,6 +1298,10 @@ bool NETWORK_IsConsolePlayerOrNotInClientMode( const player_t *pPlayer )
 //
 bool NETWORK_IsConsolePlayer( const AActor *pActor )
 {
+	// [AK] The server can't ever be a consoleplayer, so return false.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		return false;
+
 	if ( ( pActor == NULL ) || ( pActor->player == NULL ) )
 		return false;
 
