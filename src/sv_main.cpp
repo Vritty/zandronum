@@ -5163,9 +5163,13 @@ bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MoveThingData OldData )
 	float fY = FIXED2FLOAT( players[ulClient].mo->y - OldData.y );
 	float fZ = FIXED2FLOAT( players[ulClient].mo->z - OldData.z );
 
+	float fDiff = static_cast<float>( TVector3<float>( fX, fY, fZ ).Length( ));
+
 	// [AK] Don't accept the backtrace if the player ended up in a spot that's too far than where we
 	// extrapolated them to, depending on how much error we can accept with predicting their movement.
-	if ( TVector3<float>( fX, fY, fZ ).Length( ) > sv_backtracelimit )
+	// We also don't need to accept the backtrace if they're close enough that rejecting it won't make
+	// a huge impact on their end. This eliminates any small stutters on the other clients' ends.
+	if (( fDiff < 8.0 ) || ( fDiff > sv_backtracelimit ))
 		return false;
 
 	// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
