@@ -374,8 +374,10 @@ void P_Ticker (void)
 
 							ULONG ulExtrapolateStartTic = client->LastMoveCMD->getClientTic( );
 							ULONG ulClientGameTic = client->ulClientGameTic + client->ulExtrapolatedTics;
+							LONG lOldLastMoveTickProcess = client->lLastMoveTickProcess;
+
 							client->bIsBacktracing = true;
-							client->lLastBacktraceTic = gametic;
+							client->lLastMoveTickProcess = client->lLastBacktraceTic = gametic;
 
 							// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
 							// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"
@@ -396,6 +398,7 @@ void P_Ticker (void)
 
 							players[ulIdx].mo->flags = flags;
 							client->ulClientGameTic = ulClientGameTic;
+							client->lLastMoveTickProcess = lOldLastMoveTickProcess;
 
 							// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
 							// didn't move too far away into a spot that's blocking them or out of sight. If this check fails,
