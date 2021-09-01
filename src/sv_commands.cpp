@@ -4975,18 +4975,28 @@ void SERVERCOMMANDS_SyncMapRotation( ULONG ulPlayerExtra, ServerCommandFlags fla
 		return;
 
 	ServerCommands::SyncMapRotation command;
-	TArray<ServerCommands::MapRotationEntry> mapEntries;
-	mapEntries.Reserve( numEntries );
+	command.SetCurrentPosition( MAPROTATION_GetCurrentPosition() );
 
 	for ( unsigned int i = 0; i < numEntries; i++ )
 	{
-		mapEntries[i].name = MAPROTATION_GetMap( i )->mapname;
-		mapEntries[i].minPlayers = MAPROTATION_GetPlayerLimits( i, false );
-		mapEntries[i].maxPlayers = MAPROTATION_GetPlayerLimits( i, true );
+		ServerCommands::MapRotationEntry entry;
+		entry.name = MAPROTATION_GetMap( i )->mapname;
+		entry.minPlayers = MAPROTATION_GetPlayerLimits( i, false );
+		entry.maxPlayers = MAPROTATION_GetPlayerLimits( i, true );
+
+		command.PushToEntries( entry );
+
+		// [AK] If the latest entry won't fit into a single packet, remove it from the list and send out
+		// what we already have. We'll then send another packet containing this entry and more.
+		if ( static_cast<ULONG>( command.BuildNetCommand().calcSize() ) + PACKET_HEADER_SIZE >= SERVER_GetMaxPacketSize() )
+		{
+			command.PopFromEntries( entry );
+			command.sendCommandToClients( ulPlayerExtra, flags );
+			command.ClearEntries();
+			command.PushToEntries( entry );
+		}
 	}
 
-	command.SetEntries( mapEntries );
-	command.SetCurrentPosition( MAPROTATION_GetCurrentPosition() );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 

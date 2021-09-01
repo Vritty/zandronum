@@ -37,7 +37,7 @@ EndStruct
 Command SyncMapRotation
 	ExtendedCommand
 	Struct<MapRotationEntry>[] entries
-	Byte currentPosition
+	Short currentPosition
 EndCommand
 
 Command ReplaceTextures

@@ -473,6 +473,9 @@ void CLIENT_Construct( void )
 		// Put the game in client mode.
 		NETWORK_SetState( NETSTATE_CLIENT );
 
+		// [AK] Reset the map rotation before we connect to the server.
+		MAPROTATION_Construct( );
+
 		// Make sure cheats are off.
 		Val.Bool = false;
 		sv_cheats.ForceSet( Val, CVAR_Bool );
@@ -2439,6 +2442,9 @@ void CLIENT_QuitNetworkGame( const char *pszString )
 	// [AK] Close the server setup menu if we're still in it.
 	if ( M_InServerSetupMenu( ))
 		M_ClearMenus( );
+
+	// [AK] Clear the map rotation when we leave the server.
+	MAPROTATION_Construct( );
 
 	// Set the network state back to single player.
 	NETWORK_SetState( NETSTATE_SINGLE );
@@ -9269,9 +9275,6 @@ void ServerCommands::SyncJoinQueue::Execute()
 //
 void ServerCommands::SyncMapRotation::Execute()
 {
-	// [AK] Clear the map rotation first before adding the new maps.
-	MAPROTATION_Construct();
-
 	for ( unsigned int i = 0; i < entries.Size(); i++ )
 		MAPROTATION_AddMap( entries[i].name, 0, entries[i].minPlayers, entries[i].maxPlayers, true );
 
@@ -9322,6 +9325,9 @@ CCMD( connect )
 	// [AK] Make sure the server setup menu is closed if we're connecting.
 	if ( M_InServerSetupMenu( ))
 		M_SetMenu( NAME_ZA_RconLoginMenu );
+
+	// [AK] Reset the map rotation before we connect to the server.
+	MAPROTATION_Construct( );
 
 	// Make sure cheats are off.
 	Val.Bool = false;
@@ -9409,6 +9415,9 @@ CCMD( reconnect )
 	// [AK] Make sure the server setup menu is closed if we're reconnecting.
 	if ( M_InServerSetupMenu( ))
 		M_SetMenu( NAME_ZA_RconLoginMenu );
+
+	// [AK] Reset the map rotation before we reconnect to the server.
+	MAPROTATION_Construct( );
 
 	// Make sure cheats are off.
 	Val.Bool = false;
