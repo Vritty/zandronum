@@ -967,7 +967,8 @@ void SERVERCOMMANDS_MoveLocalPlayer( ULONG ulPlayer )
 //
 void SERVERCOMMANDS_SetLocalPlayerJumpTics( ULONG ulPlayer )
 {
-	if ( SERVER_IsValidClient( ulPlayer ) == false )
+	// [AK] Don't update this client's jump tics while we're extrapolating their movement.
+	if (( SERVER_IsValidClient( ulPlayer ) == false ) || ( SERVER_GetClient( ulPlayer )->ulExtrapolatedTics > 0 ))
 		return;
 
 	ServerCommands::SetLocalPlayerJumpTics command;
