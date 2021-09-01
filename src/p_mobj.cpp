@@ -4484,9 +4484,16 @@ void AActor::Tick ()
 	if ( CLIENT_PREDICT_IsPredicting( ))
 		return;
 
-	// [BB] Spectators shall stay in their spawn state and don't execute any code pointers.
-	if ( this->player && this->player->bSpectating )
-		return;
+	if ( this->player )
+	{
+		// [BB] Spectators shall stay in their spawn state and don't execute any code pointers.
+		if ( this->player->bSpectating )
+			return;
+
+		// [AK] Don't tick the player's states while we're backtracing their movement.
+		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( this->player->mo == this ) && ( SERVER_GetClient( this->player - players )->bIsBacktracing ))
+			return;
+	}
 
 	assert (state != NULL);
 	if (state == NULL)
