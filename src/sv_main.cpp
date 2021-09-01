@@ -5201,6 +5201,9 @@ void SERVER_ResetClientTicBuffer( ULONG ulClient )
 		delete g_aClients[ulClient].LastMoveCMD;
 		g_aClients[ulClient].LastMoveCMD = NULL;
 	}
+ 
+	// [AK] We want to reset this client's last backtrace tic only when we reset their tic buffer.
+	g_aClients[ulClient].lLastBacktraceTic = 0;
 
 	SERVER_ResetClientExtrapolation( ulClient );
 }

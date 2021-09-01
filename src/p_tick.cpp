@@ -328,9 +328,13 @@ void P_Ticker (void)
 				CLIENT_s *client = SERVER_GetClient( ulIdx );
 
 				// [AK] Don't process two movement commands in a single tic if we didn't receive any new commands
-				// from this client in the current tic. Only do this when the skip correction is enabled.
-				if (( bAlreadySmoothed[ulIdx] ) && ( client->lLastMoveTick != gametic ))
-					continue;
+				// from this client in the current tic, or if it's too soon since we last performed a backtrace on
+				// them. Only do this when the skip correction is enabled and if their tic buffer isn't too full.
+				if (( bAlreadySmoothed[ulIdx] ) && ( client->MoveCMDs.Size( ) <= 3 ))
+				{
+					if (( client->lLastMoveTick != gametic ) || ( client->lLastBacktraceTic > gametic - 3 ))
+						continue;
+				}
 
 				// [AK] When a player is experiencing ping spikes or packet loss and we don't have any commands
 				// left in their buffer, we will try to predict where they will be for at least the next few tics
@@ -371,6 +375,7 @@ void P_Ticker (void)
 							ULONG ulExtrapolateStartTic = client->LastMoveCMD->getClientTic( );
 							ULONG ulClientGameTic = client->ulClientGameTic + client->ulExtrapolatedTics;
 							client->bIsBacktracing = true;
+							client->lLastBacktraceTic = gametic;
 
 							// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
 							// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"

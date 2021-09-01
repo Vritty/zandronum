@@ -383,6 +383,9 @@ struct CLIENT_s
 	// [AK] Are we in the middle of backtracing this player's movement via skip correction?
 	bool			bIsBacktracing;
 
+	// [AK] Last tic we processed a backtrace on this client.
+	LONG			lLastBacktraceTic;
+
 	// [BB] Variables for the account system
 	FString username;
 	unsigned int clientSessionID;
