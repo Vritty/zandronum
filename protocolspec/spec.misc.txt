@@ -30,6 +30,7 @@ EndCommand
 
 Struct MapRotationEntry
 	String name
+	Byte isUsed
 	Byte minPlayers
 	Byte maxPlayers
 EndStruct

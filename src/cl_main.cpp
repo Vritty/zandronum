@@ -6992,6 +6992,7 @@ void ServerCommands::MapLoad::Execute()
 
 		// [AK] Set the current position of the map rotation.
 		MAPROTATION_SetCurrentPosition( currentPosition );
+		MAPROTATION_SetUsed( currentPosition );
 
 		// [BB] We'll receive a full update for the new map from the server.
 		g_bFullUpdateIncomplete = true;
@@ -9276,7 +9277,13 @@ void ServerCommands::SyncJoinQueue::Execute()
 void ServerCommands::SyncMapRotation::Execute()
 {
 	for ( unsigned int i = 0; i < entries.Size(); i++ )
+	{
 		MAPROTATION_AddMap( entries[i].name, 0, entries[i].minPlayers, entries[i].maxPlayers, true );
+
+		// [AK] Mark this map as used if we need to. It's also now the last entry on the map list.
+		if ( entries[i].isUsed )
+			MAPROTATION_SetUsed( MAPROTATION_GetNumEntries( ) - 1 );
+	}
 
 	// [AK] Set the current position of the map rotation.
 	MAPROTATION_SetCurrentPosition( currentPosition );

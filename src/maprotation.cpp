@@ -345,6 +345,16 @@ bool MAPROTATION_IsUsed( ULONG ulIdx )
 
 //*****************************************************************************
 //
+void MAPROTATION_SetUsed( ULONG ulIdx, bool bUsed )
+{
+	if ( ulIdx >= g_MapRotationEntries.size( ))
+		return;
+
+	g_MapRotationEntries[ulIdx].bUsed = bUsed;
+}
+
+//*****************************************************************************
+//
 void MAPROTATION_AddMap( FCommandLine &argv, bool bSilent, bool bInsert )
 {
 	int iPosition = bInsert ? atoi( argv[2] ) : 0;
@@ -512,8 +522,11 @@ CCMD( maplist )
 			message.Format( "%lu. %s - %s", ulIdx + 1, g_MapRotationEntries[ulIdx].pMap->mapname, g_MapRotationEntries[ulIdx].pMap->LookupLevelName( ).GetChars( ));
 
 			// [AK] Highlight the current position in the map rotation in green, but only if we're actually playing on that map.
+			// Otherwise, maps that have already been played will be highlighted in red.
 			if (( g_ulCurMapInList == ulIdx ) && ( stricmp( level.mapname, g_MapRotationEntries[g_ulCurMapInList].pMap->mapname ) == 0 ))
 				message.Insert( 0, TEXTCOLOR_GREEN );
+			else if ( g_MapRotationEntries[ulIdx].bUsed )
+				message.Insert( 0, TEXTCOLOR_RED );
 
 			// [AK] Also print the min and max player limits if they're different from the default values.
 			if (( g_MapRotationEntries[ulIdx].ulMinPlayers > 0 ) || ( g_MapRotationEntries[ulIdx].ulMaxPlayers < MAXPLAYERS ))
