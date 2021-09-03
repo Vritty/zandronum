@@ -193,6 +193,10 @@ static void MAPROTATION_CalcNextMap( void )
 			{
 				for ( ULONG ulIdx = 0; ulIdx < g_MapRotationEntries.size( ); ulIdx++ )
 					g_MapRotationEntries[ulIdx].bUsed = false;
+
+				// [AK] If we're the server, tell the clients to reset their map lists too.
+				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+					SERVERCOMMANDS_ResetMapRotation( );
 			}
 		}
 

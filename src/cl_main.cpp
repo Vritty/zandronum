@@ -2293,28 +2293,43 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				}
 				break;
 
-			case SVC2_ADDTOMAPROTATION:
+			case SVC2_UPDATEMAPROTATION:
 				{
-					const char *pszMapName = pByteStream->ReadString();
-					int position = pByteStream->ReadByte();
-					ULONG ulMinPlayers = pByteStream->ReadByte();
-					ULONG ulMaxPlayers = pByteStream->ReadByte();
+					const LONG lType = pByteStream->ReadByte();
 
-					// [AK] Add this map to the rotation.
-					MAPROTATION_AddMap( pszMapName, position, ulMinPlayers, ulMaxPlayers, true );
-				}
-				break;
+					switch ( lType )
+					{
+						// [AK] Add this map to the rotation using the passed name, position, and player limits.
+						case UPDATE_MAPROTATION_ADDMAP:
+						{
+							const char *pszMapName = pByteStream->ReadString();
+							int position = pByteStream->ReadByte();
+							ULONG ulMinPlayers = pByteStream->ReadByte();
+							ULONG ulMaxPlayers = pByteStream->ReadByte();
+							MAPROTATION_AddMap( pszMapName, position, ulMinPlayers, ulMaxPlayers, true );
+							break;
+						}
 
-			case SVC2_DELFROMMAPROTATION:
-				if ( pByteStream->ReadByte() )
-				{
-					// [AK] Clear all maps from the rotation.
-					MAPROTATION_Construct();
-				}
-				else
-				{
-					// [AK] Remove the map with the given name from the rotation.
-					MAPROTATION_DelMap( pByteStream->ReadString(), true );
+						// [AK] Remove the map with the given name from the rotation.
+						case UPDATE_MAPROTATION_DELMAP:
+							MAPROTATION_DelMap( pByteStream->ReadString(), true );
+							break;
+
+						// [AK] Clear all maps from the rotation.
+						case UPDATE_MAPROTATION_CLEAR:
+							MAPROTATION_Construct();
+							break;
+
+						// [AK] Reset all maps in the rotation. To do this, we'll go through every entry on the list
+						// and manually set their used status to false.
+						case UPDATE_MAPROTATION_RESET:
+						{
+							ULONG ulNumEntries = MAPROTATION_GetNumEntries();
+							for ( ULONG ulIdx = 0; ulIdx < ulNumEntries; ulIdx++ )
+								MAPROTATION_SetUsed( ulIdx, false );
+							break;
+						}
+					}
 				}
 				break;
 

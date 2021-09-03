@@ -5008,7 +5008,8 @@ void SERVERCOMMANDS_AddToMapRotation( const char *pszMapName, int position, ULON
 	if (( pszMapName == NULL ) || ( FindLevelByName( pszMapName ) == NULL ))
 		return;
 
-	NetCommand command ( SVC2_ADDTOMAPROTATION );
+	NetCommand command ( SVC2_UPDATEMAPROTATION );
+	command.addByte( UPDATE_MAPROTATION_ADDMAP );
 	command.addString( pszMapName );
 	command.addByte( position );
 	command.addByte( ulMinPlayers );
@@ -5020,8 +5021,8 @@ void SERVERCOMMANDS_AddToMapRotation( const char *pszMapName, int position, ULON
 // [AK]
 void SERVERCOMMANDS_DelFromMapRotation( const char *pszMapName, bool bClear, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
-	NetCommand command ( SVC2_DELFROMMAPROTATION );
-	command.addByte( bClear );
+	NetCommand command ( SVC2_UPDATEMAPROTATION );
+	command.addByte( bClear ? UPDATE_MAPROTATION_CLEAR : UPDATE_MAPROTATION_DELMAP );
 
 	// [AK] We should only send a map name if we're not clearing the map list.
 	if ( bClear == false )
@@ -5032,6 +5033,15 @@ void SERVERCOMMANDS_DelFromMapRotation( const char *pszMapName, bool bClear, ULO
 		command.addString( pszMapName );
 	}
 
+	command.sendCommandToClients( ulPlayerExtra, flags );
+}
+
+//*****************************************************************************
+// [AK]
+void SERVERCOMMANDS_ResetMapRotation( ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	NetCommand command ( SVC2_UPDATEMAPROTATION );
+	command.addByte( UPDATE_MAPROTATION_RESET );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 

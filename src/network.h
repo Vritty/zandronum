@@ -207,6 +207,15 @@ enum ActorScaleFlag
 	ACTORSCALE_Y = 2
 };
 
+// [AK] If we're updating the map rotation then what exactly are we doing?
+enum UpdateMapRotationType
+{
+	UPDATE_MAPROTATION_ADDMAP,
+	UPDATE_MAPROTATION_DELMAP,
+	UPDATE_MAPROTATION_CLEAR,
+	UPDATE_MAPROTATION_RESET,
+};
+
 // Which actor sound is being updated?
 #define	ACTORSOUND_SEESOUND			1
 #define	ACTORSOUND_ATTACKSOUND		2
