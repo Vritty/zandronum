@@ -9191,14 +9191,10 @@ static void client_CreateTranslation( BYTESTREAM_s *pByteStream, bool bIsTypeTwo
 
 	if ( Translation.ulType == DLevelScript::PCD_TRANSLATIONRANGE1 )
 		pTranslation->AddIndexRange( Translation.ulStart, Translation.ulEnd, Translation.ulPal1, Translation.ulPal2 );
+	else if ( Translation.ulType == DLevelScript::PCD_TRANSLATIONRANGE2 )
+		pTranslation->AddColorRange( Translation.ulStart, Translation.ulEnd, Translation.ulR1, Translation.ulG1, Translation.ulB1, Translation.ulR2, Translation.ulG2, Translation.ulB2 );
 	else
-	{
-		// [AK] We also need to check if this is a desaturated translation.
-		if ( Translation.ulType == DLevelScript::PCD_TRANSLATIONRANGE2 )
-			pTranslation->AddColorRange( Translation.ulStart, Translation.ulEnd, Translation.ulR1, Translation.ulG1, Translation.ulB1, Translation.ulR2, Translation.ulG2, Translation.ulB2 );
-		else
-			pTranslation->AddDesaturation( Translation.ulStart, Translation.ulEnd, Translation.fR1, Translation.fG1, Translation.fB1, Translation.fR2, Translation.fG2, Translation.fB2 );
-	}
+		pTranslation->AddDesaturation( Translation.ulStart, Translation.ulEnd, Translation.fR1, Translation.fG1, Translation.fB1, Translation.fR2, Translation.fG2, Translation.fB2 );
 
 	pTranslation->UpdateNative();
 }
