@@ -628,6 +628,41 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 			for ( unsigned i = 0; i < NETWORK_GetPWADList().Size(); ++i )
 				g_MasterServerBuffer.ByteStream.WriteString( NETWORK_GetPWADList()[i].checksum );
 		}
+
+		// [SB] send the server's country code
+		if ( ulBits2 & SQF2_COUNTRY )
+		{
+			// [SB] The value of this field will always be 3 characters, so we can just use and
+			// send a char[3]
+			const size_t codeSize = 3;
+			char code[codeSize];
+
+			FString countryCode = sv_country.GetGenericRep( CVAR_String ).String;
+			countryCode.ToUpper();
+
+			// [SB] ISO 3166-1 alpha-3 codes in the range XAA-XZZ will never be allocated to actual
+			// countries. Therefore, we use these for our special codes:
+			//     XIP  -  launcher should try and use IP geolocation
+			//     XUN  -  launcher should display a generic unknown flag
+
+			if ( countryCode.CompareNoCase( "automatic" ) == 0 )
+			{
+				memcpy( code, "XIP", codeSize );
+			}
+			// [SB] We assume any 3 character long value is a valid country code, and leave it up
+			// the launcher to check if they have a flag for it
+			else if ( countryCode.Len() == 3 )
+			{
+				memcpy( code, countryCode.GetChars(), codeSize );
+			}
+			// [SB] Any other value results in the "unknown" value
+			else
+			{
+				memcpy( code, "XUN", codeSize );
+			}
+
+			g_MasterServerBuffer.ByteStream.WriteBuffer( code, codeSize );
+		}
 	}
 
 //	NETWORK_LaunchPacket( &g_MasterServerBuffer, Address, true );
@@ -727,6 +762,9 @@ CVAR( String, sv_website, "", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 
 // E-mail address of the person running this server.
 CVAR( String, sv_hostemail, "", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
+
+// [SB] The country in which this server is located.
+CVAR( String, sv_country, "automatic", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 
 // IP address of the master server.
 // [BB] Client and server use this now, therefore the name doesn't begin with "sv_"
