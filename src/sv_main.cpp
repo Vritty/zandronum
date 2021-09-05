@@ -5153,6 +5153,59 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
+CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
+{
+	PositionData = MOVE_THING_DATA_s( player->mo );
+	MorphedPlayerClass = player->MorphedPlayerClass;
+	reactionTime = player->mo->reactiontime;
+	chickenPeck = player->chickenPeck;
+	morphTics = player->morphTics;
+	inventoryTics = player->inventorytics;
+	jumpTics = player->jumpTics;
+	turnTics = player->turnticks;
+	crouching = player->crouching;
+	crouchDirection = player->crouchdir;
+	crouchFactor = player->crouchfactor;
+	crouchOffset = player->crouchoffset;
+	crouchViewDelta = player->crouchviewdelta;
+}
+
+//*****************************************************************************
+//
+void CLIENT_PLAYER_DATA_s::Restore ( player_t *player, bool bMoveOnly )
+{
+	// [AK] Set the actor's position. Despite the name of the function, the clients don't execute this
+	// function here, but CLIENT_MoveThing adds checks upon calling AActor::SetOrigin that correct the
+	// player's floorz value after they've been moved.
+	CLIENT_MoveThing( player->mo, PositionData.x, PositionData.y, PositionData.z );
+
+	// [AK] Set the player's velocity, orientation, and reactiontime.
+	player->mo->velx = PositionData.velx;
+	player->mo->vely = PositionData.vely;
+	player->mo->velz = PositionData.velz;
+	player->mo->pitch = PositionData.pitch;
+	player->mo->angle = PositionData.angle;
+	player->mo->movedir = PositionData.movedir;
+	player->mo->reactiontime = reactionTime;
+
+	// [AK] Set the player's tics and crouch accordingly if we want to.
+	if ( bMoveOnly == false )
+	{
+		player->chickenPeck = chickenPeck;
+		player->morphTics = morphTics;
+		player->inventorytics = inventoryTics;
+		player->jumpTics = jumpTics;
+		player->turnticks = turnTics;
+		player->crouching = crouching;
+		player->crouchdir = crouchDirection;
+		player->crouchfactor = crouchFactor;
+		player->crouchoffset = crouchOffset;
+		player->crouchviewdelta = crouchViewDelta;
+	}
+}
+
+//*****************************************************************************
+//
 bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData )
 {
 	float fX = FIXED2FLOAT( players[ulClient].mo->x - OldData.x );
@@ -5213,10 +5266,10 @@ void SERVER_ResetClientExtrapolation( ULONG ulClient )
 
 	g_aClients[ulClient].LateMoveCMDs.Clear( );
 
-	if ( g_aClients[ulClient].PositionData != NULL )
+	if ( g_aClients[ulClient].OldData != NULL )
 	{
-		delete g_aClients[ulClient].PositionData;
-		g_aClients[ulClient].PositionData = NULL;
+		delete g_aClients[ulClient].OldData;
+		g_aClients[ulClient].OldData = NULL;
 	}
 
 	g_aClients[ulClient].ulExtrapolatedTics = 0;

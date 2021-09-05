@@ -193,21 +193,6 @@ struct MOVE_THING_DATA_s
 	    angle ( actor->angle ),
 	    movedir ( actor->movedir ) {}
 
-	// [AK] Sets an actor's position, orientation, and velocity to the stored data.
-	void Restore( AActor *actor )
-	{
-		if ( actor == NULL )
-			return;
-
-		actor->SetOrigin( x, y, z );
-		actor->velx = velx;
-		actor->vely = vely;
-		actor->velz = velz;
-		actor->pitch = pitch;
-		actor->angle = angle;
-		actor->movedir = movedir;
-	}
-
 	fixed_t x, y, z;
 	fixed_t velx, vely, velz;
 	fixed_t pitch;
@@ -241,6 +226,30 @@ struct CLIENT_MOVE_COMMAND_s
 	bool operator<(const CLIENT_MOVE_COMMAND_s& other) const {
 	  return ( ulGametic > other.ulGametic );
 	}
+};
+
+//*****************************************************************************
+struct CLIENT_PLAYER_DATA_s
+{
+	MOVE_THING_DATA_s	PositionData;
+	const PClass		*MorphedPlayerClass;
+	SDWORD				reactionTime;
+	int					chickenPeck;
+	int					morphTics;
+	int					inventoryTics;
+	int					jumpTics;
+	BYTE				turnTics;
+	SBYTE				crouching;
+	SBYTE				crouchDirection;
+	fixed_t				crouchFactor;
+	fixed_t				crouchOffset;
+	fixed_t				crouchViewDelta;
+
+	CLIENT_PLAYER_DATA_s ( player_t *player );
+
+	// [AK] Restore's the player's data to whatever's stored in the structure.
+	// We won't restore the morphed player class though.
+	void Restore ( player_t *player, bool bMoveOnly );
 };
 
 //*****************************************************************************
@@ -418,8 +427,9 @@ struct CLIENT_s
 	// [AK] The number of tics we extrapolated this player's movement.
 	ULONG			ulExtrapolatedTics;
 
-	// [AK] The player's position, velocity, and orientation from before we started extrapolating.
-	MOVE_THING_DATA_s	*PositionData;
+	// [AK] Some of the player's data that was saved before we started extrapolating them, which can
+	// be restored if we need to perform a backtrace on them.
+	CLIENT_PLAYER_DATA_s	*OldData;
 
 	// [AK] Are we in the middle of backtracing this player's movement via skip correction?
 	bool			bIsBacktracing;
