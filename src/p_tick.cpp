@@ -364,7 +364,7 @@ void P_Ticker (void)
 						// [AK] If we have enough late commands in the buffer, process them all immediately.
 						if (( client->LateMoveCMDs.Size( ) > 0 ) && ( client->PositionData != NULL ))
 						{
-							MoveThingData oldPositionData( players[ulIdx].mo );
+							MOVE_THING_DATA_s oldPositionData( players[ulIdx].mo );
 							client->PositionData->Restore( players[ulIdx].mo );
 
 							// [AK] During the backtrace, the player shouldn't be solid so they don't stuck inside other
@@ -414,7 +414,7 @@ void P_Ticker (void)
 						{
 							// [AK] Save the player's current position, velocity, and orientation before we start extrapolating.
 							if ( client->ulExtrapolatedTics++ == 0 )
-								client->PositionData = new MoveThingData( players[ulIdx].mo );
+								client->PositionData = new MOVE_THING_DATA_s( players[ulIdx].mo );
 
 							client->LastMoveCMD->process( ulIdx );
 						}

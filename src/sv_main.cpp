@@ -5153,7 +5153,7 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
-bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MoveThingData OldData )
+bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData )
 {
 	float fX = FIXED2FLOAT( players[ulClient].mo->x - OldData.x );
 	float fY = FIXED2FLOAT( players[ulClient].mo->y - OldData.y );

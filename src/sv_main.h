@@ -61,8 +61,6 @@
 #include <list>
 #include <queue>
 
-struct MoveThingData;
-
 //*****************************************************************************
 //	DEFINES
 
@@ -173,6 +171,48 @@ enum CLIENTSTATE_e
 	// Client is in the game.
 	CLS_SPAWNED,
 
+};
+
+//*****************************************************************************
+//
+// [TP] For SERVERCOMMANDS_MoveThingIfChanged
+// [AK] Also used by the skip correction.
+//
+struct MOVE_THING_DATA_s
+{
+	MOVE_THING_DATA_s( ) {}
+
+	MOVE_THING_DATA_s( AActor *actor ) :
+	    x ( actor->x ),
+	    y ( actor->y ),
+	    z ( actor->z ),
+	    velx ( actor->velx ),
+	    vely ( actor->vely ),
+	    velz ( actor->velz ),
+	    pitch ( actor->pitch ),
+	    angle ( actor->angle ),
+	    movedir ( actor->movedir ) {}
+
+	// [AK] Sets an actor's position, orientation, and velocity to the stored data.
+	void Restore( AActor *actor )
+	{
+		if ( actor == NULL )
+			return;
+
+		actor->SetOrigin( x, y, z );
+		actor->velx = velx;
+		actor->vely = vely;
+		actor->velz = velz;
+		actor->pitch = pitch;
+		actor->angle = angle;
+		actor->movedir = movedir;
+	}
+
+	fixed_t x, y, z;
+	fixed_t velx, vely, velz;
+	fixed_t pitch;
+	angle_t angle;
+	BYTE movedir;
 };
 
 //*****************************************************************************
@@ -379,7 +419,7 @@ struct CLIENT_s
 	ULONG			ulExtrapolatedTics;
 
 	// [AK] The player's position, velocity, and orientation from before we started extrapolating.
-	MoveThingData	*PositionData;
+	MOVE_THING_DATA_s	*PositionData;
 
 	// [AK] Are we in the middle of backtracing this player's movement via skip correction?
 	bool			bIsBacktracing;
@@ -547,7 +587,7 @@ void		SERVER_SyncServerModCVars ( const int PlayerToSync );
 void		SERVER_KillCheat( const char* what );
 void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
 void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
-bool		SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MoveThingData OldData );
+bool		SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData );
 void		SERVER_ResetClientTicBuffer( ULONG ulClient );
 void		SERVER_ResetClientExtrapolation( ULONG ulClient );
 
