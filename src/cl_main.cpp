@@ -421,13 +421,30 @@ void CLIENT_LimitProtectedCVARs( void )
 
 //*****************************************************************************
 //
+static void client_ResetValuesOnConnection( void )
+{
+	UCVarValue Val;
+
+	// [AK] Reset the map rotation before we connect to the server.
+	MAPROTATION_Construct( );
+
+	// Make sure cheats are off.
+	Val.Bool = false;
+	sv_cheats.ForceSet( Val, CVAR_Bool );
+	am_cheat = 0;
+
+	// Make sure our visibility is normal.
+	R_SetVisibility( 8.0f );
+}
+
+//*****************************************************************************
+//
 void CLIENT_Construct( void )
 {
 	const char	*pszPort;
 	const char	*pszIPAddress;
 	const char	*pszDemoName;
 	USHORT		usPort;
-	UCVarValue	Val;
 
 	// Start off as being disconnected.
 	g_ConnectionState = CTS_DISCONNECTED;
@@ -473,16 +490,7 @@ void CLIENT_Construct( void )
 		// Put the game in client mode.
 		NETWORK_SetState( NETSTATE_CLIENT );
 
-		// [AK] Reset the map rotation before we connect to the server.
-		MAPROTATION_Construct( );
-
-		// Make sure cheats are off.
-		Val.Bool = false;
-		sv_cheats.ForceSet( Val, CVAR_Bool );
-		am_cheat = 0;
-
-		// Make sure our visibility is normal.
-		R_SetVisibility( 8.0f );
+		client_ResetValuesOnConnection();
 
 		CLIENT_ClearAllPlayers();
 
@@ -9317,7 +9325,6 @@ void STACK_ARGS CLIENT_PrintWarning( const char* format, ... )
 CCMD( connect )
 {
 	const char	*pszDemoName;
-	UCVarValue	Val;
 
 	// Servers can't connect to other servers!
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -9342,16 +9349,7 @@ CCMD( connect )
 	if ( M_InServerSetupMenu( ))
 		M_SetMenu( NAME_ZA_RconLoginMenu );
 
-	// [AK] Reset the map rotation before we connect to the server.
-	MAPROTATION_Construct( );
-
-	// Make sure cheats are off.
-	Val.Bool = false;
-	sv_cheats.ForceSet( Val, CVAR_Bool );
-	am_cheat = 0;
-
-	// Make sure our visibility is normal.
-	R_SetVisibility( 8.0f );
+	client_ResetValuesOnConnection( );
 
 	// Create a server IP from the given string.
 	g_AddressServer.LoadFromString( argv[1] );
@@ -9412,8 +9410,6 @@ CCMD( timeout )
 //
 CCMD( reconnect )
 {
-	UCVarValue	Val;
-
 	// If we're in the middle of a game, we first need to disconnect from the server.
 	if ( g_ConnectionState != CTS_DISCONNECTED )
 		CLIENT_QuitNetworkGame( NULL );
@@ -9432,16 +9428,7 @@ CCMD( reconnect )
 	if ( M_InServerSetupMenu( ))
 		M_SetMenu( NAME_ZA_RconLoginMenu );
 
-	// [AK] Reset the map rotation before we reconnect to the server.
-	MAPROTATION_Construct( );
-
-	// Make sure cheats are off.
-	Val.Bool = false;
-	sv_cheats.ForceSet( Val, CVAR_Bool );
-	am_cheat = 0;
-
-	// Make sure our visibility is normal.
-	R_SetVisibility( 8.0f );
+	client_ResetValuesOnConnection( );
 
 	// Set the address of the server we're trying to connect to to the previously connected to server.
 	g_AddressServer = g_AddressLastConnected;
