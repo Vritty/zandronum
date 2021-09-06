@@ -2484,6 +2484,9 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 			SERVERCOMMANDS_SetPlayerWins( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
 			SERVERCOMMANDS_SetPlayerPoints( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
+
+		// [AK] Tell the client how many times this player died.
+		SERVERCOMMANDS_SetPlayerDeaths( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 	}
 
 	// Send Domination State
