@@ -2303,7 +2303,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 						case UPDATE_MAPROTATION_ADDMAP:
 						{
 							const char *pszMapName = pByteStream->ReadString();
-							int position = pByteStream->ReadByte();
+							int position = pByteStream->ReadShort();
 							ULONG ulMinPlayers = pByteStream->ReadByte();
 							ULONG ulMaxPlayers = pByteStream->ReadByte();
 							MAPROTATION_AddMap( pszMapName, position, ulMinPlayers, ulMaxPlayers, true );

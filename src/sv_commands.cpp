@@ -5011,7 +5011,7 @@ void SERVERCOMMANDS_AddToMapRotation( const char *pszMapName, int position, ULON
 	NetCommand command ( SVC2_UPDATEMAPROTATION );
 	command.addByte( UPDATE_MAPROTATION_ADDMAP );
 	command.addString( pszMapName );
-	command.addByte( position );
+	command.addShort( position );
 	command.addByte( ulMinPlayers );
 	command.addByte( ulMaxPlayers );
 	command.sendCommandToClients( ulPlayerExtra, flags );
