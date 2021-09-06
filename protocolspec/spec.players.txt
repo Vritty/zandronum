@@ -106,6 +106,12 @@ Command SetPlayerWins
 	Variable wins
 EndCommand
 
+Command SetPlayerDeaths
+	ExtendedCommand
+	Player player
+	Variable deaths
+EndCommand
+
 Command SetPlayerKillCount
 	Player player
 	Variable killCount

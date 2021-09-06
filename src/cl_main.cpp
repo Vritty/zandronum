@@ -2131,18 +2131,6 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				}
 				break;
 
-			case SVC2_SETPLAYERDEATHS:
-				{
-					const ULONG ulPlayer = pByteStream->ReadByte();
-					const int deaths = pByteStream->ReadVariable();
-
-					if ( PLAYER_IsValidPlayer( ulPlayer ) == false ) 
-						break;
-
-					players[ulPlayer].ulDeathCount = deaths;
-				}
-				break;
-
 			case SVC2_SRP_USER_START_AUTHENTICATION:
 			case SVC2_SRP_USER_PROCESS_CHALLENGE:
 			case SVC2_SRP_USER_VERIFY_SESSION:
@@ -4208,6 +4196,14 @@ void ServerCommands::SetPlayerPoints::Execute()
 void ServerCommands::SetPlayerWins::Execute()
 {
 	player->ulWins = wins;
+	HUD_Refresh( );
+}
+
+//*****************************************************************************
+//
+void ServerCommands::SetPlayerDeaths::Execute()
+{
+	player->ulDeathCount = deaths;
 	HUD_Refresh( );
 }
 

@@ -611,9 +611,9 @@ void SERVERCOMMANDS_SetPlayerDeaths( ULONG ulPlayer, ULONG ulPlayerExtra, Server
 	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
 		return;
 
-	NetCommand command( SVC2_SETPLAYERDEATHS );
-	command.addByte( ulPlayer );
-	command.addVariable( players[ulPlayer].ulDeathCount );
+	ServerCommands::SetPlayerDeaths command;
+	command.SetPlayer( &players[ulPlayer] );
+	command.SetDeaths( players[ulPlayer].ulDeathCount );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 
