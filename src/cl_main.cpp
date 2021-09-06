@@ -4221,37 +4221,30 @@ void ServerCommands::SetPlayerKillCount::Execute()
 
 //*****************************************************************************
 //
-void ServerCommands::SetPlayerChatStatus::Execute()
+void ServerCommands::SetPlayerStatus::Execute()
 {
-	player->bChatting = chatting;
-}
+	switch ( type )
+	{
+		case PLAYERSTATUS_CHATTING:
+			player->bChatting = value;
+			break;
 
-//*****************************************************************************
-//
-void ServerCommands::SetPlayerConsoleStatus::Execute()
-{
-	player->bInConsole = inConsole;
-}
+		case PLAYERSTATUS_INCONSOLE:
+			player->bInConsole = value;
+			break;
 
-//*****************************************************************************
-//
-void ServerCommands::SetPlayerMenuStatus::Execute()
-{
-	player->bInMenu = inMenu;
-}
+		case PLAYERSTATUS_INMENU:
+			player->bInMenu = value;
+			break;
 
-//*****************************************************************************
-//
-void ServerCommands::SetPlayerLaggingStatus::Execute()
-{
-	player->bLagging = lagging;
-}
+		case PLAYERSTATUS_LAGGING:
+			player->bLagging = value;
+			break;
 
-//*****************************************************************************
-//
-void ServerCommands::SetPlayerReadyToGoOnStatus::Execute()
-{
-	player->bReadyToGoOn = readyToGoOn;
+		case PLAYERSTATUS_READYTOGOON:
+			player->bReadyToGoOn = value;
+			break;
+	}
 }
 
 //*****************************************************************************

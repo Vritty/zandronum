@@ -1036,7 +1036,7 @@ void SERVER_CheckTimeouts( void )
 			if ( players[ulIdx].bLagging == false )
 			{
 				players[ulIdx].bLagging = true;
-				SERVERCOMMANDS_SetPlayerLaggingStatus( ulIdx );
+				SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_LAGGING );
 			}
 		}
 		else
@@ -1045,7 +1045,7 @@ void SERVER_CheckTimeouts( void )
 			if ( players[ulIdx].bLagging )
 			{
 				players[ulIdx].bLagging = false;
-				SERVERCOMMANDS_SetPlayerLaggingStatus( ulIdx );
+				SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_LAGGING );
 			}
 		}
 	}
@@ -2426,9 +2426,9 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		SERVERCOMMANDS_SetPlayerLivesLeft( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [BB] Also tell this player's chat / console status to the new client.
-		SERVERCOMMANDS_SetPlayerChatStatus( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
-		SERVERCOMMANDS_SetPlayerConsoleStatus( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
-		SERVERCOMMANDS_SetPlayerMenuStatus( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_CHATTING, ulClient, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_INCONSOLE, ulClient, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_INMENU, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [BB] If this player has any cheats, also inform the new client.
 		if( players[ulIdx].cheats )
@@ -4643,7 +4643,7 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			players[g_lCurrentClient].bChatting = true;
 
 			// Tell clients about the change in this player's chatting status.
-			SERVERCOMMANDS_SetPlayerChatStatus( g_lCurrentClient );
+			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_CHATTING );
 		}
 		else if ( lCommand == CLC_ENDCHAT )
 		{
@@ -4651,33 +4651,33 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			players[g_lCurrentClient].bChatting = false;
 
 			// Tell clients about the change in this player's chatting status.
-			SERVERCOMMANDS_SetPlayerChatStatus( g_lCurrentClient );
+			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_CHATTING );
 		}
 		else if ( lCommand == CLC_ENTERCONSOLE )
 		{
 
 			// Player has entered the console - give him an icon.
 			players[g_lCurrentClient].bInConsole = true;
-			SERVERCOMMANDS_SetPlayerConsoleStatus( g_lCurrentClient );
+			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INCONSOLE );
 		}
 		else if ( lCommand == CLC_EXITCONSOLE )
 		{
 			// Player has left the console - remove his icon.
 			players[g_lCurrentClient].bInConsole = false;
-			SERVERCOMMANDS_SetPlayerConsoleStatus( g_lCurrentClient );
+			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INCONSOLE );
 		}
 		else if ( lCommand == CLC_ENTERMENU )
 		{
 
 			// Player has entered the console - give him an icon.
 			players[g_lCurrentClient].bInMenu = true;
-			SERVERCOMMANDS_SetPlayerMenuStatus( g_lCurrentClient );
+			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INMENU );
 		}
 		else if ( lCommand == CLC_EXITMENU )
 		{
 			// Player has left the console - remove his icon.
 			players[g_lCurrentClient].bInMenu = false;
-			SERVERCOMMANDS_SetPlayerMenuStatus( g_lCurrentClient );
+			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INMENU );
 		}
 		return false;
 	case CLC_IGNORE:
@@ -4772,7 +4772,7 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		players[g_lCurrentClient].bReadyToGoOn = true;
 
 		if ( SERVER_IsEveryoneReadyToGoOn( ) == false )
-			SERVERCOMMANDS_SetPlayerReadyToGoOnStatus( g_lCurrentClient );
+			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_READYTOGOON );
 
 		return false;
 	case CLC_CHANGEDISPLAYPLAYER:
@@ -5734,19 +5734,19 @@ bool ClientMoveCommand::process( const ULONG ulClient ) const
 		if ( pPlayer->bChatting )
 		{
 			pPlayer->bChatting = false;
-			SERVERCOMMANDS_SetPlayerChatStatus( ulClient );
+			SERVERCOMMANDS_SetPlayerStatus( ulClient, PLAYERSTATUS_CHATTING );
 		}
 
 		if ( pPlayer->bInConsole )
 		{
 			pPlayer->bInConsole = false;
-			SERVERCOMMANDS_SetPlayerConsoleStatus( ulClient );
+			SERVERCOMMANDS_SetPlayerStatus( ulClient, PLAYERSTATUS_INCONSOLE );
 		}
 
 		if ( pPlayer->bInMenu )
 		{
 			pPlayer->bInMenu = false;
-			SERVERCOMMANDS_SetPlayerMenuStatus( ulClient );
+			SERVERCOMMANDS_SetPlayerStatus( ulClient, PLAYERSTATUS_INMENU );
 		}
 	}
 

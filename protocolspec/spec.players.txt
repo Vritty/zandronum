@@ -111,29 +111,11 @@ Command SetPlayerKillCount
 	Variable killCount
 EndCommand
 
-Command SetPlayerChatStatus
+Command SetPlayerStatus
 	Player player
-	Bool chatting
-EndCommand
-
-Command SetPlayerConsoleStatus
-	Player player
-	Bool inConsole
-EndCommand
-
-Command SetPlayerMenuStatus
-	Player player
-	Bool inMenu
-EndCommand
-
-Command SetPlayerLaggingStatus
-	Player player
-	Bool lagging
-EndCommand
-
-Command SetPlayerReadyToGoOnStatus
-	Player player
-	Bool readyToGoOn
+	# [AK] Ideally, we want to fit the status we're updating and its value into a single byte.
+	ShortByte<7> type
+	Bool value
 EndCommand
 
 Command SetPlayerTeam

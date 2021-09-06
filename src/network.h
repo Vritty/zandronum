@@ -207,6 +207,16 @@ enum ActorScaleFlag
 	ACTORSCALE_Y = 2
 };
 
+// [AK] What kind of player status are we trying to update?
+enum PlayerStatusType
+{
+	PLAYERSTATUS_CHATTING,
+	PLAYERSTATUS_INCONSOLE,
+	PLAYERSTATUS_INMENU,
+	PLAYERSTATUS_LAGGING,
+	PLAYERSTATUS_READYTOGOON,
+};
+
 // [AK] If we're updating the map rotation then what exactly are we doing?
 enum UpdateMapRotationType
 {
