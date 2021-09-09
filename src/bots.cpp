@@ -1973,6 +1973,9 @@ CSkullBot::CSkullBot( char *pszName, char *pszTeamName, ULONG ulPlayerNum )
 	if ( m_pPlayer->bSpectating )
 		PostEvent( BOTEVENT_SPECTATING );
 
+	// [AK] The bot has successfully joined the game, trigger an event script to indicate that.
+	GAMEMODE_HandleEvent( GAMEEVENT_PLAYERCONNECT, NULL, ulPlayerNum );
+
 	// Refresh the HUD since a new player is now here (this affects the number of players in the game).
 	HUD_Refresh( );
 }

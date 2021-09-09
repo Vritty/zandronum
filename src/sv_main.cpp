@@ -1616,6 +1616,10 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 
 	// [RC] Clients may wish to ignore this new player.
 	SERVERCOMMANDS_PotentiallyIgnorePlayer( g_lCurrentClient );
+
+	// [AK] Trigger an event script indicating that the client has connected to the server.
+	// Also indicate if they had previously connected to the server.
+	GAMEMODE_HandleEvent( GAMEEVENT_PLAYERCONNECT, NULL, g_lCurrentClient, !!pSavedInfo );
 }
 
 //*****************************************************************************

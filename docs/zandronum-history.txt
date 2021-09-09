@@ -56,6 +56,7 @@
 +	- Added CVars that customize how the weapon bobs, sways, and offsets based on the player's pitch, or whether or not to bob the screen itself while leaving the weapon bob unaffected. [Kaminsky]
 +	- Added the GAMEMODE flag DONTPRINTPLAYERSLEFT to prevent printing the "waiting for players" or "x allies/opponents left" message at the bottom of the screen. [Kaminsky]
 +	- Added all of the text colors from "New Text Colors", originally made by FuzzballFox. [Kaminsky]
++	- Added the EVENT script type: GAMEEVENT_PLAYERCONNECT, indicating when a client or bot joins the server. [Kaminsky]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]
