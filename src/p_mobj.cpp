@@ -5178,6 +5178,19 @@ void AActor::PostBeginPlay ()
 	}
 	PrevAngle = angle;
 	flags7 |= MF7_HANDLENODELAY;
+
+	// [AK] Trigger an event script indicating that the actor has spawned. We
+	// shouldn't need to execute this for players since we already have special
+	// script types like ENTER, RETURN, and RESPAWN.
+	if (( player == NULL ) && (( STFlags & STFL_NOSPAWNEVENTSCRIPT ) == false ))
+	{
+		bool bNotImportant = (( flags & ( MF_NOBLOCKMAP|MF_NOSECTOR )) || IsKindOf( RUNTIME_CLASS( AHexenArmor )));
+
+		// [AK] If we want to force GAMEEVENT_ACTOR_SPAWNED on every actor, then at least ignore 
+		// the less imporant actors unless they have the USESPAWNEVENTSCRIPT flag enabled.
+		if (( STFlags & STFL_USESPAWNEVENTSCRIPT ) || (( gameinfo.bForceSpawnEventScripts ) && ( bNotImportant == false )))
+			GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_SPAWNED, this );
+	}
 }
 
 void AActor::MarkPrecacheSounds() const

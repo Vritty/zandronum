@@ -145,6 +145,9 @@ struct gameinfo_t
 	bool norandomplayerclass;
 	bool forcekillscripts;
 
+	// [AK] Forces actors to trigger GAMEEVENT_ACTOR_SPAWNED unless they have STFL_NOSPAWNEVENTSCRIPT enabled.
+	bool bForceSpawnEventScripts;
+
 	const char *GetFinalePage(unsigned int num) const;
 };
 

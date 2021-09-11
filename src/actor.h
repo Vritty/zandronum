@@ -431,6 +431,10 @@ enum
 	// [BB] Hidden by HideOrDestroyIfSafe(), will be restored when the map is reset.
 	STFL_HIDDEN_INSTEAD_OF_DESTROYED		= 0x00800000,
 
+	// [AK] This actor may (not) trigger GAMEEVENT_ACTOR_SPAWNED upon spawning.
+	STFL_USESPAWNEVENTSCRIPT	= 0x01000000,
+	STFL_NOSPAWNEVENTSCRIPT		= 0x02000000,
+
 // More flags for Skulltag... these having to do with the network.
 
 	// This object does not have a network ID.

@@ -266,6 +266,10 @@ static FFlagDef ActorFlags[]=
 	DEFINE_FLAG(STFL, EXPLODEONDEATH, AActor, STFlags),
 	DEFINE_FLAG(STFL, DONTIDENTIFYTARGET, AActor, STFlags), // [CK]
 
+	// [AK] Enables/disables GAMEEVENT_ACTOR_SPAWNED for the actor.
+	DEFINE_FLAG(STFL, USESPAWNEVENTSCRIPT, AActor, STFlags),
+	DEFINE_FLAG(STFL, NOSPAWNEVENTSCRIPT, AActor, STFlags),
+
 	// [BB] New DECORATE network related flag defines here.
 	DEFINE_FLAG(NETFL, NONETID, AActor, NetworkFlags),
 	DEFINE_FLAG(NETFL, ALLOWCLIENTSPAWN, AActor, NetworkFlags),
