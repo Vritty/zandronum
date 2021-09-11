@@ -115,6 +115,7 @@ typedef enum
 	GAMEEVENT_CHAT,
 	GAMEEVENT_PLAYERCONNECT,
 	GAMEEVENT_ACTOR_SPAWNED,
+	GAMEEVENT_ACTOR_DAMAGED,
 } GAMEEVENT_e;
 
 //*****************************************************************************

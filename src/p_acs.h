@@ -1074,6 +1074,12 @@ protected:
 	int				InModuleScriptNumber;
 	FString			activefontname; // [TP]
 
+	// [AK] Pointers to the source, inflictor, and target actors that triggered a GAMEEVENT_ACTOR_DAMAGED event.
+	// In all other cases, these pointers should be equal to NULL.
+	TObjPtr<AActor>	pDamageSource;
+	TObjPtr<AActor> pDamageInflictor;
+	TObjPtr<AActor> pDamageTarget;
+
 	void Link ();
 	void Unlink ();
 	void PutLast ();
@@ -1115,6 +1121,8 @@ private:
 	friend class ServerCommands::ReplaceTextures;
 	// [AK] We need to access protected variables from this class when we tell the clients to print a HUD message.
 	friend void SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags );
+	// [AK] If the current running script is a GAMEEVENT_ACTOR_DAMAGED event, this will return a pointer to the source, inflictor, or target actor.
+	friend AActor *ACS_GetScriptDamagePointers( int pointer );
 };
 
 class DACSThinker : public DThinker

@@ -306,8 +306,9 @@ inline int uallong(const int &foo)
 
 // [BC] When true, any console commands/line specials were executed via the ConsoleCommand p-code.
 static	bool	g_bCalledFromConsoleCommand = false;
-// [AK] When true, any action or line specials were executed from an ACS script.
-static	bool	g_bCalledFromACS = false;
+// [AK] A pointer to the script currently being run. When it's not equal to NULL, it means that
+// any action or line specials are being executed inside an ACS script.
+static	DLevelScript	*g_pCurrentScript = NULL;
 
 
 //============================================================================
@@ -7808,7 +7809,7 @@ int DLevelScript::RunScript ()
 	int temp;
 
 	// [AK] Any action or line specials activated at this point are done from ACS so indicate that.
-	g_bCalledFromACS = true;
+	g_pCurrentScript = this;
 
 	while (state == SCRIPT_Running)
 	{
@@ -11597,7 +11598,7 @@ scriptwait:
 	}
 
 	// [AK] We're done running this script so any action or line specials activated now aren't done in ACS.
-	g_bCalledFromACS = false;
+	g_pCurrentScript = NULL;
 
 	// [BB] Stop the net traffic measurement and add the result to this script's traffic.
 	NETTRAFFIC_AddACSScriptTraffic ( script, NETWORK_StopTrafficMeasurement ( ) );
@@ -11653,6 +11654,21 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, const ScriptPtr
 	// other way.
 	// [TP] We need to store this as activefontname instead.
 	activefontname = "SmallFont";
+
+	// [AK] Check if this is an event script triggered by GAMEEVENT_ACTOR_DAMAGED. This is
+	// where we initialize the script's target, source, and inflictor pointers by using the
+	// activator as the target, and the activator's own master and target, which are the
+	// source and inflictor respectively.
+	if (( who != NULL ) && ( code->Type == SCRIPT_Event ) && ( args[0] == GAMEEVENT_ACTOR_DAMAGED ))
+	{
+		pDamageTarget = who;
+		pDamageSource = who->master;
+		pDamageInflictor = who->target;
+	}
+	else
+	{
+		pDamageTarget = pDamageSource = pDamageInflictor = NULL;
+	}
 
 	hudwidth = hudheight = 0;
 	ClipRectLeft = ClipRectTop = ClipRectWidth = ClipRectHeight = WrapWidth = 0;
@@ -12185,7 +12201,7 @@ bool ACS_IsCalledFromConsoleCommand( void )
 //
 bool ACS_IsCalledFromScript( void )
 {
-	return ( g_bCalledFromACS );
+	return ( g_pCurrentScript != NULL );
 }
 
 //*****************************************************************************
@@ -12240,6 +12256,28 @@ bool ACS_ExistsScript( int script )
 {
 	FBehavior* module = NULL;
 	return FBehavior::StaticFindScript( script, module ) != NULL;
+}
+
+//*****************************************************************************
+//
+AActor *ACS_GetScriptDamagePointers( int pointer )
+{
+	if ( g_pCurrentScript )
+	{
+		switch ( pointer )
+		{
+			case AAPTR_DAMAGE_SOURCE:
+				return g_pCurrentScript->pDamageSource;
+
+			case AAPTR_DAMAGE_INFLICTOR:
+				return g_pCurrentScript->pDamageInflictor;
+
+			case AAPTR_DAMAGE_TARGET:
+				return g_pCurrentScript->pDamageTarget;
+		}
+	}
+
+	return NULL;
 }
 
 //*****************************************************************************

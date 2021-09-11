@@ -1663,6 +1663,26 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 		source->player->ulUnrewardedDamageDealt += MIN( (int)lOldTargetHealth, damage );
 	}
 
+	// [AK] Trigger an event script indicating that the target actor has taken damage, if we can.
+	if ((( target->STFlags & STFL_NODAMAGEEVENTSCRIPT ) == false ) && (( target->STFlags & STFL_USEDAMAGEEVENTSCRIPT ) || ( gameinfo.bForceDamageEventScripts )))
+	{
+		// [AK] We somehow need to pass the source and inflictor actor pointers into the script
+		// itself. A simple way to do this is temporarily changing the target's pointers to the
+		// source and inflictor, which we'll then use to initialize AAPTR_DAMAGE_SOURCE and
+		// AAPTR_DAMAGE_INFLICTOR for the script.
+		// The source actor is the activator, which we'll use to initialize AAPTR_DAMAGE_TARGET.
+		AActor *tempMaster = target->master;
+		AActor *tempTarget = target->target;
+		target->master = source;
+		target->target = inflictor;
+
+		GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, target, damage );
+
+		// [AK] Restore the source actor's old pointers.
+		target->master = tempMaster;
+		target->target = tempTarget;
+	}
+
 	// [BC] Tell clients that this thing was damaged.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{

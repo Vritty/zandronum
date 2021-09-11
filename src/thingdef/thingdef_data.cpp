@@ -270,6 +270,10 @@ static FFlagDef ActorFlags[]=
 	DEFINE_FLAG(STFL, USESPAWNEVENTSCRIPT, AActor, STFlags),
 	DEFINE_FLAG(STFL, NOSPAWNEVENTSCRIPT, AActor, STFlags),
 
+	// [AK] Enables/disables GAMEEVENT_ACTOR_DAMAGED for the actor.
+	DEFINE_FLAG(STFL, USEDAMAGEEVENTSCRIPT, AActor, STFlags),
+	DEFINE_FLAG(STFL, NODAMAGEEVENTSCRIPT, AActor, STFlags),
+
 	// [BB] New DECORATE network related flag defines here.
 	DEFINE_FLAG(NETFL, NONETID, AActor, NetworkFlags),
 	DEFINE_FLAG(NETFL, ALLOWCLIENTSPAWN, AActor, NetworkFlags),

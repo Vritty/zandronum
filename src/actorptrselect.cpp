@@ -2,6 +2,8 @@
 #include "actor.h"
 #include "d_player.h"
 #include "p_pspr.h"
+// [AK] New #includes.
+#include "p_acs.h"
 
 //==========================================================================
 //
@@ -32,6 +34,12 @@
 
 AActor *COPY_AAPTR(AActor *origin, int selector)
 {
+	// [AK] Check if we want to return the source, inflictor, or target actor pointers, which are only
+	// valid in ACS EVENT scripts in which GAMEEVENT_ACTOR_DAMAGED is the event type. In all other
+	// cases, a NULL pointer should always be returned.
+	if ( ACS_IsCalledFromScript( ) && ( selector & AAPTR_DAMAGE_SELECTORS ))
+		return ACS_GetScriptDamagePointers( selector & AAPTR_DAMAGE_SELECTORS );
+
 	if (origin)
 	{
 		if (origin->player)

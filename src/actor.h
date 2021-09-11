@@ -435,6 +435,10 @@ enum
 	STFL_USESPAWNEVENTSCRIPT	= 0x01000000,
 	STFL_NOSPAWNEVENTSCRIPT		= 0x02000000,
 
+	// [AK] This actor may (not) trigger the GAMEEVENT_ACTOR_DAMAGED event type.
+	STFL_USEDAMAGEEVENTSCRIPT	= 0x04000000,
+	STFL_NODAMAGEEVENTSCRIPT	= 0x08000000,
+
 // More flags for Skulltag... these having to do with the network.
 
 	// This object does not have a network ID.
