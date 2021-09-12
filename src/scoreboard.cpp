@@ -536,22 +536,22 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 
 	g_ulCurYPos += BigFont->GetHeight( ) + 6;
 
-	// [AK] Draw the name of the server if we're in an online game.
-	if ( NETWORK_InClientMode( ))
-	{
-		FString hostName = sv_hostname.GetGenericRep( CVAR_String ).String;
-		V_ColorizeString( hostName );
-		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, hostName, g_bScale );
-		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
-	}
-
-	// [AK] Draw the name of the current game mode.
-	HUD_DrawTextCentered( SmallFont, CR_GOLD, g_ulCurYPos, GAMEMODE_GetCurrentName( ), g_bScale );
-	g_ulCurYPos += SmallFont->GetHeight( ) + 1;
-
-	// Draw the time, frags, points, or kills we have left until the level ends.
 	if ( gamestate == GS_LEVEL )
 	{
+		// [AK] Draw the name of the server if we're in an online game.
+		if ( NETWORK_InClientMode( ))
+		{
+			FString hostName = sv_hostname.GetGenericRep( CVAR_String ).String;
+			V_ColorizeString( hostName );
+			HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, hostName, g_bScale );
+			g_ulCurYPos += SmallFont->GetHeight( ) + 1;
+		}
+
+		// [AK] Draw the name of the current game mode.
+		HUD_DrawTextCentered( SmallFont, CR_GOLD, g_ulCurYPos, GAMEMODE_GetCurrentName( ), g_bScale );
+		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
+
+		// Draw the time, frags, points, or kills we have left until the level ends.
 		// Generate the limit strings.
 		std::list<FString> lines;
 		SCOREBOARD_BuildLimitStrings( lines, true );
