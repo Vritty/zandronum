@@ -632,6 +632,8 @@ CVAR (Flag, sv_nounlaggedbfgtracers, zadmflags, ZADF_NOUNLAGGED_BFG_TRACERS);
 CVAR (Flag, sv_nodoorclose, zadmflags, ZADF_NODOORCLOSE);
 CVAR (Flag, sv_forcesoftwarepitchlimits, zadmflags, ZADF_FORCE_SOFTWARE_PITCH_LIMITS);
 CVAR (Flag, sv_noprivatechat, zadmflags, ZADF_NO_PRIVATE_CHAT);
+CVAR (Flag, sv_shootthroughallies, zadmflags, ZADF_SHOOT_THROUGH_ALLIES);
+CVAR (Flag, sv_dontpushallies, zadmflags, ZADF_DONT_PUSH_ALLIES);
 
 // Old name kept for compatibility
 CVAR (Flag, sv_forcegldefaults,		zadmflags, ZADF_FORCE_VIDEO_DEFAULTS);

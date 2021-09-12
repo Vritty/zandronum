@@ -1392,11 +1392,13 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 	// Push the target unless the source's weapon's kickback is 0.
 	// (i.e. Gauntlets/Chainsaw)
 	// [BB] The server handles this.
+	// [AK] Don't push teammates if ZADF_DONT_PUSH_ALLIES is enabled.
 	if (inflictor && inflictor != target	// [RH] Not if hurting own self
 		&& !(target->flags & MF_NOCLIP)
 		&& !(inflictor->flags2 & MF2_NODMGTHRUST)
 		&& !(flags & DMG_THRUSTLESS)
 		&& (source == NULL || source->player == NULL || !(source->flags2 & MF2_NODMGTHRUST))
+		&& ( PLAYER_CannotAffectAllyWith( source, target, ZADF_DONT_PUSH_ALLIES ) == false )
 		&& ( NETWORK_InClientMode() == false ) )
 	{
 		int kickback;
@@ -3419,6 +3421,26 @@ bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 	}
 
 	return true;
+}
+
+//*****************************************************************************
+//
+bool PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, int flag )
+{
+	// [AK] Check if we have the corresponding zadmflag enabled.
+	if (( zadmflags & flag ) == false )
+		return false;
+
+	// [AK] If the first actor isn't a player, return false.
+	if (( pActor1 == NULL ) || ( pActor1->player == NULL ))
+		return false;
+
+	// [AK] Make sure the other actor is another player and a teammate of the first actor. Otherwise,
+	// their attacks should still hit and push each other.
+	if (( pActor1 != pActor2 ) && ( pActor1->IsTeammate( pActor2 )) && ( pActor2->player ))
+		return true;
+
+	return false;
 }
 
 CCMD (kill)

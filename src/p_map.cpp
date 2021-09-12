@@ -1084,6 +1084,11 @@ bool PIT_CheckThing(AActor *thing, FCheckPosition &tm)
 			&& (tm.thing->target->GetSpecies() == thing->GetSpecies()))
 			return true;
 
+		// [AK] Check if this projectile was shot by a player and can pass through their
+		// teammates if ZADF_SHOOT_THROUGH_ALLIES is enabled.
+		if ( PLAYER_CannotAffectAllyWith( tm.thing->target, thing, ZADF_SHOOT_THROUGH_ALLIES ))
+			return true;
+
 		// Check for rippers passing through corpses
 		if ((thing->flags & MF_CORPSE) && (tm.thing->flags2 & MF2_RIP) && !(thing->flags & MF_SHOOTABLE))
 		{
@@ -4133,6 +4138,12 @@ static ETraceStatus CheckForActor(FTraceResults &res, void *userdata)
 		return TRACE_Skip;
 	}
 
+	// [AK] Check if this player can shoot through their teammates if ZADF_SHOOT_THROUGH_ALLIES is enabled.
+	if ( PLAYER_CannotAffectAllyWith( data->Caller, res.Actor, ZADF_SHOOT_THROUGH_ALLIES ))
+	{
+		return TRACE_Skip;
+	}
+
 	return TRACE_Stop;
 }
 
@@ -5612,6 +5623,11 @@ void P_RadiusAttack(AActor *bombspot, AActor *bombsource, int bombdamage, int bo
 			((bombsource->flags6 & MF6_DONTHARMSPECIES) && (thing->GetSpecies() == bombsource->GetSpecies()))
 			)
 			)	continue;
+
+		// [AK] Don't push this player if ZADF_DONT_PUSH_ALLIES is enabled and the
+		// other player who caused the explosion is their teammate.
+		if ( PLAYER_CannotAffectAllyWith( bombsource, thing, ZADF_DONT_PUSH_ALLIES ))
+			continue;
 
 		// Barrels always use the original code, since this makes
 		// them far too "active." BossBrains also use the old code

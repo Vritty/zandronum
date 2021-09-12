@@ -386,6 +386,12 @@ enum
 
 	// [AK] No private messaging allowed on the server.
 	ZADF_NO_PRIVATE_CHAT = 1 << 21,
+
+	// [AK] Allows players to fire hitscans and projectiles through teammates.
+	ZADF_SHOOT_THROUGH_ALLIES = 1 << 22,
+
+	// [AK] Players aren't pushed by attacks caused by their teammates (e.g. BFG tracers).
+	ZADF_DONT_PUSH_ALLIES = 1 << 23,
 };
 
 // [RH] Compatibility flags.
