@@ -468,7 +468,7 @@ void MEDAL_RenderAllMedalsFullscreen( player_t *pPlayer )
 
 	// Start by drawing "MEDALS" 4 pixels from the top.
 	HUD_DrawTextCentered( BigFont, gameinfo.gametype == GAME_Doom ? CR_RED : CR_UNTRANSLATED, ulCurYPos, "MEDALS", g_bScale );
-	ulCurYPos += 42;
+	ulCurYPos += BigFont->GetHeight( ) + 30;
 
 	ULONG ulNumMedal = 0;
 	ULONG ulMaxMedalHeight = 0;
@@ -516,7 +516,7 @@ void MEDAL_RenderAllMedalsFullscreen( player_t *pPlayer )
 	else
 		string += " earned the following medals:";
 
-	HUD_DrawTextCentered( SmallFont, CR_WHITE, 26, string, g_bScale );
+	HUD_DrawTextCentered( SmallFont, CR_WHITE, BigFont->GetHeight( ) + 14, string, g_bScale );
 }
 
 //*****************************************************************************

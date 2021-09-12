@@ -534,7 +534,7 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 	if ( gamestate == GS_LEVEL )
 		HUD_DrawTextCentered( BigFont, CR_RED, g_ulCurYPos, "RANKINGS", g_bScale );
 
-	g_ulCurYPos += 18;
+	g_ulCurYPos += BigFont->GetHeight( ) + 6;
 
 	// [AK] Draw the name of the server if we're in an online game.
 	if ( NETWORK_InClientMode( ))
@@ -542,12 +542,12 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 		FString hostName = sv_hostname.GetGenericRep( CVAR_String ).String;
 		V_ColorizeString( hostName );
 		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, hostName, g_bScale );
-		g_ulCurYPos += 10;
+		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 	}
 
 	// [AK] Draw the name of the current game mode.
 	HUD_DrawTextCentered( SmallFont, CR_GOLD, g_ulCurYPos, GAMEMODE_GetCurrentName( ), g_bScale );
-	g_ulCurYPos += 10;
+	g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 
 	// Draw the time, frags, points, or kills we have left until the level ends.
 	if ( gamestate == GS_LEVEL )
@@ -560,7 +560,7 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 		for ( std::list<FString>::iterator i = lines.begin( ); i != lines.end( ); i++ )
 		{
 			HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, *i, g_bScale );
-			g_ulCurYPos += 10;
+			g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 		}
 	}
 
@@ -568,16 +568,16 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
 	{
 		if ( gamestate != GS_LEVEL )
-			g_ulCurYPos += 10;
+			g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 
 		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, HUD_BuildPointString( ), g_bScale );
-		g_ulCurYPos += 10;
+		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 	}
 	// Draw my rank and my frags, points, etc. Don't draw it if we're in the intermission.
 	else if (( gamestate == GS_LEVEL ) && ( HUD_ShouldDrawRank( ulPlayer )))
 	{
 		HUD_DrawTextCentered( SmallFont, CR_GREY, g_ulCurYPos, HUD_BuildPlaceString( ulPlayer ), g_bScale );
-		g_ulCurYPos += 10;
+		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 	}
 
 	// [JS] Intermission countdown display.
@@ -593,7 +593,7 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 
 		countdownMessage.AppendFormat( " in %d seconds", MAX( static_cast<int>( WI_GetStopWatch( )) / TICRATE + 1, 1 ));
 		HUD_DrawTextCentered( SmallFont, CR_GREEN, g_ulCurYPos, countdownMessage, g_bScale );
-		g_ulCurYPos += 10;
+		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 	}
 }
 
@@ -1000,12 +1000,12 @@ static void scoreboard_DoRankingListPass( ULONG ulPlayer, LONG lSpectators, LONG
 			continue;
 
 		scoreboard_RenderIndividualPlayer( ulPlayer, g_iSortedPlayers[ulIdx] );
-		g_ulCurYPos += 10;
+		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 		ulNumPlayers++;
 	}
 
 	if ( ulNumPlayers )
-		g_ulCurYPos += 10;
+		g_ulCurYPos += SmallFont->GetHeight( ) + 1;
 }
 
 //*****************************************************************************
