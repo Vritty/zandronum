@@ -1032,11 +1032,17 @@ void GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const i
 	if ( NETWORK_InClientMode() )
 		return;
 
+	// [AK] Allow events that are triggered by an actor spawning or
+	// taking damage to be executed immediately, in case any of the
+	// actor pointers that were responsible for calling the event
+	// become NULL after one tic.
+	bool bRunNow = ( Event == GAMEEVENT_ACTOR_SPAWNED || Event == GAMEEVENT_ACTOR_DAMAGED );
+
 	// [BB] The activator of the event activates the event script.
 	// The first argument is the type, e.g. GAMEEVENT_PLAYERFRAGS,
 	// the second and third are specific to the event, e.g. the second is the number of the fragged player.
 	// The third argument will be zero if it isn't used in the script.
-	FBehavior::StaticStartTypedScripts( SCRIPT_Event, pActivator, true, Event, false, false, DataOne, DataTwo );
+	FBehavior::StaticStartTypedScripts( SCRIPT_Event, pActivator, true, Event, bRunNow, false, DataOne, DataTwo );
 }
 
 //*****************************************************************************
