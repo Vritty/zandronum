@@ -168,6 +168,11 @@ public:
 	// [CW] Fades for when you are being damaged.
 	PalEntry DamageFade;
 
+	// [AK] How much the player's angle and pitch changed across a single tic. These are
+	// used to control how much weapon sprites sway on the local player's screen.
+	fixed_t		AngleDelta;
+	fixed_t		PitchDelta;
+
 	bool UpdateWaterLevel (fixed_t oldz, bool splash);
 	bool ResetAirSupply (bool playgasp = true);
 

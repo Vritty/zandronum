@@ -3816,6 +3816,9 @@ void ServerCommands::MovePlayer::Execute()
 	// [BB] But don't just set the position, but also properly set floorz and ceilingz, etc.
 	CLIENT_MoveThing( player->mo, x, y, z );
 
+	// [AK] Calculate how much this player's angle changed.
+	player->mo->AngleDelta = angle - player->mo->angle;
+
 	// Set the player's angle.
 	player->mo->angle = angle;
 
@@ -4445,6 +4448,10 @@ void ServerCommands::UpdatePlayerExtraData::Execute()
 		if (pitch > ANGLE_1*56)
 			pitch = ANGLE_1*56;
 	}
+
+	// [AK] Calculate how much this player's pitch changed.
+	player->mo->PitchDelta = pitch - player->mo->pitch;
+
 	player->mo->pitch = pitch;
 	player->mo->waterlevel = waterLevel;
 	// [BB] The attack buttons are now already set in *_MovePlayer, so additionally setting

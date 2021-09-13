@@ -2840,6 +2840,9 @@ void P_MovePlayer (player_t *player)
 	// [Leo] cl_spectatormove is now applied here to avoid code duplication.
 	fixed_t spectatormove = FLOAT2FIXED(cl_spectatormove);
 
+	// [AK] Save the player's angle before we update it.
+	fixed_t oldAngle = mo->angle;
+
 	// [RH] 180-degree turn overrides all other yaws
 	if (player->turnticks)
 	{
@@ -2850,6 +2853,9 @@ void P_MovePlayer (player_t *player)
 	{
 		mo->angle += cmd->ucmd.yaw << 16;
 	}
+
+	// [AK] Calculate how much the player's angle changed.
+	mo->AngleDelta = mo->angle - oldAngle;
 
 	// [TP] Allow spectators to move freely even if the game is suspended.
 	if ( GAME_GetEndLevelDelay( ) && ( player->bSpectating == false ))
@@ -3664,6 +3670,9 @@ void P_PlayerThink (player_t *player)
 		player->mo->MorphPlayerThink ();
 	}
 
+	// [AK] Save the player's pitch before we update it.
+	fixed_t oldPlayerPitch = player->mo->pitch;
+
 	// [Leo] Spectators shouldn't be limited by the server settings.
 	// [RH] Look up/down stuff
 	if (!level.IsFreelookAllowed() && player->bSpectating == false)
@@ -3731,6 +3740,9 @@ void P_PlayerThink (player_t *player)
 			}
 		}
 	}
+
+	// [AK] Calculate how much the player's pitch changed.
+	player->mo->PitchDelta = player->mo->pitch - oldPlayerPitch;
 
 	// [RH] Check for fast turn around
 	if (cmd->ucmd.buttons & BT_TURN180 && !(player->oldbuttons & BT_TURN180))
