@@ -207,6 +207,14 @@ enum ActorScaleFlag
 	ACTORSCALE_Y = 2
 };
 
+// [AK] What kind of translation are we sending to clients?
+enum CreateTranslationType
+{
+	CREATETRANSLATION_PALETTE,
+	CREATETRANSLATION_RGB,
+	CREATETRANSLATION_DESATURATED,
+};
+
 // [AK] What kind of player status are we trying to update?
 enum PlayerStatusType
 {

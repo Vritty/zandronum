@@ -287,7 +287,7 @@ static	void	client_SetWallScroller( BYTESTREAM_s *pByteStream );
 static	void	client_DoFlashFader( BYTESTREAM_s *pByteStream );
 static	void	client_GenericCheat( BYTESTREAM_s *pByteStream );
 static	void	client_SetCameraToTexture( BYTESTREAM_s *pByteStream );
-static	void	client_CreateTranslation( BYTESTREAM_s *pByteStream, bool bIsTypeTwo );
+static	void	client_CreateTranslation( BYTESTREAM_s *pByteStream );
 static	void	client_DoPusher( BYTESTREAM_s *pByteStream );
 static	void	client_AdjustPusher( BYTESTREAM_s *pByteStream );
 
@@ -1891,11 +1891,7 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		break;
 	case SVC_CREATETRANSLATION:
 
-		client_CreateTranslation( pByteStream, false );
-		break;
-	case SVC_CREATETRANSLATION2:
-
-		client_CreateTranslation( pByteStream, true );
+		client_CreateTranslation( pByteStream );
 		break;
 
 	case SVC_DOPUSHER:
@@ -9119,7 +9115,7 @@ static void client_SetCameraToTexture( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
-static void client_CreateTranslation( BYTESTREAM_s *pByteStream, bool bIsTypeTwo )
+static void client_CreateTranslation( BYTESTREAM_s *pByteStream )
 {
 	EDITEDTRANSLATION_s	Translation;
 	FRemapTable	*pTranslation;
@@ -9127,42 +9123,40 @@ static void client_CreateTranslation( BYTESTREAM_s *pByteStream, bool bIsTypeTwo
 	// Read in which translation is being created.
 	Translation.ulIdx = pByteStream->ReadShort();
 
-	const bool bIsEdited = !!pByteStream->ReadByte();
+	// [AK] Read in the boolean that tell us if this translation is edited, and the
+	// type of translation this is supposed to be.
+	const bool bIsEdited = pByteStream->ReadBit();
+	const LONG lType = pByteStream->ReadShortByte( 7 );
 
 	// Read in the range that's being translated.
 	Translation.ulStart = pByteStream->ReadByte();
 	Translation.ulEnd = pByteStream->ReadByte();
 
-	if ( bIsTypeTwo == false )
+	if ( lType == CREATETRANSLATION_PALETTE )
 	{
 		Translation.ulPal1 = pByteStream->ReadByte();
 		Translation.ulPal2 = pByteStream->ReadByte();
 		Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE1;
 	}
+	else if ( lType == CREATETRANSLATION_RGB )
+	{
+		Translation.ulR1 = pByteStream->ReadByte();
+		Translation.ulG1 = pByteStream->ReadByte();
+		Translation.ulB1 = pByteStream->ReadByte();
+		Translation.ulR2 = pByteStream->ReadByte();
+		Translation.ulG2 = pByteStream->ReadByte();
+		Translation.ulB2 = pByteStream->ReadByte();
+		Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE2;
+	}
 	else
 	{
-		const bool bIsDesaturated = !!pByteStream->ReadByte();
-
-		if ( bIsDesaturated )
-		{
-			Translation.fR1 = pByteStream->ReadFloat();
-			Translation.fG1 = pByteStream->ReadFloat();
-			Translation.fB1 = pByteStream->ReadFloat();
-			Translation.fR2 = pByteStream->ReadFloat();
-			Translation.fG2 = pByteStream->ReadFloat();
-			Translation.fB2 = pByteStream->ReadFloat();
-			Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE3;
-		}
-		else
-		{
-			Translation.ulR1 = pByteStream->ReadByte();
-			Translation.ulG1 = pByteStream->ReadByte();
-			Translation.ulB1 = pByteStream->ReadByte();
-			Translation.ulR2 = pByteStream->ReadByte();
-			Translation.ulG2 = pByteStream->ReadByte();
-			Translation.ulB2 = pByteStream->ReadByte();
-			Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE2;
-		}
+		Translation.fR1 = pByteStream->ReadFloat();
+		Translation.fG1 = pByteStream->ReadFloat();
+		Translation.fB1 = pByteStream->ReadFloat();
+		Translation.fR2 = pByteStream->ReadFloat();
+		Translation.fG2 = pByteStream->ReadFloat();
+		Translation.fB2 = pByteStream->ReadFloat();
+		Translation.ulType = DLevelScript::PCD_TRANSLATIONRANGE3;
 	}
 
 	// [BB] We need to do this check here, otherwise the client could be crashed
