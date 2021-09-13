@@ -38,6 +38,7 @@
 #include "unlagged.h"
 #include "g_game.h"
 #include "p_tick.h"
+#include "cl_main.h"
 
 
 // MACROS ------------------------------------------------------------------
@@ -587,8 +588,8 @@ void P_BobWeapon (player_t *player, pspdef_t *psp, fixed_t *x, fixed_t *y)
 	// [AK] Sway the weapon if the multiplier is a non-zero value.
 	if (cl_swayspeed != 0.0f)
 	{
-		// [AK] Don't readjust the position of the sprite while the ticker is paused.
-		if ((paused == false) && (P_CheckTickerPaused() == false))
+		// [AK] Don't reposition the sprite while the ticker is paused or while the server is lagging.
+		if ((paused == false) && (P_CheckTickerPaused() == false) && (CLIENT_GetServerLagging() == false))
 		{
 			fixed_t nswaypos[2];
 			nswaypos[0] = FLOAT2FIXED(FIXED2FLOAT(player->mo->AngleDelta) * cl_swayspeed / 128.0f);
