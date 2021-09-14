@@ -1122,7 +1122,7 @@ private:
 	// [AK] We need to access protected variables from this class when we tell the clients to print a HUD message.
 	friend void SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags );
 	// [AK] If the current running script is a GAMEEVENT_ACTOR_DAMAGED event, this will return a pointer to the source, inflictor, or target actor.
-	friend AActor *ACS_GetScriptDamagePointers( int pointer );
+	friend AActor *ACS_GetScriptDamagePointers( unsigned int pointer );
 };
 
 class DACSThinker : public DThinker
@@ -1183,7 +1183,7 @@ bool	ACS_IsScriptPukeable( ULONG ulScript );
 int		ACS_GetTranslationIndex( FRemapTable *pTranslation );
 int		ACS_PushAndReturnDynamicString ( const FString &Work );
 bool	ACS_ExistsScript( int script );
-AActor	*ACS_GetScriptDamagePointers( int pointer ); // [AK]
+AActor	*ACS_GetScriptDamagePointers( unsigned int pointer ); // [AK]
 
 // [BB] Export DoGiveInv
 bool	DoGiveInv(AActor *actor, const PClass *info, int amount);

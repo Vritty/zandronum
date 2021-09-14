@@ -12260,7 +12260,7 @@ bool ACS_ExistsScript( int script )
 
 //*****************************************************************************
 //
-AActor *ACS_GetScriptDamagePointers( int pointer )
+AActor *ACS_GetScriptDamagePointers( unsigned int pointer )
 {
 	if ( g_pCurrentScript )
 	{
