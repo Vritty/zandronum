@@ -17,7 +17,7 @@ Command PrintHUDMessage
 	Float x
 	Float y
 	Short type
-	Byte color
+	Short color
 	Float holdTime
 	Long id
 
