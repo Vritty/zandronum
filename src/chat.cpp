@@ -928,7 +928,7 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 		else
 		{
 			OutString = TEXTCOLOR_ESCAPE;
-			OutString += V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ));
+			OutString += TEAM_GetTextColorName( players[consoleplayer].Team );
 			OutString += "<TEAM> ";
 		}
 

@@ -701,12 +701,6 @@ void V_CleanPlayerName( FString &String )
 		String = "Player";
 }
 
-// [RC] Converts COL_ numbers to their \c counterparts.
-char V_GetColorChar( ULONG ulColor )
-{
-	return (char) ( 97 + (int) ulColor );
-}
-
 // [RC] Escapes quotes and backslashes.
 void V_EscapeBacklashes( FString &String )
 {

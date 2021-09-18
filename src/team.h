@@ -104,6 +104,7 @@ int			TEAM_GetColor( ULONG ulTeamIdx );
 void		TEAM_SetColor( ULONG ulTeamIdx, int r, int g, int b );
 bool		TEAM_IsCustomPlayerColorAllowed( ULONG ulTeamIdx );
 
+const char	*TEAM_GetTextColorName( ULONG ulTeamIdx );	
 ULONG		TEAM_GetTextColor( ULONG ulTeamIdx );
 void		TEAM_SetTextColor( ULONG ulTeamIdx, USHORT usColor );
 

@@ -641,7 +641,7 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 						if (( NETWORK_GetState( ) == NETSTATE_SINGLE_MULTIPLAYER ) && ( players[consoleplayer].mo->CheckLocalView( source->player - players )))
 							sprintf( szString, "\\cGYOU WIN!" );
 						else if (( teamplay ) && ( source->player->bOnTeam ))
-							sprintf( szString, "\\c%c%s wins!\n", V_GetColorChar( TEAM_GetTextColor( source->player->Team )), TEAM_GetName( source->player->Team ));
+							sprintf( szString, "\\c%s%s wins!\n", TEAM_GetTextColorName( source->player->Team ), TEAM_GetName( source->player->Team ));
 						else
 							sprintf( szString, "%s \\cGWINS!", players[source->player - players].userinfo.GetName() );
 						V_ColorizeString( szString );
@@ -2338,7 +2338,7 @@ void PLAYER_GivePossessionPoint( player_t *pPlayer )
 			if (( NETWORK_GetState() != NETSTATE_SERVER ) && pPlayer->mo->IsTeammate( players[consoleplayer].camera ))
 				ANNOUNCER_PlayEntry( cl_announcer, "YouWin" );
 
-			sprintf( szString, "\\c%c%s WINS!", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
+			sprintf( szString, "\\c%s%s WINS!", TEAM_GetTextColorName( pPlayer->Team ), TEAM_GetName( pPlayer->Team ));
 			V_ColorizeString( szString );
 
 			if ( NETWORK_GetState( ) != NETSTATE_SERVER )
@@ -2433,7 +2433,7 @@ void PLAYER_SetTeam( player_t *pPlayer, ULONG ulTeam, bool bNoBroadcast )
 		// Player has changed his team! Tell clients.
 		if ( bBroadcastChange )
 		{
-			SERVER_Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", pPlayer->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( ulTeam ) ), TEAM_GetName( ulTeam ));
+			SERVER_Printf( "%s joined the \034%s%s " TEXTCOLOR_NORMAL "team.\n", pPlayer->userinfo.GetName(), TEAM_GetTextColorName( ulTeam ), TEAM_GetName( ulTeam ));
 		}		
 	}
 

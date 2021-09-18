@@ -457,7 +457,7 @@ bool AFlag::HandlePickup( AInventory *pItem )
 				SERVERCOMMANDS_PrintHUDMessage( "", 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.5f, "SmallFont", MAKE_ID( 'S', 'U', 'B', 'S' ) );
 
 			// Create the "captured" message.
-			sprintf( szString, "\\c%c%s team scores!", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
+			sprintf( szString, "\\c%s%s team scores!", TEAM_GetTextColorName( Owner->player->Team ), TEAM_GetName( Owner->player->Team ));
 			V_ColorizeString( szString );
 
 			// Now, print it.
@@ -480,7 +480,7 @@ bool AFlag::HandlePickup( AInventory *pItem )
 			}
 
 			// [RC] Create the "scored by" and "assisted by" message.
-			sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), Owner->player->userinfo.GetName() );
+			sprintf( szString, "\\c%sScored by: %s", TEAM_GetTextColorName( Owner->player->Team ), Owner->player->userinfo.GetName() );
 			const bool bAssisted = (TEAM_GetAssistPlayer(Owner->player->Team) != MAXPLAYERS);
 			if ( bAssisted )
 			{
@@ -490,9 +490,9 @@ bool AFlag::HandlePickup( AInventory *pItem )
 							selfAssist = true;
 
 				if ( selfAssist )
-					sprintf( szString + strlen ( szString ), "\\n\\c%c[ Self-Assisted ]", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )));
+					sprintf( szString + strlen ( szString ), "\\n\\c%s[ Self-Assisted ]", TEAM_GetTextColorName( Owner->player->Team ));
 				else
-					sprintf( szString + strlen ( szString ), "\\n\\c%cAssisted by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), players[TEAM_GetAssistPlayer( Owner->player->Team )].userinfo.GetName());
+					sprintf( szString + strlen ( szString ), "\\n\\c%sAssisted by: %s", TEAM_GetTextColorName( Owner->player->Team ), players[TEAM_GetAssistPlayer( Owner->player->Team )].userinfo.GetName());
 			}
 
 			V_ColorizeString( szString );
@@ -516,9 +516,9 @@ bool AFlag::HandlePickup( AInventory *pItem )
 				SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.5f, "SmallFont", MAKE_ID( 'S', 'U', 'B', 'S' ) );
 
 				if( ( bAssisted ) && ( ! selfAssist ) )
-					SERVER_Printf( "%s and %s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), players[TEAM_GetAssistPlayer( Owner->player->Team )].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
+					SERVER_Printf( "%s and %s scored for the \034%s%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), players[TEAM_GetAssistPlayer( Owner->player->Team )].userinfo.GetName(), TEAM_GetTextColorName( Owner->player->Team ), TEAM_GetName( Owner->player->Team ));
 				else
-					SERVER_Printf( "%s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
+					SERVER_Printf( "%s scored for the \034%s%s " TEXTCOLOR_NORMAL "team!\n", Owner->player->userinfo.GetName(), TEAM_GetTextColorName( Owner->player->Team ), TEAM_GetName( Owner->player->Team ));
 			}
 
 			
@@ -617,9 +617,9 @@ void AFlag::DisplayFlagTaken( AActor *pToucher )
 
 	// Create the "pickup" message.
 	if (( pToucher->player - players ) == consoleplayer )
-		sprintf( szString, "\\c%cYou have the %s flag!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%sYou have the %s flag!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 	else
-		sprintf( szString, "\\c%c%s flag taken!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%s%s flag taken!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 
 	V_ColorizeString( szString );
 
@@ -639,18 +639,18 @@ void AFlag::DisplayFlagTaken( AActor *pToucher )
 	// If necessary, send it to clients.
 	else
 	{
-		sprintf( szString, "\\c%cYou have the %s flag!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%sYou have the %s flag!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 		V_ColorizeString( szString );
 		SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.25f, "BigFont", MAKE_ID( 'C', 'N', 'T', 'R' ), ULONG( pToucher->player - players ), SVCF_ONLYTHISCLIENT );
 
-		sprintf( szString, "\\c%c%s flag taken!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%s%s flag taken!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 		V_ColorizeString( szString );
 		SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.25f, "BigFont", MAKE_ID( 'C', 'N', 'T', 'R' ), ULONG( pToucher->player - players ), SVCF_SKIPTHISCLIENT );
 	}
 
 	// [RC] Create the "held by" message for the team.
 	ULONG playerIndex = ULONG( pToucher->player - players );
-	sprintf( szString, "\\c%cHeld by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName() );
+	sprintf( szString, "\\c%sHeld by: %s", TEAM_GetTextColorName( players[playerIndex].Team ), players[playerIndex].userinfo.GetName() );
 
 	V_ColorizeString( szString );
 
@@ -674,7 +674,7 @@ void AFlag::DisplayFlagTaken( AActor *pToucher )
 	else
 	{
 		SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.25f, "SmallFont", MAKE_ID( 'S', 'U', 'B', 'S' ), ULONG( pToucher->player - players ), SVCF_SKIPTHISCLIENT );
-		SERVER_Printf( PRINT_MEDIUM, "%s has taken the \034%c%s " TEXTCOLOR_NORMAL "flag.\n", players[playerIndex].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		SERVER_Printf( PRINT_MEDIUM, "%s has taken the \034%s%s " TEXTCOLOR_NORMAL "flag.\n", players[playerIndex].userinfo.GetName(), TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 	}
 }
 
@@ -753,7 +753,7 @@ void AFlag::ReturnFlag( AActor *pReturner )
 	{
 		// [RC] Create the "returned by" message for this team.
 		ULONG playerIndex = ULONG( pReturner->player - players );
-		sprintf( szString, "\\c%cReturned by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName() );
+		sprintf( szString, "\\c%sReturned by: %s", TEAM_GetTextColorName( players[playerIndex].Team ), players[playerIndex].userinfo.GetName() );
 
 		// [CK] Send out an event that a flag/skull was returned, this is the easiest place to do it
 		// Second argument is the team index, third argument is what kind of return it was
@@ -762,7 +762,7 @@ void AFlag::ReturnFlag( AActor *pReturner )
 	else
 	{
 		// [RC] Create the "returned automatically" message for this team.
-		sprintf( szString, "\\c%cReturned automatically.", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))));
+		sprintf( szString, "\\c%sReturned automatically.", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )));
 
 		// [CK] Indicate the server returned the flag/skull after a timeout
 		GAMEMODE_HandleEvent ( GAMEEVENT_RETURNS, NULL, static_cast<int> ( ulItemTeam ), GAMEEVENT_RETURN_TIMEOUTRETURN );
@@ -774,9 +774,9 @@ void AFlag::ReturnFlag( AActor *pReturner )
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
 		if ( pReturner && pReturner->player )
-			SERVER_Printf( PRINT_MEDIUM, "%s returned the \034%c%s " TEXTCOLOR_NORMAL "flag.\n", pReturner->player->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+			SERVER_Printf( PRINT_MEDIUM, "%s returned the \034%s%s " TEXTCOLOR_NORMAL "flag.\n", pReturner->player->userinfo.GetName(), TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 		else
-			SERVER_Printf( PRINT_MEDIUM, "\034%c%s " TEXTCOLOR_NORMAL "flag returned.\n", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+			SERVER_Printf( PRINT_MEDIUM, "\034%s%s " TEXTCOLOR_NORMAL "flag returned.\n", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 	}
 }
 
@@ -813,7 +813,7 @@ void AFlag::DisplayFlagReturn( void )
 	char						szString[256];
 
 	// Create the "returned" message.
-	sprintf( szString, "\\c%c%s flag returned", V_GetColorChar( TEAM_GetTextColor ( TEAM_GetTeamFromItem( this ))), TEAM_GetName ( TEAM_GetTeamFromItem( this )));
+	sprintf( szString, "\\c%s%s flag returned", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName ( TEAM_GetTeamFromItem( this )));
 
 	V_ColorizeString( szString );
 
@@ -904,7 +904,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 		}
 
 		// Create the "captured" message.
-		sprintf( szString, "\\c%c%s team scores!", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), TEAM_GetName( Owner->player->Team ));
+		sprintf( szString, "\\c%s%s team scores!", TEAM_GetTextColorName( Owner->player->Team ), TEAM_GetName( Owner->player->Team ));
 		V_ColorizeString( szString );
 
 		// Now, print it.
@@ -927,7 +927,7 @@ bool AWhiteFlag::HandlePickup( AInventory *pItem )
 		}
 
 		// [BC] Rivecoder's "scored by" message.
-		sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( Owner->player->Team )), Owner->player->userinfo.GetName() );
+		sprintf( szString, "\\c%sScored by: %s", TEAM_GetTextColorName( Owner->player->Team ), Owner->player->userinfo.GetName() );
 		V_ColorizeString( szString );
 
 		// Now, print it.
@@ -1065,7 +1065,7 @@ void AWhiteFlag::DisplayFlagTaken( AActor *pToucher )
 	sprintf( szName, "%s", players[ulPlayer].userinfo.GetName() );
 	V_RemoveColorCodes( szName );
 
-	sprintf( szString, "\\ccHeld by: \\c%c%s", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].Team )), szName );
+	sprintf( szString, "\\ccHeld by: \\c%s%s", TEAM_GetTextColorName( players[ulPlayer].Team ), szName );
 	V_ColorizeString( szString );
 
 	// Now, print it.
@@ -1235,9 +1235,9 @@ void ASkull::DisplayFlagTaken( AActor *pToucher )
 
 	// Create the "pickup" message.
 	if (( pToucher->player - players ) == consoleplayer )
-		sprintf( szString, "\\c%cYou have the %s skull!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%sYou have the %s skull!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 	else
-		sprintf( szString, "\\c%c%s skull taken!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%s%s skull taken!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 
 	V_ColorizeString( szString );
 
@@ -1257,18 +1257,18 @@ void ASkull::DisplayFlagTaken( AActor *pToucher )
 	// If necessary, send it to clients.
 	else
 	{
-		sprintf( szString, "\\c%cYou have the %s skull!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%sYou have the %s skull!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 		V_ColorizeString( szString );
 		SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.25f, "BigFont", MAKE_ID( 'C', 'N', 'T', 'R' ), ULONG( pToucher->player - players ), SVCF_ONLYTHISCLIENT );
 
-		sprintf( szString, "\\c%c%s skull taken!", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		sprintf( szString, "\\c%s%s skull taken!", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 		V_ColorizeString( szString );
 		SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.25f, "BigFont", MAKE_ID( 'C', 'N', 'T', 'R' ), ULONG( pToucher->player - players ), SVCF_SKIPTHISCLIENT );
 	}
 
 	// [RC] Create the "held by" message for this team.
 	ULONG playerIndex = ULONG( pToucher->player - players );
-	sprintf( szString, "\\c%cHeld by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName());
+	sprintf( szString, "\\c%sHeld by: %s", TEAM_GetTextColorName( players[playerIndex].Team ), players[playerIndex].userinfo.GetName());
 
 	V_ColorizeString( szString );
 
@@ -1292,7 +1292,7 @@ void ASkull::DisplayFlagTaken( AActor *pToucher )
 	else
 	{
 		SERVERCOMMANDS_PrintHUDMessage( szString, 1.5f, TEAM_MESSAGE_Y_AXIS_SUB, 0, 0, HUDMESSAGETYPE_FADEOUT, CR_UNTRANSLATED, 3.0f, 0.0f, 0.25f, "SmallFont", MAKE_ID( 'S', 'U', 'B', 'S' ), ULONG( pToucher->player - players ), SVCF_SKIPTHISCLIENT );
-		SERVER_Printf( PRINT_MEDIUM, "%s has taken the \034%c%s " TEXTCOLOR_NORMAL "skull.\n", players[playerIndex].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+		SERVER_Printf( PRINT_MEDIUM, "%s has taken the \034%s%s " TEXTCOLOR_NORMAL "skull.\n", players[playerIndex].userinfo.GetName(), TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 	}
 }
 
@@ -1371,7 +1371,7 @@ void ASkull::ReturnFlag( AActor *pReturner )
 	{
 		// [RC] Create the "returned by" message for this team.
 		ULONG playerIndex = ULONG( pReturner->player - players );
-		sprintf( szString, "\\c%cReturned by: %s", V_GetColorChar( TEAM_GetTextColor( players[playerIndex].Team )), players[playerIndex].userinfo.GetName() );
+		sprintf( szString, "\\c%sReturned by: %s", TEAM_GetTextColorName( players[playerIndex].Team ), players[playerIndex].userinfo.GetName() );
 
 		// [AK] Trigger an event script indicating that a player returned the skull.
 		GAMEMODE_HandleEvent( GAMEEVENT_RETURNS, pReturner, static_cast<int> ( ulItemTeam ), GAMEEVENT_RETURN_PLAYERRETURN );
@@ -1379,7 +1379,7 @@ void ASkull::ReturnFlag( AActor *pReturner )
 	else
 	{
 		// [RC] Create the "returned automatically" message for this team.
-		sprintf( szString, "\\c%cReturned automatically.", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))));
+		sprintf( szString, "\\c%sReturned automatically.", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )));
 
 		// [AK] Trigger an event script indicating that the skull was returned after a timeout.
 		GAMEMODE_HandleEvent( GAMEEVENT_RETURNS, NULL, static_cast<int> ( ulItemTeam ), GAMEEVENT_RETURN_TIMEOUTRETURN );
@@ -1391,9 +1391,9 @@ void ASkull::ReturnFlag( AActor *pReturner )
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
 		if ( pReturner && pReturner->player )
-			SERVER_Printf( PRINT_MEDIUM, "%s returned the \034%c%s " TEXTCOLOR_NORMAL "skull.\n", pReturner->player->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+			SERVER_Printf( PRINT_MEDIUM, "%s returned the \034%s%s " TEXTCOLOR_NORMAL "skull.\n", pReturner->player->userinfo.GetName(), TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 		else
-			SERVER_Printf( PRINT_MEDIUM, "\034%c%s " TEXTCOLOR_NORMAL "skull returned.\n", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+			SERVER_Printf( PRINT_MEDIUM, "\034%s%s " TEXTCOLOR_NORMAL "skull returned.\n", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 	}
 }
 
@@ -1430,7 +1430,7 @@ void ASkull::DisplayFlagReturn( void )
 	char						szString[256];
 
 	// Create the "returned" message.
-	sprintf( szString, "\\c%c%s skull returned", V_GetColorChar( TEAM_GetTextColor( TEAM_GetTeamFromItem( this ))), TEAM_GetName( TEAM_GetTeamFromItem( this )));
+	sprintf( szString, "\\c%s%s skull returned", TEAM_GetTextColorName( TEAM_GetTeamFromItem( this )), TEAM_GetName( TEAM_GetTeamFromItem( this )));
 
 	V_ColorizeString( szString );
 

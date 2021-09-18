@@ -872,9 +872,9 @@ static void DrawTeamScores( int x, int y )
 		int leadingTeam = !!( scores[1] > scores[0] );
 		int losingTeam = 1 - leadingTeam;
 
-		text.Format ("\\c%c%d\\cC - \\c%c%d",
-			V_GetColorChar( TEAM_GetTextColor( leadingTeam )), scores[leadingTeam],
-			V_GetColorChar( TEAM_GetTextColor( losingTeam )), scores[losingTeam] );
+		text.Format ("\\c%s%d\\cC - \\c%s%d",
+			TEAM_GetTextColorName( leadingTeam ), scores[leadingTeam],
+			TEAM_GetTextColorName( losingTeam ), scores[losingTeam] );
 	}
 	else
 	{
@@ -887,7 +887,7 @@ static void DrawTeamScores( int x, int y )
 				text += "\\cC - ";
 
 			text += "\\c";
-			text += V_GetColorChar( TEAM_GetTextColor( teams[i] ));
+			text += TEAM_GetTextColorName( teams[i] );
 			text.AppendFormat( "%d", GetScoreForTeam( teams[i] ));
 		}
 	}

@@ -822,7 +822,7 @@ void DrawFullHUD_GameInformation()
 			if ( TEAM_CountPlayers( i ) < 1 )
 				continue;
 
-			sprintf( szString , "\\c%c%d\n", V_GetColorChar( TEAM_GetTextColor ( i ) ), static_cast<unsigned int> (lPoints[i]));
+			sprintf( szString , "\\c%s%d\n", TEAM_GetTextColorName ( i ), static_cast<unsigned int> (lPoints[i]));
 			V_ColorizeString( szString );
 
 			HUD_DrawText( ConFont, CR_GRAY,

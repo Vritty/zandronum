@@ -459,7 +459,7 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 		if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
 		{
 			color = TEXTCOLOR_ESCAPE;
-			color += V_GetColorChar( TEAM_GetTextColor( players[ulDisplayPlayer].Team ));
+			color += TEAM_GetTextColorName( players[ulDisplayPlayer].Team );
 		}
 
 		bottomString.AppendFormat( "%sFollowing - %s%s", color.GetChars( ), players[ulDisplayPlayer].userinfo.GetName( ), color.GetChars( ));
@@ -1126,7 +1126,7 @@ FString HUD_BuildPointString( void )
 
 			// [AK] Reset the list of team names, starting with this team.
 			teamName = TEXTCOLOR_ESCAPE;
-			teamName.AppendFormat( "%c%s", V_GetColorChar( TEAM_GetTextColor( ulTeam )), TEAM_GetName( ulTeam ));
+			teamName.AppendFormat( "%s%s", TEAM_GetTextColorName( ulTeam ), TEAM_GetName( ulTeam ));
 			ulNumTeamsWithHighestScore = 1;
 		}
 		// [AK] If this team's score is equal to the current highest score, add their name to the end of the list.
@@ -1139,7 +1139,7 @@ FString HUD_BuildPointString( void )
 
 			// [AK] Store this team's name and text color into a string, we'll need it later.
 			lastTeamName = TEXTCOLOR_ESCAPE;
-			lastTeamName.AppendFormat( "%c%s", V_GetColorChar( TEAM_GetTextColor( ulTeam )), TEAM_GetName( ulTeam ));
+			lastTeamName.AppendFormat( "%s%s", TEAM_GetTextColorName( ulTeam ), TEAM_GetName( ulTeam ));
 			ulNumTeamsWithHighestScore++;
 		}
 		

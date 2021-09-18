@@ -720,8 +720,8 @@ void possession_DisplayScoreInfo( ULONG ulPlayer )
 	// [RC] On team possession, state who scored.
 	if ( teampossession && ( players[ulPlayer].bOnTeam ))
 	{
-		sprintf( szString, "\\c%c%s %s!", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].Team )), TEAM_GetName( players[ulPlayer].Team ) ,bPointLimitReached ? "WINS" : "SCORES" );
-		sprintf( szScorer, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( players[ulPlayer].Team )), players[ulPlayer].userinfo.GetName() );
+		sprintf( szString, "\\c%s%s %s!", TEAM_GetTextColorName( players[ulPlayer].Team ), TEAM_GetName( players[ulPlayer].Team ) ,bPointLimitReached ? "WINS" : "SCORES" );
+		sprintf( szScorer, "\\c%sScored by: %s", TEAM_GetTextColorName( players[ulPlayer].Team ), players[ulPlayer].userinfo.GetName() );
 
 		// [BB] I don't see why we should remove the player name's color codes here. It's not done in CTF either
 		// and the player's team is apparent from the rest of the message.

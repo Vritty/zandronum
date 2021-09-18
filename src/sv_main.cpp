@@ -6251,12 +6251,12 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	// Player was on a team, so tell everyone that he's changing teams.
 	if ( bOnTeam )
 	{
-		SERVER_Printf( "%s defected to the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].Team )), TEAM_GetName( players[g_lCurrentClient].Team ));
+		SERVER_Printf( "%s defected to the \034%s%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), TEAM_GetTextColorName( players[g_lCurrentClient].Team ), TEAM_GetName( players[g_lCurrentClient].Team ));
 	}
 	// Otherwise, tell everyone he's joining a team.
 	else
 	{
-		SERVER_Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[g_lCurrentClient].Team )), TEAM_GetName( players[g_lCurrentClient].Team ));
+		SERVER_Printf( "%s joined the \034%s%s " TEXTCOLOR_NORMAL "team.\n", players[g_lCurrentClient].userinfo.GetName(), TEAM_GetTextColorName( players[g_lCurrentClient].Team ), TEAM_GetName( players[g_lCurrentClient].Team ));
 	}
 
 	if ( players[g_lCurrentClient].mo )

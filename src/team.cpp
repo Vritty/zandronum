@@ -500,15 +500,15 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 
 	// Create the console message.
 	if( ( bAssisted ) && ( ! bSelfAssisted ) )
-		sprintf(szString, "%s and %s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), players[TEAM_GetAssistPlayer( pPlayer->Team )].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
+		sprintf(szString, "%s and %s scored for the \034%s%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), players[TEAM_GetAssistPlayer( pPlayer->Team )].userinfo.GetName(), TEAM_GetTextColorName( pPlayer->Team ), TEAM_GetName( pPlayer->Team ));
 	else
-		sprintf(szString, "%s scored for the \034%c%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
+		sprintf(szString, "%s scored for the \034%s%s " TEXTCOLOR_NORMAL "team!\n", pPlayer->userinfo.GetName(), TEAM_GetTextColorName( pPlayer->Team ), TEAM_GetName( pPlayer->Team ));
 
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		SERVERCOMMANDS_Print( szString, PRINT_HIGH );
 
 	// Create the fullscreen message.
-	FString coloredTeamName = V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) );
+	FString coloredTeamName = TEAM_GetTextColorName( pPlayer->Team );
 	coloredTeamName += " ";
 	coloredTeamName += TEAM_GetName( pPlayer->Team );
 	switch ( ulNumPoints )
@@ -564,14 +564,14 @@ void TEAM_ScoreSkulltagPoint( player_t *pPlayer, ULONG ulNumPoints, AActor *pPil
 	}
 
 	// Create the "scored by / assisted by" message.
-	sprintf( szString, "\\c%cScored by: %s", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) ), pPlayer->userinfo.GetName());
+	sprintf( szString, "\\c%sScored by: %s", TEAM_GetTextColorName( pPlayer->Team ), pPlayer->userinfo.GetName());
 
 	if ( bAssisted )
 	{
 		if ( bSelfAssisted )
-			sprintf( szString + strlen ( szString ), "\\n\\c%c( Self-Assisted )", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) ) );
+			sprintf( szString + strlen ( szString ), "\\n\\c%s( Self-Assisted )", TEAM_GetTextColorName( pPlayer->Team ) );
 		else
-			sprintf( szString + strlen ( szString ), "\\n\\c%cAssisted by: %s", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team ) ), players[TEAM_GetAssistPlayer( pPlayer->Team )].userinfo.GetName());
+			sprintf( szString + strlen ( szString ), "\\n\\c%sAssisted by: %s", TEAM_GetTextColorName( pPlayer->Team ), players[TEAM_GetAssistPlayer( pPlayer->Team )].userinfo.GetName());
 	}
 	
 	V_ColorizeString( szString );
@@ -683,7 +683,7 @@ void TEAM_DisplayNeedToReturnSkullMessage( player_t *pPlayer )
 		return;
 
 	// Create the message.
-	sprintf( szString, "\\c%cThe %s skull must be returned first!", V_GetColorChar( TEAM_GetTextColor( pPlayer->Team )), TEAM_GetName( pPlayer->Team ));
+	sprintf( szString, "\\c%sThe %s skull must be returned first!", TEAM_GetTextColorName( pPlayer->Team ), TEAM_GetName( pPlayer->Team ));
 
 	V_ColorizeString( szString );
 
@@ -728,7 +728,7 @@ void TEAM_FlagDropped( player_t *pPlayer, ULONG ulTeamIdx )
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
 		SERVERCOMMANDS_TeamFlagDropped( ULONG( pPlayer - players ), ulTeamIdx );
-		SERVER_Printf( PRINT_MEDIUM, "%s lost the \034%c%s " TEXTCOLOR_NORMAL "%s.\n", pPlayer->userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( ulTeamIdx)), TEAM_GetName( ulTeamIdx), ( skulltag ) ? "skull" : "flag" );
+		SERVER_Printf( PRINT_MEDIUM, "%s lost the \034%s%s " TEXTCOLOR_NORMAL "%s.\n", pPlayer->userinfo.GetName(), TEAM_GetTextColorName( ulTeamIdx), TEAM_GetName( ulTeamIdx), ( skulltag ) ? "skull" : "flag" );
 		return;
 	}
 
@@ -736,7 +736,7 @@ void TEAM_FlagDropped( player_t *pPlayer, ULONG ulTeamIdx )
 	Printf( "%s %s dropped!\n", TEAM_GetName( ulTeamIdx ), ( skulltag ) ? "skull" : "flag" );
 
 	// Next, build the dropped message.
-	sprintf( szString, "\\c%c%s %s dropped!", V_GetColorChar( TEAM_GetTextColor( ulTeamIdx )), TEAM_GetName( ulTeamIdx ), ( skulltag ) ? "skull" : "flag" );
+	sprintf( szString, "\\c%s%s %s dropped!", TEAM_GetTextColorName( ulTeamIdx ), TEAM_GetName( ulTeamIdx ), ( skulltag ) ? "skull" : "flag" );
 
 	// Colorize it.
 	V_ColorizeString( szString );
@@ -776,7 +776,7 @@ void TEAM_DoWinSequence( ULONG ulTeamIdx )
 
 	// Display "%s WINS!" HUD message.
 	if ( ulTeamIdx < teams.Size( ) )
-		sprintf( szString, "\\c%c%s WINS!", V_GetColorChar( TEAM_GetTextColor( ulTeamIdx ) ), TEAM_GetName( ulTeamIdx ) );
+		sprintf( szString, "\\c%s%s WINS!", TEAM_GetTextColorName( ulTeamIdx ), TEAM_GetName( ulTeamIdx ) );
 	else
 		sprintf( szString, "DRAW GAME!\n" );
 
@@ -962,6 +962,16 @@ bool TEAM_IsCustomPlayerColorAllowed( ULONG ulTeamIdx )
 
 //*****************************************************************************
 //
+const char *TEAM_GetTextColorName( ULONG ulTeamIdx )
+{
+	if (( TEAM_CheckIfValid( ulTeamIdx )) && ( teams[ulTeamIdx].TextColor.IsNotEmpty( )))
+		return ( teams[ulTeamIdx].TextColor.GetChars( ));
+
+	return ( "Untranslated" );
+}
+
+//*****************************************************************************
+//
 ULONG TEAM_GetTextColor( ULONG ulTeamIdx )
 {
 	if ( TEAM_CheckIfValid( ulTeamIdx ))
@@ -1058,7 +1068,7 @@ void TEAM_SetScore( ULONG ulTeamIdx, LONG lScore, bool bAnnouncer )
 
 	if ( TEAM_GetScore( ulTeamIdx ) >= (LONG)pointlimit )
 	{
-		NETWORK_Printf( "\034%c%s " TEXTCOLOR_NORMAL "has won the game!\n", V_GetColorChar( TEAM_GetTextColor( ulTeamIdx )), TEAM_GetName( ulTeamIdx ));
+		NETWORK_Printf( "\034%s%s " TEXTCOLOR_NORMAL "has won the game!\n", TEAM_GetTextColorName( ulTeamIdx ), TEAM_GetName( ulTeamIdx ));
 
 		// Do the win sequence for the winner.
 		TEAM_DoWinSequence( ulTeamIdx );
@@ -2064,7 +2074,7 @@ CCMD( team )
 	{
 		if ( players[consoleplayer].bOnTeam )
 		{
-			Printf( "You are on the \034%c%s " TEXTCOLOR_NORMAL "team.\n", V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ) ), TEAM_GetName( players[consoleplayer].Team ) );
+			Printf( "You are on the \034%s%s " TEXTCOLOR_NORMAL "team.\n", TEAM_GetTextColorName( players[consoleplayer].Team ), TEAM_GetName( players[consoleplayer].Team ) );
 		}
 		else
 			Printf( "You are not currently on a team.\n" );
@@ -2266,12 +2276,12 @@ CCMD( changeteam )
 		// Player was on a team, so tell everyone that he's changing teams.
 		if ( bOnTeam )
 		{
-			Printf( "%s defected to the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ) ), TEAM_GetName( players[consoleplayer].Team ));
+			Printf( "%s defected to the \034%s%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), TEAM_GetTextColorName( players[consoleplayer].Team ), TEAM_GetName( players[consoleplayer].Team ));
 		}
 		// Otherwise, tell everyone he's joining a team.
 		else
 		{
-			Printf( "%s joined the \034%c%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), V_GetColorChar( TEAM_GetTextColor( players[consoleplayer].Team ) ), TEAM_GetName( players[consoleplayer].Team ));
+			Printf( "%s joined the \034%s%s " TEXTCOLOR_NORMAL "team.\n", players[consoleplayer].userinfo.GetName(), TEAM_GetTextColorName( players[consoleplayer].Team ), TEAM_GetName( players[consoleplayer].Team ));
 		}
 
 		if ( players[consoleplayer].mo )

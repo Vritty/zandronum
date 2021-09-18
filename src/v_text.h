@@ -86,7 +86,6 @@ void	V_UnColorizeString( FString &String );
 void	V_RemoveColorCodes( FString &String );
 void	V_RemoveColorCodes( char *pszString );
 void	V_StripColors( char *pszString );
-char	V_GetColorChar( ULONG ulColor );
 void	V_EscapeBacklashes( FString &String );
 void	V_RemoveTrailingCrap( char *pszString );
 void	V_RemoveTrailingCrapFromFString( FString &String );

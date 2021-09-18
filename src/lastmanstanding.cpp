@@ -443,7 +443,7 @@ void LASTMANSTANDING_DoWinSequence( ULONG ulWinner )
 			if ( ulWinner == teams.Size( ) )
 				sprintf( szString, "\\cdDraw Game!" );
 			else
-				sprintf( szString, "\\c%c%s Wins!", V_GetColorChar( TEAM_GetTextColor( ulWinner ) ), TEAM_GetName( ulWinner ));
+				sprintf( szString, "\\c%s%s Wins!", TEAM_GetTextColorName( ulWinner ), TEAM_GetName( ulWinner ));
 		}
 		else if ( ulWinner == MAXPLAYERS )
 			sprintf( szString, "\\cdDRAW GAME!" );
