@@ -4520,7 +4520,7 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 
 		// [BC] If we're the server, tell clients to update this actor property.
 		// [AK] Only bother the clients if the flags were actually changed.
-		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->flags2 ) )
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( static_cast<DWORD>( oldValue ) != actor->flags2 ) )
 			SERVERCOMMANDS_SetThingFlags( actor, FLAGSET_FLAGS2 );
 		break;
 
@@ -4778,7 +4778,7 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 	
 		// [AK] If we're the server, tell clients to update this actor property.
 		// Only bother the clients if the stencil color has actually changed.
-		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->fillcolor ) )
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( static_cast<DWORD>( oldValue ) != actor->fillcolor ) )
 			SERVERCOMMANDS_SetThingProperty( actor, APROP_StencilColor );
 		break;
 
@@ -7514,7 +7514,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 							players[ulPlayer].ulWins = args[2] >= 0 ? args[2] : 0;
 
 							// [AK] If we're the server, tell the clients the player's new win count.
-							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].ulWins ))
+							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( static_cast<ULONG>( oldvalue ) != players[ulPlayer].ulWins ))
 								SERVERCOMMANDS_SetPlayerWins( ulPlayer );
 							return 1;
 						}
@@ -7526,7 +7526,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 							players[ulPlayer].ulDeathCount = args[2] >= 0 ? args[2] : 0;
 
 							// [AK] If we're the server, tell the clients the player's new death count.
-							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].ulDeathCount ))
+							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( static_cast<ULONG>( oldvalue ) != players[ulPlayer].ulDeathCount ))
 								SERVERCOMMANDS_SetPlayerDeaths( ulPlayer );
 							return 1;
 						}
