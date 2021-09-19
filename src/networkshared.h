@@ -580,6 +580,14 @@ public:
 	{
 		return _data[ ( _position + Offset ) % Length ];
 	}
+	unsigned int getPosition( void )
+	{
+		return _position;
+	}
+	void setPosition( unsigned int pos )
+	{
+		_position = pos % Length;
+	}
 };
 
 #endif	// __NETWORKSHARED_H__

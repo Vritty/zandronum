@@ -78,6 +78,7 @@
 #include "sectinfo.h"
 #include "g_level.h"
 #include "p_acs.h"
+#include "farchive.h"
 
 //*****************************************************************************
 //
@@ -865,6 +866,43 @@ void CHAT_AddChatMessage( ULONG ulPlayer, const char *pszString )
 void CHAT_ClearChatMessages( ULONG ulPlayer )
 {
 	g_SavedChatMessages[ulPlayer].clear();
+}
+
+//*****************************************************************************
+//
+void CHAT_SerializeMessages( FArchive &arc )
+{
+	FString serializedMessages[MAX_SAVED_MESSAGES];
+	unsigned int serializedPosition;
+
+	// [AK] We need to save the current position of the saved messages ring buffer
+	// so the saved game knows which entry is the oldest.
+	if ( arc.IsStoring( ))
+	{
+		serializedPosition = g_SavedChatMessages[consoleplayer].getPosition( );
+		arc << serializedPosition;
+	}
+	else
+	{
+		arc << serializedPosition;
+		g_SavedChatMessages[consoleplayer].setPosition( serializedPosition );
+	}
+
+	// [AK] We only need to save the local player's messages, as they'll be the only
+	// player left when the save is loaded. We don't need to save anybody else's.
+	for ( unsigned int i = 0; i < MAX_SAVED_MESSAGES; i++ )
+	{
+		if ( arc.IsStoring( ))
+		{
+			serializedMessages[i] = g_SavedChatMessages[consoleplayer].getOldestEntry( i );
+			arc << serializedMessages[i];
+		}
+		else
+		{
+			arc << serializedMessages[i];
+			g_SavedChatMessages[consoleplayer].put( serializedMessages[i] );
+		}
+	}
 }
 
 //*****************************************************************************

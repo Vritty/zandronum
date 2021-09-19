@@ -2225,6 +2225,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 	AM_SerializeMarkers(arc);
 
 	P_SerializePlayers (arc, hubLoad);
+	CHAT_SerializeMessages (arc); // [AK]
 	P_SerializeSounds (arc);
 	if (arc.IsLoading())
 	{
