@@ -1678,7 +1678,7 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 		target->master = source;
 		target->target = inflictor;
 
-		GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, target, damage );
+		GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, target, damage, GlobalACSStrings.AddString( mod ));
 
 		// [AK] Restore the source actor's old pointers.
 		target->master = tempMaster;
