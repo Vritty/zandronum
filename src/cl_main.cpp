@@ -5296,6 +5296,27 @@ void ServerCommands::SetThingProperty::Execute()
 
 //*****************************************************************************
 //
+void ServerCommands::SetThingStringProperty::Execute()
+{
+	// Set one of the actor's properties, depending on what was read in.
+	switch ( property )
+	{
+	case APROP_Species:
+		actor->Species = value;
+		break;
+
+	case APROP_NameTag:
+		actor->SetTag( value );
+		break;
+
+	default:
+		CLIENT_PrintWarning( "client_SetThingStringProperty: Unknown property, %d!\n", static_cast<unsigned int> (property) );
+		return;
+	}
+}
+
+//*****************************************************************************
+//
 void ServerCommands::SetThingSound::Execute()
 {
 	// Set one of the actor's sounds, depending on what was read in.
@@ -5452,13 +5473,6 @@ void ServerCommands::SetThingScale::Execute()
 
 	if ( ContainsScaleY() )
 		actor->scaleY = scaleY;
-}
-
-//*****************************************************************************
-//
-void ServerCommands::SetThingSpecies::Execute()
-{
-	actor->Species = species;
 }
 
 //*****************************************************************************

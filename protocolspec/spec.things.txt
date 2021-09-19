@@ -214,6 +214,13 @@ Command SetThingProperty
 	Long value
 EndCommand
 
+Command SetThingStringProperty
+	ExtendedCommand
+	Actor actor
+	Byte property
+	String value
+EndCommand
+
 Command SetThingSound
 	Actor actor
 	Byte soundType
@@ -288,12 +295,6 @@ Command SetThingScale
 	If (scaleflags & ACTORSCALE_Y)
 		Long scaleY
 	EndIf
-EndCommand
-
-Command SetThingSpecies
-	ExtendedCommand
-	Actor actor
-	String species
 EndCommand
 
 Command ThingIsCorpse

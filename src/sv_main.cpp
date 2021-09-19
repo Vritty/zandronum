@@ -3461,6 +3461,14 @@ void SERVER_UpdateActorProperties( AActor *pActor, ULONG ulClient )
 		&& static_cast<APlayerPawn *>( pActor )->JumpZ != static_cast<APlayerPawn *>( pActor->GetDefault( ) )->JumpZ )
 		SERVERCOMMANDS_SetThingProperty( pActor, APROP_JumpZ, ulClient, SVCF_ONLYTHISCLIENT );
 
+	// [AK] Update the actor's species if it's changed.
+	if ( strcmp( pActor->Species, pActor->GetDefault()->Species ) != 0 )
+		SERVERCOMMANDS_SetThingStringProperty( pActor, APROP_Species, ulClient, SVCF_ONLYTHISCLIENT );
+
+	// [AK] Update the actor's name tag if it's changed.
+	if (( pActor->Tag != NULL ) && (( pActor->GetDefault()->Tag == NULL ) || ( pActor->Tag->Compare( *pActor->GetDefault()->Tag ) != 0 )))
+		SERVERCOMMANDS_SetThingStringProperty( pActor, APROP_NameTag, ulClient, SVCF_ONLYTHISCLIENT );
+
 	// [BB] Update the actor's gravity if it's changed.
 	if ( pActor->gravity != pActor->GetDefault( )->gravity )
 		SERVERCOMMANDS_SetThingGravity ( pActor, ulClient, SVCF_ONLYTHISCLIENT );
@@ -3491,10 +3499,6 @@ void SERVER_UpdateActorProperties( AActor *pActor, ULONG ulClient )
 
 	// [EP] Update the actor's scale if it's changed.
 	SERVERCOMMANDS_UpdateThingScaleNotAtDefault ( pActor, ulClient, SVCF_ONLYTHISCLIENT );
-
-	// [AK] Update the actor's species if it's changed.
-	if ( strcmp( pActor->Species, pActor->GetDefault()->Species ) != 0 )
-		SERVERCOMMANDS_SetThingSpecies( pActor, ulClient, SVCF_ONLYTHISCLIENT );
 }
 
 //*****************************************************************************

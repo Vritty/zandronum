@@ -1681,6 +1681,37 @@ void SERVERCOMMANDS_SetThingProperty( AActor *pActor, ULONG ulProperty, ULONG ul
 
 //*****************************************************************************
 //
+void SERVERCOMMANDS_SetThingStringProperty( AActor *pActor, ULONG ulProperty, ULONG ulPlayerExtra, ServerCommandFlags flags )
+{
+	if ( !EnsureActorHasNetID (pActor) )
+		return;
+
+	const char *value;
+
+	// Set one of the actor's properties, depending on what was read in.
+	switch ( ulProperty )
+	{
+	case APROP_Species:
+		value = pActor->GetSpecies( );
+		break;
+
+	case APROP_NameTag:
+		value = pActor->GetTag( );
+		break;
+
+	default:
+		return;
+	}
+
+	ServerCommands::SetThingStringProperty command;
+	command.SetActor( pActor );
+	command.SetProperty( ulProperty );
+	command.SetValue( value );
+	command.sendCommandToClients( ulPlayerExtra, flags );
+}
+
+//*****************************************************************************
+//
 void SERVERCOMMANDS_SetThingSound( AActor *pActor, ULONG ulSound, const char *pszSound, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	if ( !EnsureActorHasNetID (pActor) )
@@ -3870,19 +3901,6 @@ void SERVERCOMMANDS_SetThingScale( AActor* mobj, unsigned int scaleFlags, ULONG 
 		command.addLong( mobj->scaleX );
 	if ( scaleFlags & ACTORSCALE_Y )
 		command.addLong( mobj->scaleY );
-	command.sendCommandToClients( ulPlayerExtra, flags );
-}
-
-//*****************************************************************************
-//
-void SERVERCOMMANDS_SetThingSpecies( AActor* mobj, ULONG ulPlayerExtra, ServerCommandFlags flags )
-{
-	if ( !EnsureActorHasNetID (mobj) )
-		return;
-
-	NetCommand command( SVC2_SETTHINGSPECIES );
-	command.addShort( mobj->NetID );
-	command.addString( mobj->Species );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 

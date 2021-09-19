@@ -4423,6 +4423,7 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 	// [BB]
 	int oldValue = 0;
 	FRenderStyle oldRenderStyle;
+	const char *oldString;
 
 	switch (property)
 	{
@@ -4668,14 +4669,14 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 
 	case APROP_Species:
 		// [AK] Save the original species.
-		oldValue = actor->Species;
+		oldString = actor->Species;
 
 		actor->Species = FBehavior::StaticLookupString(value);
 
 		// [AK] If we're the server, tell clients to update this actor property.
 		// Only bother the clients if the species has actually changed.
-		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( oldValue != actor->Species ) )
-			SERVERCOMMANDS_SetThingSpecies( actor );
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( strcmp( actor->GetSpecies( ), oldString ) != 0 ) )
+			SERVERCOMMANDS_SetThingStringProperty( actor, APROP_Species );
 		break;
 
 	case APROP_Score:
@@ -4683,7 +4684,15 @@ void DLevelScript::DoSetActorProperty (AActor *actor, int property, int value)
 		break;
 
 	case APROP_NameTag:
+		// [AK] Save the original name tag.
+		oldString = actor->GetTag( );
+
 		actor->SetTag(FBehavior::StaticLookupString(value));
+
+		// [AK] If we're the server, tell clients to update this actor property.
+		// Only bother the clients if the name tag has actually changed.
+		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( strcmp( actor->GetTag( ), oldString ) != 0 ) )
+			SERVERCOMMANDS_SetThingStringProperty( actor, APROP_NameTag );
 		break;
 
 	case APROP_DamageFactor:
