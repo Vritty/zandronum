@@ -84,6 +84,7 @@ void C_SetTicker (unsigned int at, bool forceUpdate=false);
 class FFont;
 void C_MidPrint (FFont *font, const char *message);
 void C_MidPrintBold (FFont *font, const char *message);
+void C_MOTDPrint (FString message); // [AK]
 
 bool C_Responder (event_t *ev);
 

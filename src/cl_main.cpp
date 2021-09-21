@@ -2801,46 +2801,6 @@ bool CLIENT_GainingRCONAccess()
 
 //*****************************************************************************
 //
-// :(. This is needed so that the MOTD can be printed in the color the user wishes to print
-// mid-screen messages in.
-extern	int PrintColors[7];
-void CLIENT_DisplayMOTD( void )
-{
-	FString	ConsoleString;
-
-	if ( g_MOTD.Len( ) <= 0 )
-		return;
-
-	// Add pretty colors/formatting!
-	V_ColorizeString( g_MOTD );
-
-	ConsoleString.AppendFormat( TEXTCOLOR_RED
-		"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		"\36\36\36\36\36\36\36\36\36\36\36\36\37" TEXTCOLOR_TAN
-		"\n\n%s\n" TEXTCOLOR_RED
-		"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		"\36\36\36\36\36\36\36\36\36\36\36\36\37" TEXTCOLOR_NORMAL "\n\n" ,
-		g_MOTD.GetChars() );
-
-	// Add this message to the console window.
-	AddToConsole( -1, ConsoleString );
-
-	// We cannot create the message if there's no status bar to attach it to.
-	if ( StatusBar == NULL )
-		return;
-
-	StatusBar->AttachMessage( new DHUDMessageFadeOut( SmallFont, g_MOTD,
-		1.5f,
-		0.375f,
-		0,
-		0,
-		(EColorRange)PrintColors[5],
-		cl_motdtime,
-		0.35f ), MAKE_ID('M','O','T','D') );
-}
-
-//*****************************************************************************
-//
 AActor *CLIENT_FindThingByNetID( LONG lNetID )
 {
     return ( g_NetIDList.findPointerByID ( lNetID ) );
@@ -3383,7 +3343,7 @@ void ServerCommands::EndSnapshot::Execute()
 	}
 
 	// Display the message of the day.
-	CLIENT_DisplayMOTD( );
+	C_MOTDPrint( g_MOTD );
 }
 
 //*****************************************************************************
@@ -5693,6 +5653,8 @@ void ServerCommands::PrintMOTD::Execute()
 	g_MOTD = motd;
 	// [BB] Some cleaning of the string since we can't trust the server.
 	V_RemoveTrailingCrapFromFString ( g_MOTD );
+	// [AK] Add pretty colors/formatting!
+	V_ColorizeString( g_MOTD );
 }
 
 //*****************************************************************************
@@ -9518,7 +9480,10 @@ CCMD( send_password )
 
 //*****************************************************************************
 // [Dusk] Redisplay the MOTD
-CCMD( motd ) {CLIENT_DisplayMOTD();}
+CCMD( motd )
+{
+	C_MOTDPrint( g_MOTD );
+}
 
 //*****************************************************************************
 //	CONSOLE VARIABLES

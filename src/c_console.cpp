@@ -2271,6 +2271,28 @@ void C_MidPrintBold (FFont *font, const char *msg)
 	}
 }
 
+// [AK] Prints the MOTD in the centre of the screen.
+void C_MOTDPrint (FString msg)
+{
+	if (msg.Len( ) <= 0)
+		return;
+
+	FString ConsoleString;
+	ConsoleString.Format ("%s\n%s\n%s\n", bar1, msg, bar3);
+
+	// Add this message to the console window.
+	AddToConsole (-1, ConsoleString);
+
+	// We cannot create the message if there's no status bar to attach it to.
+	if (StatusBar == NULL)
+		return;
+
+	// [AK] Print the MOTD in the same color the user wishes to print mid-screen messages in.
+	EColorRange Color = static_cast<EColorRange> (PrintColors[PRINTLEVELS]);
+	DHUDMessageFadeOut* pMsg = new DHUDMessageFadeOut (SmallFont, msg, 1.5f, 0.375f, 0, 0, Color, cl_motdtime, 0.35f);
+	StatusBar->AttachMessage (pMsg, MAKE_ID('M','O','T','D'));
+}
+
 /****** Tab completion code ******/
 
 struct TabData
