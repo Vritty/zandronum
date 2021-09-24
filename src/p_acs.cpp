@@ -7312,64 +7312,66 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 		case ACSF_SetCurrentGamemode:
 			{
-				const char *name = FBehavior::StaticLookupString( args[0] );
+				// [AK] Only the server should change the game mode, but not during the result sequence.
+				if (( NETWORK_InClientMode()) || ( GAMEMODE_GetState() == GAMESTATE_INRESULTSEQUENCE ))
+					return 0;
+
+				FString name = "GAMEMODE_";
+				name += FBehavior::StaticLookupString( args[0] );
+				name.ToUpper( );
+
 				const GAMEMODE_e oldmode = GAMEMODE_GetCurrentMode();
-				GAMEMODE_e newmode;
 
-				// [AK] Only the server should change the gamemode, but not during the result sequence.
-				if ( NETWORK_InClientMode() || GAMEMODE_GetState() == GAMESTATE_INRESULTSEQUENCE )
+				// [AK] Don't accept invalid game mode names.
+				int gamemode = GetValueGAMEMODE_e( name );
+				if ( gamemode == -1 )
 					return 0;
 
-				// [AK] No need to change the gamemode if we're already playing it.
-				if ( stricmp( name, GAMEMODE_GetName( oldmode )) == 0 )
+				// [AK] No need to change the game mode if we're already playing it.
+				GAMEMODE_e newmode = static_cast<GAMEMODE_e>( gamemode );
+				if ( newmode == oldmode )
 					return 0;
 
-				for ( int i = 0; i < NUM_GAMEMODES; i++ )
+				// [AK] Don't change to any team game if there's no team starts on the map!
+				if (( GAMEMODE_GetFlags( newmode ) & GMF_TEAMGAME ) && ( TEAM_GetNumTeamsWithStarts() < 1 ))
+					return 0;
+				
+				// [AK] Don't change to deathmatch if there's no deathmatch starts on the map!
+				if ( GAMEMODE_GetFlags( newmode ) & GMF_DEATHMATCH )
 				{
-					newmode = static_cast<GAMEMODE_e> ( i );
-					if ( stricmp( name, GAMEMODE_GetName( newmode )) != 0 )
-						continue;
-
-					// [AK] Don't change to any team game if there's no team starts on the map!
-					if (( GAMEMODE_GetFlags( newmode ) & GMF_TEAMGAME ) && TEAM_GetNumTeamsWithStarts() < 1 )
+					if ( deathmatchstarts.Size() < 1 )
 						return 0;
-					// [AK] Don't change to deathmatch if there's no deathmatch starts on the map!
-					if ( GAMEMODE_GetFlags( newmode ) & GMF_DEATHMATCH )
-					{
-						if ( deathmatchstarts.Size() < 1 )
-							return 0;
 
-						// [AK] If we're changing to duel, don't change if there's too many active players.
-						if ( newmode == GAMEMODE_DUEL && GAME_CountActivePlayers() > 2 )
-							return 0;
-					}
-					// [AK] Don't change to cooperative if there's no cooperative starts on the map!
-					else if ( GAMEMODE_GetFlags( newmode ) & GMF_COOPERATIVE )
-					{
-						ULONG ulNumSpawns = 0;
-						for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-						{
-							if ( playerstarts[ulIdx].type != 0 )
-							{
-								ulNumSpawns++;
-								break;
-							}
-						}
-
-						if ( ulNumSpawns < 1 )
-							return 0;
-					}
-
-					// [AK] If everything's okay now, change the gamemode.
-					GAMEMODE_SetCurrentMode( newmode );
-
-					// [AK] We should also start a new game, so just execute the "map" CCMD to do this.
-					FString command;
-					command.Format( "map %s", level.mapname );
-					C_DoCommand( command.GetChars());
-					return 1;
+					// [AK] If we're changing to duel, don't change if there's too many active players.
+					if (( newmode == GAMEMODE_DUEL ) && ( GAME_CountActivePlayers() > 2 ))
+						return 0;
 				}
-				return 0;
+				// [AK] Don't change to cooperative if there's no cooperative starts on the map!
+				else if ( GAMEMODE_GetFlags( newmode ) & GMF_COOPERATIVE )
+				{
+					ULONG ulNumSpawns = 0;
+					for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+					{
+						if ( playerstarts[ulIdx].type != 0 )
+						{
+							ulNumSpawns++;
+							break;
+						}
+					}
+
+					if ( ulNumSpawns < 1 )
+						return 0;
+				}
+
+				// [AK] If everything's okay now, change the gamemode.
+				GAMEMODE_SetCurrentMode( newmode );
+
+				// [AK] We should also start a new game, so just execute the "map" CCMD to do this.
+				FString command;
+				command.Format( "map %s", level.mapname );
+				C_DoCommand( command );
+				
+				return 1;
 			}
 
 		case ACSF_GetCurrentGamemode:
