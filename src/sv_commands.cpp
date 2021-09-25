@@ -3358,7 +3358,7 @@ void SERVERCOMMANDS_SoundActor( AActor *pActor, LONG lChannel, const char *pszSo
 		return;
 
 	// [AK] If the actor is a player, don't tell clients to play the sound while we're backtracing their movement.
-	if (( pActor->player ) && ( SERVER_GetClient( pActor->player - players )->bIsBacktracing ))
+	if (( pActor->player ) && ( pActor->player->mo == pActor ) && ( SERVER_GetClient( pActor->player - players )->bIsBacktracing ))
 		return;
 
 	// [BB] If the actor doesn't have a NetID, we have to instruct the clients differently how to play the sound.
