@@ -213,6 +213,7 @@ bool		GAMEMODE_IsHandledSpecial ( AActor *Activator, int Special );
 GAMESTATE_e	GAMEMODE_GetState ( void );
 void		GAMEMODE_SetState ( GAMESTATE_e GameState );
 void		GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator = NULL, const int DataOne = 0, const int DataTwo = 0 );
+void		GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *source, int damage, FName mod );
 
 // [BB] This function doesn't really belong here. Find a better place for it.
 void		GAMEMODE_DisplayStandardMessage( const char *pszMessage, const bool bInformClients = false );

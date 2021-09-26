@@ -67,6 +67,7 @@
 #include "possession.h"
 #include "p_lnspec.h"
 #include "p_acs.h"
+#include "gi.h"
 // [BB] The next includes are only needed for GAMEMODE_DisplayStandardMessage
 #include "sbar.h"
 #include "v_video.h"
@@ -1099,6 +1100,36 @@ void GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const i
 	// the second and third are specific to the event, e.g. the second is the number of the fragged player.
 	// The third argument will be zero if it isn't used in the script.
 	FBehavior::StaticStartTypedScripts( SCRIPT_Event, pActivator, true, Event, bRunNow, false, DataOne, DataTwo );
+}
+
+//*****************************************************************************
+//
+void GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *source, int damage, FName mod )
+{
+	// [AK] Don't run any scripts if the target doesn't allow executing GAMEEVENT_ACTOR_DAMAGED.
+	if ( target->STFlags & STFL_NODAMAGEEVENTSCRIPT )
+		return;
+
+	// [AK] Don't run any scripts if the target can't execute GAMEEVENT_ACTOR_DAMAGED unless
+	// all actors are forced to execute it.
+	if ((( target->STFlags & STFL_USEDAMAGEEVENTSCRIPT ) == false ) && ( gameinfo.bForceDamageEventScripts == false ))
+		return;
+	
+	// [AK] We somehow need to pass the source and inflictor actor pointers into the script
+	// itself. A simple way to do this is temporarily changing the target's pointers to the
+	// source and inflictor, which we'll then use to initialize AAPTR_DAMAGE_SOURCE and
+	// AAPTR_DAMAGE_INFLICTOR for the script.
+	// The source actor is the activator, which we'll use to initialize AAPTR_DAMAGE_TARGET.
+	AActor *tempMaster = target->master;
+	AActor *tempTarget = target->target;
+	target->master = source;
+	target->target = inflictor;
+
+	GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, target, damage, GlobalACSStrings.AddString( mod ));
+
+	// [AK] Restore the source actor's old pointers.
+	target->master = tempMaster;
+	target->target = tempTarget;
 }
 
 //*****************************************************************************

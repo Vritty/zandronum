@@ -1508,7 +1508,8 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 	lOldTargetHealth = target->health;
 	if (player)
 	{
-		
+		bool bDamageEventHandled = false; // [AK]
+
 		// [TIHan/Spleen] Apply factor for damage dealt to players by monsters.
 		ApplyCoopDamagefactor(damage, source);
 
@@ -1553,6 +1554,10 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 				}
 			}
 			
+			// [AK] Trigger an event script indicating that the player has taken damage, if we can.
+			GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod );
+			bDamageEventHandled = true;
+
 			if (damage >= player->health
 				&& (G_SkillProperty(SKILLP_AutoUseHealth) || deathmatch)
 				&& !player->morphTics)
@@ -1560,6 +1565,10 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 				P_AutoUseHealth (player, damage - player->health + 1);
 			}
 		}
+
+		// [AK] If we haven't done so already, trigger an event script indicating that the player has taken damage.
+		if ( bDamageEventHandled == false )
+			GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod );
 
 		player->health -= damage;		// mirror mobj health here for Dave
 		// [RH] Make voodoo dolls and real players record the same health
@@ -1625,6 +1634,9 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 			}
 		}
 	
+		// [AK] Trigger an event script indicating that the target actor has taken damage, if we can.
+		GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod );
+
 		target->health -= damage;	
 	}
 
@@ -1663,26 +1675,6 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 		&& ( target->flags & MF_COUNTKILL ))
 	{
 		source->player->ulUnrewardedDamageDealt += MIN( (int)lOldTargetHealth, damage );
-	}
-
-	// [AK] Trigger an event script indicating that the target actor has taken damage, if we can.
-	if ((( target->STFlags & STFL_NODAMAGEEVENTSCRIPT ) == false ) && (( target->STFlags & STFL_USEDAMAGEEVENTSCRIPT ) || ( gameinfo.bForceDamageEventScripts )))
-	{
-		// [AK] We somehow need to pass the source and inflictor actor pointers into the script
-		// itself. A simple way to do this is temporarily changing the target's pointers to the
-		// source and inflictor, which we'll then use to initialize AAPTR_DAMAGE_SOURCE and
-		// AAPTR_DAMAGE_INFLICTOR for the script.
-		// The source actor is the activator, which we'll use to initialize AAPTR_DAMAGE_TARGET.
-		AActor *tempMaster = target->master;
-		AActor *tempTarget = target->target;
-		target->master = source;
-		target->target = inflictor;
-
-		GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, target, damage, GlobalACSStrings.AddString( mod ));
-
-		// [AK] Restore the source actor's old pointers.
-		target->master = tempMaster;
-		target->target = tempTarget;
 	}
 
 	// [BC] Tell clients that this thing was damaged.
