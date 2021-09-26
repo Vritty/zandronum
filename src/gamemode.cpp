@@ -174,7 +174,6 @@ FFlagCVar *GAMEMODE_ParserMustGetFlagset ( FScanner &sc, const GAMEMODE_e GameMo
 //
 void GAMEMODE_ParseGamemodeInfoLump ( FScanner &sc, const GAMEMODE_e GameMode )
 {
-	TEAMINFO team;
 	FLAGSET_e flagset;
 
 	sc.MustGetStringName("{");
