@@ -1,3 +1,8 @@
+// [AK] This is just to initialize the flagsets of all game modes to zero.
+DefaultGameSettings
+{
+}
+
 // Regular co-op
 Cooperative
 {
