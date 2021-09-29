@@ -1145,7 +1145,12 @@ void DBaseStatusBar::DrawCrosshair ()
 
 	// Don't draw the crosshair in chasecam mode
 	if (players[consoleplayer].cheats & CF_CHASECAM)
-		return;
+	{
+		// [AK] Still draw the crosshair if they're a spectator and spying on themelves, since the chasecam
+		// will be disabled for them anyways.
+		if (CLIENTDEMO_IsInFreeSpectateMode() || (players[consoleplayer].bSpectating && players[consoleplayer].camera != players[consoleplayer].mo))
+			return;
+	}
 
 	ST_LoadCrosshair();
 
