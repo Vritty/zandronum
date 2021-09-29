@@ -4402,9 +4402,18 @@ void SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags )
 
 	// [AK] We also need to tell the clients to update the changed flagset.
 	if ( flagset == *lmsspectatorsettings )
+	{
 		SERVERCOMMANDS_SetLMSSpectatorSettings( );
+	}
+	else if ( flagset == *lmsallowedweapons )
+	{
+		if (( lastmanstanding ) || ( teamlms ))
+			SERVERCOMMANDS_SetLMSAllowedWeapons( );
+	}
 	else
+	{
 		SERVERCOMMANDS_SetGameDMFlags( );
+	}
 }
 
 //*****************************************************************************

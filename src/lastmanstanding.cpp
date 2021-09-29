@@ -784,12 +784,7 @@ CUSTOM_CVAR( Int, winlimit, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK )
 // [AK] Added CVAR_GAMEMODELOCK.
 CUSTOM_CVAR( Int, lmsallowedweapons, LMS_AWF_ALLALLOWED, CVAR_SERVERINFO | CVAR_GAMEMODELOCK )
 {
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		if ( lastmanstanding || teamlms )
-			SERVERCOMMANDS_SetLMSAllowedWeapons( );
-	}
+	SERVER_FlagsetChanged( self );
 }
 CVAR( Flag, lms_allowpistol, lmsallowedweapons, LMS_AWF_PISTOL );
 CVAR( Flag, lms_allowshotgun, lmsallowedweapons, LMS_AWF_SHOTGUN );
