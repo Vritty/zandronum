@@ -80,6 +80,8 @@ struct FLatchedValue
 static TArray<FLatchedValue> LatchedValues;
 // [AK] Saved original values of CVars changed by ConsoleCommand.
 static TArray<FLatchedValue> SavedValues;
+// [AK] A list of ServerInfo CVars entered as custom parameters on the command line.
+static TArray<FLatchedValue> SavedServerInfoValues;
 
 bool FBaseCVar::m_DoNoSet = false;
 bool FBaseCVar::m_UseCallback = false;
@@ -1743,6 +1745,19 @@ FBaseCVar* C_GetRootCVar()
 	return CVars;
 }
 
+// [AK] Restores values set for ServerInfo CVars on the command line.
+void C_RestoreServerInfoCVars( void )
+{
+	FLatchedValue var;
+
+	while ( SavedServerInfoValues.Pop( var ))
+	{
+		var.Variable->SetGenericRep( var.Value, var.Type );
+		if ( var.Type == CVAR_String )
+			delete[] var.Value.String;
+	}
+}
+
 // [AK] Try to load a single mod CVar if it exists in the config file.
 bool C_FindModCVar( FBaseCVar **cvar, const char *cvarname, bool userinfo = false )
 {
@@ -1800,6 +1815,26 @@ void FBaseCVar::CmdSet (const char *newval)
 		Printf ("%s is write protected.\n", GetName());
 	else if (GetFlags() & CVAR_LATCH)
 		Printf ("%s will be changed for next game.\n", GetName());
+
+	// [AK] If this is a net ServerInfo CVar that was entered as a custom parameter on the
+	// command line, keep a copy of the value. We'll need to restore it once the server
+	// has read all ServerInfo CVars from its config file upon startup.
+	if ((gamestate == GS_STARTUP) && (NETWORK_GetState() == NETSTATE_SERVER))
+	{
+		if ((Flags & (CVAR_SERVERINFO | CVAR_ARCHIVE)) == (CVAR_SERVERINFO | CVAR_ARCHIVE))
+		{
+			FLatchedValue saved;
+			saved.Variable = this;
+			saved.Type = this->GetRealType();
+
+			if (saved.Type != CVAR_String)
+				saved.Value = this->GetGenericRep(saved.Type);
+			else
+				saved.Value.String = ncopystring(this->GetGenericRep(saved.Type).String);
+
+			SavedServerInfoValues.Push(saved);
+		}
+	}
 
 	// [AK] If this is a dummy mod CVar that was changed using ConsoleCommand, then make it
 	// accessible to ACS. This ensures mods that created their own CVars with the "set" and
