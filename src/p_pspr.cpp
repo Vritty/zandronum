@@ -592,8 +592,8 @@ void P_BobWeapon (player_t *player, pspdef_t *psp, fixed_t *x, fixed_t *y)
 		if ((paused == false) && (P_CheckTickerPaused() == false) && (CLIENT_GetServerLagging() == false))
 		{
 			fixed_t nswaypos[2];
-			nswaypos[0] = FLOAT2FIXED(FIXED2FLOAT(player->mo->AngleDelta) * cl_swayspeed / 128.0f);
-			nswaypos[1] = FLOAT2FIXED(FIXED2FLOAT(player->mo->PitchDelta) * cl_swayspeed / 128.0f);
+			nswaypos[0] = FLOAT2FIXED(FIXED2FLOAT(player->mo->AngleDelta) * cl_swayspeed / 256.0f);
+			nswaypos[1] = FLOAT2FIXED(FIXED2FLOAT(player->mo->PitchDelta) * cl_swayspeed / 256.0f);
 
 			for (int i = 0; i <= 1; i++)
 			{
