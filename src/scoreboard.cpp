@@ -113,7 +113,7 @@ static	const char	*g_pszColumnHeaders[NUM_COLUMN_TYPES] =
 	"DEATHS",
 	"WINS",
 	"KILLS",
-	"SCORE",
+	"ASSISTS",
 	"SECRETS",
 	"MEDALS",
 };
@@ -487,8 +487,8 @@ static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPl
 					text.Format( "%d", static_cast<int>( players[ulPlayer].lPointCount ));
 					break;
 
-				case COLUMN_POINTSASSISTS:
-					text.Format( "%d / %d", static_cast<int>( players[ulPlayer].lPointCount ), static_cast<unsigned int>( players[ulPlayer].ulMedalCount[14] ));
+				case COLUMN_ASSISTS:
+					text.Format( "%d", static_cast<unsigned int>( players[ulPlayer].ulMedalCount[14] ));
 					break;
 
 				case COLUMN_WINS:
