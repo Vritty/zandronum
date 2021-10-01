@@ -784,7 +784,7 @@ static void scoreboard_Prepare5ColumnDisplay( void )
 		g_aulColumnType[0] = COLUMN_WINS;
 		g_aulColumnType[1] = COLUMN_FRAGS;
 		g_aulColumnType[2] = COLUMN_NAME;
-		g_aulColumnType[3] = COLUMN_EMPTY;
+		g_aulColumnType[3] = COLUMN_DEATHS;
 		if ( NETWORK_InClientMode() )
 			g_aulColumnType[3] = COLUMN_PING;
 		g_aulColumnType[4] = COLUMN_TIME;
