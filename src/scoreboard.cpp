@@ -115,7 +115,6 @@ static	const char	*g_pszColumnHeaders[NUM_COLUMN_TYPES] =
 	"DEATHS",
 	"ASSISTS",
 	"SECRETS",
-	"MEDALS",
 };
 
 //*****************************************************************************
