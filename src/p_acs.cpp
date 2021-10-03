@@ -11670,14 +11670,16 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, const ScriptPtr
 
 	// [AK] Check if this is an event script triggered by GAMEEVENT_ACTOR_DAMAGED. This is
 	// where we initialize the script's target, source, and inflictor pointers by using the
-	// activator as the target, and the activator's own master and target, which are the
-	// source and inflictor respectively.
+	// temporary activator's own pointers.
 	if (( NETWORK_InClientMode( ) == false ) && ( who != NULL ) &&
 		( code->Type == SCRIPT_Event ) && ( args[0] == GAMEEVENT_ACTOR_DAMAGED ))
 	{
-		pDamageTarget = who;
+		pDamageTarget = who->target;
 		pDamageSource = who->master;
-		pDamageInflictor = who->target;
+		pDamageInflictor = who->tracer;
+
+		// [AK] Make the target actor the activator.
+		activator = pDamageTarget;
 	}
 	else
 	{

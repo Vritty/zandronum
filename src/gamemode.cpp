@@ -1115,21 +1115,20 @@ void GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *sou
 	if ((( target->STFlags & STFL_USEDAMAGEEVENTSCRIPT ) == false ) && ( gameinfo.bForceDamageEventScripts == false ))
 		return;
 	
-	// [AK] We somehow need to pass the source and inflictor actor pointers into the script
-	// itself. A simple way to do this is temporarily changing the target's pointers to the
-	// source and inflictor, which we'll then use to initialize AAPTR_DAMAGE_SOURCE and
-	// AAPTR_DAMAGE_INFLICTOR for the script.
-	// The source actor is the activator, which we'll use to initialize AAPTR_DAMAGE_TARGET.
-	AActor *tempMaster = target->master;
-	AActor *tempTarget = target->target;
-	target->master = source;
-	target->target = inflictor;
+	// [AK] We somehow need to pass all the actor pointers into the script itself. A simple way
+	// to do this is temporarily spawn a temporary actor and change its actor pointers to the target,
+	// source, and inflictor. We can then use these to initialize the AAPTR_DAMAGE_TARGET,
+	// AAPTR_DAMAGE_SOURCE, and AAPTR_DAMAGE_INFLICTOR pointers of the script.
+	AActor *temp = Spawn( "MapSpot", target->x, target->y, target->z, NO_REPLACE );
 
-	GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, target, damage, GlobalACSStrings.AddString( mod ));
+	temp->target = target;
+	temp->master = source;
+	temp->tracer = inflictor;
 
-	// [AK] Restore the source actor's old pointers.
-	target->master = tempMaster;
-	target->target = tempTarget;
+	GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, temp, damage, GlobalACSStrings.AddString( mod ));
+
+	// [AK] Destroy the temporary actor after executing all event scripts.
+	temp->Destroy( );
 }
 
 //*****************************************************************************
