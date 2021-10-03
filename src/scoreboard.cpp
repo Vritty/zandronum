@@ -179,10 +179,10 @@ void SCOREBOARD_Render( ULONG ulDisplayPlayer )
 	// First, determine how many columns we can use, based on our screen resolution.
 	ulNumIdealColumns = 3;
 
-	if ( HUD_GetWidth( ) >= 480 )
-		ulNumIdealColumns = 4;
-	else if ( HUD_GetWidth( ) >= 600 )
+	if ( HUD_GetWidth( ) >= 600 )
 		ulNumIdealColumns = 5;
+	else if ( HUD_GetWidth( ) >= 480 )
+		ulNumIdealColumns = 4;
 
 	// The 5 column display is only availible for modes that support it.
 	if (( ulNumIdealColumns == 5 ) && !( GAMEMODE_GetCurrentFlags() & (GMF_PLAYERSEARNPOINTS|GMF_PLAYERSEARNWINS) ))
