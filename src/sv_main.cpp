@@ -315,7 +315,7 @@ CUSTOM_CVAR( Int, sv_extrapolatetics, 10, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERV
 
 //*****************************************************************************
 // [AK] How much error, in map units, is allowed after a backtrace for it to still be acceptable.
-CUSTOM_CVAR( Float, sv_backtracelimit, 32.0, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
+CUSTOM_CVAR( Float, sv_backtracelimit, 0.0f, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 {
 	if ( self < 0 )
 		self = 0;
@@ -5238,7 +5238,7 @@ bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldDa
 	// extrapolated them to, depending on how much error we can accept with predicting their movement.
 	// We also don't need to accept the backtrace if they're close enough that rejecting it won't make
 	// a huge impact on their end. This eliminates any small stutters on the other clients' ends.
-	if (( fDiff < 8.0 ) || ( fDiff > sv_backtracelimit ))
+	if (( fDiff < 8.0 ) || (( sv_backtracelimit != 0.0f ) && ( fDiff > sv_backtracelimit )))
 		return false;
 
 	// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
