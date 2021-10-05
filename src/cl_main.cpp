@@ -5487,6 +5487,11 @@ void ServerCommands::TeleportThing::Execute()
 	// Set the thing's new position.
 	CLIENT_MoveThing( actor, x, y, z );
 
+	// [AK] Don't interpolate the thing to their new position.
+	actor->PrevX = x;
+	actor->PrevY = y;
+	actor->PrevZ = z;
+
 	// Spawn a teleport fog at the destination.
 	if ( destfog )
 	{
