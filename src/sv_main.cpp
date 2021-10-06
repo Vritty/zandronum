@@ -1128,7 +1128,7 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 		return;
 
 	// Potentially prevent spectators from talking to active players during LMS games.
-	const bool bFordidChatToPlayers = GAMEMODE_IsClientFordiddenToChatToPlayers( ulPlayer );
+	const bool bForbidChatToPlayers = GAMEMODE_IsClientForbiddenToChatToPlayers( ulPlayer );
 
 	FString cleanedChatString = pszString;
 
@@ -1151,11 +1151,11 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 	// [AK] Check if we're sending a private message.
 	if ( ulMode == CHATMODE_PRIVATE_SEND )
 	{
-		SERVERCOMMANDS_PrivateSay( ulPlayer, ulReceiver, pszString, bFordidChatToPlayers );
+		SERVERCOMMANDS_PrivateSay( ulPlayer, ulReceiver, pszString, bForbidChatToPlayers );
 	}
 	else
 	{
-		SERVERCOMMANDS_PlayerSay( ulPlayer, pszString, ulMode, bFordidChatToPlayers );
+		SERVERCOMMANDS_PlayerSay( ulPlayer, pszString, ulMode, bForbidChatToPlayers );
 		CHAT_AddChatMessage( ulPlayer, pszString );
 
 		// [AK] Trigger an event script indicating that a chat message was received.

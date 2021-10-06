@@ -827,7 +827,7 @@ void GAMEMODE_ResetPlayersKillCount( const bool bInformClients )
 
 //*****************************************************************************
 //
-bool GAMEMODE_AreSpectatorsFordiddenToChatToPlayers( void )
+bool GAMEMODE_AreSpectatorsForbiddenToChatToPlayers( void )
 {
 	if ( ( lmsspectatorsettings & LMS_SPF_CHAT ) == false )
 	{
@@ -843,7 +843,7 @@ bool GAMEMODE_AreSpectatorsFordiddenToChatToPlayers( void )
 
 //*****************************************************************************
 //
-bool GAMEMODE_IsClientFordiddenToChatToPlayers( const ULONG ulClient )
+bool GAMEMODE_IsClientForbiddenToChatToPlayers( const ULONG ulClient )
 {
 	// [BB] If it's not a valid client, there are no restrictions. Note:
 	// ulClient == MAXPLAYERS means the server wants to say something.
@@ -854,7 +854,7 @@ bool GAMEMODE_IsClientFordiddenToChatToPlayers( const ULONG ulClient )
 	if ( players[ulClient].bSpectating == false )
 		return false;
 
-	return GAMEMODE_AreSpectatorsFordiddenToChatToPlayers();
+	return GAMEMODE_AreSpectatorsForbiddenToChatToPlayers();
 }
 
 //*****************************************************************************

@@ -777,7 +777,7 @@ void CHAT_Render( void )
 	}
 
 	// [RC] Tell chatters about the iron curtain of LMS chat.
-	if ( GAMEMODE_AreSpectatorsFordiddenToChatToPlayers() )
+	if ( GAMEMODE_AreSpectatorsForbiddenToChatToPlayers() )
 	{
 		FString note = "NOTE: " TEXTCOLOR_GRAY;
 		bool bDrawNote = true;
