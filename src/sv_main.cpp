@@ -140,8 +140,6 @@ EXTERN_CVAR( Bool, sv_unlagged_debugactors )
 //*****************************************************************************
 //	PROTOTYPES
 
-static	bool	server_StartChat( BYTESTREAM_s *pByteStream );
-static	bool	server_EndChat( BYTESTREAM_s *pByteStream );
 static	bool	server_Ignore( BYTESTREAM_s *pByteStream );
 static	bool	server_Say( BYTESTREAM_s *pByteStream );
 static	bool	server_ClientMove( BYTESTREAM_s *pByteStream );
@@ -159,7 +157,6 @@ static	bool	server_SpectateInfo( BYTESTREAM_s *pByteStream );
 static	bool	server_GenericCheat( BYTESTREAM_s *pByteStream );
 static	bool	server_GiveCheat( BYTESTREAM_s *pByteStream, bool take );
 static	bool	server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType );
-static	bool	server_ReadyToGoOn( BYTESTREAM_s *pByteStream );
 static	bool	server_ChangeDisplayPlayer( BYTESTREAM_s *pByteStream );
 static	bool	server_AuthenticateLevel( BYTESTREAM_s *pByteStream );
 static	bool	server_CallVote( BYTESTREAM_s *pByteStream );
