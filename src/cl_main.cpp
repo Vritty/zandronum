@@ -321,6 +321,9 @@ static	bool				g_bFullUpdateIncomplete = false;
 // [BB] Time we received the end of the last full update from the server.
 static ULONG				g_ulEndFullUpdateTic = 0;
 
+// [AK] The time when we first entered the game.
+static	ULONG				g_ulFirstSpawnedTic = 0;
+
 // Used for item respawning client-side.
 static	FRandom				g_RestorePositionSeed( "ClientRestorePos" );
 
@@ -3397,10 +3400,18 @@ void ServerCommands::SpawnPlayer::Execute()
 	// are temporarily selected while getting the inventory. 
 	CLIENT_IgnoreWeaponSelect ( true );
 
-	// [BB] Possibly play a connect sound.
-	if ( cl_connectsound && ( playeringame[ulPlayer] == false ) && isSpectating && ( ulPlayer != static_cast<ULONG>(consoleplayer) )
-		&& ( CLIENT_GetConnectionState() != CTS_RECEIVINGSNAPSHOT ) )
-		S_Sound( CHAN_AUTO, "zandronum/connect", 1.f, ATTN_NONE );
+	if ( ulPlayer == static_cast<ULONG>( consoleplayer ))
+	{
+		// [AK] Keep track of the tic when we first entered the game.
+		if (( priorState == PST_ENTER ) || ( priorState == PST_ENTERNOINVENTORY ))
+			g_ulFirstSpawnedTic = gametic;
+	}
+	else
+	{
+		// [BB] Possibly play a connect sound.
+		if (( cl_connectsound ) && ( playeringame[ulPlayer] == false ) && ( isSpectating ) && ( CLIENT_GetConnectionState( ) != CTS_RECEIVINGSNAPSHOT ))
+			S_Sound( CHAN_AUTO, "zandronum/connect", 1.f, ATTN_NONE );
+	}
 
 	// This player is now in the game!
 	playeringame[ulPlayer] = true;
@@ -4444,12 +4455,20 @@ static void client_UpdateLocalPlayerGameTics( int latestServerGametic, unsigned 
 	// "ulClientTicOnServerEnd" is the gametic of the last time we sent a movement command.
 	CLIENT_SetLastConsolePlayerUpdateTick( clientTicOnServerEnd );
 
+	LONG lOffsettedTic = gametic - CLIENTDEMO_GetGameticOffset( );
 	// If the last time the server heard from us exceeds one second, the client is lagging!
 	// [BB] But don't think we are lagging immediately after receiving a full update.
-	if (( gametic - CLIENTDEMO_GetGameticOffset( ) - clientTicOnServerEnd >= TICRATE ) && (( gametic + CLIENTDEMO_GetGameticOffset( ) - g_ulEndFullUpdateTic ) > TICRATE ))
+	// [AK] Also don't think we are lagging if we just joined the game.
+	if (( lOffsettedTic - clientTicOnServerEnd >= TICRATE ) &&
+		( lOffsettedTic - g_ulFirstSpawnedTic >= TICRATE ) &&
+		( gametic + CLIENTDEMO_GetGameticOffset( ) - g_ulEndFullUpdateTic > TICRATE ))
+	{
 		g_bClientLagging = true;
+	}
 	else
+	{
 		g_bClientLagging = false;
+	}
 }
 
 //*****************************************************************************
