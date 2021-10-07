@@ -412,9 +412,10 @@ void P_Ticker (void)
 
 							SERVER_ResetClientExtrapolation( ulIdx );
 						}
+
 						// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing
 						// the last movement command we received from them, but we won't extrapolate more than we should.
-						else if (( numMoveCommands == 0 ) && ( client->LastMoveCMD != NULL ) && ( client->ulExtrapolatedTics < static_cast<ULONG>( sv_extrapolatetics )))
+						if (( numMoveCommands == 0 ) && ( client->LastMoveCMD != NULL ) && ( client->ulExtrapolatedTics < static_cast<ULONG>( sv_extrapolatetics )))
 						{
 							// [AK] Save the player's current position, velocity, and orientation before we start extrapolating.
 							if ( client->ulExtrapolatedTics++ == 0 )
