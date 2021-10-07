@@ -5263,13 +5263,16 @@ bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldDa
 
 //*****************************************************************************
 //
-void SERVER_ResetClientTicBuffer( ULONG ulClient )
+void SERVER_ResetClientTicBuffer( ULONG ulClient, bool bClearMoveCMDs )
 {
 	// [AK] Clear all stored commands in the tic buffer.
-	for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
-		delete g_aClients[ulClient].MoveCMDs[i];
+	if ( bClearMoveCMDs )
+	{
+		for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
+			delete g_aClients[ulClient].MoveCMDs[i];
 
-	g_aClients[ulClient].MoveCMDs.Clear( );
+		g_aClients[ulClient].MoveCMDs.Clear( );
+	}
 
 	// [AK] Also delete the last processed movement command.
 	if ( g_aClients[ulClient].LastMoveCMD != NULL )

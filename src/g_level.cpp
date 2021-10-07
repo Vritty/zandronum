@@ -1358,7 +1358,7 @@ void G_DoLoadLevel (int position, bool autosave)
 		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		{
 			// [AK] Reset this client's tic buffer.
-			SERVER_ResetClientTicBuffer( i );
+			SERVER_ResetClientTicBuffer( i, false );
 
 			SERVERCONSOLE_UpdatePlayerInfo( i, UDF_FRAGS|UDF_PING|UDF_TIME );
 			// [BB] Since the map was changed, the players who are already spawned need to reauthenticate.
