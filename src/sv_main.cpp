@@ -284,11 +284,23 @@ CVAR( Int, sv_showcommands, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY )
 // [AK] Smooths the movement of lagging players using extrapolation and correction.
 CUSTOM_CVAR( Bool, sv_smoothplayers, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO ) 
 {
-	// [AK] Reset the extrapolation for all clients if we disable the skip correction.
-	if ( !self )
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		for ( ULONG ulClient = 0; ulClient < MAXPLAYERS; ulClient++ )
-			SERVER_ResetClientExtrapolation( ulClient );
+		static bool bOldValue = self;
+
+		// [AK] Print a message indicating that the skip correction is enabled/disabled.
+		if ( self != bOldValue )
+		{
+			// [AK] Reset the extrapolation for all clients if we disable the skip correction.
+			if ( !self )
+			{
+				for ( ULONG ulClient = 0; ulClient < MAXPLAYERS; ulClient++ )
+					SERVER_ResetClientExtrapolation( ulClient );
+			}
+
+			SERVER_Printf( "Skip correction %s.\n", self ? "enabled" : "disabled" );
+			bOldValue = self;
+		}
 	}
 }
 
