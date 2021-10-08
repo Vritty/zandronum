@@ -3435,6 +3435,77 @@ bool PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, int flag )
 	return false;
 }
 
+//*****************************************************************************
+//
+LONG PLAYER_CalcSpread( ULONG ulPlayer )
+{
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
+	LONG lHighestScore = 0;
+	bool bInit = true;
+
+	// First, find the highest fragcount that isn't ours.
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	{
+		if (( ulPlayer == ulIdx ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
+			continue;
+
+		if (( ulFlags & GMF_PLAYERSEARNWINS ) && (( bInit ) || ( players[ulIdx].ulWins > static_cast<ULONG>( lHighestScore ))))
+		{
+			lHighestScore = players[ulIdx].ulWins;
+			bInit = false;
+		}
+		else if (( ulFlags & GMF_PLAYERSEARNPOINTS ) && (( bInit ) || ( players[ulIdx].lPointCount > lHighestScore )))
+		{
+			lHighestScore = players[ulIdx].lPointCount;
+			bInit = false;
+		}
+		else if (( ulFlags & GMF_PLAYERSEARNFRAGS ) && (( bInit ) || ( players[ulIdx].fragcount > lHighestScore )))
+		{
+			lHighestScore = players[ulIdx].fragcount;
+			bInit = false;
+		}
+	}
+
+	// [AK] Return the difference between our score and the highest score.
+	if ( bInit == false )
+	{
+		if ( ulFlags & GMF_PLAYERSEARNWINS )
+			return ( players[ulPlayer].ulWins - lHighestScore );
+		else if ( ulFlags & GMF_PLAYERSEARNPOINTS )
+			return ( players[ulPlayer].lPointCount - lHighestScore );
+		else
+			return ( players[ulPlayer].fragcount - lHighestScore );
+	}
+
+	// [AK] If we're the only person in the game just return zero.
+	return ( 0 );
+}
+
+//*****************************************************************************
+//
+ULONG PLAYER_CalcRank( ULONG ulPlayer )
+{
+	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
+	ULONG ulRank = 0;
+
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	{
+		if (( ulIdx == ulPlayer ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
+			continue;
+
+		if (( ulFlags & GMF_PLAYERSEARNWINS ) && ( players[ulIdx].ulWins > players[ulPlayer].ulWins ))
+			ulRank++;
+		else if (( ulFlags & GMF_PLAYERSEARNPOINTS ) && ( players[ulIdx].lPointCount > players[ulPlayer].lPointCount ))
+			ulRank++;
+		else if (( ulFlags & GMF_PLAYERSEARNFRAGS ) && ( players[ulIdx].fragcount > players[ulPlayer].fragcount ))
+			ulRank++;
+	}
+
+	return ( ulRank );
+}
+
+//*****************************************************************************
+//
 CCMD (kill)
 {
 	// Only allow it in a level.

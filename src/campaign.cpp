@@ -55,7 +55,6 @@
 #include "i_system.h"
 #include "network.h"
 #include "sc_man.h"
-#include "st_hud.h"
 #include "team.h"
 #include "w_wad.h"
 
@@ -244,7 +243,7 @@ bool CAMPAIGN_DidPlayerBeatMap( void )
 	// If it's a deathmatch, check the player's spread.
 	else if ( deathmatch )
 	{
-		if ( HUD_CalcSpread( consoleplayer ) < 0 )
+		if ( PLAYER_CalcSpread( consoleplayer ) < 0 )
 			return ( false );
 	}
 

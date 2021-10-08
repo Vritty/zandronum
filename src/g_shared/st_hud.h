@@ -75,8 +75,6 @@ void	HUD_Refresh( void );
 void	HUD_DrawCoopInfo( void );
 void	HUD_DrawFragMessage( player_t *pFraggedPlayer, bool bFraggedBy );
 bool	HUD_ShouldDrawRank( ULONG ulPlayer );
-LONG	HUD_CalcSpread( ULONG ulPlayerNum );
-ULONG	HUD_CalcRank( ULONG ulPlayerNum );
 bool	HUD_IsTied( ULONG ulPlayerNum );
 bool	HUD_IsTied( void );
 ULONG	HUD_GetViewPlayer( void );

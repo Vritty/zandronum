@@ -70,7 +70,6 @@
 #include "p_trace.h"
 #include "i_system.h"
 #include "sc_man.h"
-#include "st_hud.h"
 #include "sv_commands.h"
 #include "sv_main.h"
 #include "team.h"
@@ -2509,7 +2508,7 @@ static void botcmd_GetSpread( CSkullBot *pBot )
 			g_iReturnInt = TEAM_GetWinCountSpread( pBot->GetPlayer( )->Team );
 	}
 	else
-		g_iReturnInt = HUD_CalcSpread( pBot->GetPlayer( ) - players );
+		g_iReturnInt = PLAYER_CalcSpread( pBot->GetPlayer( ) - players );
 }
 
 //*****************************************************************************

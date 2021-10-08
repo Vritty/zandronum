@@ -300,8 +300,8 @@ void HUD_Refresh( void )
 	player_t *player = &players[HUD_GetViewPlayer( )];
 	ULONG ulPlayer = player - players;
 
-	g_ulRank = HUD_CalcRank( ulPlayer );
-	g_lSpread = HUD_CalcSpread( ulPlayer );
+	g_ulRank = PLAYER_CalcRank( ulPlayer );
+	g_lSpread = PLAYER_CalcSpread( ulPlayer );
 	g_bIsTied = HUD_IsTied( ulPlayer );
 
 	// [AK] Count how many players are in the game.
@@ -883,75 +883,6 @@ bool HUD_ShouldDrawRank( ULONG ulPlayer )
 
 //*****************************************************************************
 //
-LONG HUD_CalcSpread( ULONG ulPlayerNum )
-{
-	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
-	LONG lHighestScore = 0;
-	bool bInit = true;
-
-	// First, find the highest fragcount that isn't ours.
-	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-	{
-		if (( ulPlayerNum == ulIdx ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
-			continue;
-
-		if (( ulFlags & GMF_PLAYERSEARNWINS ) && (( bInit ) || ( players[ulIdx].ulWins > static_cast<ULONG>( lHighestScore ))))
-		{
-			lHighestScore = players[ulIdx].ulWins;
-			bInit = false;
-		}
-		else if (( ulFlags & GMF_PLAYERSEARNPOINTS ) && (( bInit ) || ( players[ulIdx].lPointCount > lHighestScore )))
-		{
-			lHighestScore = players[ulIdx].lPointCount;
-			bInit = false;
-		}
-		else if (( ulFlags & GMF_PLAYERSEARNFRAGS ) && (( bInit ) || ( players[ulIdx].fragcount > lHighestScore )))
-		{
-			lHighestScore = players[ulIdx].fragcount;
-			bInit = false;
-		}
-	}
-
-	// [AK] Return the difference between our score and the highest score.
-	if ( bInit == false )
-	{
-		if ( ulFlags & GMF_PLAYERSEARNWINS )
-			return ( players[ulPlayerNum].ulWins - lHighestScore );
-		else if ( ulFlags & GMF_PLAYERSEARNPOINTS )
-			return ( players[ulPlayerNum].lPointCount - lHighestScore );
-		else
-			return ( players[ulPlayerNum].fragcount - lHighestScore );
-	}
-
-	// [AK] If we're the only person in the game just return zero.
-	return ( 0 );
-}
-
-//*****************************************************************************
-//
-ULONG HUD_CalcRank( ULONG ulPlayerNum )
-{
-	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
-	ULONG ulRank = 0;
-
-	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-	{
-		if (( ulIdx == ulPlayerNum ) || ( playeringame[ulIdx] == false ) || ( PLAYER_IsTrueSpectator( &players[ulIdx] )))
-			continue;
-
-		if (( ulFlags & GMF_PLAYERSEARNWINS ) && ( players[ulIdx].ulWins > players[ulPlayerNum].ulWins ))
-			ulRank++;
-		else if (( ulFlags & GMF_PLAYERSEARNPOINTS ) && ( players[ulIdx].lPointCount > players[ulPlayerNum].lPointCount ))
-			ulRank++;
-		else if (( ulFlags & GMF_PLAYERSEARNFRAGS ) && ( players[ulIdx].fragcount > players[ulPlayerNum].fragcount ))
-			ulRank++;
-	}
-
-	return ( ulRank );
-}
-
-//*****************************************************************************
-//
 bool HUD_IsTied( ULONG ulPlayerNum )
 {
 	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
@@ -1210,7 +1141,7 @@ FString HUD_BuildPlaceString( ULONG ulPlayer )
 
 			// [AK] Get the rank of this player, though it isn't always equivalent to g_ulRank. Particularly,
 			// when we (the local player) get a frag or get fragged while spying on another player.
-			ULONG ulRank = ( ulPlayer == HUD_GetViewPlayer( )) ? g_ulRank : HUD_CalcRank( ulPlayer );
+			ULONG ulRank = ( ulPlayer == HUD_GetViewPlayer( )) ? g_ulRank : PLAYER_CalcRank( ulPlayer );
 			text.AppendFormat( "%s" TEXTCOLOR_NORMAL " place with ", HUD_SpellOrdinal( ulRank, true ).GetChars() );
 
 			// Tack on the rest of the string.

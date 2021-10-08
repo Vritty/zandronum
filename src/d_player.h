@@ -806,6 +806,8 @@ bool	PLAYER_NameUsed( const FString &Name, const ULONG ulIgnorePlayer = MAXPLAYE
 FString	PLAYER_GenerateUniqueName( void );
 bool	PLAYER_CanRespawnWhereDied( player_t *pPlayer );
 bool	PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, int flag );
+LONG	PLAYER_CalcSpread( ULONG ulPlayer );
+ULONG	PLAYER_CalcRank( ULONG ulPlayer );
 
 void P_CheckPlayerSprite(AActor *mo, int &spritenum, fixed_t &scalex, fixed_t &scaley);
 
