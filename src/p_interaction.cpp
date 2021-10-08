@@ -2814,7 +2814,7 @@ void PLAYER_SpectatorJoinsGame( player_t *pPlayer )
 //
 void PLAYER_SetPoints( player_t *pPlayer, ULONG ulPoints )
 {
-	// Set the player's fragcount.
+	// Set the player's point count.
 	pPlayer->lPointCount = ulPoints;
 
 	// Refresh the HUD since a score has changed.
@@ -2822,7 +2822,7 @@ void PLAYER_SetPoints( player_t *pPlayer, ULONG ulPoints )
 
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		// If we're the server, notify the clients of the win count change.
+		// If we're the server, notify the clients of the point count change.
 		SERVERCOMMANDS_SetPlayerPoints( static_cast<ULONG>( pPlayer - players ));
 
 		// Also, update the scoreboard.
@@ -2835,7 +2835,7 @@ void PLAYER_SetPoints( player_t *pPlayer, ULONG ulPoints )
 //
 void PLAYER_SetWins( player_t *pPlayer, ULONG ulWins )
 {
-	// Set the player's fragcount.
+	// Set the player's win count.
 	pPlayer->ulWins = ulWins;
 
 	// Refresh the HUD since a score has changed.
