@@ -170,36 +170,36 @@ static void MAPROTATION_CalcNextMap( void )
 			ulPlayerCount++;
 	}
 
+	// If all the maps have been played, make them all available again.
+	{
+		bool bAllMapsPlayed = true;
+		for ( ULONG ulIdx = 0; ulIdx < g_MapRotationEntries.size( ); ulIdx++ )
+		{
+			// [AK] Ignore rotation entries that we can't select due to player limits.
+			if ( MAPROTATION_CanEnterMap( ulIdx, ulPlayerCount ) == false )
+				continue;
+
+			if ( !g_MapRotationEntries[ulIdx].bUsed )			
+			{
+				bAllMapsPlayed = false;
+				break;
+			}
+		}
+			
+		if ( bAllMapsPlayed )
+		{
+			for ( ULONG ulIdx = 0; ulIdx < g_MapRotationEntries.size( ); ulIdx++ )
+				g_MapRotationEntries[ulIdx].bUsed = false;
+
+			// [AK] If we're the server, tell the clients to reset their map lists too.
+			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				SERVERCOMMANDS_ResetMapRotation( );
+		}
+	}
+
 	// [BB] The random selection is only necessary if there is more than one map.
 	if ( sv_randommaprotation && ( g_MapRotationEntries.size( ) > 1 ) )
 	{
-		// If all the maps have been played, make them all available again. 
-		{
-			bool bAllMapsPlayed = true;
-			for ( ULONG ulIdx = 0; ulIdx < g_MapRotationEntries.size( ); ulIdx++ )
-			{
-				// [AK] Ignore rotation entries that we can't select due to player limits.
-				if ( MAPROTATION_CanEnterMap( ulIdx, ulPlayerCount ) == false )
-					continue;
-
-				if ( !g_MapRotationEntries[ulIdx].bUsed )			
-				{
-					bAllMapsPlayed = false;
-					break;
-				}
-			}
-			
-			if ( bAllMapsPlayed )
-			{
-				for ( ULONG ulIdx = 0; ulIdx < g_MapRotationEntries.size( ); ulIdx++ )
-					g_MapRotationEntries[ulIdx].bUsed = false;
-
-				// [AK] If we're the server, tell the clients to reset their map lists too.
-				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_ResetMapRotation( );
-			}
-		}
-
 		// Select a new map.
 		std::vector<unsigned int> unusedEntries;
 		for ( unsigned int i = 0; i < g_MapRotationEntries.size( ); ++i )
