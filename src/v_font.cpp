@@ -2695,9 +2695,6 @@ void V_InitFonts()
 			IntermissionFont = BigFont;
 		}
 	}
-
-	// [AK] Now that the SmallFont is initialized, update the scaled text height.
-	C_UpdateVirtualScreen();
 }
 
 void V_ClearFonts()

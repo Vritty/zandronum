@@ -1393,6 +1393,9 @@ bool V_DoModeSetup (int width, int height, int bits)
 	
 	M_RefreshModesList ();
 
+	// [AK] Reset the virtual screen if the screen size changed.
+	C_UpdateVirtualScreen();
+
 	// [TP] Inform the server of our new resolution.
 	if ( NETWORK_GetState() == NETSTATE_CLIENT )
 		CLIENTCOMMANDS_SetVideoResolution();
