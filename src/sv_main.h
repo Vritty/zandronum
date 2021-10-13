@@ -232,7 +232,7 @@ struct CLIENT_MOVE_COMMAND_s
 struct CLIENT_PLAYER_DATA_s
 {
 	MOVE_THING_DATA_s	PositionData;
-	const PClass		*MorphedPlayerClass;
+	const PClass		*pMorphedPlayerClass;
 	SDWORD				reactionTime;
 	int					chickenPeck;
 	int					morphTics;

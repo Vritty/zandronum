@@ -326,11 +326,19 @@ void P_Ticker (void)
 					continue;
 
 				CLIENT_s *client = SERVER_GetClient( ulIdx );
+				ULONG ulNumMoveCMDs = 0;
+
+				// [AK] Count how many movement commands are inside the client's tic buffer.
+				for ( unsigned int i = 0; i < client->MoveCMDs.Size( ); i++ )
+				{
+					if ( client->MoveCMDs[i]->isMoveCmd( ))
+						ulNumMoveCMDs++;
+				}
 
 				// [AK] Don't process two movement commands in a single tic if we didn't receive any new commands
 				// from this client in the current tic, or if it's too soon since we last performed a backtrace on
 				// them. Only do this when the skip correction is enabled and if their tic buffer isn't too full.
-				if (( bAlreadySmoothed[ulIdx] ) && ( client->MoveCMDs.Size( ) <= 3 ))
+				if (( bAlreadySmoothed[ulIdx] ) && ( ulNumMoveCMDs <= 3 ))
 				{
 					if (( client->lLastMoveTick != gametic ) || ( client->lLastBacktraceTic > gametic - 3 ))
 						continue;
@@ -352,20 +360,11 @@ void P_Ticker (void)
 					// [AK] Only run the skip correction on players that are alive.
 					if (( players[ulIdx].bSpectating == false ) && ( players[ulIdx].playerstate == PST_LIVE ))
 					{
-						int numMoveCommands = 0;
-
-						// [AK] Count how many movement commands are inside the client's tic buffer.
-						for ( unsigned int i = 0; i < client->MoveCMDs.Size( ); i++ )
-						{
-							if ( client->MoveCMDs[i]->isMoveCmd( ))
-								numMoveCommands++;
-						}
-
 						// [AK] If we have enough late commands in the buffer, process them all immediately, so as long
 						// as they hadn't morphed or unmorphed at any point during extrapolation.
 						if (( client->LateMoveCMDs.Size( ) > 0 ) && ( client->OldData != NULL ))
 						{
-							if ( client->OldData->MorphedPlayerClass == players[ulIdx].MorphedPlayerClass )
+							if ( client->OldData->pMorphedPlayerClass == players[ulIdx].MorphedPlayerClass )
 							{
 								CLIENT_PLAYER_DATA_s oldData( &players[ulIdx] );
 								client->OldData->Restore( &players[ulIdx], false );
@@ -415,7 +414,7 @@ void P_Ticker (void)
 
 						// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing
 						// the last movement command we received from them, but we won't extrapolate more than we should.
-						if (( numMoveCommands == 0 ) && ( client->LastMoveCMD != NULL ) && ( client->ulExtrapolatedTics < static_cast<ULONG>( sv_extrapolatetics )))
+						if (( ulNumMoveCMDs == 0 ) && ( client->LastMoveCMD != NULL ) && ( client->ulExtrapolatedTics < static_cast<ULONG>( sv_extrapolatetics )))
 						{
 							// [AK] Save the player's current position, velocity, and orientation before we start extrapolating.
 							if ( client->ulExtrapolatedTics++ == 0 )
@@ -425,7 +424,7 @@ void P_Ticker (void)
 						}
 
 						// [AK] Reset the client's extrapolation data if necessary.
-						if (( client->ulExtrapolatedTics > 0 ) && (( numMoveCommands > 0 ) || ( client->LateMoveCMDs.Size( ) > 0 )))
+						if (( ulNumMoveCMDs > 0 ) && ( client->ulExtrapolatedTics > 0 ))
 							SERVER_ResetClientExtrapolation( ulIdx );
 					}
 				}

@@ -5185,7 +5185,7 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
 {
 	PositionData = MOVE_THING_DATA_s( player->mo );
-	MorphedPlayerClass = player->MorphedPlayerClass;
+	pMorphedPlayerClass = player->MorphedPlayerClass;
 	reactionTime = player->mo->reactiontime;
 	chickenPeck = player->chickenPeck;
 	morphTics = player->morphTics;
