@@ -391,6 +391,10 @@ void P_Ticker (void)
 								int flags = players[ulIdx].mo->flags;
 								players[ulIdx].mo->flags &= ~( MF_SOLID | MF_PICKUP );
 
+								// [AK] It's probably better if the player is also invulnerable during the backtrace.
+								int flags2 = players[ulIdx].mo->flags2;
+								players[ulIdx].mo->flags2 |= MF2_INVULNERABLE;
+
 								ULONG ulExtrapolateStartTic = client->LastMoveCMD->getClientTic( );
 								ULONG ulClientGameTic = client->ulClientGameTic + client->ulExtrapolatedTics;
 								LONG lOldLastMoveTickProcess = client->lLastMoveTickProcess;
@@ -416,6 +420,7 @@ void P_Ticker (void)
 								}
 
 								players[ulIdx].mo->flags = flags;
+								players[ulIdx].mo->flags2 = flags2;
 								client->ulClientGameTic = ulClientGameTic;
 								client->lLastMoveTickProcess = lOldLastMoveTickProcess;
 
