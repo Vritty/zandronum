@@ -316,8 +316,6 @@ void P_Ticker (void)
 	// [BB] Process up to two movement commands for each client.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		bool bAlreadySmoothed[MAXPLAYERS] = { false };
-
 		for ( int i = 0; i < ( ( gametic % 3 == 0 ) ? 2 : 1 ); i++ )
 		{
 			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
@@ -335,129 +333,10 @@ void P_Ticker (void)
 						ulNumMoveCMDs++;
 				}
 
-				// [AK] Don't process two movement commands in a single tic if we didn't receive any new commands
-				// from this client in the current tic, or if it's too soon since we last performed a backtrace on
-				// them. Only do this when the skip correction is enabled and if their tic buffer isn't too full.
-				if (( bAlreadySmoothed[ulIdx] ) && ( ulNumMoveCMDs <= 3 ))
-				{
-					if (( client->lLastMoveTick != gametic ) || ( client->lLastBacktraceTic > gametic - 3 ))
-						continue;
-				}
-
-				// [AK] When a player is experiencing ping spikes or packet loss and we don't have any commands
-				// left in their buffer, we will try to predict where they will be for at least the next few tics
-				// until we start receiveing commands from them again. In case the player suffers from a ping spike, we
-				// might eventually receive the commands we emulated. When this happens, we will move the player's body
-				// to where they were before we started extrapolating, then backtrace their movement by processing all
-				// these commands in the same tic.
-				// If our prediction was correct, the player should move to about where we extrapolated them, but
-				// sometimes we might be wrong. However, the skipping that may result from this discrepancy is usually
-				// not nearly as bad than if the player was lagging without any skip correction in place.
-				if (( sv_smoothplayers ) && ( players[ulIdx].mo != NULL ) && ( bAlreadySmoothed[ulIdx] == false ))
-				{
-					bAlreadySmoothed[ulIdx] = true;
-
-					// [AK] Only run the skip correction on players that are alive.
-					if (( players[ulIdx].bSpectating == false ) && ( players[ulIdx].playerstate == PST_LIVE ))
-					{
-						// [AK] If we have enough late commands in the buffer, process them all immediately, so as long
-						// as they hadn't morphed or unmorphed at any point during extrapolation.
-						if (( client->LateMoveCMDs.Size( ) > 0 ) && ( client->OldData != NULL ))
-						{
-							bool bPressedAnything = false;
-
-							// [AK] Check that the player was actually pressing inputs, and therefore wasn't just standing
-							// still during the ping spike. Otherwise, we shouldn't perform a backtrace.
-							for ( unsigned int i = 0; i < client->LateMoveCMDs.Size( ); i++ )
- 							{
-								if ( client->LateMoveCMDs[i]->pressedAnything( ))
-								{
-									bPressedAnything = true;
-									break;
-								}
-							}
-
-							if (( bPressedAnything ) && ( client->OldData->pMorphedPlayerClass == players[ulIdx].MorphedPlayerClass ))
-							{
-								client->backtraceThrust[0] = players[ulIdx].mo->velx - client->backtraceThrust[0];
-								client->backtraceThrust[1] = players[ulIdx].mo->vely - client->backtraceThrust[1];
-								client->backtraceThrust[2] = players[ulIdx].mo->velz - client->backtraceThrust[2];
-
-								CLIENT_PLAYER_DATA_s oldData( &players[ulIdx] );
-								client->OldData->Restore( &players[ulIdx], false );
-
-								// [AK] During the backtrace, the player shouldn't be solid so they don't stuck inside other
-								// objects, and they shouldn't be able to pick up any items.
-								int flags = players[ulIdx].mo->flags;
-								players[ulIdx].mo->flags &= ~( MF_SOLID | MF_PICKUP );
-
-								// [AK] It's probably better if the player is also invulnerable during the backtrace.
-								int flags2 = players[ulIdx].mo->flags2;
-								players[ulIdx].mo->flags2 |= MF2_INVULNERABLE;
-
-								ULONG ulExtrapolateStartTic = client->LastMoveCMD->getClientTic( );
-								ULONG ulClientGameTic = client->ulClientGameTic + client->ulExtrapolatedTics;
-								LONG lOldLastMoveTickProcess = client->lLastMoveTickProcess;
-
-								client->bIsBacktracing = true;
-								client->lLastMoveTickProcess = client->lLastBacktraceTic = gametic;
-
-								// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
-								// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"
-								// by re-processing the command we last processed until every tic is accounted for.
-								for ( ULONG ulTic = 1; ulTic <= client->ulExtrapolatedTics; ulTic++ )
-								{
-									if (( client->LateMoveCMDs.Size( ) > 0 ) && ( client->LateMoveCMDs[0]->getClientTic( ) == ulExtrapolateStartTic + ulTic ))
-									{
-										delete client->LastMoveCMD;
-										client->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( client->LateMoveCMDs[0] ));
-							
-										delete client->LateMoveCMDs[0];
-										client->LateMoveCMDs.Delete( 0 );
-									}
-
-									client->LastMoveCMD->process( ulIdx );
-								}
-
-								players[ulIdx].mo->flags = flags;
-								players[ulIdx].mo->flags2 = flags2;
-								client->ulClientGameTic = ulClientGameTic;
-								client->lLastMoveTickProcess = lOldLastMoveTickProcess;
-
-								// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
-								// didn't move too far away into a spot that's blocking them or out of sight. If this check fails,
-								// we have to move the player back to their original position before the backtrace happened.
-								if ( SERVER_ShouldAcceptBacktraceResult( ulIdx, oldData.PositionData ) == false )
-								{
-									oldData.Restore( &players[ulIdx], true );
-								}
-								else
-								{
-									players[ulIdx].mo->velx += client->backtraceThrust[0];
-									players[ulIdx].mo->vely += client->backtraceThrust[1];
-									players[ulIdx].mo->velz += client->backtraceThrust[2];
-								}
-							}
-
-							SERVER_ResetClientExtrapolation( ulIdx );
-						}
-
-						// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing
-						// the last movement command we received from them, but we won't extrapolate more than we should.
-						if (( ulNumMoveCMDs == 0 ) && ( client->LastMoveCMD != NULL ) && ( client->ulExtrapolatedTics < static_cast<ULONG>( sv_extrapolatetics )))
-						{
-							// [AK] Save the player's current position, velocity, and orientation before we start extrapolating.
-							if ( client->ulExtrapolatedTics++ == 0 )
-								client->OldData = new CLIENT_PLAYER_DATA_s( &players[ulIdx] );
-
-							client->LastMoveCMD->process( ulIdx );
-						}
-
-						// [AK] Reset the client's extrapolation data if necessary.
-						if (( ulNumMoveCMDs > 0 ) && ( client->ulExtrapolatedTics > 0 ))
-							SERVER_ResetClientExtrapolation( ulIdx );
-					}
-				}
+				// [AK] Handle the skip correction. If it explicity returns false, then we won't process two
+				// movement commands during this tic for the client.
+				if (( sv_smoothplayers ) && ( SERVER_HandleSkipCorrection( ulIdx, ulNumMoveCMDs ) == false ))
+					continue;
 
 				while ( client->MoveCMDs.Size( ) != 0 )
 				{
