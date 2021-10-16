@@ -369,6 +369,9 @@ struct CLIENT_s
 	// [BB] Did the client not yet acknowledge receiving the last full update?
 	bool			bFullUpdateIncomplete;
 
+	// [AK] Are we in the middle of backtracing this player's movement via skip correction?
+	bool			bIsBacktracing;
+
 	// [BB] A record of the gametics the client called protected commands, e.g. send_password.
 	RingBuffer<LONG, 6> commandInstances;
 
@@ -401,6 +404,12 @@ struct CLIENT_s
 
 	// Last tick we processed a movement command.
 	LONG			lLastMoveTickProcess;
+
+	// [AK] Last tic we processed a backtrace on this client.
+	LONG			lLastBacktraceTic;
+
+	// [AK] The last movement command we received from this client.
+	ClientCommand	*LastMoveCMD;
 
 	// We keep track of how many extra movement commands we get from the client. If it
 	// exceeds a certain level over time, we kick him.
@@ -437,21 +446,12 @@ struct CLIENT_s
 	// predicting these commands through extrapolation).
 	TArray<ClientCommand*>	LateMoveCMDs;
 
-	// [AK] The last movement command we received from this client.
-	ClientCommand	*LastMoveCMD;
-
-	// [AK] The number of tics we extrapolated this player's movement.
-	ULONG			ulExtrapolatedTics;
-
 	// [AK] Some of the player's data that was saved before we started extrapolating them, which can
 	// be restored if we need to perform a backtrace on them.
 	CLIENT_PLAYER_DATA_s	*OldData;
 
-	// [AK] Are we in the middle of backtracing this player's movement via skip correction?
-	bool			bIsBacktracing;
-
-	// [AK] Last tic we processed a backtrace on this client.
-	LONG			lLastBacktraceTic;
+	// [AK] The number of tics we extrapolated this player's movement.
+	ULONG			ulExtrapolatedTics;
 
 	// [AK] The player might have already been pushed before we start performing a backtrace on them, so
 	// we need to know how much thrust we need to add back in case the backtrace succeeds.
