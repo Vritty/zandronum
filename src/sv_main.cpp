@@ -5197,16 +5197,22 @@ CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
 	crouchFactor = player->crouchfactor;
 	crouchOffset = player->crouchoffset;
 	crouchViewDelta = player->crouchviewdelta;
+
+	// [AK] Remember the closest sector the player is standing on and their height above the floor.
+	pFloorSector = player->mo->floorsector;
+	floorHeight = player->mo->z - pFloorSector->floorplane.ZatPoint( player->mo->x, player->mo->y );
 }
 
 //*****************************************************************************
 //
 void CLIENT_PLAYER_DATA_s::Restore ( player_t *player, bool bMoveOnly )
 {
+	fixed_t newZ = pFloorSector->floorplane.ZatPoint( player->mo->x, player->mo->y ) + floorHeight;
+
 	// [AK] Set the actor's position. Despite the name of the function, the clients don't execute this
 	// function here, but CLIENT_MoveThing adds checks upon calling AActor::SetOrigin that correct the
 	// player's floorz value after they've been moved.
-	CLIENT_MoveThing( player->mo, PositionData.x, PositionData.y, PositionData.z );
+	CLIENT_MoveThing( player->mo, PositionData.x, PositionData.y, newZ );
 
 	// [AK] Set the player's velocity, orientation, and reactiontime.
 	player->mo->velx = PositionData.velx;
