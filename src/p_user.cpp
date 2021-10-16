@@ -3862,10 +3862,12 @@ void P_PlayerThink (player_t *player)
 			}
 		}
 
+		// [AK] Stop here if we're backtracing the player's movement.
+		if ( SERVER_IsBacktracingPlayer( player - players ))
+			return;
+
 		// Cycle psprites
-		// [AK] Don't do this while we're backtracing the player's movement.
-		if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( SERVER_GetClient( player - players )->bIsBacktracing == false ))
-			P_MovePsprites (player);
+		P_MovePsprites (player);
 
 		// Other Counters
 		if (player->damagecount)
