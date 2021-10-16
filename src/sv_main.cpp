@@ -281,6 +281,7 @@ CVAR( Int, sv_afk2spec, 0, CVAR_ARCHIVE | CVAR_SERVERINFO ) // [K6]
 CVAR( Bool, sv_forcelogintojoin, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Bool, sv_useticbuffer, true, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_DEBUGONLY )
 CVAR( Int, sv_showcommands, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY )
+CVAR( Bool, sv_smoothplayers_debuginfo, false, CVAR_ARCHIVE|CVAR_DEBUGONLY ) // [AK]
 
 //*****************************************************************************
 // [AK] Smooths the movement of lagging players using extrapolation and correction.
@@ -5287,6 +5288,15 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 		// [AK] Only run the skip correction on players that are alive.
 		if (( players[ulClient].bSpectating == false ) && ( players[ulClient].playerstate == PST_LIVE ))
 		{
+			if (( sv_smoothplayers_debuginfo ) && ( pClient->ulExtrapolatedTics > 0 ))
+			{
+				if (( pClient->MoveCMDs.Size( ) > 0 ) || ( pClient->LateMoveCMDs.Size( ) > 0 ))
+				{
+					Printf( "%d: %s (%d tics extrapolated, %d move commands, %d late commands.\n", gametic, players[ulClient].userinfo.GetName( ),
+						static_cast<unsigned int>( pClient->ulExtrapolatedTics ), pClient->MoveCMDs.Size( ), pClient->LateMoveCMDs.Size( ));
+				}
+			}
+
 			// [AK] If we have enough late commands in the buffer, process them all immediately, so as long
 			// as they hadn't morphed or unmorphed at any point during extrapolation.
 			if (( pClient->LateMoveCMDs.Size( ) > 0 ) && ( pClient->OldData != NULL ))
@@ -5298,14 +5308,24 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 			{
 				// [AK] Save the player's current position, velocity, and orientation before we start extrapolating.
 				if ( pClient->ulExtrapolatedTics++ == 0 )
+				{
+					if ( sv_smoothplayers_debuginfo )
+						Printf( "%d: starting extrapolation for %s.\n", gametic, players[ulClient].userinfo.GetName( ));
+
 					pClient->OldData = new CLIENT_PLAYER_DATA_s( &players[ulClient] );
+				}
 
 				pClient->LastMoveCMD->process( ulClient );
 			}
 
 			// [AK] Reset the client's extrapolation data if necessary.
 			if (( ulNumMoveCMDs > 0 ) && ( pClient->ulExtrapolatedTics > 0 ))
+			{
+				if ( sv_smoothplayers_debuginfo )
+					Printf( "%d: resetting extrapolation data for %s.\n", gametic, players[ulClient].userinfo.GetName( ));
+
 				SERVER_ResetClientExtrapolation( ulClient );
+			}
 		}
 	}
 
@@ -7222,6 +7242,9 @@ static void server_PerformBacktrace( ULONG ulClient )
 
 	if (( bPressedAnything ) && ( pClient->OldData->pMorphedPlayerClass == players[ulClient].MorphedPlayerClass ))
 	{
+		if ( sv_smoothplayers_debuginfo )
+			Printf( "%d: backtracing %s... ", gametic, players[ulClient].userinfo.GetName( ));
+
 		pClient->backtraceThrust[0] = players[ulClient].mo->velx - pClient->backtraceThrust[0];
 		pClient->backtraceThrust[1] = players[ulClient].mo->vely - pClient->backtraceThrust[1];
 		pClient->backtraceThrust[2] = players[ulClient].mo->velz - pClient->backtraceThrust[2];
@@ -7279,7 +7302,14 @@ static void server_PerformBacktrace( ULONG ulClient )
 			players[ulClient].mo->velx += pClient->backtraceThrust[0];
 			players[ulClient].mo->vely += pClient->backtraceThrust[1];
 			players[ulClient].mo->velz += pClient->backtraceThrust[2];
+
+			if ( sv_smoothplayers_debuginfo )
+				Printf( "accepted.\n" );
 		}
+	}
+	else if ( sv_smoothplayers_debuginfo )
+	{
+		Printf( "%d: no need to backtrace %s.\n", gametic, players[ulClient].userinfo.GetName( ));
 	}
 
 	SERVER_ResetClientExtrapolation( ulClient );
@@ -7298,17 +7328,30 @@ static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_
 	// [AK] Don't accept the backtrace if the player ended up in a spot that's too far than where we
 	// extrapolated them to, depending on how much error we can accept with predicting their movement.
 	if (( sv_backtracelimit != 0.0f ) && ( fDiff > sv_backtracelimit ))
+	{
+		if ( sv_smoothplayers_debuginfo )
+			Printf( "failed (exceeded backtrace limit - %.4f vs. %.4f).\n", fDiff, sv_backtracelimit );
+
 		return false;
+	}
 
 	// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
 	if ( P_TestMobjLocation( players[ulClient].mo ) == false )
+	{
+		if ( sv_smoothplayers_debuginfo )
+			Printf( "failed (not enough room).\n" );
+
 		return false;
+	}
 
 	// [AK] Also check if there's some line of sight between where we originally extrapolated them to
 	// and where they're located now. We'll spawn a dummy actor at their old position to determine this.
 	AActor *temp = Spawn( players[ulClient].mo->GetClass( ), OldData.x, OldData.y, OldData.z, ALLOW_REPLACE );
 	bool bCanSee = P_CheckSight( players[ulClient].mo, temp );
 	temp->Destroy( );
+
+	if (( sv_smoothplayers_debuginfo ) && ( bCanSee == false ))
+		Printf( "failed (no line of sight).\n" );
 
 	return bCanSee;
 }
