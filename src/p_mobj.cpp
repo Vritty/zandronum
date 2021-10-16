@@ -4491,7 +4491,7 @@ void AActor::Tick ()
 			return;
 
 		// [AK] Don't tick the player's states while we're backtracing their movement.
-		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( this->player->mo == this ) && ( SERVER_GetClient( this->player - players )->bIsBacktracing ))
+		if ( SERVER_IsBacktracingPlayer( this->player - players ))
 			return;
 	}
 

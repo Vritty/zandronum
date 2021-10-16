@@ -5286,6 +5286,17 @@ bool SERVER_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldDa
 
 //*****************************************************************************
 //
+bool SERVER_IsBacktracingPlayer( ULONG ulClient )
+{
+	// [AK] Only the server is allowed to backtrace players.
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+		return false;
+
+	return (( SERVER_IsValidClient( ulClient )) && ( g_aClients[ulClient].bIsBacktracing ));
+}
+
+//*****************************************************************************
+//
 void SERVER_ResetClientTicBuffer( ULONG ulClient, bool bClearMoveCMDs )
 {
 	// [AK] Clear all stored commands in the tic buffer.
