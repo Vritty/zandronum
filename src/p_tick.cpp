@@ -379,6 +379,10 @@ void P_Ticker (void)
 
 							if (( bPressedAnything ) && ( client->OldData->pMorphedPlayerClass == players[ulIdx].MorphedPlayerClass ))
 							{
+								client->backtraceThrust[0] = players[ulIdx].mo->velx - client->backtraceThrust[0];
+								client->backtraceThrust[1] = players[ulIdx].mo->vely - client->backtraceThrust[1];
+								client->backtraceThrust[2] = players[ulIdx].mo->velz - client->backtraceThrust[2];
+
 								CLIENT_PLAYER_DATA_s oldData( &players[ulIdx] );
 								client->OldData->Restore( &players[ulIdx], false );
 
@@ -419,7 +423,15 @@ void P_Ticker (void)
 								// didn't move too far away into a spot that's blocking them or out of sight. If this check fails,
 								// we have to move the player back to their original position before the backtrace happened.
 								if ( SERVER_ShouldAcceptBacktraceResult( ulIdx, oldData.PositionData ) == false )
+								{
 									oldData.Restore( &players[ulIdx], true );
+								}
+								else
+								{
+									players[ulIdx].mo->velx += client->backtraceThrust[0];
+									players[ulIdx].mo->vely += client->backtraceThrust[1];
+									players[ulIdx].mo->velz += client->backtraceThrust[2];
+								}
 							}
 
 							SERVER_ResetClientExtrapolation( ulIdx );

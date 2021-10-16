@@ -453,6 +453,10 @@ struct CLIENT_s
 	// [AK] Last tic we processed a backtrace on this client.
 	LONG			lLastBacktraceTic;
 
+	// [AK] The player might have already been pushed before we start performing a backtrace on them, so
+	// we need to know how much thrust we need to add back in case the backtrace succeeds.
+	fixed_t			backtraceThrust[3];
+
 	// [BB] Variables for the account system
 	FString username;
 	unsigned int clientSessionID;

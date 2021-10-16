@@ -648,6 +648,23 @@ void SERVER_Tick( void )
 		// [BB] Tick the unlagged module.
 		UNLAGGED_Tick( );
 
+		// [AK] If the skip correction is enabled, also record their velocities before they move.
+		// This way, we can determine how much the player is thrusted, in case we need to perform a
+		// backtrace on them, so we can re-add the thrust velocity afterwards.
+		if ( sv_smoothplayers )
+		{
+			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+			{
+				if (( SERVER_IsValidClient( ulIdx )) && ( players[ulIdx].mo ))
+				{
+					CLIENT_s *client = SERVER_GetClient( ulIdx );
+					client->backtraceThrust[0] = players[ulIdx].mo->velx;
+					client->backtraceThrust[1] = players[ulIdx].mo->vely;
+					client->backtraceThrust[2] = players[ulIdx].mo->velz;
+				}
+			}
+		}
+
 		G_Ticker ();
 
 		// However we need to spawn the unlagged debug actors here i.e. after having processed their
