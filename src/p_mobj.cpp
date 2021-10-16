@@ -4014,14 +4014,18 @@ void AActor::Tick ()
 	}
 	else
 	{
-		AInventory * item = Inventory;
-
-		// Handle powerup effects here so that the order is controlled
-		// by the order in the inventory, not the order in the thinker table
-		while (item != NULL && item->Owner == this)
+		// [AK] Don't handle powerup effects while we're backtracing the player's movement.
+		if (( this->player == NULL ) || ( SERVER_IsBacktracingPlayer( this->player - players ) == false ))
 		{
-			item->DoEffect();
-			item = item->Inventory;
+			AInventory * item = Inventory;
+
+			// Handle powerup effects here so that the order is controlled
+			// by the order in the inventory, not the order in the thinker table
+			while (item != NULL && item->Owner == this)
+			{
+				item->DoEffect();
+				item = item->Inventory;
+			}
 		}
 
 		if (flags & MF_UNMORPHED)
