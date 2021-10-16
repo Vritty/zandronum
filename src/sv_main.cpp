@@ -7252,14 +7252,13 @@ static void server_PerformBacktrace( ULONG ulClient )
 		CLIENT_PLAYER_DATA_s oldData( &players[ulClient] );
 		pClient->OldData->Restore( &players[ulClient], false );
 
-		// [AK] During the backtrace, the player shouldn't be solid so they don't stuck inside other
-		// objects, and they shouldn't be able to pick up any items.
+		// [AK] During the backtrace, the player shouldn't be shootable or able to pick up items.
 		int flags = players[ulClient].mo->flags;
-		players[ulClient].mo->flags &= ~( MF_SOLID | MF_PICKUP );
+		players[ulClient].mo->flags &= ~( MF_SHOOTABLE | MF_PICKUP );
 
-		// [AK] It's probably better if the player is also invulnerable during the backtrace.
+		// [AK] Also make them invulnerable, able to walk through other actors, and unable to push.
 		int flags2 = players[ulClient].mo->flags2;
-		players[ulClient].mo->flags2 |= MF2_INVULNERABLE;
+		players[ulClient].mo->flags2 |= ( MF2_CANNOTPUSH | MF2_THRUACTORS | MF2_INVULNERABLE );
 
 		ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
 		ULONG ulClientGameTic = pClient->ulClientGameTic + pClient->ulExtrapolatedTics;
