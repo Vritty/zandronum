@@ -364,7 +364,20 @@ void P_Ticker (void)
 						// as they hadn't morphed or unmorphed at any point during extrapolation.
 						if (( client->LateMoveCMDs.Size( ) > 0 ) && ( client->OldData != NULL ))
 						{
-							if ( client->OldData->pMorphedPlayerClass == players[ulIdx].MorphedPlayerClass )
+							bool bPressedAnything = false;
+
+							// [AK] Check that the player was actually pressing inputs, and therefore wasn't just standing
+							// still during the ping spike. Otherwise, we shouldn't perform a backtrace.
+							for ( unsigned int i = 0; i < client->LateMoveCMDs.Size( ); i++ )
+ 							{
+								if ( client->LateMoveCMDs[i]->pressedAnything( ))
+								{
+									bPressedAnything = true;
+									break;
+								}
+							}
+
+							if (( bPressedAnything ) && ( client->OldData->pMorphedPlayerClass == players[ulIdx].MorphedPlayerClass ))
 							{
 								CLIENT_PLAYER_DATA_s oldData( &players[ulIdx] );
 								client->OldData->Restore( &players[ulIdx], false );

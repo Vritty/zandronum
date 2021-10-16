@@ -271,12 +271,20 @@ public:
 	{
 		return 0;
 	}
+
+	// [AK] Were any inputs being pressed in this command?
+	virtual bool pressedAnything ( ) const
+	{
+		return false;
+	}
 };
 
 //*****************************************************************************
 class ClientMoveCommand : public ClientCommand
 {
 	CLIENT_MOVE_COMMAND_s moveCmd;
+	bool bPressedAnything;
+
 public:
 	ClientMoveCommand ( BYTESTREAM_s *pByteStream );
 
@@ -290,6 +298,12 @@ public:
 	virtual unsigned int getClientTic ( ) const
 	{
 		return moveCmd.ulGametic;
+	}
+
+	// [AK] Were any inputs being pressed in this command?
+	virtual bool pressedAnything ( ) const
+	{
+		return bPressedAnything;
 	}
 };
 

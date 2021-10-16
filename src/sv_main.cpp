@@ -5570,6 +5570,7 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 
 	// Read in the information the client is sending us.
 	const ULONG ulBits = pByteStream->ReadByte();
+	bPressedAnything = !!ulBits;
 
 	if ( ulBits & CLIENT_UPDATE_YAW )
 		pCmd->ucmd.yaw = pByteStream->ReadShort();
