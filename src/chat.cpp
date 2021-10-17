@@ -919,6 +919,10 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 	if (( ulPlayer != MAXPLAYERS ) && players[ulPlayer].bIgnoreChat )
 		return;
 
+	// [AK] Sanity check, make sure the chat mode is valid.
+	if (( ulMode == CHATMODE_NONE ) || ( ulMode >= NUM_CHATMODES ))
+		return;
+
 	// If ulPlayer == MAXPLAYERS, it is the server talking.
 	if ( ulPlayer == MAXPLAYERS )
 	{
@@ -984,12 +988,27 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 			OutString.AppendFormat( TEXTCOLOR_GREEN "%s" TEXTCOLOR_TEAMCHAT ": ", players[ulPlayer].userinfo.GetName() );
 		}
 	}
-	else if (( ulMode == CHATMODE_PRIVATE_SEND ) || ( ulMode == CHATMODE_PRIVATE_RECEIVE ))
+	else
 	{
 		ulChatLevel = PRINT_PRIVATECHAT;
+		const bool bRconReceived = ( ulMode == CHATMODE_PRIVATE_RCON_SEND ) || ( ulMode == CHATMODE_PRIVATE_RCON_RECEIVE );
 
-		OutString.AppendFormat( TEXTCOLOR_GREEN "<%s ", ulMode == CHATMODE_PRIVATE_SEND ? "To" : "From" );
-		OutString.AppendFormat( "%s" TEXTCOLOR_GREEN ">", players[ulPlayer].userinfo.GetName() );
+		// [AK] Check if this is a private message we received because it was sent to/from the server.
+		// In this case, the header needs to be formatted a little differently.
+		if ( bRconReceived )
+		{
+			OutString += TEXTCOLOR_GREY;
+
+			if ( ulMode == CHATMODE_PRIVATE_RCON_SEND )
+				OutString.AppendFormat( "<Server to %s" TEXTCOLOR_GREY ">", players[ulPlayer].userinfo.GetName() );
+			else
+				OutString.AppendFormat( "<%s" TEXTCOLOR_GREY " to Server>", players[ulPlayer].userinfo.GetName() );
+		}
+		else
+		{
+			OutString.AppendFormat( TEXTCOLOR_GREEN "<%s ", ulMode == CHATMODE_PRIVATE_SEND ? "To" : "From" );
+			OutString.AppendFormat( "%s" TEXTCOLOR_GREEN ">", players[ulPlayer].userinfo.GetName() );
+		}
 
 		// Special support for "/me" commands.
 		if ( strnicmp( "/me", pszString, 3 ) == 0 )
@@ -999,7 +1018,7 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 		}
 		else
 		{
-			OutString.AppendFormat( TEXTCOLOR_PRIVATECHAT ": " );
+			OutString.AppendFormat( "%s: ", bRconReceived == false ? TEXTCOLOR_PRIVATECHAT : "" );
 		}
 	}
 

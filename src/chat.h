@@ -68,8 +68,10 @@ typedef enum
 	CHATMODE_NONE,
 	CHATMODE_GLOBAL,
 	CHATMODE_TEAM,
-	CHATMODE_PRIVATE_SEND,		// [AK] We're send a private message.
-	CHATMODE_PRIVATE_RECEIVE,	// [AK] We're receiving a private message.
+	CHATMODE_PRIVATE_SEND,			// [AK] We sent a private message.
+	CHATMODE_PRIVATE_RECEIVE,		// [AK] We received a private message.
+	CHATMODE_PRIVATE_RCON_SEND,		// [AK] We have RCON access and received a private message sent by the server.
+	CHATMODE_PRIVATE_RCON_RECEIVE,	// [AK] We have RCON access and received a private message sent to the server.
 
 	NUM_CHATMODES
 

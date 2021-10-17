@@ -201,6 +201,26 @@ void CheckPositionReuse( AActor *pActor, ULONG &ulBits )
 		ulBits |= CM_REUSE_Z;
 	}
 }
+
+//*****************************************************************************
+//
+// [AK] Sends a private message sent to/from the server to all in-game RCON clients.
+void SendPrivateMessageToRCONClients( ServerCommands::PlayerSay &command, ULONG ulPlayer, bool bServerSent )
+{
+	command.SetPlayerNumber( ulPlayer );
+	command.SetMode( bServerSent ? CHATMODE_PRIVATE_RCON_SEND : CHATMODE_PRIVATE_RCON_RECEIVE );
+
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	{
+		if ( SERVER_IsValidClient( ulIdx ) == false )
+			continue;
+
+		// [AK] Also ignore the player who sent/received the message.
+		if (( ulIdx != ulPlayer ) && ( SERVER_GetClient( ulIdx )->bRCONAccess ))
+			command.sendCommandToClients( ulIdx, SVCF_ONLYTHISCLIENT );
+	}
+}
+
 //*****************************************************************************
 //
 void SERVERCOMMANDS_Ping( ULONG ulTime )
@@ -1114,6 +1134,11 @@ void SERVERCOMMANDS_PrivateSay( ULONG ulSender, ULONG ulReceiver, const char *ps
 			command.sendCommandToClients( ulReceiver, SVCF_ONLYTHISCLIENT );
 		}
 	}
+	else
+	{
+		// [AK] Tell in-game RCON clients that the server received a private message from somebody.
+		SendPrivateMessageToRCONClients( command, ulSender, false );
+	}
 
 	// [AK] Next, send the command back to the player who sent the message.
 	if ( ulSender != MAXPLAYERS )
@@ -1121,6 +1146,11 @@ void SERVERCOMMANDS_PrivateSay( ULONG ulSender, ULONG ulReceiver, const char *ps
 		command.SetPlayerNumber( ulReceiver );
 		command.SetMode( CHATMODE_PRIVATE_SEND );
 		command.sendCommandToClients( ulSender, SVCF_ONLYTHISCLIENT );
+	}
+	else
+	{
+		// [AK] Tell in-game RCON clients that the server sent a private message to somebody.
+		SendPrivateMessageToRCONClients( command, ulReceiver, true );
 	}
 }
 
