@@ -1077,8 +1077,19 @@ void SERVERCOMMANDS_PlayerSay( ULONG ulPlayer, const char *pszString, ULONG ulMo
 //
 void SERVERCOMMANDS_PrivateSay( ULONG ulSender, ULONG ulReceiver, const char *pszString, bool bForbidChatToPlayers, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
-	if ( ulSender != MAXPLAYERS && PLAYER_IsValidPlayer( ulSender ) == false )
-		return;
+	if ( ulSender != MAXPLAYERS )
+	{
+		if ( PLAYER_IsValidPlayer( ulSender ) == false )
+			return;
+
+		// [AK] Spectators cannot send private messages to the server or non-spectators when the chat is restricted.
+		if (( bForbidChatToPlayers ) && (( ulReceiver == MAXPLAYERS ) || ( players[ulReceiver].bSpectating == false )))
+		{
+			SERVER_PrintfPlayer( ulSender, "You can't send any private messages to %s right now.\n",
+				( ulReceiver == MAXPLAYERS ) ? "the server" : players[ulReceiver].userinfo.GetName() );
+			return;
+		}
+	}
 
 	ServerCommands::PlayerSay command;
 	command.SetMessage( pszString );
@@ -1086,13 +1097,6 @@ void SERVERCOMMANDS_PrivateSay( ULONG ulSender, ULONG ulReceiver, const char *ps
 	// [AK] First send the command to the player receiving the message.
 	if ( ulReceiver != MAXPLAYERS )
 	{
-		if (( bForbidChatToPlayers ) && ( players[ulReceiver].bSpectating == false ))
-		{
-			SERVER_PrintfPlayer( ulSender, "You can't send any private messages to %s right now.\n",
-				players[ulReceiver].userinfo.GetName() );
-			return;
-		}
-
 		// [AK] Don't send the command if the sender is supposed to be ignoring the player who receives the message.
 		if (( ulSender != MAXPLAYERS ) && ( SERVER_GetPlayerIgnoreTic( ulSender, SERVER_GetClient( ulReceiver )->Address ) != 0 ))
 		{

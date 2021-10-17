@@ -787,8 +787,10 @@ void CHAT_Render( void )
 		{
 			if ( g_ulChatMode != CHATMODE_PRIVATE_SEND )
 				note += "Players cannot hear you chat";
-			else if (( g_ulChatPlayer != MAXPLAYERS ) && ( players[g_ulChatPlayer].bSpectating == false ))
-				note.AppendFormat( "%s " TEXTCOLOR_GRAY "cannot hear you chat", players[g_ulChatPlayer].userinfo.GetName());
+			else if ( g_ulChatPlayer == MAXPLAYERS )
+				note += "The server cannot hear you chat";
+			else if ( players[g_ulChatPlayer].bSpectating == false )
+				note.AppendFormat( "%s " TEXTCOLOR_GRAY "cannot hear you chat", players[g_ulChatPlayer].userinfo.GetName() );
 			else bDrawNote = false;
 		}
 		else

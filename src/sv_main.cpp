@@ -1191,9 +1191,16 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 		GAMEMODE_HandleEvent( GAMEEVENT_CHAT, 0, ulPlayer != MAXPLAYERS ? ulPlayer : -1, ulMode - CHATMODE_GLOBAL );
 	}
 
-	// [AK] Don't log private messages that aren't sent to/from the server.
-	if (( ulMode == CHATMODE_PRIVATE_SEND ) && ( ulPlayer != MAXPLAYERS ) && ( ulReceiver != MAXPLAYERS ))
-		return;
+	if ( ulMode == CHATMODE_PRIVATE_SEND )
+	{
+		// [AK] Don't log private messages that aren't sent to/from the server.
+		if (( ulPlayer != MAXPLAYERS ) && ( ulReceiver != MAXPLAYERS ))
+			return;
+
+		// [AK] Don't log private messages sent by spectators when the chat is restricted.
+		if (( ulReceiver == MAXPLAYERS ) && ( bForbidChatToPlayers ))
+			return;
+	}
 
 	// [BB] This is to make the lines readily identifiable, necessary
 	// for MiX-MaN's IRC server control tool for example.
