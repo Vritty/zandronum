@@ -776,11 +776,14 @@ void CHAT_Render( void )
 		HUD_DrawText( SmallFont, messageColor, SmallFont->StringWidth( prompt ), positionY, displayString );
 	}
 
+	FString note;
+	positionY = static_cast<int>( positionY * g_rYScale - SmallFont->GetHeight( ) * 2 + 1 );
+
 	// [RC] Tell chatters about the iron curtain of LMS chat.
 	if ( GAMEMODE_AreSpectatorsForbiddenToChatToPlayers() )
 	{
-		FString note = "NOTE: " TEXTCOLOR_GRAY;
 		bool bDrawNote = true;
+		note = "NOTE: " TEXTCOLOR_GRAY;
 
 		// Is this the spectator talking?
 		if ( players[consoleplayer].bSpectating )
@@ -803,7 +806,17 @@ void CHAT_Render( void )
 		}
 
 		if ( bDrawNote )
-			HUD_DrawTextCentered( SmallFont, CR_GREEN, static_cast<LONG>( positionY * g_rYScale - SmallFont->GetHeight( ) * 2 + 1 ), note, g_bScale );
+		{
+			HUD_DrawTextCentered( SmallFont, CR_GREEN, positionY, note, g_bScale );
+			positionY -= SmallFont->GetHeight( ) + 1;
+		}
+	}
+
+	// [AK] If we're sending a private message, tell us how to change the player we want to send the message to.
+	if (( g_ulChatMode == CHATMODE_PRIVATE_SEND ) && ( SERVER_CountPlayers( false ) >= 2 ))
+	{
+		note = "Press 'TAB' to move forward a player, or 'TAB + SHIFT' to move backward.";
+		HUD_DrawTextCentered( SmallFont, CR_GREY, positionY, note, g_bScale );
 	}
 
 	BorderTopRefresh = screen->GetPageCount( );
