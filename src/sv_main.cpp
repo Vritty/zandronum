@@ -5164,18 +5164,22 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 {
 	CommandType *cmd = new CommandType ( pByteStream );
 	TArray<ClientCommand*> *buffer = &g_aClients[g_lCurrentClient].MoveCMDs;
+	const ULONG ulClientTic = cmd->getClientTic( );
+	const bool bIsMoveCMD = cmd->isMoveCmd( );
+
+	// [AK] Ignore move commands that arrived too late or are duplicates of move commands we already
+	// processed, neither of which we can account for anymore. This way, we aren't processing the
+	// same commands again, or that happened too far into the past.
+	if (( bIsMoveCMD ) && ( ulClientTic <= g_aClients[g_lCurrentClient].ulClientGameTic ))
+	{
+		delete cmd;
+		return false;
+	}
 
 	if ( sv_useticbuffer )
 	{
-		if (( sv_smoothplayers ) && ( cmd->isMoveCmd( )))
+		if (( sv_smoothplayers ) && ( bIsMoveCMD ))
 		{
-			// [AK] Ignore commands that arrived too late, which we won't account for anymore.
-			if ( cmd->getClientTic( ) <= g_aClients[g_lCurrentClient].ulClientGameTic )
-			{
-				delete cmd;
-				return false;
-			}
-
 			// [AK] It's possible this was a command that arrived late and we already extrapolated
 			// the player's movement at this tic. In this case, we'll store these commands into a
 			// separate buffer so we can backtrace the player's actual movement.
@@ -5183,18 +5187,37 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 			{
 				// [AK] We want to try filling this buffer only when the client is suffering from a ping
 				// spike, not when they're experiencing packet loss.
-				if ( cmd->getClientTic( ) <= g_aClients[g_lCurrentClient].ulClientGameTic + g_aClients[g_lCurrentClient].ulExtrapolatedTics )
+				if ( ulClientTic <= g_aClients[g_lCurrentClient].ulClientGameTic + g_aClients[g_lCurrentClient].ulExtrapolatedTics )
 					buffer = &g_aClients[g_lCurrentClient].LateMoveCMDs;
 			}
 		}
 
-		// [AK] Organize the movement commands in case they arrived in the wrong order.
-		for ( unsigned int i = 0; i < buffer->Size( ); i++ )
+		if ( ulClientTic != 0 )
 		{
-			if ( cmd->getClientTic( ) < ( *buffer )[i]->getClientTic( ))
+			for ( unsigned int i = 0; i < buffer->Size( ); i++ )
 			{
-				buffer->Insert( i, cmd );
-				return false;
+				ULONG ulBufferClientTic = (*buffer)[i]->getClientTic( );
+
+				if ( ulBufferClientTic != 0 )
+				{
+					// [AK] Double-check to make sure we don't already have this command stored anywhere in the buffer.
+					// If it's not a late command, we also need to make sure there aren't any newer move commands already
+					// in the tic buffer. If any of these conditions fail, we have to ignore this command.
+					// Movement and weapon select commands with the same gametic can co-exist in the tic buffer, as
+					// they're not the same command, but two movement or weapon select commands cannot.
+					if (( ulBufferClientTic == ulClientTic ) && ( bIsMoveCMD == (*buffer)[i]->isMoveCmd( )))
+					{
+						delete cmd;
+						return false;
+					}
+
+					// [AK] Reorganize the commands in case they arrived in the wrong order.
+					if ( ulClientTic < ulBufferClientTic )
+					{
+						buffer->Insert( i, cmd );
+						return false;
+					}
+				}
 			}
 		}
 
