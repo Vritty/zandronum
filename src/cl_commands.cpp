@@ -313,28 +313,47 @@ void CLIENTCOMMANDS_Ignore( ULONG ulPlayer, bool bIgnore, LONG lTicks )
 
 //*****************************************************************************
 //
-void CLIENTCOMMANDS_ClientMove( void )
+static CLIENT_MOVE_COMMAND_s clientcommand_CreateMoveCommand( void )
 {
-	ticcmd_t	*pCmd;
-	ULONG		ulBits;
+	CLIENT_MOVE_COMMAND_s moveCMD;
 
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( gametic );
-	// [CK] Send the server the latest known server-gametic
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( CLIENT_GetLatestServerGametic( ) + CLIENT_GetServerGameticOffset( ) );
-
-	// Decide what additional information needs to be sent.
-	ulBits = 0;
-	pCmd = &players[consoleplayer].cmd;
+	moveCMD.ulGametic = gametic;
+	moveCMD.ulServerGametic = CLIENT_GetLatestServerGametic( ) + CLIENT_GetServerGameticOffset( );
+	moveCMD.cmd = players[consoleplayer].cmd;
 
 	// [BB] If we think that we can't move, don't even try to tell the server that we
 	// want to move.
 	if ( players[consoleplayer].mo->reactiontime )
 	{
-		pCmd->ucmd.forwardmove = 0;
-		pCmd->ucmd.sidemove = 0;
-		pCmd->ucmd.buttons &= ~BT_JUMP;
+		moveCMD.cmd.ucmd.forwardmove = 0;
+		moveCMD.cmd.ucmd.sidemove = 0;
+		moveCMD.cmd.ucmd.buttons &= ~BT_JUMP;
 	}
+
+	moveCMD.angle = players[consoleplayer].mo->angle;
+	moveCMD.pitch = players[consoleplayer].mo->pitch;
+	// [AK] Calculate the checksum of this ticcmd from this tic.
+	moveCMD.sdwChecksum = g_sdwCheckCmd;
+
+	if ( players[consoleplayer].ReadyWeapon == NULL )
+		moveCMD.usWeaponNetworkIndex = 0;
+	else
+		moveCMD.usWeaponNetworkIndex = players[consoleplayer].ReadyWeapon->GetClass( )->getActorNetworkIndex( );
+
+	return moveCMD;
+}
+
+//*****************************************************************************
+//
+static void clientcommand_WriteMoveCommandToBuffer( CLIENT_MOVE_COMMAND_s moveCMD )
+{
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( moveCMD.ulGametic );
+	// [CK] Send the server the latest known server-gametic
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( moveCMD.ulServerGametic );
+
+	// Decide what additional information needs to be sent.
+	ULONG ulBits = 0;
+	ticcmd_t *pCmd = &moveCMD.cmd;
 
 	if ( pCmd->ucmd.yaw )
 		ulBits |= CLIENT_UPDATE_YAW;
@@ -382,16 +401,22 @@ void CLIENTCOMMANDS_ClientMove( void )
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( players[consoleplayer].mo->angle );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( players[consoleplayer].mo->pitch );
 	// [BB] Send the checksum of our ticcmd we calculated when we originally generated the ticcmd from the user input.
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( g_sdwCheckCmd );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( moveCMD.sdwChecksum );
 
 	// Attack button.
 	if ( pCmd->ucmd.buttons & BT_ATTACK )
-	{
-		if ( players[consoleplayer].ReadyWeapon == NULL )
-			CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( 0 );
-		else
-			CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( players[consoleplayer].ReadyWeapon->GetClass( )->getActorNetworkIndex() );
-	}
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( moveCMD.usWeaponNetworkIndex );
+}
+
+//*****************************************************************************
+//
+void CLIENTCOMMANDS_ClientMove( void )
+{
+	// [AK] Create the movement command for the current tic.
+	CLIENT_MOVE_COMMAND_s moveCMD = clientcommand_CreateMoveCommand( );
+
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
+	clientcommand_WriteMoveCommandToBuffer( moveCMD );
 }
 
 //*****************************************************************************

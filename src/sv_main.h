@@ -220,6 +220,7 @@ struct CLIENT_MOVE_COMMAND_s
 	USHORT			usWeaponNetworkIndex;
 	ULONG				ulGametic;
 	ULONG			ulServerGametic;
+	SWORD			sdwChecksum;
 
 	// [BB] We want to process the command from the lowest gametic first.
 	// This puts the lowest gametic on top of the queue. 
