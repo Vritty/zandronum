@@ -145,7 +145,7 @@ static	bool	server_Say( BYTESTREAM_s *pByteStream );
 static	bool	server_ClientMove( BYTESTREAM_s *pByteStream, bool bSentBackup );
 static	bool	server_MissingPacket( BYTESTREAM_s *pByteStream );
 static	bool	server_UpdateClientPing( BYTESTREAM_s *pByteStream );
-static	bool	server_WeaponSelect( BYTESTREAM_s *pByteStream );
+static	bool	server_WeaponSelect( BYTESTREAM_s *pByteStream, bool bSentBackup );
 static	bool	server_Taunt( BYTESTREAM_s *pByteStream );
 static	bool	server_Spectate( BYTESTREAM_s *pByteStream );
 static	bool	server_RequestJoin( BYTESTREAM_s *pByteStream );
@@ -4769,9 +4769,10 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		// Ping response from client.
 		return ( server_UpdateClientPing( pByteStream ));
 	case CLC_WEAPONSELECT:
+	case CLC_WEAPONSELECTBACKUP:
 
 		// Client has sent a weapon change.
-		return ( server_WeaponSelect( pByteStream ));
+		return ( server_WeaponSelect( pByteStream, lCommand == CLC_WEAPONSELECTBACKUP ));
 	case CLC_TAUNT:
 
 		// Client is taunting! Broadcast it to other clients.
@@ -6072,17 +6073,26 @@ static bool server_UpdateClientPing( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
-static bool server_WeaponSelect( BYTESTREAM_s *pByteStream )
+static bool server_WeaponSelect( BYTESTREAM_s *pByteStream, bool bSentBackup )
 {
 	// [BB] To keep weapon sync when buffering movement commands, the weapon 
 	// select commands also need to be stored in the same buffer the keep
 	// the proper order of the commands.
-	return server_ParseBufferedCommand<ClientWeaponSelectCommand> ( pByteStream );
+	// [AK] Also check if this is supposed to be a backup command.
+	if ( bSentBackup )
+		return server_ParseBufferedCommand<ClientBackupWeaponSelectCommand> ( pByteStream );
+	else
+		return server_ParseBufferedCommand<ClientWeaponSelectCommand> ( pByteStream );
 }
 
 ClientWeaponSelectCommand::ClientWeaponSelectCommand ( BYTESTREAM_s *pByteStream )
 	// Read in the identification of the weapon the player is selecting.
 	: usActorNetworkIndex ( pByteStream->ReadShort() ) { }
+
+ClientBackupWeaponSelectCommand::ClientBackupWeaponSelectCommand ( BYTESTREAM_s *pByteStream )
+	// [AK] Read in the gametic the client sent us.
+	: ulGametic ( pByteStream->ReadLong() ), ClientWeaponSelectCommand( pByteStream ) { }
+
 
 bool ClientWeaponSelectCommand::process( const ULONG ulClient ) const
 {
@@ -6092,6 +6102,11 @@ bool ClientWeaponSelectCommand::process( const ULONG ulClient ) const
 	// If the player doesn't have a body, break out.
 	if ( players[ulClient].mo == NULL )
 		return ( false );
+
+	// [AK] CLC_WEAPONSELECTBACKUP commands should all have non-zero client gametics,
+	// so in these cases we'll update the gametic the client sent us with this.
+	if ( getClientTic( ) != 0 )
+		g_aClients[ulClient].ulClientGameTic = getClientTic( );
 
 	// Try to find the class that corresponds to the name of the weapon the client
 	// is sending us. If it doesn't exist, or the class isn't a type of weapon, boot

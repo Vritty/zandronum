@@ -2527,6 +2527,11 @@ void CLIENT_SendCmd( void )
 
 	// Send the move header and the gametic.
 	CLIENTCOMMANDS_ClientMove( );
+
+	// [AK] If we had recently sent out a weapon select command, try sending out backup copies of
+	// it in case it doesn't reach the server. Only do this a few times.
+	if ( cl_backupcommands > 0 )
+		CLIENTCOMMANDS_SendBackupWeaponSelect( );
 }
 
 //*****************************************************************************

@@ -73,11 +73,15 @@ static	ULONG	g_ulLastSuicideTime = 0;
 static	ULONG	g_ulLastJoinTime = 0;
 static	ULONG	g_ulLastDropTime = 0;
 static	ULONG	g_ulLastSVCheatMessageTime = 0;
+static	ULONG	g_ulLastWeaponSelectTime = 0; // [AK]
 static	bool g_bIgnoreWeaponSelect = false;
 SDWORD g_sdwCheckCmd = 0;
 
 // [AK] Backups of the last few movement commands we sent to the server.
 static RingBuffer<CLIENT_MOVE_COMMAND_s, MAX_BACKUP_COMMANDS> g_BackupMoveCMDs;
+
+// [AK] The last weapon class we tried switching to before sending to the server.
+static const PClass	*g_pLastWeaponClass = NULL;
 
 //*****************************************************************************
 //	FUNCTIONS
@@ -96,6 +100,8 @@ void CLIENT_ResetFloodTimers( void )
 void CLIENT_ClearBackupCommands( void )
 {
 	g_BackupMoveCMDs.clear( );
+	g_ulLastWeaponSelectTime = 0;
+	g_pLastWeaponClass = NULL;
 }
 
 //*****************************************************************************
@@ -498,8 +504,44 @@ void CLIENTCOMMANDS_WeaponSelect( const PClass *pType )
 	if ( ( pType == NULL ) || g_bIgnoreWeaponSelect )
 		return;
 
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WEAPONSELECT );
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pType->getActorNetworkIndex() );
+	// [AK] If we don't want to send backup commands, send only this one and that's it.
+	if ( cl_backupcommands == 0 )
+	{
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WEAPONSELECT );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( pType->getActorNetworkIndex() );
+	}
+	else
+	{
+		// [AK] Save the weapon class and the original time we sent out the command,
+		// which we'll use when we re-send the command.
+		g_pLastWeaponClass = pType;
+		g_ulLastWeaponSelectTime = gametic;
+
+		// [AK] Send out the backup command.
+		CLIENTCOMMANDS_SendBackupWeaponSelect( );
+	}
+}
+
+//*****************************************************************************
+//
+void CLIENTCOMMANDS_SendBackupWeaponSelect( void )
+{
+	if (( g_pLastWeaponClass == NULL ) || ( g_bIgnoreWeaponSelect ))
+		return;
+
+	// [AK] We don't want to send out this command more than we should (i.e. up to how
+	// many backup commands we can send). If the time that we originally sent this
+	// command is too far into the past, don't send it anymore.
+	if ( gametic - g_ulLastWeaponSelectTime > static_cast<ULONG>( cl_backupcommands ))
+		return;
+
+	// [AK] A backup version of a weapon select command is different from an ordinary
+	// CLC_WEAPONSELECT command, so we'll use a different CLC identifier for it. We must
+	// also send the gametic so the server knows exactly where this command should go
+	// in the client's tic buffer, or can ignore it if it's already been received.
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WEAPONSELECTBACKUP );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( g_ulLastWeaponSelectTime );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( g_pLastWeaponClass->getActorNetworkIndex( ));
 }
 
 //*****************************************************************************

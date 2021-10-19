@@ -321,6 +321,19 @@ public:
 };
 
 //*****************************************************************************
+class ClientBackupWeaponSelectCommand : public ClientWeaponSelectCommand
+{
+	ULONG ulGametic;
+public:
+	ClientBackupWeaponSelectCommand ( BYTESTREAM_s *pByteStream );
+
+	virtual unsigned int getClientTic() const
+	{
+		return ulGametic;
+	}
+};
+
+//*****************************************************************************
 struct CLIENT_s
 {
 	// The network address of this client.
