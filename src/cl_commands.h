@@ -70,6 +70,7 @@ typedef std::set<FName, UserInfoSortingFunction> UserInfoChanges;
 //	PROTOTYPES
 
 void	CLIENT_ResetFloodTimers( void );
+void	CLIENT_ClearBackupCommands( void );
 void	CLIENT_IgnoreWeaponSelect( bool bIgnore );
 bool	CLIENT_GetIgnoreWeaponSelect( void );
 bool	CLIENT_AllowSVCheatMessage( void );

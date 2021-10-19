@@ -142,7 +142,7 @@ EXTERN_CVAR( Bool, sv_unlagged_debugactors )
 
 static	bool	server_Ignore( BYTESTREAM_s *pByteStream );
 static	bool	server_Say( BYTESTREAM_s *pByteStream );
-static	bool	server_ClientMove( BYTESTREAM_s *pByteStream );
+static	bool	server_ClientMove( BYTESTREAM_s *pByteStream, bool bSentBackup );
 static	bool	server_MissingPacket( BYTESTREAM_s *pByteStream );
 static	bool	server_UpdateClientPing( BYTESTREAM_s *pByteStream );
 static	bool	server_WeaponSelect( BYTESTREAM_s *pByteStream );
@@ -4563,7 +4563,7 @@ void SERVER_PrintCommand( LONG lCommand )
 		pszString = GetStringCLCC ( static_cast<CLCC> ( lCommand ) );
 	else
 	{
-		if (( sv_showcommands >= 2 ) && ( lCommand == CLC_CLIENTMOVE ))
+		if (( sv_showcommands >= 2 ) && ( lCommand == CLC_CLIENTMOVE || lCommand == CLC_CLIENTMOVEBACKUP ))
 			return;
 		if (( sv_showcommands >= 3 ) && ( lCommand == CLC_PONG ))
 			return;
@@ -4745,11 +4745,12 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		// Client is talking.
 		return ( server_Say( pByteStream ));
 	case CLC_CLIENTMOVE:
+	case CLC_CLIENTMOVEBACKUP:
 		{
 			bool	bPlayerKicked;
 
 			// Client is sending movement information.
-			bPlayerKicked = server_ClientMove( pByteStream );
+			bPlayerKicked = server_ClientMove( pByteStream, lCommand == CLC_CLIENTMOVEBACKUP );
 
 			if ( g_aClients[g_lCurrentClient].lLastMoveTick == gametic )
 				g_aClients[g_lCurrentClient].lOverMovementLevel++;
@@ -5232,6 +5233,40 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
+bool SERVER_ShouldProcessMoveCommand( ULONG ulClient, ULONG ulNumMoveCMDs )
+{
+	// [AK] If the client isn't sending us backup commands, then always process movement commands.
+	if ( g_aClients[ulClient].ulNumExpectedCMDs == 1 )
+		return true;
+
+	// [AK] If the client is sending us backup commands and their tic buffer is getting too full, we
+	// must always process their movement commands. This condition is true when the number of commands
+	// stored in the buffer exceeds the number of commands we expect them to send us per tic.
+	if ( ulNumMoveCMDs >= g_aClients[ulClient].ulNumExpectedCMDs )
+		return true;
+
+	// [AK] Don't execute this block if we already processed a movement commands on this tic.
+	if ( g_aClients[ulClient].lLastMoveTickProcess != gametic )
+	{
+		// [AK] We have received enough movement commands from this client to process them, but we can only
+		// do this once per tic. Otherwise, their tic buffer will become too empty for us to process any
+		// backup commands properly.
+		if ( g_aClients[ulClient].ulNumSentCMDs == g_aClients[ulClient].ulNumExpectedCMDs )
+			return true;
+
+		// [AK] Are we still waiting for the client to send us more movement commands than we expect? In case
+		// case they suffer from packet loss, we don't want to wait forever to receive all of them , so we'll
+		// just have process whatever we have. To do this, increment the counter once per tic, which will
+		// eventually satisfy the condition above this one.
+		if ( g_aClients[ulClient].lLastMoveTick != gametic )
+			g_aClients[ulClient].ulNumSentCMDs++;
+	}
+
+	return false;
+}
+
+//*****************************************************************************
+//
 CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
 {
 	PositionData = MOVE_THING_DATA_s( player->mo );
@@ -5395,6 +5430,8 @@ void SERVER_ResetClientTicBuffer( ULONG ulClient, bool bClearMoveCMDs )
  
 	// [AK] We want to reset this client's last backtrace tic only when we reset their tic buffer.
 	g_aClients[ulClient].lLastBacktraceTic = 0;
+	// [AK] Also reset the backup command counters.
+	g_aClients[ulClient].ulNumSentCMDs = g_aClients[ulClient].ulNumExpectedCMDs = 1;
 
 	SERVER_ResetClientExtrapolation( ulClient );
 }
@@ -5653,7 +5690,7 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
-static bool server_ClientMove( BYTESTREAM_s *pByteStream )
+static bool server_ClientMove( BYTESTREAM_s *pByteStream, bool bSentBackup )
 {
 	// Don't timeout.
 	g_aClients[g_lCurrentClient].ulLastCommandTic = gametic;
@@ -5662,7 +5699,43 @@ static bool server_ClientMove( BYTESTREAM_s *pByteStream )
 	// in a buffer. This way we can limit the amount of movement commands
 	// we process for a player in a given tic to prevent the player from
 	// seemingly teleporting in case too many movement commands arrive at once.
-	return server_ParseBufferedCommand<ClientMoveCommand> ( pByteStream );
+	if ( !bSentBackup )
+	{
+		g_aClients[g_lCurrentClient].ulNumSentCMDs = 1;
+		g_aClients[g_lCurrentClient].ulNumExpectedCMDs = 1;
+
+		return server_ParseBufferedCommand<ClientMoveCommand>( pByteStream );
+	}
+
+	// [AK] If we get to this point, that means the client also wanted to
+	// send us backup movement commands. Here, we'll determine how many commands
+	// they actually sent us (ulNumSentCMDs), and how many commands they're
+	// trying to send to us per tic (ulNumExpectedCMDs = cl_backupcommands + 1).
+	ULONG ulNumSentCMDs = pByteStream->ReadShortByte( 4 );
+	ULONG ulNumExpectedCMDs = pByteStream->ReadShortByte( 4 );
+
+	ULONG ulOldBufferSize = g_aClients[g_lCurrentClient].MoveCMDs.Size( );
+	bool result = false;
+
+	// [AK] Parse all of the movement commands, but also remember if the client
+	// needs to be kicked at all or not.
+	for ( unsigned int i = 1; i <= ulNumSentCMDs; i++ )
+	{
+		if ( server_ParseBufferedCommand<ClientMoveCommand>( pByteStream ))
+			result = true;
+	}
+
+	// [AK] We only want to update the number of sent/expected commands from
+	// the client if these movement commands weren't treated as late commands
+	// because of the skip correction. We can figure this out by checking if
+	// the size of the tic buffer changed at all.
+	if ( ulOldBufferSize != g_aClients[g_lCurrentClient].MoveCMDs.Size( ))
+	{
+		g_aClients[g_lCurrentClient].ulNumSentCMDs = ulNumSentCMDs;
+		g_aClients[g_lCurrentClient].ulNumExpectedCMDs = ulNumExpectedCMDs;
+	}
+
+	return result;
 }
 
 ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )

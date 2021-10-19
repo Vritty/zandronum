@@ -76,6 +76,9 @@ static	ULONG	g_ulLastSVCheatMessageTime = 0;
 static	bool g_bIgnoreWeaponSelect = false;
 SDWORD g_sdwCheckCmd = 0;
 
+// [AK] Backups of the last few movement commands we sent to the server.
+static RingBuffer<CLIENT_MOVE_COMMAND_s, MAX_BACKUP_COMMANDS> g_BackupMoveCMDs;
+
 //*****************************************************************************
 //	FUNCTIONS
 
@@ -86,6 +89,13 @@ void CLIENT_ResetFloodTimers( void )
 	g_ulLastJoinTime = 0;
 	g_ulLastDropTime = 0;
 	g_ulLastSVCheatMessageTime = 0;
+}
+
+//*****************************************************************************
+//
+void CLIENT_ClearBackupCommands( void )
+{
+	g_BackupMoveCMDs.clear( );
 }
 
 //*****************************************************************************
@@ -415,8 +425,42 @@ void CLIENTCOMMANDS_ClientMove( void )
 	// [AK] Create the movement command for the current tic.
 	CLIENT_MOVE_COMMAND_s moveCMD = clientcommand_CreateMoveCommand( );
 
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
-	clientcommand_WriteMoveCommandToBuffer( moveCMD );
+	// [AK] If we don't want to send backup commands, send only this one and that's it.
+	if ( cl_backupcommands == 0 )
+	{
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
+		clientcommand_WriteMoveCommandToBuffer( moveCMD );
+	}
+	else
+	{
+		// [AK] Save the movement command from this tic for future use.
+		g_BackupMoveCMDs.put( moveCMD );
+
+		ULONG ulNumSavedCMDs = 0;
+		ULONG ulNumExpectedCMDs = cl_backupcommands + 1;
+
+		// [AK] Determine how many movement commands we now have saved in the buffer.
+		for ( unsigned int i = 0; i < MAX_BACKUP_COMMANDS; i++ )
+		{
+			if ( g_BackupMoveCMDs.getOldestEntry( i ).ulGametic != 0 )
+				ulNumSavedCMDs++;
+		}
+
+		ULONG ulNumCMDsToSend = MIN( ulNumSavedCMDs, ulNumExpectedCMDs );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVEBACKUP );
+
+		// [AK] We need to tell the server the number of movement commands we sent, and
+		// up to how many movment commands we actually want to send.
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShortByte( ulNumCMDsToSend, 4 );
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteShortByte( ulNumExpectedCMDs, 4 );
+
+		// [AK] Older movement commands must be written to the buffer before newer ones.
+		for ( int i = ulNumCMDsToSend; i >= 1; i-- )
+		{
+			moveCMD = g_BackupMoveCMDs.getOldestEntry( MAX_BACKUP_COMMANDS - i );
+			clientcommand_WriteMoveCommandToBuffer( moveCMD );
+		}
+	}
 }
 
 //*****************************************************************************

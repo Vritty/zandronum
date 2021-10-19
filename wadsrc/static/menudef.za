@@ -93,6 +93,13 @@ OptionValue ZA_ConnectionType
 	1.0, "DSL"
 }
 
+OptionValue ZA_BackupRate
+{
+	0.0, "None"
+	1.0, "One per tick"
+	2.0, "Two per tick"
+}
+
 OptionMenu ZA_NetworkOptions
 {
 	Title "NETWORK OPTIONS"
@@ -101,9 +108,21 @@ OptionMenu ZA_NetworkOptions
 	Option		"Unlagged",					"cl_unlagged",				"OnOff"
 	Option		"Unlag Type",				"cl_ping_unlagged",			"ZA_UnlagType"
 	Option		"Update Rate",				"cl_ticsperupdate",			"ZA_UpdateRate"
+	Option		"Send backup commands",		"cl_backupcommands",		"ZA_BackupRate"
 	Option		"Hitscan decals",			"cl_hitscandecalhack",		"OnOff"
 	Option		"Clientside puffs",			"cl_clientsidepuffs",		"OnOff"
 	Option		"Display packet loss",			"cl_showpacketloss",		"YesNo"
+
+	// [AK] Sending backup commands comes with drawbacks, such as increased outbound
+	// net traffic and their commands being delayed on the server's end. If the client
+	// decides to enable this, they should be made aware of the consequences too.
+	StaticText	" "
+	StaticText	"--- WARNING ---"
+	StaticText	"Sending backup commands helps mitigate packet loss", 1
+	StaticText	"but increases outbound net traffic and delays your input!", 1
+	StaticText	" "
+	StaticText	"You should only enable them if you're actually", 1
+	StaticText	"suffering from severe packet loss!", 1
 }
 
 // =================================================================================================

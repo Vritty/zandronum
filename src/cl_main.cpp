@@ -169,6 +169,16 @@ CVAR( Bool, cl_showpacketloss, false, CVAR_ARCHIVE )
 // [JS] Always makes us ready when we are in intermission.
 CVAR( Bool, cl_autoready, false, CVAR_ARCHIVE )
 
+// [AK] Let the user send backup copies of old commands, in case of packet loss.
+CUSTOM_CVAR( Int, cl_backupcommands, 0, CVAR_ARCHIVE )
+{
+	if ( self < 0 )
+		self = 0;
+
+	if ( self > MAX_BACKUP_COMMANDS - 1 )
+		self = MAX_BACKUP_COMMANDS - 1;
+}
+
 //*****************************************************************************
 //	PROTOTYPES
 
@@ -3407,6 +3417,8 @@ void ServerCommands::SpawnPlayer::Execute()
 			( priorState == PST_REBORN ) || ( priorState == PST_REBORNNOINVENTORY ))
 		{
 			g_ulFirstSpawnedTic = gametic;
+			// [AK] Any backup commands we have saved are now invalid, so remove them.
+			CLIENT_ClearBackupCommands( );
 		}
 	}
 	else

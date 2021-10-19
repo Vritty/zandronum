@@ -61,6 +61,9 @@
 #define	CONNECTION_RESEND_TIME		( 3 * TICRATE )
 #define	GAMESTATE_RESEND_TIME		( 3 * TICRATE )
 
+// [AK] The maximum number of move commands we're allowed to send per tic.
+#define MAX_BACKUP_COMMANDS			3
+
 //*****************************************************************************
 enum CONNECTIONSTATE_e
 {
@@ -211,6 +214,7 @@ EXTERN_CVAR( Flag, cl_dontrestorefrags )
 EXTERN_CVAR( String, cl_password )
 EXTERN_CVAR( String, cl_joinpassword )
 EXTERN_CVAR( Bool, cl_hitscandecalhack )
+EXTERN_CVAR( Int, cl_backupcommands ) // [AK]
 
 // Not in cl_main.cpp, but this seems like a good enough place for it.
 EXTERN_CVAR( Int, cl_skins )
