@@ -3402,9 +3402,12 @@ void ServerCommands::SpawnPlayer::Execute()
 
 	if ( ulPlayer == static_cast<ULONG>( consoleplayer ))
 	{
-		// [AK] Keep track of the tic when we first entered the game.
-		if (( priorState == PST_ENTER ) || ( priorState == PST_ENTERNOINVENTORY ))
+		// [AK] Keep track of the tic when we (re)entered the game.
+		if (( priorState == PST_ENTER ) || ( priorState == PST_ENTERNOINVENTORY ) ||
+			( priorState == PST_REBORN ) || ( priorState == PST_REBORNNOINVENTORY ))
+		{
 			g_ulFirstSpawnedTic = gametic;
+		}
 	}
 	else
 	{
