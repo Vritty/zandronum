@@ -7464,7 +7464,7 @@ static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_
 	if (( sv_backtracelimit != 0.0f ) && ( fDiff > sv_backtracelimit ))
 	{
 		if ( sv_smoothplayers_debuginfo )
-			Printf( "failed (exceeded backtrace limit - %.4f vs. %.4f).\n", fDiff, sv_backtracelimit );
+			Printf( "failed (exceeded backtrace limit - %.4f vs. %.4f).\n", fDiff, static_cast<float>( sv_backtracelimit ));
 
 		return false;
 	}
