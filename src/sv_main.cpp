@@ -5824,7 +5824,8 @@ bool ClientMoveCommand::process( const ULONG ulClient ) const
 		g_aClients[ulClient].lLastServerGametic = moveCmd.ulServerGametic; // [CK] Use the gametic from what we saw
 
 	// If the client is attacking, he always sends the name of the weapon he's using.
-	if ( pCmd->ucmd.buttons & BT_ATTACK )
+	// [AK] Only do this when we're not backtracing this player's movement.
+	if (( pCmd->ucmd.buttons & BT_ATTACK ) && ( SERVER_IsBacktracingPlayer( ulClient ) == false ))
 	{
 		// If the name of the weapon the client is using doesn't match the name of the
 		// weapon we think he's using, do something to rectify the situation.
