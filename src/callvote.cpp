@@ -251,6 +251,7 @@ void CALLVOTE_RenderClassic( void )
 	ULONG *pulPlayersWhoVotedYes = CALLVOTE_GetPlayersWhoVotedYes( );
 	ULONG *pulPlayersWhoVotedNo = CALLVOTE_GetPlayersWhoVotedNo( );
 	ULONG ulMaxYesOrNoVoters = ( MAXPLAYERS / 2 ) + 1;
+	ULONG ulPlayer;
 	FString text;
 
 	// Start with the "VOTE NOW!" title.
@@ -293,10 +294,12 @@ void CALLVOTE_RenderClassic( void )
 	// [AK] Show a list of all the players who voted yes.
 	for ( ULONG ulIdx = 0; ulIdx < ulMaxYesOrNoVoters; ulIdx++ )
 	{
-		if ( pulPlayersWhoVotedYes[ulIdx] != MAXPLAYERS )
+		ulPlayer = pulPlayersWhoVotedYes[ulIdx];
+
+		if ( ulPlayer != MAXPLAYERS )
 		{
 			ulYPos += 8;
-			text.Format( "%s", players[ulIdx].userinfo.GetName( ));
+			text.Format( "%s", players[ulPlayer].userinfo.GetName( ));
 			HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 32, ulYPos, text );
 		}
 	}
@@ -306,10 +309,12 @@ void CALLVOTE_RenderClassic( void )
 	// [AK] Next, show another list with all the players who voted no.
 	for ( ULONG ulIdx = 0; ulIdx < ulMaxYesOrNoVoters; ulIdx++ )
 	{
-		if ( pulPlayersWhoVotedNo[ulIdx] != MAXPLAYERS )
+		ulPlayer = pulPlayersWhoVotedNo[ulIdx];
+
+		if ( ulPlayer != MAXPLAYERS )
 		{
 			ulYPos += 8;
-			text.Format( "%s", players[ulIdx].userinfo.GetName( ));
+			text.Format( "%s", players[ulPlayer].userinfo.GetName( ));
 			HUD_DrawTextClean( SmallFont, CR_UNTRANSLATED, 320 - 32 - SmallFont->StringWidth( text ), ulYPos, text );
 		}
 	}
