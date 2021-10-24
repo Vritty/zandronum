@@ -7486,7 +7486,8 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 		case ACSF_SetPlayerScore:
 			{
 				const ULONG ulPlayer = static_cast<ULONG> ( args[0] );
-				int oldvalue;
+				// [AK] With the exception of frags, the new score must not be a negative value.
+				const LONG lScore = ( args[1] == SCORE_FRAGS || args[2] >= 0 ) ? args[2] : 0;
 
 				if ( PLAYER_IsValidPlayer( ulPlayer ) )
 				{
@@ -7494,73 +7495,71 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 					{
 						case SCORE_FRAGS:
 						{
-							// [AK] Keep the original value of the player's frags.
-							oldvalue = players[ulPlayer].fragcount;
-							players[ulPlayer].fragcount = args[2];
+							// [AK] Don't do anything if the frag count won't change.
+							if ( players[ulPlayer].fragcount == lScore )
+								return 0;
 
-							// [AK] If we're the server, tell the clients the player's new frag count.
-							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].fragcount ))
-								SERVERCOMMANDS_SetPlayerFrags( ulPlayer );
+							PLAYER_SetFragcount( &players[ulPlayer], lScore, true, true );
 							return 1;
 						}
 
 						case SCORE_POINTS:
 						{
-							// [AK] Keep the original value of the player's points.
-							oldvalue = players[ulPlayer].lPointCount;
-							players[ulPlayer].lPointCount = args[2];
+							// [AK] Don't do anything if the point count won't change.
+							if ( players[ulPlayer].lPointCount == lScore )
+								return 0;
 
-							// [AK] If we're the server, tell the clients the player's new point count.
-							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].lPointCount ))
-								SERVERCOMMANDS_SetPlayerPoints( ulPlayer );
+							PLAYER_SetPoints( &players[ulPlayer], lScore );
 							return 1;
 						}
 
 						case SCORE_WINS:
 						{
-							// [AK] Keep the original value of the player's wins.
-							oldvalue = players[ulPlayer].ulWins;
-							players[ulPlayer].ulWins = args[2] >= 0 ? args[2] : 0;
+							// [AK] Don't do anything if the win count won't change.
+							if ( players[ulPlayer].ulWins == static_cast<ULONG>( lScore ) )
+								return 0;
 
-							// [AK] If we're the server, tell the clients the player's new win count.
-							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( static_cast<ULONG>( oldvalue ) != players[ulPlayer].ulWins ))
-								SERVERCOMMANDS_SetPlayerWins( ulPlayer );
+							PLAYER_SetWins( &players[ulPlayer], lScore );
 							return 1;
 						}
 
 						case SCORE_DEATHS:
 						{
-							// [AK] Keep the original value of the player's deaths.
-							oldvalue = players[ulPlayer].ulDeathCount;
-							players[ulPlayer].ulDeathCount = args[2] >= 0 ? args[2] : 0;
+							// [AK] Don't do anything if the death count won't change.
+							if ( players[ulPlayer].ulDeathCount == static_cast<ULONG>( lScore ) )
+								return 0;
 
-							// [AK] If we're the server, tell the clients the player's new death count.
-							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( static_cast<ULONG>( oldvalue ) != players[ulPlayer].ulDeathCount ))
-								SERVERCOMMANDS_SetPlayerDeaths( ulPlayer );
+							PLAYER_SetDeaths( &players[ulPlayer], lScore );
 							return 1;
 						}
 
 						case SCORE_KILLS:
 						{
-							// [AK] Keep the original value of the player's kills.
-							oldvalue = players[ulPlayer].killcount;
-							players[ulPlayer].killcount = args[2];
+							// [AK] Don't do anything if the kill count won't change.
+							if ( players[ulPlayer].killcount == lScore )
+								return 0;
 
-							// [AK] If we're the server, tell the clients the player's new kill count.
-							if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( oldvalue != players[ulPlayer].killcount ))
-								SERVERCOMMANDS_SetPlayerKillCount( ulPlayer );
+							PLAYER_SetKills( &players[ulPlayer], lScore );
 							return 1;
 						}
 
 						case SCORE_ITEMS:
 						{
-							players[ulPlayer].itemcount = args[2];
+							// [AK] Don't do anything if the item count won't change.
+							if ( players[ulPlayer].itemcount == lScore )
+								return 0;
+
+							players[ulPlayer].itemcount = lScore;
 							return 1;
 						}
 
 						case SCORE_SECRETS:
 						{
-							players[ulPlayer].secretcount = args[2];
+							// [AK] Don't do anything if the secret count won't change.
+							if ( players[ulPlayer].secretcount == lScore )
+								return 0;
+
+							players[ulPlayer].secretcount = lScore;
 							return 1;
 						}
 					}

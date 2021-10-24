@@ -781,6 +781,8 @@ void	PLAYER_SetDefaultSpectatorValues( player_t *pPlayer );
 void	PLAYER_SpectatorJoinsGame ( player_t *pPlayer );
 void	PLAYER_SetPoints( player_t *pPlayer, ULONG ulPoints );
 void	PLAYER_SetWins( player_t *pPlayer, ULONG ulWins );
+void	PLAYER_SetKills( player_t *pPlayer, ULONG ulKills );
+void	PLAYER_SetDeaths( player_t *pPlayer, ULONG ulDeaths );
 // [BB] PLAYER_GetHealth and PLAYER_GetLivesLeft are helper functions for PLAYER_GetPlayerWithSingleHighestValue.
 LONG	PLAYER_GetHealth( ULONG ulPlayer );
 LONG	PLAYER_GetLivesLeft( ULONG ulPlayer );
