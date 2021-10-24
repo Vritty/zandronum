@@ -741,6 +741,13 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 			for ( int i = pByteStream->ReadByte(); i > 0; --i )
 				pByteStream->ReadString();
 		}
+
+		// [SB] Server country code
+		if ( ulFlags2 & SQF2_COUNTRY )
+		{
+			char code[3];
+			pByteStream->ReadBuffer( code, 3 );
+		}
 	}
 
 	// Now that this server has been read in, resort the servers in the menu.

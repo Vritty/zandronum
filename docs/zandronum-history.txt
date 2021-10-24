@@ -60,6 +60,7 @@
 +	- Added the EVENT script type GAMEEVENT_ACTOR_SPAWNED and GAMEVENT_ACTOR_DAMAGED, which are triggered just before an actor's first tic and when an actor takes damage. Note that for performance reasons, these events are disabled by default so modders have to enable them by themselves. [Kaminsky]
 +	- Added DMFlags: "sv_shootthroughallies" and "sv_dontpushallies", so a player's attacks can pass through and not push their allies. [Kaminsky]
 +	- Added packet loss mitigation, which the client can control using the CVar "cl_backupcommands". [Kaminsky]
++	- Added the server CVAR "sv_country", which allows servers to present their country to launchers. [Sean]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]
