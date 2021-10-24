@@ -384,6 +384,7 @@ static void scoreboard_DrawIcon( const char *pszPatchName, ULONG &ulXPos, ULONG 
 static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPlayer )
 {
 	ULONG ulColor = CR_GRAY;
+	FString patchName;
 	FString text;
 
 	// [AK] Change the text color if we're carrying a terminator sphere or on a team.
@@ -433,15 +434,24 @@ static void scoreboard_RenderIndividualPlayer( ULONG ulDisplayPlayer, ULONG ulPl
 			// Draw a bot icon if this player is a bot.
 			if ( players[ulPlayer].bIsBot )
 			{
-				FString patchName;
 				patchName.Format( "BOTSKIL%d", botskill.GetGenericRep( CVAR_Int ).Int );
 				scoreboard_DrawIcon( patchName, ulXPosOffset, g_ulCurYPos, 4 );
 			}
 
 			// Draw a chat icon if this player is chatting.
 			// [Cata] Also shows who's in the console.
-			if (( players[ulPlayer].bChatting ) || ( players[ulPlayer].bInConsole ))
-				scoreboard_DrawIcon( players[ulPlayer].bInConsole ? "CONSMINI" : "TLKMINI", ulXPosOffset, g_ulCurYPos, 4 );
+			// [AK] Also show who's in the menu.
+			if (( players[ulPlayer].bChatting ) || ( players[ulPlayer].bInConsole ) || ( players[ulPlayer].bInMenu ))
+			{
+				if ( players[ulPlayer].bChatting )
+					patchName = "TLKMINI";
+				else if ( players[ulPlayer].bInConsole )
+					patchName = "CONSMINI";
+				else
+					patchName = "MENUMINI";
+
+				scoreboard_DrawIcon( patchName, ulXPosOffset, g_ulCurYPos, 4 );
+			}
 
 			// [AK] Also show an icon if the player is lagging to the server.
 			if (( players[ulPlayer].bLagging ) && ( players[ulPlayer].bSpectating == false ) && ( gamestate == GS_LEVEL ))
