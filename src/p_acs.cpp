@@ -7428,20 +7428,23 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 				if ( bRespawn && PLAYER_IsValidPlayerWithMo( args[0] ) )
 				{
-					APlayerPawn *pmo = player->mo;
-					player->playerstate = PST_REBORNNOINVENTORY;
+					// [AK] Only respawn the player if they still have enough lives left.
+					if ( !GAMEMODE_AreLivesLimited() || GAMEMODE_GetState() < GAMESTATE_INPROGRESS || player->ulLivesLeft > 0 )
+					{
+						APlayerPawn *pmo = player->mo;
+						player->playerstate = PST_REBORNNOINVENTORY;
 
-					// [AK] Unmorph the player before respawning them with a new class.
-					if ( player->morphTics )
-						P_UndoPlayerMorph( player, player );
+						// [AK] Unmorph the player before respawning them with a new class.
+						if ( player->morphTics )
+							P_UndoPlayerMorph( player, player );
 
-					// [AK] If we're the server, tell the clients to destroy the body.
-					if ( NETWORK_GetState() == NETSTATE_SERVER )
-						SERVERCOMMANDS_DestroyThing( pmo );
+						// [AK] If we're the server, tell the clients to destroy the body.
+						if ( NETWORK_GetState() == NETSTATE_SERVER )
+							SERVERCOMMANDS_DestroyThing( pmo );
 
-					pmo->Destroy();
-					pmo = NULL;
-					GAMEMODE_SpawnPlayer( player - players );
+						pmo->Destroy();
+						GAMEMODE_SpawnPlayer( player - players );
+					}
 				}
 
 				return 1;
