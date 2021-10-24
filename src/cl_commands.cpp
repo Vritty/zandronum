@@ -540,8 +540,8 @@ void CLIENTCOMMANDS_SendBackupWeaponSelect( void )
 	// also send the gametic so the server knows exactly where this command should go
 	// in the client's tic buffer, or can ignore it if it's already been received.
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_WEAPONSELECTBACKUP );
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( g_ulLastWeaponSelectTime );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( g_pLastWeaponClass->getActorNetworkIndex( ));
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( g_ulLastWeaponSelectTime );
 }
 
 //*****************************************************************************

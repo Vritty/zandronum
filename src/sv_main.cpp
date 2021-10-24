@@ -6091,7 +6091,7 @@ ClientWeaponSelectCommand::ClientWeaponSelectCommand ( BYTESTREAM_s *pByteStream
 
 ClientBackupWeaponSelectCommand::ClientBackupWeaponSelectCommand ( BYTESTREAM_s *pByteStream )
 	// [AK] Read in the gametic the client sent us.
-	: ulGametic ( pByteStream->ReadLong() ), ClientWeaponSelectCommand( pByteStream ) { }
+	: ClientWeaponSelectCommand( pByteStream ), ulGametic ( pByteStream->ReadLong() ) { }
 
 
 bool ClientWeaponSelectCommand::process( const ULONG ulClient ) const
