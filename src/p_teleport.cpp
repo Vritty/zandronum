@@ -185,10 +185,14 @@ bool P_Teleport (AActor *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 	}
 
 	// [BC] Teleporting spectators do not create fog.
-	if ( thing && thing->player && thing->player->bSpectating )
+	// [AK] Players also don't create fog while they're being backtraced.
+	if ( thing && thing->player )
 	{
-		useFog = false;
-		sourceFog = false;
+		if ( thing->player->bSpectating || ( SERVER_IsBacktracingPlayer( thing->player - players )))
+		{
+			useFog = false;
+			sourceFog = false;
+		}
 	}
 
 	// Spawn teleport fog at source and destination
