@@ -108,7 +108,6 @@ OptionMenu ZA_NetworkOptions
 	Option		"Unlagged",					"cl_unlagged",				"OnOff"
 	Option		"Unlag Type",				"cl_ping_unlagged",			"ZA_UnlagType"
 	Option		"Update Rate",				"cl_ticsperupdate",			"ZA_UpdateRate"
-	Option		"Send backup commands",		"cl_backupcommands",		"ZA_BackupRate"
 	Option		"Hitscan decals",			"cl_hitscandecalhack",		"OnOff"
 	Option		"Clientside puffs",			"cl_clientsidepuffs",		"OnOff"
 	Option		"Display packet loss",			"cl_showpacketloss",		"YesNo"
@@ -123,6 +122,9 @@ OptionMenu ZA_NetworkOptions
 	StaticText	" "
 	StaticText	"You should only enable them if you're actually", 1
 	StaticText	"suffering from severe packet loss!", 1
+	StaticText	" "
+
+	Option		"Send backup commands",		"cl_backupcommands",		"ZA_BackupRate"
 }
 
 // =================================================================================================
