@@ -4846,15 +4846,13 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 		// Client wishes to call a vote.
 		return ( server_CallVote( pByteStream ));
-	case CLC_VOTEYES:
+	case CLC_VOTE:
 
-		// Client wishes to vote "yes" on the current vote.
-		CALLVOTE_VoteYes( g_lCurrentClient );
-		return ( false );
-	case CLC_VOTENO:
-
-		// Client wishes to vote "no" on the current vote.
-		CALLVOTE_VoteNo( g_lCurrentClient );
+		// [AK] Check if the client wishes to vote "yes" or "no" on the current vote.
+		if ( !!pByteStream->ReadByte( ) == true )
+			CALLVOTE_VoteYes( g_lCurrentClient );
+		else
+			CALLVOTE_VoteNo( g_lCurrentClient );
 		return ( false );
 	case CLC_INVENTORYUSEALL:
 

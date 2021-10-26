@@ -1236,7 +1236,7 @@ CCMD( vote_yes )
 	if ( g_VoteState != VOTESTATE_INVOTE )
 		return;
 
-	CLIENTCOMMANDS_VoteYes( );
+	CLIENTCOMMANDS_Vote( true );
 /*
 	g_lBytesSent += g_LocalBuffer.cursize;
 	if ( g_lBytesSent > g_lMaxBytesSent )
@@ -1259,7 +1259,7 @@ CCMD( vote_no )
 	if ( g_VoteState != VOTESTATE_INVOTE )
 		return;
 
-	CLIENTCOMMANDS_VoteNo( );
+	CLIENTCOMMANDS_Vote( false );
 /*
 	g_lBytesSent += g_LocalBuffer.cursize;
 	if ( g_lBytesSent > g_lMaxBytesSent )
@@ -1288,7 +1288,7 @@ CCMD ( cancelvote )
 		// Just vote no; we're the original caller, so it will be cancelled.
 		if ( CLIENT_GetConnectionState( ) == CTS_ACTIVE )
 		{
-			CLIENTCOMMANDS_VoteNo( );
+			CLIENTCOMMANDS_Vote( false );
 			NETWORK_LaunchPacket( CLIENT_GetLocalBuffer( ), CLIENT_GetServerAddress( ));
 			CLIENT_GetLocalBuffer( )->Clear();
 		}

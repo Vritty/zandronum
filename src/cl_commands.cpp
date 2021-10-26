@@ -710,16 +710,10 @@ void CLIENTCOMMANDS_CallVote( LONG lVoteCommand, const char *pszArgument, const 
 
 //*****************************************************************************
 //
-void CLIENTCOMMANDS_VoteYes( void )
+void CLIENTCOMMANDS_Vote( bool bVotedYes )
 {
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_VOTEYES );
-}
-
-//*****************************************************************************
-//
-void CLIENTCOMMANDS_VoteNo( void )
-{
-	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_VOTENO );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_VOTE );
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( bVotedYes );
 }
 
 //*****************************************************************************
