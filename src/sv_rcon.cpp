@@ -432,7 +432,12 @@ static void server_rcon_HandleLogin( int iCandidateIndex, const char *pszHash )
 
 		// Tell him some info about the server.
 		g_MessageBuffer.ByteStream.WriteByte( PROTOCOL_VERSION );
-		g_MessageBuffer.ByteStream.WriteString( sv_hostname.GetGenericRep( CVAR_String ).String );
+
+		// [AK] Remove any color codes in the server name before sending it off.
+		FString uncolorizedHostname = sv_hostname.GetGenericRep( CVAR_String ).String;
+		V_ColorizeString( uncolorizedHostname );
+		V_RemoveColorCodes( uncolorizedHostname );
+		g_MessageBuffer.ByteStream.WriteString( uncolorizedHostname );
 		
 		// Send updates.
 		g_MessageBuffer.ByteStream.WriteByte( NUM_RCON_UPDATES );
