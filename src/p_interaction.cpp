@@ -3459,14 +3459,14 @@ bool PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, int flag )
 	if (( zadmflags & flag ) == false )
 		return false;
 
-	// [AK] If the first actor isn't a player, return false.
-	if (( pActor1 == NULL ) || ( pActor1->player == NULL ))
-		return false;
-
-	// [AK] Make sure the other actor is another player and a teammate of the first actor. Otherwise,
-	// their attacks should still hit and push each other.
-	if (( pActor1 != pActor2 ) && ( pActor1->IsTeammate( pActor2 )) && ( pActor2->player ))
-		return true;
+	// [AK] One of the actors must be a player, at least.
+	if (( pActor1 && pActor2 ) && ( pActor1->player || pActor2->player ))
+	{
+		// [AK] Make sure the other actor is a teammate of the first actor. Otherwise,
+		// their attacks should still hit and push each other.
+		if (( pActor1 != pActor2 ) && ( pActor1->IsTeammate( pActor2 )))
+			return true;
+	}
 
 	return false;
 }
