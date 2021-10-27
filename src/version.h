@@ -128,6 +128,7 @@ unsigned int GetRevisionNumber();
 #define DOMAIN_NAME "zandronum.com"
 #define FORUM_URL "https://" DOMAIN_NAME "/forum/"
 #define BUGS_FORUM_URL	"https://" DOMAIN_NAME "/tracker/"
+#define WIKI_URL "https://wiki." DOMAIN_NAME "/"
 
 // [BC] This is what's displayed as the title for server windows.
 #define	SERVERCONSOLE_TITLESTRING	GAMENAME " v" DOTVERSIONSTR " Server"

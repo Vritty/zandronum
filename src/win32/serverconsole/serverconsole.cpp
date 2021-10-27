@@ -455,23 +455,23 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 				break;
 			case IDM_HOW_TO_USE1:
 
-				I_RunProgram( "http://" DOMAIN_NAME "/wiki/How_to_use_the_Skulltag_Server" );
+				I_RunProgram( WIKI_URL "Moderating_Game_Servers" );
 				break;
 			case IDM_COMMAND_REFERENCE1:
 
-				I_RunProgram( "http://" DOMAIN_NAME "/wiki/Commands" );
+				I_RunProgram( WIKI_URL "Console_Commands" );
 				break;
 			case IDM_DMFLAGS1:
 
-				I_RunProgram( "http://" DOMAIN_NAME "/wiki/DMFlags" );
+				I_RunProgram( WIKI_URL "DMFlags" );
 				break;
 			case IDM_GAME_MODES1:
 
-				I_RunProgram( "http://" DOMAIN_NAME "/wiki/Game_Modes" );
+				I_RunProgram( WIKI_URL "Game_Modes" );
 				break;
 			case IDM_NOBODY_CAN_SEE_MY_SERVER_1:
 
-				I_RunProgram( "http://" DOMAIN_NAME "/wiki/Port_Forwarding" );
+				I_RunProgram( WIKI_URL "Port_Forwarding" );
 				break;
 			case IDR_JOIN_SERVER:
 
