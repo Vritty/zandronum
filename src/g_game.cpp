@@ -1099,18 +1099,28 @@ static void ChangeSpy (int changespy)
 
 		do
 		{
+			bool bFoundValidPlayer = true;
+
 			// [AK] If we're using "spyto", switch to the player we want to spy on.
 			pnum = ( changespy >= 0 ) ? changespy : ( pnum + step );
 			pnum &= MAXPLAYERS-1;
 
-			// [AK] Only choose active players who could also be on our team.
-			if (( playeringame[pnum] ) && ( players[pnum].bSpectating == false ) &&
-				(( changespy != SPY_CARRIER ) || ( GAMEMODE_IsPlayerCarryingGameModeItem( &players[pnum] ))) &&
-				(( PLAYER_IsTrueSpectator( &players[consoleplayer] )) ||
-				(( players[pnum].mo != NULL ) && ( players[pnum].mo->IsTeammate( players[consoleplayer].mo )))))
+			// [AK] Don't pick this player if they're invalid or spectating.
+			if (( playeringame[pnum] == false ) || ( players[pnum].bSpectating ) || ( players[pnum].mo == NULL ))
+				bFoundValidPlayer = false;		
+			// [AK] Also don't pick them if they're not carrying any game mode items, and we want to spy on the carrier(s).
+			else if (( changespy == SPY_CARRIER ) && ( GAMEMODE_IsPlayerCarryingGameModeItem( &players[pnum] ) == false ))
+				bFoundValidPlayer = false;
+			// [AK] Also don't pick them if they're not a teammate. 
+			else if (( PLAYER_IsTrueSpectator( &players[consoleplayer] ) == false ) && ( players[pnum].mo->IsTeammate( players[consoleplayer].mo ) == false ))
 			{
-				break;
+				// [AK] We can still spy on enemy players as a dead spectator if LMS_SPF_VIEW is enabled.
+				if (( players[consoleplayer].bDeadSpectator == false ) || ( lmsspectatorsettings & LMS_SPF_VIEW ) == false )
+					bFoundValidPlayer = false;
 			}
+
+			if ( bFoundValidPlayer )
+				break;
 
 			// [AK] We couldn't change the view using "spyto" so don't do anything.
 			if ( changespy >= 0 )
