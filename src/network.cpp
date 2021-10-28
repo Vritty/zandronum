@@ -1067,7 +1067,7 @@ void network_CheckIfDuplicateLump( const int LumpNum )
 		if ( DuplicateLumps[i].CompareNoCase( lumpName ) == 0 )
 		{
 			FString fullPath = Wads.GetLumpFullPath( LumpNum );
-			const char *fileName = fullPath.Left( fullPath.Len() - strlen( lumpName ) - 1 );
+			FString fileName = fullPath.Left( fullPath.Len() - strlen( lumpName ) - 1 );
 
 			// [AK] If the lumps belong to the same file, print a message into the console and
 			// remove it from the list.

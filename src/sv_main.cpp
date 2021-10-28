@@ -7090,7 +7090,7 @@ static bool server_CallVote( BYTESTREAM_s *pByteStream )
 		// and the parameter from each other.
 		if ( ulVoteCmd == VOTECMD_FLAG )
 		{
-			sprintf( szCommand, Parameters.Left( Parameters.IndexOf( ' ')));
+			sprintf( szCommand, Parameters.Left( Parameters.IndexOf( ' ' )).GetChars( ));
 			Parameters = Parameters.Right( Parameters.Len() - ( strlen( szCommand ) + 1 ));
 		}
 

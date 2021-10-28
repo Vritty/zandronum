@@ -135,7 +135,7 @@ void CALLVOTE_Tick( void )
 				// [AK] If the current vote is for changing a flag, we must check if it's still valid to keep the vote active.
 				if ( g_PreviousVotes.back().ulVoteType == VOTECMD_FLAG )
 				{
-					const char *flagName = g_VoteCommand.Left( g_VoteCommand.IndexOf( ' ' ));
+					FString flagName = g_VoteCommand.Left( g_VoteCommand.IndexOf( ' ' ));
 					FFlagCVar *flag = static_cast<FFlagCVar *>( FindCVar( flagName, NULL ));
 					bool bEnable = !g_VoteCommand.Right( g_VoteCommand.Len() - ( strlen( flagName ) + 1 )).CompareNoCase( "true" );
 
