@@ -1047,6 +1047,14 @@ static bool callvote_CheckValidity( FString &Command, FString &Parameters )
 			}
 		
 			FFlagCVar *flag = static_cast<FFlagCVar *>( FindCVar( Command, NULL));
+			FIntCVar *flagset = flag->GetValueVar( );
+
+			// [AK] Don't accept compatibility flags, only server hosts should be messing with these flags.
+			if (( flagset == &compatflags ) || ( flagset == &compatflags2 ) || ( flagset == &zacompatflags ))
+			{
+				SERVER_PrintfPlayer( SERVER_GetCurrentClient( ), "compatibility flags cannot be changed in a vote.\n" );
+				return ( false );
+			}
 
 			// [AK] Don't call the vote if this flag is supposed to be locked in the current game mode.
 			if ( flag->GetBitVal() & GAMEMODE_GetCurrentFlagsetMask( flag->GetValueVar(), true ))
