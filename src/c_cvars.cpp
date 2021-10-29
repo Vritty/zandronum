@@ -1710,6 +1710,8 @@ void C_ArchiveCVars (FConfigFile *f, uint32 filter)
 			// [AK] Reset the CVar back to its original value if it was changed by ConsoleCommand.
 			if ( cl_protectcvars )
 			{
+				// [AK] We're just resetting the value, so don't execute any callbacks.
+				FBaseCVar::DisableCallbacks( );
 				for ( unsigned int i = 0; i < SavedValues.Size( ); i++ )
 				{
 					if ( SavedValues[i].Variable == cvar )
@@ -1721,6 +1723,8 @@ void C_ArchiveCVars (FConfigFile *f, uint32 filter)
 						break;
 					}
 				}
+
+				FBaseCVar::m_UseCallback = true;
 			}
 
 			UCVarValue val;
