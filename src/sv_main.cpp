@@ -5412,6 +5412,9 @@ bool SERVER_IsBacktracingPlayer( ULONG ulClient )
 //
 void SERVER_ResetClientTicBuffer( ULONG ulClient, bool bClearMoveCMDs )
 {
+	if ( SERVER_IsValidClient( ulClient ) == false )
+		return;
+
 	// [AK] Clear all stored commands in the tic buffer.
 	if ( bClearMoveCMDs )
 	{
