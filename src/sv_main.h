@@ -423,7 +423,7 @@ struct CLIENT_s
 	LONG			lLastBacktraceTic;
 
 	// [AK] The last movement command we received from this client.
-	ClientCommand	*LastMoveCMD;
+	ClientMoveCommand	*LastMoveCMD;
 
 	// We keep track of how many extra movement commands we get from the client. If it
 	// exceeds a certain level over time, we kick him.
