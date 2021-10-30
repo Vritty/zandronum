@@ -281,7 +281,7 @@ CVAR( Int, sv_afk2spec, 0, CVAR_ARCHIVE | CVAR_SERVERINFO ) // [K6]
 CVAR( Bool, sv_forcelogintojoin, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Bool, sv_useticbuffer, true, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_DEBUGONLY )
 CVAR( Int, sv_showcommands, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY )
-CVAR( Bool, sv_smoothplayers_debuginfo, false, CVAR_ARCHIVE|CVAR_DEBUGONLY ) // [AK]
+CVAR( Int, sv_smoothplayers_debuginfo, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY ) // [AK]
 
 //*****************************************************************************
 // [AK] Smooths the movement of lagging players using extrapolation and correction.
@@ -5359,6 +5359,23 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 				{
 					Printf( "%d: %s (%d tics extrapolated, %d move commands, %d late commands.\n", gametic, players[ulClient].userinfo.GetName( ),
 						static_cast<unsigned int>( pClient->ulExtrapolatedTics ), pClient->MoveCMDs.Size( ), pClient->LateMoveCMDs.Size( ));
+
+					if ( sv_smoothplayers_debuginfo >= 2 )
+					{
+						if ( pClient->MoveCMDs.Size( ) > 0 )
+						{
+							Printf( "-> Move gametics: " );
+							for ( unsigned int i = 0; i < pClient->MoveCMDs.Size( ); i++ )
+								Printf( "%d%s", pClient->MoveCMDs[i]->getClientTic( ), i < pClient->MoveCMDs.Size( ) - 1 ? ", " : "\n" );
+						}
+
+						if ( pClient->LateMoveCMDs.Size( ) > 0 )
+						{
+							Printf( "-> Late gametics: " );
+							for ( unsigned int i = 0; i < pClient->LateMoveCMDs.Size( ); i++ )
+								Printf( "%d%s", pClient->LateMoveCMDs[i]->getClientTic( ), i < pClient->LateMoveCMDs.Size( ) - 1 ? ", " : "\n" );
+						}
+					}
 				}
 			}
 
@@ -5375,7 +5392,10 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 				if ( pClient->ulExtrapolatedTics++ == 0 )
 				{
 					if ( sv_smoothplayers_debuginfo )
-						Printf( "%d: starting extrapolation for %s.\n", gametic, players[ulClient].userinfo.GetName( ));
+					{
+						Printf( "%d: starting extrapolation for %s (last gametic = %d).\n", gametic, players[ulClient].userinfo.GetName( ),
+							pClient->LastMoveCMD->getClientTic( ));
+					}
 
 					pClient->OldData = new CLIENT_PLAYER_DATA_s( &players[ulClient] );
 				}
@@ -7453,7 +7473,15 @@ static void server_PerformBacktrace( ULONG ulClient )
 		pClient->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( pClient->LateMoveCMDs[ulLastIdx] ));
 
 		if ( sv_smoothplayers_debuginfo )
-			Printf( "%d: no need to backtrace %s.\n", gametic, players[ulClient].userinfo.GetName( ));
+		{
+			Printf( "%d: no need to backtrace %s ", gametic, players[ulClient].userinfo.GetName( ));
+
+			// [AK] Explain why we didn't backtrace their movement.
+			if ( bPressedAnything == false )
+				Printf( "(didn't press anything).\n" );
+			else
+				Printf( "(morphed during extrapolation).\n" );
+		}
 	}
 
 	SERVER_ResetClientExtrapolation( ulClient );
