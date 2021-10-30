@@ -7442,9 +7442,18 @@ static void server_PerformBacktrace( ULONG ulClient )
 				Printf( "accepted.\n" );
 		}
 	}
-	else if ( sv_smoothplayers_debuginfo )
+	else
 	{
-		Printf( "%d: no need to backtrace %s.\n", gametic, players[ulClient].userinfo.GetName( ));
+		// [AK] We still need to update the client's last move command to the late command we received last.
+		// We also need to set their gametic so that they don't think they're lagging.
+		ULONG ulLastIdx = pClient->LateMoveCMDs.Size( ) - 1;
+		pClient->ulClientGameTic += pClient->ulExtrapolatedTics;
+
+		delete pClient->LastMoveCMD;
+		pClient->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( pClient->LateMoveCMDs[ulLastIdx] ));
+
+		if ( sv_smoothplayers_debuginfo )
+			Printf( "%d: no need to backtrace %s.\n", gametic, players[ulClient].userinfo.GetName( ));
 	}
 
 	SERVER_ResetClientExtrapolation( ulClient );
