@@ -5168,10 +5168,10 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 	const ULONG ulClientTic = cmd->getClientTic( );
 	const bool bIsMoveCMD = cmd->isMoveCmd( );
 
-	// [AK] Ignore move commands that arrived too late or are duplicates of move commands we already
-	// processed, neither of which we can account for anymore. This way, we aren't processing the
-	// same commands again, or that happened too far into the past.
-	if (( bIsMoveCMD ) && ( ulClientTic <= g_aClients[g_lCurrentClient].ulClientGameTic ))
+	// [AK] Ignore commands that arrived too late or are duplicates of commands we already processed,
+	// neither of which we can account for anymore. This way, we aren't processing the same commands
+	// again, or that happened too far into the past.
+	if (( ulClientTic != 0 ) && ( ulClientTic <= g_aClients[g_lCurrentClient].ulClientGameTic ))
 	{
 		delete cmd;
 		return false;
