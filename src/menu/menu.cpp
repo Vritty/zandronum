@@ -493,6 +493,7 @@ void M_SetMenu(FName menu, int param)
 			M_StartMessage (GStrings("SAVEDEAD"), 1);
 			return;
 		}
+		break;
 
 	case NAME_ZA_ServerSetupMenu:
 		// [TP] Make the server setup menu redirect to RCON login if not logged in yet
