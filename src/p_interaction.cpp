@@ -2539,7 +2539,7 @@ void PLAYER_SetSpectator( player_t *pPlayer, bool bBroadcast, bool bDeadSpectato
 	}
 	// [AK] If this player's current mobj doesn't match their player class due to
 	// A_SkullPop, then we must reset their mobj back to the original body.
-	else if (( bDeadSpectator == false ) && ( pPlayer->mo != NULL ))
+	else if (( bDeadSpectator == false ) && ( pPlayer->mo != NULL ) && ( pPlayer->cls != NULL ))
 	{
 		APlayerPawn *mo = pPlayer->mo;
 
