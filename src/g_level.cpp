@@ -1064,6 +1064,9 @@ void G_DoLoadLevel (int position, bool autosave)
 	// [BB] Reset the net traffic measurements when a new map starts.
 	NETTRAFFIC_Reset();
 
+	// [AK] Reset the end level delay if it's not already zero.
+	GAME_SetEndLevelDelay( 0, false );
+
 	// [AK] Reset all locked gameplay/compatibility flags to what they're supposed to be, in case they somehow changed.
 	GAMEMODE_ReconfigureGameSettings( true );
 

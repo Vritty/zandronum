@@ -66,7 +66,7 @@ void	GAME_SpawnTerminatorArtifact( void );
 void	GAME_SpawnPossessionArtifact( void );
 
 // [BC] Access functions.
-void	GAME_SetEndLevelDelay( ULONG ulTicks );
+void	GAME_SetEndLevelDelay( ULONG ulTicks, bool bInformClients = true );
 ULONG	GAME_GetEndLevelDelay( void );
 
 void	GAME_SetLevelIntroTicks( USHORT usTicks );

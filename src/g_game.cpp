@@ -4338,12 +4338,12 @@ void GAME_SpawnPossessionArtifact( void )
 
 //*****************************************************************************
 //
-void GAME_SetEndLevelDelay( ULONG ulTicks )
+void GAME_SetEndLevelDelay( ULONG ulTicks, bool bInformClients )
 {
 	g_ulEndLevelDelay = ulTicks;
 
 	// Tell the clients about the end level delay.
-	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( bInformClients ))
 		SERVERCOMMANDS_SetGameEndLevelDelay( g_ulEndLevelDelay );
 }
 
