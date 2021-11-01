@@ -7233,6 +7233,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 			{
 				const ULONG ulPlayer = static_cast<ULONG> ( args[0] );
 				const bool bDeadSpectator = !!args[1];
+				const GAMESTATE_e gamestate = GAMEMODE_GetState( );
 
 				// [BB] Clients are not allowed to change the status of players.
 				if ( NETWORK_InClientMode() )
@@ -7242,8 +7243,11 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				if ( ( GAMEMODE_GetCurrentFlags() & GMF_DEADSPECTATORS ) == false )
 					return 0;
 
-				// [AK] This should only work while the game is in progress.
-				if ( GAMEMODE_GetState( ) != GAMESTATE_INPROGRESS )
+				// [AK] This should never work while the game is in the result sequence. We also
+				// shouldn't turn players into dead spectators if the game isn't in progress,
+				// but we can still revive any dead spectators that might exist while the game
+				// is waiting for players or in the countdown sequence.
+				if (( gamestate != GAMESTATE_INPROGRESS ) && ( gamestate == GAMESTATE_INRESULTSEQUENCE || bDeadSpectator ))
 					return 0;
 
 				if ( PLAYER_IsValidPlayer ( ulPlayer ) == false )
