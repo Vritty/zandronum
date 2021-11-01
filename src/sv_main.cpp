@@ -1991,6 +1991,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	g_aClients[lClient].ScreenWidth = 0;
 	g_aClients[lClient].ScreenHeight = 0;
 	g_aClients[lClient].ulExtraDelay = 0;
+	g_aClients[lClient].ulClientGameTic = 0;
 	// [CK] Since the client is not up to date at all, the farthest the client
 	// should be able to go back is the gametic they connected with.
 	g_aClients[lClient].lLastServerGametic = gametic;
