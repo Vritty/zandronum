@@ -926,7 +926,6 @@ void medal_SelectIcon( ULONG ulPlayer )
 		case ( S_INMENU + 1 ):
 		case ( S_INMENU + 2 ):
 		case ( S_INMENU + 3 ):
-		case ( S_INMENU + 4 ):
 
 			if ( pPlayer->bInMenu == false )
 			{

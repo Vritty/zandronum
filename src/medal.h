@@ -66,7 +66,7 @@ enum
 	S_CHAT						= ( S_TERMINATORARTIFACT + 4 ),
 	S_INCONSOLE					= ( S_CHAT + 1 ),
 	S_INMENU					= ( S_INCONSOLE + 2 ),
-	S_ALLY						= ( S_INMENU + 5 ),
+	S_ALLY						= ( S_INMENU + 4 ),
 	S_WHITEFLAG					= ( S_ALLY + 1 ),
 	S_EXCELLENT					= ( S_WHITEFLAG + 6 ),
 	S_INCREDIBLE				= ( S_EXCELLENT + 1 ),
