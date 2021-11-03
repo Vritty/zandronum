@@ -95,7 +95,7 @@ void	V_RemoveInvalidColorCodes( FString &String );
 // [RC] Functions related to user name cleaning.
 bool	v_IsCharAcceptableInNames ( char c );
 bool	v_IsCharacterWhitespace ( char c );
-void	V_CleanPlayerName( FString &String );
+void	V_CleanPlayerName( FString &String, bool bPrintWarning );
 
 FBrokenLines *V_BreakLines (FFont *font, int maxwidth, const BYTE *str);
 void V_FreeBrokenLines (FBrokenLines *lines);

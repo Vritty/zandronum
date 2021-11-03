@@ -4068,11 +4068,7 @@ void ServerCommands::SetPlayerUserInfo::Execute()
 
 		// Player's name.
 		if ( name == NAME_Name )
-		{
-			if ( value.Len() > MAXPLAYERNAMEBUFFER )
-				value.Truncate( MAXPLAYERNAMEBUFFER );
 			player->userinfo.NameChanged ( value );
-		}
 		// Other info.
 		else if ( name == NAME_Gender )
 			player->userinfo.GenderNumChanged ( value.ToLong() );

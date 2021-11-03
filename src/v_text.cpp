@@ -594,9 +594,8 @@ bool v_IsCharacterWhitespace ( char c )
 	return false;
 }
 
-
 // [RC] Conforms names to meet standards.
-void V_CleanPlayerName( FString &String )
+void V_CleanPlayerName( FString &String, bool bPrintWarning )
 {
 	ULONG ulNumActualCharacters = 0;
 	ULONG ulNonWhitespace = 0;
@@ -606,6 +605,23 @@ void V_CleanPlayerName( FString &String )
 	{
 		String = "Player";
 		return;
+	}
+
+	// [AK] We don't want the CVar to be longer than MAXPLAYERNAMEBUFER, especially if sent across the network.
+	if ( String.Len() > MAXPLAYERNAMEBUFFER )
+	{
+		if ( bPrintWarning )
+			Printf( PRINT_MEDIUM, "Your name is too long and can't be used! The maximum length is %d characters.\n", MAXPLAYERNAMEBUFFER );
+
+		String.Truncate( MAXPLAYERNAMEBUFFER - 2 );
+	}
+	// [AK] We also need to leave enough room to put the "\\c-" at the end of the name.
+	else if (( String.Len() == MAXPLAYERNAMEBUFFER ) && ( String[MAXPLAYERNAMEBUFFER - 2] != TEXTCOLOR_ESCAPE ))
+	{
+		if ( bPrintWarning )
+			Printf( PRINT_MEDIUM, "You didn't leave enough room for the terminating (\\c-) color code.\n", MAXPLAYERNAMEBUFFER );
+
+		String.Truncate( MAXPLAYERNAMEBUFFER - 2 );	
 	}
 
 	// Go through and remove the illegal characters.

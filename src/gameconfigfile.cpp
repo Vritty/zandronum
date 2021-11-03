@@ -525,7 +525,7 @@ void FGameConfigFile::ReadCVars (DWORD flags)
 		if(strcmp(key,"name") == 0) {
 			FString cleanedName = val.String;
 			V_ColorizeString(cleanedName); // Convert \ to color escapes
-			V_CleanPlayerName(cleanedName);
+			V_CleanPlayerName(cleanedName, false);
 			V_UnColorizeString(cleanedName);
 			val.String = const_cast<char *>(cleanedName.GetChars());
 			cvar->SetGenericRep (val, CVAR_String);

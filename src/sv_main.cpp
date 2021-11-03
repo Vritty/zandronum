@@ -1851,7 +1851,9 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	clientVersion = pByteStream->ReadString();
 	// [BB] Hijack the player name cleaning system to get rid of inappropriate chars in the version string.
 	// Tampered clients can put in anything here!
-	V_CleanPlayerName ( clientVersion );
+	// [AK] V_CleanPlayerName also truncates the string if it's longer than MAXPLAYERNAMEBUFFER, but under
+	// normal circumstances, the version string should never be this long anyways.
+	V_CleanPlayerName ( clientVersion, false );
 	// [BB] Version strings also will never be incredibly long.
 	clientVersion = clientVersion.Left ( 32 );
 
@@ -2086,14 +2088,10 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 		if ( name == NAME_Name )
 		{
 			FString oldPlayerName = pPlayer->userinfo.GetName();
-
-			if ( value.Len() > MAXPLAYERNAMEBUFFER )
-				value.Truncate( MAXPLAYERNAMEBUFFER );
-
 			FString nameStringCopy = value;
 
 			// [RC] Remove bad characters from their username.
-			V_CleanPlayerName(value);
+			V_CleanPlayerName( value, false );
 
 			// The user really shouldn't have an invalid name unless they are using a hacked executable.
 			if ( value.Compare( nameStringCopy ) != 0 )
