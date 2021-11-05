@@ -1507,18 +1507,10 @@ void P_SpawnSpecials (void)
 			break;
 
 		case dFriction_Low:
-			// [BC] In client mode, let the server tell us about sectors' friction level.
-			if ( NETWORK_InClientMode() == false )
-			{
-				sector->friction = FRICTION_LOW;
-				sector->movefactor = 0x269;
-			}
+			sector->friction = FRICTION_LOW;
+			sector->movefactor = 0x269;
 			sector->special &= 0xff00;
-			// [BC] In client mode, let the server tell us about sectors' friction level.
-			if ( NETWORK_InClientMode() == false )
-			{
-				sector->special |= FRICTION_MASK;
-			}
+			sector->special |= FRICTION_MASK;
 			break;
 
 		  // [RH] Hexen-like phased lighting
