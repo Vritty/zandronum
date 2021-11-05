@@ -2278,7 +2278,7 @@ void C_MOTDPrint (FString msg)
 		return;
 
 	FString ConsoleString;
-	ConsoleString.Format ("%s\n%s\n%s\n", bar1, msg, bar3);
+	ConsoleString.Format ("%s\n%s\n%s\n", bar1, msg.GetChars(), bar3);
 
 	// Add this message to the console window.
 	AddToConsole (-1, ConsoleString);

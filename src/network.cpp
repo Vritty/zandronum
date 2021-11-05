@@ -1073,7 +1073,7 @@ void network_CheckIfDuplicateLump( const int LumpNum )
 			// remove it from the list.
 			if ( DuplicateLumpFilenames[i].CompareNoCase( fileName ) == 0 )
 			{
-				Printf( TEXTCOLOR_YELLOW "%s contains duplicate protected lump %s\n", fileName, lumpName );
+				Printf( TEXTCOLOR_YELLOW "%s contains duplicate protected lump %s\n", fileName.GetChars(), lumpName );
 				g_bDuplicateLumpAuthenticated = true;
 
 				DuplicateLumps.Delete( i );
