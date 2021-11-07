@@ -683,6 +683,7 @@ EXTERN_CVAR( Bool, sv_defaultdmflags );
 EXTERN_CVAR( Bool, sv_forcepassword );
 EXTERN_CVAR( Bool, sv_forcejoinpassword );
 EXTERN_CVAR( Int, sv_forcerespawntime ); // [RK] Delay used for forced respawn
+EXTERN_CVAR( Int, sv_respawndelaytime );
 EXTERN_CVAR( Bool, sv_showlauncherqueries );
 EXTERN_CVAR( Int, sv_maxclients );
 EXTERN_CVAR( Int, sv_maxplayers );

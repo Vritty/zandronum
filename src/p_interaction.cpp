@@ -748,13 +748,19 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 		// Death script execution, care of Skull Tag
 		FBehavior::StaticStartTypedScripts (SCRIPT_Death, this, true);
 
+		// [EP] Avoid instant body disappearing if the player had no lives left.
+		bool bNoMoreLivesLeft = ( GAMEMODE_AreLivesLimited() && GAMEMODE_IsGameInProgress() && ( player->ulLivesLeft == 0 ));
+
 		// [RH] Force a delay between death and respawn
 		if ((( zacompatflags & ZACOMPATF_INSTANTRESPAWN ) == false ) ||
-			( player->bSpawnTelefragged ) ||
-			// [EP] Avoid instant body disappearing if the player had no lives left.
-			( GAMEMODE_AreLivesLimited() && GAMEMODE_IsGameInProgress() && ( player->ulLivesLeft == 0 )))
+			( player->bSpawnTelefragged ) || ( bNoMoreLivesLeft ))
 		{
-			player->respawn_time = level.time + TICRATE;
+			// [AK] The respawn delay can be adjusted, but the minimum is one second. This only works if
+			// the player wasn't spawn telefragged and still has lives left.
+			if (( sv_respawndelaytime > 1 ) && ( player->bSpawnTelefragged == false ) && ( bNoMoreLivesLeft == false ))
+				player->respawn_time = level.time + sv_respawndelaytime * TICRATE;
+			else
+				player->respawn_time = level.time + TICRATE;
 
 			// [BC] Don't respawn quite so fast on forced respawn. It sounds weird when your
 			// scream isn't completed.
