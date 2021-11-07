@@ -1453,31 +1453,26 @@ bool chat_IsPlayerValidReceiver( ULONG ulPlayer )
 //
 bool chat_FindValidReceiver( void )
 {
-	if (( g_ulChatPlayer == MAXPLAYERS ) || ( SERVER_CountPlayers( false ) >= 2 ))
+	// [AK] If we're trying to send a message to an invalid player, find another one.
+	if ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false )
 	{
-		// [AK] If we're trying to send a message to an invalid player, find another one.
-		if ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false )
+		ULONG oldPlayer = g_ulChatPlayer;
+
+		do
 		{
-			ULONG oldPlayer = g_ulChatPlayer;
+			// [AK] Keep looping until we find another player who we can send a message to.
+			if ( ++g_ulChatPlayer > MAXPLAYERS )
+				g_ulChatPlayer = 0;
 
-			do
-			{
-				// [AK] Keep looping until we find another player who we can send a message to.
-				if ( ++g_ulChatPlayer > MAXPLAYERS )
-					g_ulChatPlayer = 0;
-
-				// [AK] If we're back to the old value for some reason, then there's no other
-				// players to send a message to, so set the receiver to the server instead.
-				if ( g_ulChatPlayer == oldPlayer )
-					return false;
-			}
-			while ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false );
+			// [AK] If we're back to the old value for some reason, then there's no other
+			// players to send a message to, so set the receiver to the server instead.
+			if ( g_ulChatPlayer == oldPlayer )
+				return false;
 		}
-
-		return true;
+		while ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false );
 	}
 
-	return false;
+	return true;
 }
 
 //*****************************************************************************
