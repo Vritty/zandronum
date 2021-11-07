@@ -4457,13 +4457,13 @@ void ServerCommands::UpdatePlayerTime::Execute()
 
 //*****************************************************************************
 //
-static void client_UpdateLocalPlayerGameTics( int latestServerGametic, unsigned int clientTicOnServerEnd )
+static bool client_UpdateLocalPlayerGameTics( int latestServerGametic, unsigned int clientTicOnServerEnd )
 {
 	// [BB] If the server already sent us our position for a later tic,
 	// the current update is outdated and we have to ignore it completely.
 	// This happens if packets from the unreliable buffer arrive in the wrong order.
 	if ( CLIENT_GetLatestServerGametic ( ) > latestServerGametic )
-		return;
+		return false;
 
 	// [BB] Update the latest server tic.
 	CLIENT_SetLatestServerGametic( latestServerGametic );
@@ -4485,6 +4485,8 @@ static void client_UpdateLocalPlayerGameTics( int latestServerGametic, unsigned 
 	{
 		g_bClientLagging = false;
 	}
+
+	return true;
 }
 
 //*****************************************************************************
@@ -4504,7 +4506,8 @@ void ServerCommands::MoveLocalPlayer::Execute()
 	if ( pPlayer->mo == NULL )
 		return;
 
-	client_UpdateLocalPlayerGameTics( latestServerGametic, clientTicOnServerEnd );
+	if ( client_UpdateLocalPlayerGameTics( latestServerGametic, clientTicOnServerEnd ) == false )
+		return;
 
 	// If the player is dead, simply ignore this (remember, this could be parsed from an
 	// out-of-order packet, since it's sent unreliably)!
