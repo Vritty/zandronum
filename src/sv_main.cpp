@@ -5636,6 +5636,13 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 			SERVER_PrintfPlayer( ulPlayer, "You can't send private messages to yourself.\n" );
 			return ( false );
 		}
+
+		// [AK] Don't let the client send a private message to invalid players or bots.
+		if (( ulReceiver != MAXPLAYERS ) && (( PLAYER_IsValidPlayer( ulReceiver ) == false ) || ( players[ulReceiver].bIsBot )))
+		{
+			SERVER_PrintfPlayer( ulPlayer, "You can't send a private message to this player.\n" );
+			return ( false );
+		}
 	}
 
 	// [BB] If the client is flooding the server with commands, the client is
