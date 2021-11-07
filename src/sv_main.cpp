@@ -1209,16 +1209,19 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 	// Print this message in the server's local window.
 	if ( strnicmp( "/me", pszString, 3 ) == 0 )
 	{
+		FString message;
 		pszString += 3;
+
 		if ( ulMode == CHATMODE_PRIVATE_SEND )
 		{
 			if ( ulPlayer == MAXPLAYERS )
-				Printf( "<To %s> ", players[ulReceiver].userinfo.GetName() );
+				message.Format( "<To %s> ", players[ulReceiver].userinfo.GetName() );
 			else
-				Printf( "<From %s> ", players[ulPlayer].userinfo.GetName() );
+				message.Format( "<From %s> ", players[ulPlayer].userinfo.GetName() );
 		}
 
-		Printf( "* %s%s\n", ulPlayer != MAXPLAYERS ? players[ulPlayer].userinfo.GetName() : "<Server>", pszString );
+		message.AppendFormat( "* %s%s", ulPlayer != MAXPLAYERS ? players[ulPlayer].userinfo.GetName() : "<Server>", pszString );
+		Printf( "%s\n", message.GetChars() );
 	}
 	else
 	{
