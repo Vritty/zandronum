@@ -432,6 +432,29 @@ CUSTOM_CVAR( Bool, sv_limitcommands, true, CVAR_ARCHIVE | CVAR_NOSETBYACS | CVAR
 }
 
 //*****************************************************************************
+//
+CUSTOM_CVAR( Int, sv_allowprivatechat, PRIVATECHAT_EVERYONE, CVAR_ARCHIVE | CVAR_NOSETBYACS | CVAR_SERVERINFO )
+{
+	if ( self < PRIVATECHAT_OFF )
+	{
+		self = PRIVATECHAT_OFF;
+		return;
+	}
+	else if ( self > PRIVATECHAT_TEAMMATESONLY )
+	{
+		self = PRIVATECHAT_TEAMMATESONLY;
+		return;
+	}
+
+	// [AK] Notify the clients about the change.
+	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
+	{
+		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), self.GetGenericRep( CVAR_Int ).Int );
+		SERVERCOMMANDS_SetGameModeLimits( );
+	}
+}
+
+//*****************************************************************************
 //	FUNCTIONS
 
 void SERVER_Construct( void )
@@ -5627,7 +5650,7 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 	if ( ulChatMode == CHATMODE_PRIVATE_SEND )
 	{
 		// [AK] Don't send the message if we disabled private messaging.
-		if ( zadmflags & ZADF_NO_PRIVATE_CHAT )
+		if ( sv_allowprivatechat == PRIVATECHAT_OFF )
 		{
 			SERVER_PrintfPlayer( ulPlayer, "Private messages have been disabled by the server.\n" );
 			return ( false );
@@ -5644,6 +5667,14 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 		if (( ulReceiver != MAXPLAYERS ) && (( PLAYER_IsValidPlayer( ulReceiver ) == false ) || ( players[ulReceiver].bIsBot )))
 		{
 			SERVER_PrintfPlayer( ulPlayer, "You can't send a private message to this player.\n" );
+			return ( false );
+		}
+
+		// [AK] If the client is only allowed to send private messages to teammates, make sure
+		// the receiver is a teammate of theirs.
+		if ( CHAT_CanSendPrivateMessageTo( ulPlayer, ulReceiver ) == false )
+		{
+			SERVER_PrintfPlayer( ulPlayer, "You can only send private messages to teammates.\n" );
 			return ( false );
 		}
 	}

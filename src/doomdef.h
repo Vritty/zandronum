@@ -384,14 +384,11 @@ enum
 	// [AK] Forces the player's pitch to be limited to what's allowed in the software renderer.
 	ZADF_FORCE_SOFTWARE_PITCH_LIMITS = 1 << 20,
 
-	// [AK] No private messaging allowed on the server.
-	ZADF_NO_PRIVATE_CHAT = 1 << 21,
-
 	// [AK] Allows players to fire hitscans and projectiles through teammates.
-	ZADF_SHOOT_THROUGH_ALLIES = 1 << 22,
+	ZADF_SHOOT_THROUGH_ALLIES = 1 << 21,
 
 	// [AK] Players aren't pushed by attacks caused by their teammates (e.g. BFG tracers).
-	ZADF_DONT_PUSH_ALLIES = 1 << 23,
+	ZADF_DONT_PUSH_ALLIES = 1 << 22,
 };
 
 // [RH] Compatibility flags.

@@ -560,6 +560,13 @@ ListMenu "BotSkillMenu"
 //
 // =================================================================================================
 
+OptionValue ZA_AllowPrivateChat
+{
+	0, "Never"
+	1, "Everyone"
+	2, "Teammates only"
+}
+
 OptionMenu ZA_ServerSetupMenu
 {
 	RequiresRconAccess
@@ -580,6 +587,7 @@ OptionMenu ZA_ServerSetupMenu
 	TextField	"Join password",			"sv_joinpassword",			"sv_forcejoinpassword"
 	Option		"Require login to join",	"sv_forcelogintojoin",		"YesNo"
 	StaticText	" "
+	Option		"Allow private chat",		"sv_allowprivatechat",		"ZA_AllowPrivateChat"
 	Option		"Smooth lagging players",	"sv_smoothplayers",			"YesNo"
 	Slider		"Extrapolation tics",		"sv_extrapolatetics",		1, 35, 1
 	Slider		"Backtrace limit (mu)",		"sv_backtracelimit",		0.0, 64.0, 8.0

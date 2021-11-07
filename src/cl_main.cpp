@@ -5910,6 +5910,10 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	// [TP] Yea.
 	Value.Bool = !!pByteStream->ReadByte();
 	sv_limitcommands.ForceSet( Value, CVAR_Bool );
+
+	// [AK] Read in, and set the value for sv_allowprivatechat.
+	Value.Int = pByteStream->ReadByte();
+	sv_allowprivatechat.ForceSet( Value, CVAR_Bool );
 }
 
 //*****************************************************************************

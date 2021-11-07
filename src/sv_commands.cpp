@@ -2339,6 +2339,8 @@ void SERVERCOMMANDS_SetGameModeLimits( ULONG ulPlayerExtra, ServerCommandFlags f
 	command.addString( lobby );
 	// [TP] Send sv_limitcommands
 	command.addByte( sv_limitcommands );
+	// [AK] Send sv_allowprivatechat.
+	command.addByte( sv_allowprivatechat );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 

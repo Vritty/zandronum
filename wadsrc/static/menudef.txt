@@ -1312,7 +1312,6 @@ OptionMenu GameplayOptions
 	Option "Force translucency",	"sv_forcealpha", "YesNo"
 	Option "Full blood brightness",	"sv_maxbloodscalar", "YesNo"
 	Option "Force software pitch limits",	"sv_forcesoftwarepitchlimits", "YesNo"
-	Option "Allow private chat",	"sv_noprivatechat", "NoYes"
 	Option "Shoot through allies",	"sv_shootthroughallies", "YesNo"
 	Option "Attacks push allies",	"sv_dontpushallies", "NoYes"
 	// [TP] --

@@ -557,10 +557,13 @@ void CHAT_Tick( void )
 		g_ulChatTicker = 0;
 
 	// [AK] If we're typing a chat message to another player, we must constantly check if
-	// they're in the game. If not, cancel the message entirely.
+	// they're still valid, or if the server disabled private messaging.
 	if ( g_ulChatMode == CHATMODE_PRIVATE_SEND )
 	{
-		if (( g_ulChatPlayer != MAXPLAYERS ) && ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false ))
+		if ( sv_allowprivatechat == PRIVATECHAT_OFF )
+			CHAT_SetChatMode( CHATMODE_NONE );
+
+		if ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false )
 			CHAT_SetChatMode( CHATMODE_NONE );
 	}
 }
@@ -663,7 +666,7 @@ bool CHAT_Input( event_t *pEvent )
 						else if ( tempPlayer > MAXPLAYERS )
 							tempPlayer = 0;
 
-						if (( tempPlayer == MAXPLAYERS ) || ( tempPlayer == g_ulChatPlayer ))
+						if ( tempPlayer == g_ulChatPlayer )
 							break;
 					}
 					while ( chat_IsPlayerValidReceiver( tempPlayer ) == false );
@@ -1098,6 +1101,33 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 }
 
 //*****************************************************************************
+//
+bool CHAT_CanPrivateChatToTeammatesOnly( void )
+{
+	return (( sv_allowprivatechat == PRIVATECHAT_TEAMMATESONLY ) && ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ));
+}
+
+//*****************************************************************************
+//
+bool CHAT_CanSendPrivateMessageTo( ULONG ulSender, ULONG ulReceiver )
+{
+	// [AK] If we're not restricted to sending private messages to only teammates, then we
+	// can send private messages to anyone including this player.
+	if ( CHAT_CanPrivateChatToTeammatesOnly( ) == false )
+		return true;
+
+	// [AK] True spectators are still allowed to send private messages to other true spectators.
+	if (( PLAYER_IsTrueSpectator( &players[ulSender] )) && ( PLAYER_IsTrueSpectator( &players[ulReceiver] )))
+		return true;
+
+	// [AK] In-game players are only allowed to send private messages to their teammates.
+	if (( ulReceiver < MAXPLAYERS ) && ( players[ulSender].mo != NULL ))
+		return players[ulSender].mo->IsTeammate( players[ulReceiver].mo );
+
+	return false;
+}
+
+//*****************************************************************************
 //*****************************************************************************
 //
 void chat_SendMessage( ULONG ulMode, const char *pszString )
@@ -1401,15 +1431,20 @@ CCMD( say_team )
 //
 bool chat_IsPlayerValidReceiver( ULONG ulPlayer )
 {
-	// [AK] If the player doesn't exist, they can't be a receiver.
-	if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
-		return false;
+	if ( ulPlayer != MAXPLAYERS )
+	{
+		// [AK] If the player doesn't exist, they can't be a receiver.
+		if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
+			return false;
 
-	// [AK] The receiver can't be ourselves or a bot.
-	if (( ulPlayer == static_cast<ULONG>( consoleplayer )) || ( players[ulPlayer].bIsBot ))
-		return false;
+		// [AK] The receiver can't be ourselves or a bot.
+		if (( ulPlayer == static_cast<ULONG>( consoleplayer )) || ( players[ulPlayer].bIsBot ))
+			return false;
+	}
 
-	return true;
+	// [AK] If we're only allowed to send private messages to teammates, then make
+	// sure this player is a teammate of ours.
+	return CHAT_CanSendPrivateMessageTo( consoleplayer, ulPlayer );
 }
 
 //*****************************************************************************
@@ -1418,11 +1453,7 @@ bool chat_IsPlayerValidReceiver( ULONG ulPlayer )
 //
 bool chat_FindValidReceiver( void )
 {
-	// [AK] We can always send private messages to the server.
-	if ( g_ulChatPlayer == MAXPLAYERS )
-		return true;
-
-	if ( SERVER_CountPlayers( false ) >= 2 )
+	if (( g_ulChatPlayer == MAXPLAYERS ) || ( SERVER_CountPlayers( false ) >= 2 ))
 	{
 		// [AK] If we're trying to send a message to an invalid player, find another one.
 		if ( chat_IsPlayerValidReceiver( g_ulChatPlayer ) == false )
@@ -1432,7 +1463,7 @@ bool chat_FindValidReceiver( void )
 			do
 			{
 				// [AK] Keep looping until we find another player who we can send a message to.
-				if ( ++g_ulChatPlayer >= MAXPLAYERS )
+				if ( ++g_ulChatPlayer > MAXPLAYERS )
 					g_ulChatPlayer = 0;
 
 				// [AK] If we're back to the old value for some reason, then there's no other
@@ -1478,7 +1509,7 @@ void chat_PrivateMessage( FCommandLine &argv, const ULONG ulReceiver )
 	}
 
 	// [AK] No sending private messages if the server has disabled them.
-	if ( zadmflags & ZADF_NO_PRIVATE_CHAT )
+	if ( sv_allowprivatechat == PRIVATECHAT_OFF )
 	{
 		Printf( "Private messages have been disabled by the server.\n" );
 		return;
@@ -1517,6 +1548,13 @@ void chat_PrivateMessage( FCommandLine &argv, const ULONG ulReceiver )
 			}
 		}
 
+		// [AK] Check if we're only allowed to send private messages to our teammates.
+		if (( NETWORK_GetState( ) != NETSTATE_SERVER ) && ( CHAT_CanSendPrivateMessageTo( consoleplayer, ulReceiver ) == false ))
+		{
+			Printf( "You can only send private messages to teammates.\n" );
+			return;
+		}
+
 		g_ulChatPlayer = ulReceiver;
 
 		if ( argv.argc( ) > 2 )
@@ -1538,9 +1576,9 @@ void chat_PrivateMessage( FCommandLine &argv, const ULONG ulReceiver )
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 	{
 		// [AK] Find a valid receiver, if necessary.
-		if (( bServerSelected == false ) && ( chat_FindValidReceiver( ) == false ))
+		if ( chat_FindValidReceiver( ) == false )
 		{
-			Printf( "There's nobody to send private messages to. Use \"sayto server\" or \"sayto_idx -1\" to message the host instead.\n" );
+			Printf( "There's no valid player to send private messages to.\n" );
 			return;
 		}
 
@@ -1816,7 +1854,7 @@ CCMD( messagemode3 )
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 	{
 		// [AK] No sending private messages if the server has disabled them.
-		if ( zadmflags & ZADF_NO_PRIVATE_CHAT )
+		if ( sv_allowprivatechat == PRIVATECHAT_OFF )
 		{
 			Printf( "Private messages have been disabled by the server.\n" );
 			return;
@@ -1825,7 +1863,7 @@ CCMD( messagemode3 )
 		// [AK] Find a valid receiver, if necessary.
 		if ( chat_FindValidReceiver( ) == false )
 		{
-			Printf( "There's nobody to send private messages to. Use \"sayto server\" or \"sayto_idx -1\" to message the host instead.\n" );
+			Printf( "There's no valid player to send private messages to.\n" );
 			return;
 		}
 
