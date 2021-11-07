@@ -5616,6 +5616,12 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 
 	// [AK] If we're sending a private message to a player, get their index number.
 	if ( ulChatMode == CHATMODE_PRIVATE_SEND )
+		ulReceiver = pByteStream->ReadByte();
+
+	// Read in the chat string.
+	const char	*pszChatString = pByteStream->ReadString();
+
+	if ( ulChatMode == CHATMODE_PRIVATE_SEND )
 	{
 		// [AK] Don't send the message if we disabled private messaging.
 		if ( zadmflags & ZADF_NO_PRIVATE_CHAT )
@@ -5624,11 +5630,13 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 			return ( false );
 		}
 
-		ulReceiver = pByteStream->ReadByte();
+		// [AK] Don't let the client send a private message to themselves.
+		if ( ulPlayer == ulReceiver )
+		{
+			SERVER_PrintfPlayer( ulPlayer, "You can't send private messages to yourself.\n" );
+			return ( false );
+		}
 	}
-
-	// Read in the chat string.
-	const char	*pszChatString = pByteStream->ReadString();
 
 	// [BB] If the client is flooding the server with commands, the client is
 	// kicked and we don't need to handle the command.
