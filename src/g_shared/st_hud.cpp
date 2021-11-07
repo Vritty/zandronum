@@ -561,7 +561,7 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 	// [RC] Draw the centered bottom message (spectating, following, waiting, etc).
 	if ( bottomString.Len( ) > 0 )
 	{
-		DHUDMessageFadeOut *pMsg = new DHUDMessageFadeOut( SmallFont, bottomString, 1.5f, 1.0f, 0, 0, CR_WHITE, 0.10f, 0.15f );
+		DHUDMessageFadeOut *pMsg = new DHUDMessageFadeOut( SmallFont, bottomString, 1.5f, 1.0f, 0, 0, CR_WHITE, 0.20f, 0.15f );
 		StatusBar->AttachMessage( pMsg, MAKE_ID( 'W', 'A', 'I', 'T' ));
 	}
 }
