@@ -303,6 +303,7 @@ OptionMenu ZA_CallVote
 
 	SubMenu		"Kick a player",		"ZA_CallKickVote"
 	SubMenu		"Change the map",		"ZA_CallMapVote"
+	SubMenu		"Go to the next map",   "ZA_CallNextMapVote"
 	SubMenu		"Change a limit",		"ZA_CallLimitVote"
 	SubMenu		"Change a flag",		"ZA_CallFlagVote"
 }
@@ -349,6 +350,19 @@ OptionMenu ZA_CallFlagVote
 	StaticText	" "
 	TextField	"Reason for change",	"menu_callvotereason"
 	Command		"Vote!",				"menu_callflagvote"
+}
+
+OptionMenu ZA_CallNextMapVote
+{
+	Title		"GO TO NEXT MAP"
+
+	Option		"Go to secret map",			"menu_callvotenextsecret",	"YesNo"
+	StaticText	" "
+	StaticText	"Note that if this map lacks a secret exit, then", 1
+	StaticText	"going to the secret map will just exit normally.", 1
+	StaticText	" "
+	TextField	"Reason for change",		"menu_callvotereason"
+	Command		"Vote!",					"menu_callnextmapvote"
 }
 
 // =================================================================================================
@@ -623,6 +637,8 @@ OptionMenu ZA_VotingSetupMenu
 	Option	"Force spectate votes",			"sv_noforcespecvote",		"NoYes"
 	Option	"Map votes",					"sv_nomapvote",				"NoYes"
 	Option	"Changemap votes",				"sv_nochangemapvote",		"NoYes"
+	Option	"Next map votes",				"sv_nonextmapvote",			"NoYes"
+	Option	"Secret map votes",				"sv_nonextsecretvote",		"NoYes"
 	Option	"Frag limit votes",				"sv_nofraglimitvote",		"NoYes"
 	Option	"Time limit votes",				"sv_notimelimitvote",		"NoYes"
 	Option	"Win limit votes",				"sv_nowinlimitvote",		"NoYes"

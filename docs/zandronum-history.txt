@@ -61,6 +61,7 @@
 +	- Added DMFlags: "sv_shootthroughallies" and "sv_dontpushallies", so a player's attacks can pass through and not push their allies. [Kaminsky]
 +	- Added packet loss mitigation, which the client can control using the CVar "cl_backupcommands". [Kaminsky]
 +	- Added the server CVAR "sv_country", which allows servers to present their country to launchers. [Sean]
++	- Added the new nextmap and nextsecret vote types. [Sean]
 -	- Fixed: Bots tries to jump to reach item when sv_nojump is true. [sleep]
 -	- Fixed: ACS function SetSkyScrollSpeed didn't work online. [Edward-san]
 -	- Fixed: color codes in callvote reasons weren't terminated properly. [Dusk]

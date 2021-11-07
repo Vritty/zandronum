@@ -232,6 +232,8 @@
 #define IDC_ALLOWRCON                           4072
 #define IDC_LOGFILENAME_TIMESTAMP               4073
 #define IDC_VIEWLOGFILE                         4082
+#define IDC_ALLOWVOTE_NEXTMAP                   4083
+#define IDC_ALLOWVOTE_NEXTSECRET                4084
 #define ID_ADMIN_ADDREMOVEBOT                   40000
 #define IDC_LMSWEAPONS_VALUE                    40001
 #define IDR_JOIN_SERVER                         40001

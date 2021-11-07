@@ -128,6 +128,7 @@ CVAR ( Int, menu_skirmishgamemode, 0, CVAR_ARCHIVE )
 CVAR ( Int, menu_skirmishmodifier, 0, CVAR_ARCHIVE )
 CVAR ( Int, menu_callvotemap, 0, 0 )
 CVAR ( Bool, menu_callvoteintermission, true, 0 )
+CVAR ( Bool, menu_callvotenextsecret, false, 0 )
 CVAR ( String, menu_callvotereason, "", 0 )
 CVAR ( String, menu_callvoteflag, "", 0 )
 CVAR ( Int, menu_callvotelimit, 0, 0 )
@@ -685,6 +686,24 @@ static void M_CallFlagVote()
 	}
 }
 
+// =================================================================================================
+//
+//
+//
+//
+//
+// =================================================================================================
+
+static void M_CallNextMapVote()
+{
+	FString command;
+	command.Format("callvote %s \"%s\"",
+		menu_callvotenextsecret ? "nextsecret" : "nextmap",
+		*menu_callvotereason);
+	C_DoCommand(command);
+	M_ClearMenus();
+}
+
 //=================================================================================================
 //
 // [TP] M_ExecuteIgnore
@@ -919,6 +938,11 @@ CCMD ( menu_calllimitvote )
 CCMD ( menu_callflagvote )
 {
 	M_CallFlagVote();
+}
+
+CCMD ( menu_callnextmapvote )
+{
+	M_CallNextMapVote();
 }
 
 CCMD ( menu_autoselect )

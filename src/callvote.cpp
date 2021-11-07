@@ -101,6 +101,7 @@ static	bool			callvote_CheckForFlooding( FString &Command, FString &Parameters, 
 static	bool			callvote_CheckValidity( FString &Command, FString &Parameters );
 static	ULONG			callvote_GetVoteType( const char *pszCommand );
 static	bool			callvote_IsKickVote( const ULONG ulVoteType );
+static	bool			callvote_VoteRequiresParameter( const ULONG ulVoteType );
 static	bool			callvote_IsFlagValid( const char *pszName );
 
 //*****************************************************************************
@@ -352,8 +353,13 @@ void CALLVOTE_BeginVote( FString Command, FString Parameters, FString Reason, UL
 
 	// Create the vote console command.
 	g_VoteCommand = Command;
-	g_VoteCommand += " ";
-	g_VoteCommand += Parameters;
+	// [SB] Only include parameters if there actually are any
+	if ( Parameters.Len() > 0 )
+	{
+		g_VoteCommand += " ";
+		g_VoteCommand += Parameters;
+	}
+
 	g_ulVoteCaller = ulPlayer;
 	g_VoteReason = Reason.Left(25);
 
@@ -1073,6 +1079,19 @@ static bool callvote_CheckValidity( FString &Command, FString &Parameters )
 			Parameters.Format( "%s", parameterInt ? "true" : "false" );
 		}
 		break;
+	case VOTECMD_NEXTMAP:
+	case VOTECMD_NEXTSECRET:
+		{
+			const char *next = ( ulVoteCmd == VOTECMD_NEXTSECRET ? G_GetSecretExitMap() : G_GetExitMap() );
+
+			if ( !next || !P_CheckIfMapExists( next ) )
+			{
+				SERVER_PrintfPlayer( SERVER_GetCurrentClient( ), "There is no next map, or it does not exist.\n" );
+				return ( false );
+			}
+		}
+		break;
+
 	default:
 
 		return ( false );
@@ -1104,6 +1123,10 @@ static ULONG callvote_GetVoteType( const char *pszCommand )
 		return VOTECMD_DUELLIMIT;
 	else if ( stricmp( "pointlimit", pszCommand ) == 0 )
 		return VOTECMD_POINTLIMIT;
+	else if ( stricmp( "nextmap", pszCommand ) == 0 )
+		return VOTECMD_NEXTMAP;
+	else if ( stricmp( "nextsecret", pszCommand ) == 0 )
+		return VOTECMD_NEXTSECRET;
 	else if ( callvote_IsFlagValid( pszCommand ))
 		return VOTECMD_FLAG;
 
@@ -1115,6 +1138,21 @@ static ULONG callvote_GetVoteType( const char *pszCommand )
 static bool callvote_IsKickVote( const ULONG ulVoteType )
 {
 	return ( ( ulVoteType == VOTECMD_KICK ) || ( ulVoteType == VOTECMD_FORCETOSPECTATE ) );
+}
+
+//*****************************************************************************
+//
+static bool callvote_VoteRequiresParameter( const ULONG ulVoteType )
+{
+	switch ( ulVoteType )
+	{
+		case VOTECMD_NEXTMAP:
+		case VOTECMD_NEXTSECRET:
+			return ( false );
+
+		default:
+			return ( true );
+	}
 }
 
 //*****************************************************************************
@@ -1172,6 +1210,8 @@ CVAR( Bool, sv_nowinlimitvote, false, CVAR_ARCHIVE | CVAR_SERVERINFO );
 CVAR( Bool, sv_noduellimitvote, false, CVAR_ARCHIVE | CVAR_SERVERINFO );
 CVAR( Bool, sv_nopointlimitvote, false, CVAR_ARCHIVE | CVAR_SERVERINFO );
 CVAR( Bool, sv_noflagvote, true, CVAR_ARCHIVE | CVAR_SERVERINFO );
+CVAR( Bool, sv_nonextmapvote, false, CVAR_ARCHIVE | CVAR_SERVERINFO );
+CVAR( Bool, sv_nonextsecretvote, false, CVAR_ARCHIVE | CVAR_SERVERINFO );
 CVAR( Int, sv_votecooldown, 5, CVAR_ARCHIVE | CVAR_SERVERINFO );
 CVAR( Int, sv_voteconnectwait, 0, CVAR_ARCHIVE | CVAR_SERVERINFO );  // [RK] The amount of seconds after client connect to wait before voting
 CVAR( Bool, cl_showfullscreenvote, false, CVAR_ARCHIVE );
@@ -1181,6 +1221,9 @@ CCMD( callvote )
 {
 	ULONG	ulVoteCmd;
 	char	szArgument[128];
+
+	// [SB] Prevent the arguments buffer from being full of garbage when the vote has no parameters
+	szArgument[0] = '\0';
 
 	// Don't allow a vote unless the player is a client.
 	if ( NETWORK_GetState( ) != NETSTATE_CLIENT )
@@ -1192,9 +1235,9 @@ CCMD( callvote )
 	if ( CLIENT_GetConnectionState( ) != CTS_ACTIVE )
 		return;
 
-	if ( argv.argc( ) < 3 )
+	if ( argv.argc( ) < 2 )
 	{
-		Printf( "callvote <command> <parameters> [reason]: Calls a vote\n" );
+		Printf( "callvote <command> [parameters] [reason]: Calls a vote\n" );
 		return;
 	}
 
@@ -1212,14 +1255,23 @@ CCMD( callvote )
 		return;
 	}
 
+	bool requiresParameter = callvote_VoteRequiresParameter( ulVoteCmd );
+
+	if ( requiresParameter && argv.argc( ) < 3 )
+	{
+		Printf( "That vote type requires a parameter.\n" );
+		return;
+	}
+
 	// [AK] If we're calling a flag vote, put the CVar's name and the parameter together.
 	if ( ulVoteCmd == VOTECMD_FLAG )
 		sprintf( szArgument, "%s %s", argv[1], argv[2] );
-	else
+	else if ( requiresParameter )
 		sprintf( szArgument, "%s", argv[2] );
 
-	if ( argv.argc( ) >= 4 )
-		CLIENTCOMMANDS_CallVote( ulVoteCmd, szArgument, argv[3] );
+	int reasonOffset = requiresParameter ? 1 : 0;
+	if ( argv.argc( ) >= 3 + reasonOffset )
+		CLIENTCOMMANDS_CallVote( ulVoteCmd, szArgument, argv[2 + reasonOffset] );
 	else
 		CLIENTCOMMANDS_CallVote( ulVoteCmd, szArgument, "" );
 /*
