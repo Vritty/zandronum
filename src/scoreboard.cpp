@@ -607,16 +607,56 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 }
 
 //*****************************************************************************
-// [RC] Helper method for SCOREBOARD_BuildLimitStrings. Creates a "x things remaining" message.
+// [AK] Checks if there's already a limit string on the list, removes it from the list, then
+// prepends it to the string we passed into the function.
 //
-void scoreboard_AddSingleLimit( std::list<FString> &lines, bool condition, int remaining, const char *pszUnitName )
+void scoreboard_TryToPrependLimit( std::list<FString> &lines, FString &limit )
+{
+	// [AK] This shouldn't be done on the server console.
+	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) && ( lines.empty( ) == false ))
+	{
+		FString prevLimitString = lines.back( );
+		lines.pop_back( );
+
+		prevLimitString += TEXTCOLOR_DARKGRAY " - " TEXTCOLOR_NORMAL;
+		limit.Insert( 0, prevLimitString );
+	}
+}
+
+//*****************************************************************************
+// [RC] Helper method for SCOREBOARD_BuildLimitStrings. Creates a "x things remaining" message.
+// [AK] Added the bWantToPrepend parameter.
+//
+void scoreboard_AddSingleLimit( std::list<FString> &lines, bool condition, int remaining, const char *pszUnitName, bool bWantToPrepend = false )
 {
 	if ( condition && remaining > 0 )
 	{
 		FString limitString;
 		limitString.Format( "%d %s%s left", static_cast<int>( remaining ), pszUnitName, remaining == 1 ? "" : "s" );
+
+		// [AK] Try to make this string appear on the same line as a previous string if we want to.
+		if ( bWantToPrepend )
+			scoreboard_TryToPrependLimit( lines, limitString );
+
 		lines.push_back( limitString );
 	}
+}
+
+//*****************************************************************************
+// [AK] Creates the time limit message to be shown on the scoreboard or server console.
+//
+void scoreboard_AddTimeLimit( std::list<FString> &lines )
+{
+	FString TimeLeftString;
+	GAMEMODE_GetTimeLeftString( TimeLeftString );
+
+	// [AK] Also print "round" when there's more than one duel match to be played.
+	FString limitString = (( duel && duellimit > 1 ) || ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNWINS )) ? "Round" : "Level";
+	limitString.AppendFormat( " ends in %s", TimeLeftString.GetChars( ));
+
+	// [AK] Try to put the time limit string on the same line as a previous string.
+	scoreboard_TryToPrependLimit( lines, limitString );
+	lines.push_back( limitString );
 }
 
 //*****************************************************************************
@@ -630,6 +670,8 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 
 	ULONG ulFlags = GAMEMODE_GetCurrentFlags( );
 	LONG lRemaining = SCOREBOARD_GetLeftToLimit( );
+	const bool bTimeLimitActive = GAMEMODE_IsTimelimitActive( );
+	bool bTimeLimitAdded = false;
 	FString text;
 
 	// Build the fraglimit string.
@@ -643,9 +685,24 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 		const bool bInResults = GAMEMODE_IsGameInResultSequence( );
 		bool bDraw = true;
 
+		// [AK] If there's a fraglimit and a duellimit string, the timelimit string should be put in-between them
+		// on the scoreboard to organize the info better (frags left on the left, duels left on the right).
+		if (( bTimeLimitActive ) && ( lines.empty( ) == false ) && ( NETWORK_GetState( ) != NETSTATE_SERVER ))
+		{
+			scoreboard_AddTimeLimit( lines );
+			bTimeLimitAdded = true;
+		}
+
 		// [TL] The number of duels left is the maximum number of duels less the number of duels fought.
 		// [AK] We already confirmed we're using duel limits, so we can now add this string unconditionally.
-		scoreboard_AddSingleLimit( lines, true, duellimit - DUEL_GetNumDuels( ), "duel" );
+		scoreboard_AddSingleLimit( lines, true, duellimit - DUEL_GetNumDuels( ), "duel", true );
+
+		// [AK] If we haven't added the timelimit string yet, make it appear next to the duellimit string.
+		if (( bTimeLimitActive ) && ( bTimeLimitAdded == false ) && ( NETWORK_GetState( ) != NETSTATE_SERVER ))
+		{
+			scoreboard_AddTimeLimit( lines );
+			bTimeLimitAdded = true;
+		}
 
 		for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 		{
@@ -699,6 +756,8 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 	// [AK] Build the coop strings.
 	if ( ulFlags & GMF_COOPERATIVE )
 	{
+		ULONG ulNumLimits = 0;
+
 		// Render the number of monsters left in coop.
 		// [AK] Unless we're playing invasion, only do this when there are actually monsters on the level.
 		if (( ulFlags & GMF_PLAYERSEARNKILLS ) && (( invasion ) || ( level.total_monsters > 0 )))
@@ -709,32 +768,54 @@ void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors
 				text.Format( "%d%% monsters left", static_cast<int>( lRemaining ));
 
 			lines.push_back( text );
+			ulNumLimits++;
 		}
+
+		// [AK] If there's monsters and secrets on the current level, the timelimit string should be put in-between
+		// them on the scoreboard to organize the info better (monsters left on the left, secrets left on the right).
+		if (( bTimeLimitActive ) && ( lines.empty( ) == false ) && ( NETWORK_GetState( ) != NETSTATE_SERVER ))
+		{
+			scoreboard_AddTimeLimit( lines );
+			bTimeLimitAdded = true;
+			ulNumLimits++;
+ 		}
 
 		// [AK] Render the number of secrets left.
 		if ( level.total_secrets > 0 )
 		{
 			lRemaining = level.total_secrets - level.found_secrets;
 			text.Format( "%d secret%s left", static_cast<int>( lRemaining ), lRemaining == 1 ? "" : "s" );
+			scoreboard_TryToPrependLimit( lines, text );
 			lines.push_back( text );
+			ulNumLimits++;
 		}
+
+		// [AK] If we haven't added the timelimit string yet, make it appear next to the "secrets left" string.
+		if (( bTimeLimitActive ) && ( bTimeLimitAdded == false ) && ( NETWORK_GetState( ) != NETSTATE_SERVER ))
+		{
+			scoreboard_AddTimeLimit( lines );
+			bTimeLimitAdded = true;
+			ulNumLimits++;
+ 		}
 
 		// [WS] Show the damage factor.
 		if ( sv_coop_damagefactor != 1.0f )
 		{
 			text.Format( "Damage factor is %.2f", static_cast<float>( sv_coop_damagefactor ));
+
+			// [AK] If there aren't too many limits already, try to make the damage factor appear on the same
+			// line as a previous string.
+			if ( ulNumLimits == 1 )
+				scoreboard_TryToPrependLimit( lines, text );
+
 			lines.push_back( text );
 		}
 	}
 
 	// Render the timelimit string. - [BB] if the gamemode uses it.
-	if ( GAMEMODE_IsTimelimitActive( ))
-	{
-		FString TimeLeftString;
-		GAMEMODE_GetTimeLeftString ( TimeLeftString );
-		text.Format( "%s ends in %s", ulFlags & GMF_PLAYERSEARNWINS ? "Round" : "Level", TimeLeftString.GetChars( ));
-		lines.push_back( text );
-	}
+	// [AK] Don't add this if we've already done so.
+	if (( bTimeLimitActive ) && ( bTimeLimitAdded == false ))
+		scoreboard_AddTimeLimit( lines );
 }
 
 //*****************************************************************************
