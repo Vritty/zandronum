@@ -620,6 +620,9 @@ void CLIENTCOMMANDS_ChangeTeam( const char *pszJoinPassword, LONG lDesiredTeam )
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CHANGETEAM );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteString( pszJoinPassword );
 	CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( lDesiredTeam );
+
+	// [AK] Send the gametic so that the client doesn't think it's lagging.
+	CLIENT_GetLocalBuffer( )->ByteStream.WriteLong( gametic );
 }
 
 //*****************************************************************************

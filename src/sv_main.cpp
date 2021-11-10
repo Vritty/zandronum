@@ -6461,7 +6461,8 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	LONG		lDesiredTeam;
 	bool		bOnTeam, bAutoSelectTeam = false;
 	FString		clientJoinPassword;
-	
+	ULONG		ulGametic;
+
 	// [SB] Change team client command is now flood checked.
 	if ( server_CheckForClientCommandFlood( g_lCurrentClient ) == true )
 		return ( true );
@@ -6472,6 +6473,9 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	lDesiredTeam = pByteStream->ReadByte();
 	if ( playeringame[g_lCurrentClient] == false )
 		return ( false );
+
+	// [AK] Read in the client's gametic.
+	ulGametic = pByteStream->ReadLong();
 
 	// Not in a level.
 	// [BB] Still allow spectators to join the queue (that's what happens if you try to join during intermission).
@@ -6554,6 +6558,9 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 
 	// Set the new team.
 	PLAYER_SetTeam( &players[g_lCurrentClient], lDesiredTeam, true );
+
+	// [AK] Set the client's gametic so that it doesn't think it's lagging.
+	g_aClients[g_lCurrentClient].ulClientGameTic = ulGametic;
 
 	// Player was on a team, so tell everyone that he's changing teams.
 	if ( bOnTeam )
