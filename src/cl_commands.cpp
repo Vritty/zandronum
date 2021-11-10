@@ -564,7 +564,8 @@ void CLIENTCOMMANDS_RequestJoin( const char *pszJoinPassword )
 {
 	if (( sv_limitcommands ) && ( g_ulLastJoinTime > 0 ) && ( (ULONG)gametic < ( g_ulLastJoinTime + ( TICRATE * 3 ))))
 	{
-		Printf( "You must wait at least 3 seconds before joining again.\n" );
+		// [AK] Show the client how many more seconds they need to wait before they can join again.
+		Printf( "You must wait %d seconds before joining again.\n", static_cast<int>( 3 - ( gametic - g_ulLastJoinTime ) / TICRATE ));
 		return;
 	}
 
@@ -598,7 +599,8 @@ void CLIENTCOMMANDS_Suicide( void )
 {
 	if (( sv_limitcommands ) && ( g_ulLastSuicideTime > 0 ) && ( (ULONG)gametic < ( g_ulLastSuicideTime + ( TICRATE * 10 ))))
 	{
-		Printf( "You must wait at least 10 seconds before suiciding again.\n" );
+		// [AK] Show the client how many more seconds they need to wait before they can suicide again.
+		Printf( "You must wait %d seconds before suiciding again.\n", static_cast<int>( 10 - ( gametic - g_ulLastSuicideTime ) / TICRATE ));
 		return;
 	}
 
@@ -612,7 +614,8 @@ void CLIENTCOMMANDS_ChangeTeam( const char *pszJoinPassword, LONG lDesiredTeam )
 {
 	if (( sv_limitcommands ) && !( ( lastmanstanding || teamlms ) && ( LASTMANSTANDING_GetState( ) == LMSS_COUNTDOWN ) ) && ( g_ulLastChangeTeamTime > 0 ) && ( (ULONG)gametic < ( g_ulLastChangeTeamTime + ( TICRATE * 3 ))))
 	{
-		Printf( "You must wait at least 3 seconds before changing teams again.\n" );
+		// [AK] Show the client how many more seconds they need to wait before they can change teams again.
+		Printf( "You must wait %d seconds before changing teams again.\n", static_cast<int>( 3 - ( gametic - g_ulLastChangeTeamTime ) / TICRATE ));
 		return;
 	}
 
