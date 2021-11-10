@@ -603,7 +603,7 @@ OptionMenu ZA_ServerSetupMenu
 	StaticText	" "
 	Option		"Allow private chat",		"sv_allowprivatechat",		"ZA_AllowPrivateChat"
 	Option		"Smooth lagging players",	"sv_smoothplayers",			"YesNo"
-	Slider		"Extrapolation tics",		"sv_extrapolatetics",		1, 35, 1
+	Slider		"Extrapolation tics",		"sv_extrapolatetics",		1, 7, 1
 	Slider		"Backtrace limit (mu)",		"sv_backtracelimit",		0.0, 64.0, 8.0
 	StaticText	" "
 	
