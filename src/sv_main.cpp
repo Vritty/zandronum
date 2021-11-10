@@ -5416,7 +5416,7 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 
 			// [AK] If we have enough late commands in the buffer, process them all immediately, so as long
 			// as they hadn't morphed or unmorphed at any point during extrapolation.
-			if (( pClient->LateMoveCMDs.Size( ) > 0 ) && ( pClient->OldData != NULL ))
+			if (( ulNumMoveCMDs > 0 ) && ( pClient->LateMoveCMDs.Size( ) > 0 ) && ( pClient->OldData != NULL ))
 				server_PerformBacktrace( ulClient );
 
 			// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing
@@ -7492,7 +7492,6 @@ static void server_PerformBacktrace( ULONG ulClient )
 		players[ulClient].mo->flags2 |= ( MF2_CANNOTPUSH | MF2_THRUACTORS | MF2_INVULNERABLE );
 
 		ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
-		ULONG ulClientGameTic = pClient->ulClientGameTic + pClient->ulExtrapolatedTics;
 		LONG lOldLastMoveTickProcess = pClient->lLastMoveTickProcess;
 
 		pClient->bIsBacktracing = true;
@@ -7517,7 +7516,6 @@ static void server_PerformBacktrace( ULONG ulClient )
 
 		players[ulClient].mo->flags = flags;
 		players[ulClient].mo->flags2 = flags2;
-		pClient->ulClientGameTic = ulClientGameTic;
 		pClient->lLastMoveTickProcess = lOldLastMoveTickProcess;
 
 		// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
@@ -7537,26 +7535,15 @@ static void server_PerformBacktrace( ULONG ulClient )
 				Printf( "accepted.\n" );
 		}
 	}
-	else
+	else if ( sv_smoothplayers_debuginfo )
 	{
-		// [AK] We still need to update the client's last move command to the late command we received last.
-		// We also need to set their gametic so that they don't think they're lagging.
-		ULONG ulLastIdx = pClient->LateMoveCMDs.Size( ) - 1;
-		pClient->ulClientGameTic += pClient->ulExtrapolatedTics;
+		Printf( "%d: no need to backtrace %s ", gametic, players[ulClient].userinfo.GetName( ));
 
-		delete pClient->LastMoveCMD;
-		pClient->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( pClient->LateMoveCMDs[ulLastIdx] ));
-
-		if ( sv_smoothplayers_debuginfo )
-		{
-			Printf( "%d: no need to backtrace %s ", gametic, players[ulClient].userinfo.GetName( ));
-
-			// [AK] Explain why we didn't backtrace their movement.
-			if ( bPressedAnything == false )
-				Printf( "(didn't press anything).\n" );
-			else
-				Printf( "(morphed during extrapolation).\n" );
-		}
+		// [AK] Explain why we didn't backtrace their movement.
+		if ( bPressedAnything == false )
+			Printf( "(didn't press anything).\n" );
+		else
+			Printf( "(morphed during extrapolation).\n" );
 	}
 
 	SERVER_ResetClientExtrapolation( ulClient );
