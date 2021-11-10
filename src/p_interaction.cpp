@@ -1404,7 +1404,7 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 		&& !(inflictor->flags2 & MF2_NODMGTHRUST)
 		&& !(flags & DMG_THRUSTLESS)
 		&& (source == NULL || source->player == NULL || !(source->flags2 & MF2_NODMGTHRUST))
-		&& ( PLAYER_CannotAffectAllyWith( source, target, ZADF_DONT_PUSH_ALLIES ) == false )
+		&& ( PLAYER_CannotAffectAllyWith( source, target, inflictor, ZADF_DONT_PUSH_ALLIES ) == false )
 		&& ( NETWORK_InClientMode() == false ) )
 	{
 		int kickback;
@@ -3459,10 +3459,15 @@ bool PLAYER_CanRespawnWhereDied( player_t *pPlayer )
 
 //*****************************************************************************
 //
-bool PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, int flag )
+bool PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, AActor *pInflictor, int flag )
 {
 	// [AK] Check if we have the corresponding zadmflag enabled.
 	if (( zadmflags & flag ) == false )
+		return false;
+
+	// [AK] If the inflicting actor (e.g. projectile) is forced to affect allied players
+	// then don't bother checking.
+	if (( pInflictor != NULL ) && ( pInflictor->STFlags & STFL_FORCEALLYCOLLISION ))
 		return false;
 
 	// [AK] One of the actors must be a player, at least.

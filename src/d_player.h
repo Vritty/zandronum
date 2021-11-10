@@ -807,7 +807,7 @@ bool	PLAYER_NameMatchesServer( const FString &Name );
 bool	PLAYER_NameUsed( const FString &Name, const ULONG ulIgnorePlayer = MAXPLAYERS );
 FString	PLAYER_GenerateUniqueName( void );
 bool	PLAYER_CanRespawnWhereDied( player_t *pPlayer );
-bool	PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, int flag );
+bool	PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, AActor *pInflictor, int flag );
 LONG	PLAYER_CalcSpread( ULONG ulPlayer );
 ULONG	PLAYER_CalcRank( ULONG ulPlayer );
 

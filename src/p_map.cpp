@@ -1086,7 +1086,7 @@ bool PIT_CheckThing(AActor *thing, FCheckPosition &tm)
 
 		// [AK] Check if this projectile was shot by a player and can pass through their
 		// teammates if ZADF_SHOOT_THROUGH_ALLIES is enabled.
-		if ( PLAYER_CannotAffectAllyWith( tm.thing->target, thing, ZADF_SHOOT_THROUGH_ALLIES ))
+		if ( PLAYER_CannotAffectAllyWith( tm.thing->target, thing, tm.thing, ZADF_SHOOT_THROUGH_ALLIES ))
 			return true;
 
 		// Check for rippers passing through corpses
@@ -4112,6 +4112,10 @@ struct Origin
 	AActor *Caller;
 	bool hitGhosts;
 	bool hitSameSpecies;
+
+	// [AK] Added hitscan puff and check for P_LinePickActor.
+	AActor *pPuff;
+	bool bIsLinePick;
 };
 
 static ETraceStatus CheckForActor(FTraceResults &res, void *userdata)
@@ -4139,7 +4143,8 @@ static ETraceStatus CheckForActor(FTraceResults &res, void *userdata)
 	}
 
 	// [AK] Check if this player can shoot through their teammates if ZADF_SHOOT_THROUGH_ALLIES is enabled.
-	if ( PLAYER_CannotAffectAllyWith( data->Caller, res.Actor, ZADF_SHOOT_THROUGH_ALLIES ))
+	// Ignore this if this was triggered by P_LinePickActor.
+	if (( !data->bIsLinePick ) && ( PLAYER_CannotAffectAllyWith( data->Caller, res.Actor, data->pPuff, ZADF_SHOOT_THROUGH_ALLIES )))
 	{
 		return TRACE_Skip;
 	}
@@ -4216,6 +4221,10 @@ AActor *P_LineAttack(AActor *t1, angle_t angle, fixed_t distance,
 
 	// We need to check the defaults of the replacement here
 	AActor *puffDefaults = GetDefaultByType(pufftype->GetReplacement());
+
+	// [AK] Remember the puff actor that is supposed to spawn with this hitscan.
+	TData.pPuff = puffDefaults;
+	TData.bIsLinePick = false;
 
 	TData.hitGhosts = (t1->player != NULL &&
 		t1->player->ReadyWeapon != NULL &&
@@ -4574,6 +4583,10 @@ AActor *P_LinePickActor(AActor *t1, angle_t angle, fixed_t distance, int pitch,
 	TData.Caller = t1;
 	TData.hitGhosts = true;
 	
+	// [AK] This doesn't spawn a puff actor, but indicate that this is a line pick hitscan.
+	TData.pPuff = NULL;
+	TData.bIsLinePick = true;
+
 	if (Trace(t1->x, t1->y, shootz, t1->Sector, vx, vy, vz, distance,
 		actorMask, wallMask, t1, trace, TRACE_NoSky, CheckForActor, &TData))
 	{
@@ -5626,7 +5639,7 @@ void P_RadiusAttack(AActor *bombspot, AActor *bombsource, int bombdamage, int bo
 
 		// [AK] Don't push this player if ZADF_DONT_PUSH_ALLIES is enabled and the
 		// other player who caused the explosion is their teammate.
-		if ( PLAYER_CannotAffectAllyWith( bombsource, thing, ZADF_DONT_PUSH_ALLIES ))
+		if ( PLAYER_CannotAffectAllyWith( bombsource, thing, bombspot, ZADF_DONT_PUSH_ALLIES ))
 			continue;
 
 		// Barrels always use the original code, since this makes

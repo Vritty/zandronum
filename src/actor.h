@@ -439,6 +439,10 @@ enum
 	STFL_USEDAMAGEEVENTSCRIPT	= 0x04000000,
 	STFL_NODAMAGEEVENTSCRIPT	= 0x08000000,
 
+	// [AK] This projectile will always collide/push the shooter's allies, even if sv_shootthroughallies
+	// or sv_dontpushallies are enabled.
+	STFL_FORCEALLYCOLLISION		= 0x10000000,
+
 // More flags for Skulltag... these having to do with the network.
 
 	// This object does not have a network ID.
