@@ -327,12 +327,22 @@ CUSTOM_CVAR( Int, sv_extrapolatetics, 3, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVE
 
 //*****************************************************************************
 // [AK] How much error, in map units, is allowed after a backtrace for it to still be acceptable.
-CUSTOM_CVAR( Float, sv_backtracelimit, 0.0f, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
+CUSTOM_CVAR( Float, sv_backtracethreshold, 0.0f, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 {
 	if ( self < 0 )
 		self = 0;
+
+	// [AK] The maximum backtrace threshold is 96 map units, so players don't end up too
+	// far away from where they were extrapolated.
+	if ( self > 96.0f )
+	{
+		Printf( "The maximum threshold is 96 map units.\n" );
+		self = 96.0f;
+	}
 }
 
+//*****************************************************************************
+//
 CUSTOM_CVAR( String, sv_adminlistfile, "adminlist.txt", CVAR_ARCHIVE|CVAR_SENSITIVESERVERSETTING|CVAR_NOSETBYACS )
 {
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
@@ -7564,10 +7574,10 @@ static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_
 
 	// [AK] Don't accept the backtrace if the player ended up in a spot that's too far than where we
 	// extrapolated them to, depending on how much error we can accept with predicting their movement.
-	if (( sv_backtracelimit != 0.0f ) && ( fDiff > sv_backtracelimit ))
+	if (( sv_backtracethreshold != 0.0f ) && ( fDiff > sv_backtracethreshold ))
 	{
 		if ( sv_smoothplayers_debuginfo )
-			Printf( "failed (exceeded backtrace limit - %.4f vs. %.4f).\n", fDiff, static_cast<float>( sv_backtracelimit ));
+			Printf( "failed (exceeded threshold - %.4f vs. %.4f).\n", fDiff, static_cast<float>( sv_backtracethreshold ));
 
 		return false;
 	}
