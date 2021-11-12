@@ -5447,6 +5447,21 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 				SERVER_ResetClientExtrapolation( ulClient );
 			}
 		}
+		else if ( pClient->ulExtrapolatedTics > 0 )
+		{
+			// [AK] Reset the client's extrapolation data whenever they die or spectate.
+			SERVER_ResetClientExtrapolation( ulClient );
+
+			if ( sv_smoothplayers_debuginfo )
+			{
+				Printf( "%d: aborting extrapolation of %s ", gametic, players[ulClient].userinfo.GetName( ));
+
+				if ( players[ulClient].bSpectating )
+					Printf( "(left game).\n" );
+				else
+					Printf( "(died).\n" );
+			}
+		}
 	}
 
 	return true;
