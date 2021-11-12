@@ -5480,19 +5480,16 @@ bool SERVER_IsBacktracingPlayer( ULONG ulClient )
 
 //*****************************************************************************
 //
-void SERVER_ResetClientTicBuffer( ULONG ulClient, bool bClearMoveCMDs )
+void SERVER_ResetClientTicBuffer( ULONG ulClient )
 {
 	if ( SERVER_IsValidClient( ulClient ) == false )
 		return;
 
 	// [AK] Clear all stored commands in the tic buffer.
-	if ( bClearMoveCMDs )
-	{
-		for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
-			delete g_aClients[ulClient].MoveCMDs[i];
+	for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
+		delete g_aClients[ulClient].MoveCMDs[i];
 
-		g_aClients[ulClient].MoveCMDs.Clear( );
-	}
+	g_aClients[ulClient].MoveCMDs.Clear( );
 
 	// [AK] Also delete the last processed movement command.
 	if ( g_aClients[ulClient].LastMoveCMD != NULL )

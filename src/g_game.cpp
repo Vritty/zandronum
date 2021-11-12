@@ -2197,7 +2197,11 @@ void G_PlayerReborn (int player, bool bGiveInventory)
 		if ( p->ReadyWeapon != NULL )
 			LastWeaponSelected = p->ReadyWeapon->GetClass();
 	}
-
+	else if ( p->bSpectating == false )
+	{
+		// [AK] Reset the client's tic buffer every time they spawn.
+		SERVER_ResetClientTicBuffer( player );
+	}
 
 	// Reset player structure to its defaults
 	p->~player_t();
