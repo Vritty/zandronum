@@ -945,15 +945,34 @@ void SERVERCOMMANDS_MoveLocalPlayer( ULONG ulPlayer )
 	if ( SERVER_IsValidClient( ulPlayer ) == false || players[ulPlayer].mo == NULL )
 		return;
 
+	CLIENT_s *pClient = SERVER_GetClient( ulPlayer );
+
 	ServerCommands::MoveLocalPlayer command;
-	command.SetClientTicOnServerEnd( SERVER_GetClient( ulPlayer )->ulClientGameTic );
 	command.SetLatestServerGametic( gametic );
-	command.SetX( players[ulPlayer].mo->x );
-	command.SetY( players[ulPlayer].mo->y );
-	command.SetZ( players[ulPlayer].mo->z );
-	command.SetVelx( players[ulPlayer].mo->velx );
-	command.SetVely( players[ulPlayer].mo->vely );
-	command.SetVelz( players[ulPlayer].mo->velz );
+
+	// [AK] If this player is being extrapolated, send them their last known position and velocity.
+	// This helps keep their movement smooth for them until we receive commands from them again.
+	if (( pClient->ulExtrapolatedTics > 0 ) && ( pClient->OldData ))
+	{
+		command.SetClientTicOnServerEnd( pClient->LastMoveCMD->getClientTic( ));
+		command.SetX( pClient->OldData->PositionData.x );
+		command.SetY( pClient->OldData->PositionData.y );
+		command.SetZ( pClient->OldData->PositionData.z );
+		command.SetVelx( pClient->OldData->PositionData.velx );
+		command.SetVely( pClient->OldData->PositionData.vely );
+		command.SetVelz( pClient->OldData->PositionData.velz );
+	}
+	else
+	{
+		command.SetClientTicOnServerEnd( pClient->ulClientGameTic );
+		command.SetX( players[ulPlayer].mo->x );
+		command.SetY( players[ulPlayer].mo->y );
+		command.SetZ( players[ulPlayer].mo->z );
+		command.SetVelx( players[ulPlayer].mo->velx );
+		command.SetVely( players[ulPlayer].mo->vely );
+		command.SetVelz( players[ulPlayer].mo->velz );
+	}
+
 	command.sendCommandToClients( ulPlayer, SVCF_ONLYTHISCLIENT );
 }
 

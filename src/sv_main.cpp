@@ -2895,12 +2895,7 @@ void SERVER_WriteCommands( void )
 				continue;
 		}
 
-		// [AK] If this player's lagging and we're extrapolating their movement, don't send updates
-		// on their position. This helps keep the movement on their screen a little smoother until
-		// we receives commands from them again. After which, we'll send them them updates again
-		// and correct any discrepancies on their end.
-		if (( sv_smoothplayers == false ) || ( g_aClients[ulIdx].ulExtrapolatedTics == 0 ))
-			SERVERCOMMANDS_MoveLocalPlayer( ulIdx );
+		SERVERCOMMANDS_MoveLocalPlayer( ulIdx );
 	}
 
 	// Once every four seconds, update each player's ping.
