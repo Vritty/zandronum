@@ -645,6 +645,7 @@ void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 )
 void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
 bool		SERVER_ShouldProcessMoveCommand( ULONG ulClient, ULONG ulNumMoveCMDs );
 bool		SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs );
+bool		SERVER_IsExtrapolatingPlayer( ULONG ulClient );
 bool		SERVER_IsBacktracingPlayer( ULONG ulClient );
 void		SERVER_ResetClientTicBuffer( ULONG ulClient );
 void		SERVER_ResetClientExtrapolation( ULONG ulClient );

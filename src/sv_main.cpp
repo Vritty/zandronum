@@ -5468,6 +5468,17 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 
 //*****************************************************************************
 //
+bool SERVER_IsExtrapolatingPlayer( ULONG ulClient )
+{
+	// [AK] Only the server is allowed to extrapolate players.
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+		return false;
+
+	return (( SERVER_IsValidClient( ulClient )) && ( g_aClients[ulClient].ulExtrapolatedTics > 0 ));
+}
+
+//*****************************************************************************
+//
 bool SERVER_IsBacktracingPlayer( ULONG ulClient )
 {
 	// [AK] Only the server is allowed to backtrace players.
