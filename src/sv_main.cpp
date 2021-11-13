@@ -174,7 +174,7 @@ static	bool	server_CheckLogin( const ULONG ulClient );
 static	void	server_PrintWithIP( FString message, const NETADDRESS_s &address );
 static	void	server_PerformBacktrace( ULONG ulClient );
 static	bool	server_ShouldPerformBacktrace( ULONG ulClient );
-static	bool	server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData );
+static	bool	server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData, FString &debugMessage );
 
 // [RC]
 #ifdef CREATE_PACKET_LOG
@@ -5359,6 +5359,7 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 {
 	CLIENT_s *pClient = &g_aClients[ulClient];
 	const bool bAlreadyProcessed = ( pClient->lLastMoveTickProcess == gametic );
+	FString debugMessage;
 
 	// [AK] Don't process two movement commands in a single tic if we didn't receive any new commands
 	// from this client in the current tic, or if it's too soon since we performed a backtrace on them.
@@ -5386,25 +5387,27 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 			{
 				if (( pClient->MoveCMDs.Size( ) > 0 ) || ( pClient->LateMoveCMDs.Size( ) > 0 ))
 				{
-					Printf( "%d: %s (%d tics extrapolated, %d move commands, %d late commands.\n", gametic, players[ulClient].userinfo.GetName( ),
+					debugMessage.Format( "%d: %s (%d tics extrapolated, %d move commands, %d late commands).\n", gametic, players[ulClient].userinfo.GetName( ),
 						static_cast<unsigned int>( pClient->ulExtrapolatedTics ), pClient->MoveCMDs.Size( ), pClient->LateMoveCMDs.Size( ));
 
 					if ( sv_smoothplayers_debuginfo >= 2 )
 					{
 						if ( pClient->MoveCMDs.Size( ) > 0 )
 						{
-							Printf( "-> Move gametics: " );
+							debugMessage.AppendFormat( "-> Move gametics: " );
 							for ( unsigned int i = 0; i < pClient->MoveCMDs.Size( ); i++ )
-								Printf( "%d%s", pClient->MoveCMDs[i]->getClientTic( ), i < pClient->MoveCMDs.Size( ) - 1 ? ", " : "\n" );
+								debugMessage.AppendFormat( "%d%s", pClient->MoveCMDs[i]->getClientTic( ), i < pClient->MoveCMDs.Size( ) - 1 ? ", " : "\n" );
 						}
 
 						if ( pClient->LateMoveCMDs.Size( ) > 0 )
 						{
-							Printf( "-> Late gametics: " );
+							debugMessage.AppendFormat( "-> Late gametics: " );
 							for ( unsigned int i = 0; i < pClient->LateMoveCMDs.Size( ); i++ )
-								Printf( "%d%s", pClient->LateMoveCMDs[i]->getClientTic( ), i < pClient->LateMoveCMDs.Size( ) - 1 ? ", " : "\n" );
+								debugMessage.AppendFormat( "%d%s", pClient->LateMoveCMDs[i]->getClientTic( ), i < pClient->LateMoveCMDs.Size( ) - 1 ? ", " : "\n" );
 						}
 					}
+
+					Printf( "%s", debugMessage.GetChars( ));
 				}
 			}
 
@@ -5448,12 +5451,14 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 
 			if ( sv_smoothplayers_debuginfo )
 			{
-				Printf( "%d: aborting extrapolation of %s ", gametic, players[ulClient].userinfo.GetName( ));
+				debugMessage.Format( "%d: aborting extrapolation of %s (", gametic, players[ulClient].userinfo.GetName( ));
 
 				if ( players[ulClient].bSpectating )
-					Printf( "(left game).\n" );
+					debugMessage.AppendFormat( "left game" );
 				else
-					Printf( "(died).\n" );
+					debugMessage.AppendFormat( "died" );
+
+				Printf( "%s).\n", debugMessage.GetChars( ));
 			}
 		}
 	}
@@ -7464,11 +7469,11 @@ static void server_PrintWithIP( FString message, const NETADDRESS_s &address )
 static void server_PerformBacktrace( ULONG ulClient )
 {
 	CLIENT_s *pClient = &g_aClients[ulClient];
+	FString debugMessage;
 
 	if ( server_ShouldPerformBacktrace( ulClient ))
 	{
-		if ( sv_smoothplayers_debuginfo )
-			Printf( "%d: backtracing %s... ", gametic, players[ulClient].userinfo.GetName( ));
+		debugMessage.Format( "%d: backtracing %s... ", gametic, players[ulClient].userinfo.GetName( ));
 
 		pClient->backtraceThrust[0] = players[ulClient].mo->velx - pClient->backtraceThrust[0];
 		pClient->backtraceThrust[1] = players[ulClient].mo->vely - pClient->backtraceThrust[1];
@@ -7515,7 +7520,7 @@ static void server_PerformBacktrace( ULONG ulClient )
 		// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
 		// didn't move too far away into a spot that's blocking them or out of sight. If this check fails,
 		// we have to move the player back to their original position before the backtrace happened.
-		if ( server_ShouldAcceptBacktraceResult( ulClient, oldData.PositionData ) == false )
+		if ( server_ShouldAcceptBacktraceResult( ulClient, oldData.PositionData, debugMessage ) == false )
 		{
 			oldData.Restore( &players[ulClient], true );
 		}
@@ -7525,9 +7530,11 @@ static void server_PerformBacktrace( ULONG ulClient )
 			players[ulClient].mo->vely += pClient->backtraceThrust[1];
 			players[ulClient].mo->velz += pClient->backtraceThrust[2];
 
-			if ( sv_smoothplayers_debuginfo )
-				Printf( "accepted.\n" );
+			debugMessage += "accepted";
 		}
+
+		if ( sv_smoothplayers_debuginfo )
+			Printf( "%s.\n", debugMessage.GetChars( ));
 	}
 
 	SERVER_ResetClientExtrapolation( ulClient );
@@ -7576,7 +7583,7 @@ static bool server_ShouldPerformBacktrace( ULONG ulClient )
 
 //*****************************************************************************
 //
-static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData )
+static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData, FString &debugMessage )
 {
 	float fX = FIXED2FLOAT( players[ulClient].mo->x - OldData.x );
 	float fY = FIXED2FLOAT( players[ulClient].mo->y - OldData.y );
@@ -7588,18 +7595,14 @@ static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_
 	// extrapolated them to, depending on how much error we can accept with predicting their movement.
 	if (( sv_backtracethreshold != 0.0f ) && ( fDiff > sv_backtracethreshold ))
 	{
-		if ( sv_smoothplayers_debuginfo )
-			Printf( "failed (exceeded threshold - %.4f vs. %.4f).\n", fDiff, static_cast<float>( sv_backtracethreshold ));
-
+		debugMessage.AppendFormat( "failed (exceeded threshold - %.4f vs. %.4f)", fDiff, static_cast<float>( sv_backtracethreshold ));
 		return false;
 	}
 
 	// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
 	if ( P_TestMobjLocation( players[ulClient].mo ) == false )
 	{
-		if ( sv_smoothplayers_debuginfo )
-			Printf( "failed (not enough room).\n" );
-
+		debugMessage.AppendFormat( "failed (not enough room)" );
 		return false;
 	}
 
@@ -7609,8 +7612,8 @@ static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_
 	bool bCanSee = P_CheckSight( players[ulClient].mo, temp );
 	temp->Destroy( );
 
-	if (( sv_smoothplayers_debuginfo ) && ( bCanSee == false ))
-		Printf( "failed (no line of sight).\n" );
+	if ( bCanSee == false )
+		debugMessage.AppendFormat( "failed (no line of sight)" );
 
 	return bCanSee;
 }
