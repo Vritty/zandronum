@@ -173,6 +173,7 @@ static	bool	server_InfoCheat( BYTESTREAM_s* pByteStream );
 static	bool	server_CheckLogin( const ULONG ulClient );
 static	void	server_PrintWithIP( FString message, const NETADDRESS_s &address );
 static	void	server_PerformBacktrace( ULONG ulClient );
+static	bool	server_ShouldPerformBacktrace( ULONG ulClient );
 static	bool	server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData );
 
 // [RC]
@@ -7463,20 +7464,8 @@ static void server_PrintWithIP( FString message, const NETADDRESS_s &address )
 static void server_PerformBacktrace( ULONG ulClient )
 {
 	CLIENT_s *pClient = &g_aClients[ulClient];
-	bool bPressedAnything = false;
 
-	// [AK] Check that the player was actually pressing inputs, and therefore wasn't just standing
-	// still during the ping spike. Otherwise, we shouldn't perform a backtrace.
-	for ( unsigned int i = 0; i < pClient->LateMoveCMDs.Size( ); i++ )
-	{
-		if ( pClient->LateMoveCMDs[i]->pressedAnything( ))
-		{
-			bPressedAnything = true;
-			break;
-		}
-	}
-
-	if (( bPressedAnything ) && ( pClient->OldData->pMorphedPlayerClass == players[ulClient].MorphedPlayerClass ))
+	if ( server_ShouldPerformBacktrace( ulClient ))
 	{
 		if ( sv_smoothplayers_debuginfo )
 			Printf( "%d: backtracing %s... ", gametic, players[ulClient].userinfo.GetName( ));
@@ -7540,18 +7529,49 @@ static void server_PerformBacktrace( ULONG ulClient )
 				Printf( "accepted.\n" );
 		}
 	}
-	else if ( sv_smoothplayers_debuginfo )
-	{
-		Printf( "%d: no need to backtrace %s ", gametic, players[ulClient].userinfo.GetName( ));
-
-		// [AK] Explain why we didn't backtrace their movement.
-		if ( bPressedAnything == false )
-			Printf( "(didn't press anything).\n" );
-		else
-			Printf( "(morphed during extrapolation).\n" );
-	}
 
 	SERVER_ResetClientExtrapolation( ulClient );
+}
+
+//*****************************************************************************
+//
+static bool server_ShouldPerformBacktrace( ULONG ulClient )
+{
+	bool bShouldPerform = true;
+	FString reason;
+
+	if ( g_aClients[ulClient].OldData->pMorphedPlayerClass != players[ulClient].MorphedPlayerClass )
+	{
+		reason = "morphed during extrapolation";
+		bShouldPerform = false;
+	}
+	else
+	{
+		bool bPressedAnything = false;
+
+		// [AK] Check that the player was actually pressing inputs, and therefore wasn't just standing
+		// still during the ping spike. Otherwise, we shouldn't perform a backtrace.
+		for ( unsigned int i = 0; i < g_aClients[ulClient].LateMoveCMDs.Size( ); i++ )
+		{
+			if ( g_aClients[ulClient].LateMoveCMDs[i]->pressedAnything( ))
+			{
+				bPressedAnything = true;
+				break;
+			}
+		}
+
+		if ( bPressedAnything == false )
+		{
+			reason = "didn't press anything";
+			bShouldPerform = false;
+		}
+	}
+
+	// [AK] Explain why we didn't backtrace their movement.
+	if (( bShouldPerform == false ) && ( sv_smoothplayers_debuginfo ))
+		Printf( "%d: cannot backtrace %s (%s).\n", gametic, players[ulClient].userinfo.GetName( ), reason.GetChars( ));
+
+	return bShouldPerform;
 }
 
 //*****************************************************************************
