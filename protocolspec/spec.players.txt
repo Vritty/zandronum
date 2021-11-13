@@ -202,12 +202,6 @@ Command UpdatePlayerTime
 	UShort time
 EndCommand
 
-Command UpdateLocalPlayerGameTics
-	UnreliableCommand
-	ULong clientTicOnServerEnd
-	Long latestServerGametic
-EndCommand
-
 Command MoveLocalPlayer
 	UnreliableCommand
 	ULong clientTicOnServerEnd

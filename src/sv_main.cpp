@@ -2899,10 +2899,8 @@ void SERVER_WriteCommands( void )
 		// on their position. This helps keep the movement on their screen a little smoother until
 		// we receives commands from them again. After which, we'll send them them updates again
 		// and correct any discrepancies on their end.
-		if (( gamestate == GS_LEVEL ) && (( sv_smoothplayers == false ) || ( g_aClients[ulIdx].ulExtrapolatedTics == 0 )))
+		if (( sv_smoothplayers == false ) || ( g_aClients[ulIdx].ulExtrapolatedTics == 0 ))
 			SERVERCOMMANDS_MoveLocalPlayer( ulIdx );
-		else
-			SERVERCOMMANDS_UpdateLocalPlayerGameTics( ulIdx );
 	}
 
 	// Once every four seconds, update each player's ping.
