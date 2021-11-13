@@ -5311,6 +5311,8 @@ CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
 	crouchFactor = player->crouchfactor;
 	crouchOffset = player->crouchoffset;
 	crouchViewDelta = player->crouchviewdelta;
+	bTookEnvironmentalDamage = false;
+	bTeleported = false;
 
 	// [AK] Remember the closest sector the player is standing on and their height above the floor.
 	pFloorSector = player->mo->floorsector;
@@ -7497,9 +7499,9 @@ static void server_PerformBacktrace( ULONG ulClient )
 		int flags = players[ulClient].mo->flags;
 		players[ulClient].mo->flags &= ~( MF_SHOOTABLE | MF_PICKUP );
 
-		// [AK] Also make them invulnerable, able to walk through other actors, and unable to push.
+		// [AK] Also make them able to walk through other actors and unable to push.
 		int flags2 = players[ulClient].mo->flags2;
-		players[ulClient].mo->flags2 |= ( MF2_CANNOTPUSH | MF2_THRUACTORS | MF2_INVULNERABLE );
+		players[ulClient].mo->flags2 |= ( MF2_CANNOTPUSH | MF2_THRUACTORS );
 
 		ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
 		LONG lOldLastMoveTickProcess = pClient->lLastMoveTickProcess;
@@ -7561,6 +7563,16 @@ static bool server_ShouldPerformBacktrace( ULONG ulClient )
 	if ( g_aClients[ulClient].OldData->pMorphedPlayerClass != players[ulClient].MorphedPlayerClass )
 	{
 		reason = "morphed during extrapolation";
+		bShouldPerform = false;
+	}
+	else if ( g_aClients[ulClient].OldData->bTeleported )
+	{
+		reason = "teleported during extrapolation";
+		bShouldPerform = false;
+	}
+	else if ( g_aClients[ulClient].OldData->bTookEnvironmentalDamage )
+	{
+		reason = "took environmental damage during extrapolation";
 		bShouldPerform = false;
 	}
 	else
