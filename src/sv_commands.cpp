@@ -89,17 +89,6 @@ CVAR (Bool, sv_showwarnings, false, CVAR_GLOBALCONFIG|CVAR_ARCHIVE)
 EXTERN_CVAR( Float, sv_aircontrol )
 
 //*****************************************************************************
-class AdminClientIterator : public ClientIterator
-{
-protected:
-	bool isCurrentValid() const
-	{
-		return ClientIterator::isCurrentValid() && SERVER_GetClient( **this )->bRCONAccess;
-	}
-};
-
-
-//*****************************************************************************
 //	FUNCTIONS
 
 // [BB] Check if the actor has a valid net ID. Returns true if it does, returns false and prints a warning if not.
@@ -4924,8 +4913,11 @@ void SERVERCOMMANDS_SetCVar( const FBaseCVar &CVar, ULONG ulPlayerExtra, ServerC
 //
 void SERVERCOMMANDS_SyncCVarToAdmins( const FBaseCVar &CVar )
 {
-	for ( AdminClientIterator it; it.notAtEnd(); ++it )
-		SERVERCOMMANDS_SetCVar( CVar, *it, SVCF_ONLYTHISCLIENT );
+	for ( ClientIterator it; it.notAtEnd(); ++it )
+	{
+		if ( SERVER_GetClient( *it )->bRCONAccess )
+			SERVERCOMMANDS_SetCVar( CVar, *it, SVCF_ONLYTHISCLIENT );
+	}
 }
 
 //*****************************************************************************

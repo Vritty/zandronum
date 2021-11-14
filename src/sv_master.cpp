@@ -755,6 +755,10 @@ CUSTOM_CVAR( Bool, sv_broadcast, true, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CUSTOM_CVAR( String, sv_hostname, "Unnamed " GAMENAME " server", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 {
 	SERVERCONSOLE_UpdateTitleString( (const char *)self );
+
+	// [AK] Notify the clients about the new hostname.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		SERVERCOMMANDS_SetCVar( self );
 }
 
 // Website that has the wad this server is using, possibly with other info.
