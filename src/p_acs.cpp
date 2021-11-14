@@ -7382,7 +7382,8 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 		case ACSF_GetCurrentGamemode:
 			{
-				return GlobalACSStrings.AddString( GetStringGAMEMODE_e( GAMEMODE_GetCurrentMode()));
+				// [AK] We need to leave the "GAMEMODE_" prefix out of the string, which is 9 characters long.
+				return GlobalACSStrings.AddString( GetStringGAMEMODE_e( GAMEMODE_GetCurrentMode()) + 9 );
 			}
 
 		case ACSF_SetGamemodeLimit:
