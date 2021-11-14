@@ -1257,7 +1257,8 @@ CCMD(linetarget)
 	AActor *linetarget;
 
 	if (CheckCheatmode () || players[consoleplayer].mo == NULL) return;
-	P_AimLineAttack(players[consoleplayer].mo,players[consoleplayer].mo->angle,MISSILERANGE, &linetarget, 0);
+	// [AK] Added the ALF_FORCEALLYCHECK flag, as "linetarget" should always check for allies.
+	P_AimLineAttack(players[consoleplayer].mo,players[consoleplayer].mo->angle,MISSILERANGE, &linetarget, 0, ALF_FORCEALLYCHECK);
 	if (linetarget)
 	{
 		// [TP] If we're the client, ask the server for information about the linetarget.
@@ -1281,8 +1282,9 @@ CCMD(info)
 	AActor *linetarget;
 
 	if (CheckCheatmode () || players[consoleplayer].mo == NULL) return;
+	// [AK] Added the ALF_FORCEALLYCHECK flag, as "info" should always check for allies.
 	P_AimLineAttack(players[consoleplayer].mo,players[consoleplayer].mo->angle,MISSILERANGE, 
-		&linetarget, 0,	ALF_CHECKNONSHOOTABLE|ALF_FORCENOSMART);
+		&linetarget, 0,	ALF_CHECKNONSHOOTABLE|ALF_FORCENOSMART|ALF_FORCEALLYCHECK);
 	if (linetarget)
 	{
 		// [TP] If we're the client, ask the server for information about the linetarget.

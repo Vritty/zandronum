@@ -490,7 +490,9 @@ enum	// P_AimLineAttack flags
 	ALF_NOFRIENDS = 16,
 
 	// [Proteh] Don't use backwards reconciliation
-	ALF_NOUNLAGGED = 32
+	ALF_NOUNLAGGED = 32,
+	// [AK] Forces allies to be checked, even when sv_shootthroughallies is enabled.
+	ALF_FORCEALLYCHECK = 64,
 };
 
 enum	// P_LineAttack flags

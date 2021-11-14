@@ -1016,14 +1016,20 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_BFGSpray)
 	if (!self->target)
 		return;
 
+	// [Proteh] Skip backwards reconciliation if the zadmflag is set
+	int lineAttackFlags = ((zadmflags & ZADF_NOUNLAGGED_BFG_TRACERS) ? ALF_NOUNLAGGED : 0);
+
+	// [AK] Check if the spray type forces collision with allies, in case sv_shootthroughallies is enabled.
+	if (GetDefaultByType(spraytype)->STFlags & STFL_FORCEALLYCOLLISION)
+		lineAttackFlags |= ALF_FORCEALLYCHECK;
+
 	// offset angles from its attack angle
 	for (i = 0; i < numrays; i++)
 	{
 		an = self->angle - ANG90/2 + ANG90/numrays*i;
 
 		// self->target is the originator (player) of the missile
-		// [Proteh] Skip backwards reconciliation if the zadmflag is set
-		P_AimLineAttack (self->target, an, 16*64*FRACUNIT, &linetarget, ANGLE_1*32, ((zadmflags & ZADF_NOUNLAGGED_BFG_TRACERS) ? ALF_NOUNLAGGED : 0));
+		P_AimLineAttack (self->target, an, 16*64*FRACUNIT, &linetarget, ANGLE_1*32, lineAttackFlags);
 
 		if (!linetarget)
 			continue;

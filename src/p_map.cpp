@@ -3933,6 +3933,11 @@ void aim_t::AimTraverse(fixed_t startx, fixed_t starty, fixed_t endx, fixed_t en
 			}
 		}
 
+		// [AK] Unless we forced the aim to check for allies, we also need to check if the
+		// shooter shouldn't pick the target, in case sv_shootthroughallies is enabled.
+		if (!( flags & ALF_FORCEALLYCHECK ) && ( PLAYER_CannotAffectAllyWith( shootthing, th, NULL, ZADF_SHOOT_THROUGH_ALLIES )))
+			continue;
+
 		if ((flags & ALF_NOFRIENDS) && th->IsFriend(friender))
 		{
 			continue;
