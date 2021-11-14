@@ -305,6 +305,9 @@ CUSTOM_CVAR( Bool, sv_smoothplayers, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SE
 
 			SERVER_Printf( "Skip correction %s.\n", self ? "enabled" : "disabled" );
 			bOldValue = self;
+
+			// [AK] Notify the clients about any changes to the skip correction's settings.
+			SERVERCOMMANDS_SyncSkipCorrectionInfo( );
 		}
 	}
 }
@@ -324,6 +327,10 @@ CUSTOM_CVAR( Int, sv_extrapolatetics, 3, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVE
 		Printf( "A player's movement can only be extrapolated for up to 7 tics.\n" );
 		self = 7;
 	}
+
+	// [AK] Notify the clients about any changes to the skip correction's settings.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		SERVERCOMMANDS_SyncSkipCorrectionInfo( );
 }
 
 //*****************************************************************************
@@ -340,6 +347,10 @@ CUSTOM_CVAR( Float, sv_backtracethreshold, 0.0f, CVAR_ARCHIVE|CVAR_NOSETBYACS|CV
 		Printf( "The maximum threshold is 96 map units.\n" );
 		self = 96.0f;
 	}
+
+	// [AK] Notify the clients about any changes to the skip correction's settings.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		SERVERCOMMANDS_SyncSkipCorrectionInfo( );
 }
 
 //*****************************************************************************
@@ -1417,6 +1428,9 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 
 	// [AK] Send the name of the server.
 	SERVERCOMMANDS_SetCVar( sv_hostname, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+
+	// [AK] Send the current state of the skip correction.
+	SERVERCOMMANDS_SyncSkipCorrectionInfo( g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 	// Send dmflags.
 	SERVERCOMMANDS_SetGameDMFlags( g_lCurrentClient, SVCF_ONLYTHISCLIENT );
