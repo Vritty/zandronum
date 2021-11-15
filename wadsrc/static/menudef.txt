@@ -1327,6 +1327,8 @@ OptionMenu GameplayOptions
 	Option "Force respawn",			"sv_forcerespawn", "YesNo"
 	// [TP] Force respawn time option
 	NumberField	"Force respawn time limit",	"sv_forcerespawntime", 0, 60, 1, "sv_forcerespawn"
+	// [AK] Added a respawn delay time option.
+	NumberField 	"Respawn delay time",		"sv_respawndelaytime", 1, 10, 1
 	Option "Allow exit",			"sv_noexit", "NoYes"
 	Option "Barrels respawn",		"sv_barrelrespawn", "YesNo"
 	// [TP] Zandronum has this CVar under a different name
