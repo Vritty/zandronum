@@ -168,6 +168,9 @@ CCMD ( acstime )
 
 extern FILE *Logfile;
 
+// [AK] We need this for SetPlayerClass.
+extern FRandom pr_classchoice;
+
 FRandom pr_acs ("ACS");
 
 // I imagine this much stack space is probably overkill, but it could
@@ -7415,21 +7418,34 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 					return 0;
 
 				const char *classname = FBehavior::StaticLookupString( args[1] );
-				const PClass *playerclass = PClass::FindClass( classname );
 
-				// [AK] Stop if the class provided doesn't exist or isn't a descendant of PlayerPawn.
-				// Also check if the player isn't already playing as the same class.
-				if ( playerclass == NULL || !playerclass->IsDescendantOf( RUNTIME_CLASS( APlayerPawn )) || player->cls == playerclass )
-					return 0;
+				if ( stricmp( classname, "random" ) == 0 )
+				{
+					player->userinfo.PlayerClassNumChanged( -1 );
 
-				// [AK] Don't change the player's class if it's not allowed.
-				if ( !TEAM_IsActorAllowedForPlayer( GetDefaultByType( playerclass ), player ) )
-					return 0;
+					// [AK] In a singleplayer game, we must also change the class the player would start as.
+					if ( NETWORK_GetState() != NETSTATE_SERVER )
+						SinglePlayerClass[args[0]] = ( pr_classchoice() ) % PlayerClasses.Size();
+				}
+				else
+				{
+					const PClass *playerclass = PClass::FindClass( classname );
 
-				player->userinfo.PlayerClassChanged( playerclass->Meta.GetMetaString( APMETA_DisplayName ));
-				// [AK] In a singleplayer game, we must also change the class the player would start as.
-				if ( NETWORK_GetState() != NETSTATE_SERVER )
-					SinglePlayerClass[args[0]] = player->userinfo.GetPlayerClassNum();
+					// [AK] Stop if the class provided doesn't exist or isn't a descendant of PlayerPawn.
+					// Also check if the player isn't already playing as the same class.
+					if ( playerclass == NULL || !playerclass->IsDescendantOf( RUNTIME_CLASS( APlayerPawn )) || player->cls == playerclass )
+						return 0;
+
+					// [AK] Don't change the player's class if it's not allowed.
+					if ( !TEAM_IsActorAllowedForPlayer( GetDefaultByType( playerclass ), player ) )
+						return 0;
+
+					player->userinfo.PlayerClassChanged( playerclass->Meta.GetMetaString( APMETA_DisplayName ));
+
+					// [AK] In a singleplayer game, we must also change the class the player would start as.
+					if ( NETWORK_GetState() != NETSTATE_SERVER )
+						SinglePlayerClass[args[0]] = player->userinfo.GetPlayerClassNum();
+				}
 
 				if ( bRespawn && PLAYER_IsValidPlayerWithMo( args[0] ) )
 				{
