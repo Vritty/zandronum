@@ -232,8 +232,8 @@ struct CLIENT_MOVE_COMMAND_s
 //*****************************************************************************
 struct CLIENT_PLAYER_DATA_s
 {
+	ULONG				ulSavedGametic;
 	MOVE_THING_DATA_s	PositionData;
-	const sector_t		*pFloorSector;
 	const PClass		*pMorphedPlayerClass;
 	SDWORD				reactionTime;
 	int					chickenPeck;
@@ -246,7 +246,6 @@ struct CLIENT_PLAYER_DATA_s
 	fixed_t				crouchFactor;
 	fixed_t				crouchOffset;
 	fixed_t				crouchViewDelta;
-	fixed_t				floorHeight;
 	bool				bTookEnvironmentalDamage;
 	bool				bTeleported;
 

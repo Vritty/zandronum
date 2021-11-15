@@ -5312,6 +5312,7 @@ bool SERVER_ShouldProcessMoveCommand( ULONG ulClient, ULONG ulNumMoveCMDs )
 //
 CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
 {
+	ulSavedGametic = gametic;
 	PositionData = MOVE_THING_DATA_s( player->mo );
 	pMorphedPlayerClass = player->MorphedPlayerClass;
 	reactionTime = player->mo->reactiontime;
@@ -5327,22 +5328,16 @@ CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
 	crouchViewDelta = player->crouchviewdelta;
 	bTookEnvironmentalDamage = false;
 	bTeleported = false;
-
-	// [AK] Remember the closest sector the player is standing on and their height above the floor.
-	pFloorSector = player->mo->floorsector;
-	floorHeight = player->mo->z - pFloorSector->floorplane.ZatPoint( player->mo->x, player->mo->y );
 }
 
 //*****************************************************************************
 //
 void CLIENT_PLAYER_DATA_s::Restore ( player_t *player, bool bMoveOnly )
 {
-	fixed_t newZ = pFloorSector->floorplane.ZatPoint( player->mo->x, player->mo->y ) + floorHeight;
-
 	// [AK] Set the actor's position. Despite the name of the function, the clients don't execute this
 	// function here, but CLIENT_MoveThing adds checks upon calling AActor::SetOrigin that correct the
 	// player's floorz value after they've been moved.
-	CLIENT_MoveThing( player->mo, PositionData.x, PositionData.y, newZ );
+	CLIENT_MoveThing( player->mo, PositionData.x, PositionData.y, PositionData.z );
 
 	// [AK] Set the player's velocity, orientation, and reactiontime.
 	player->mo->velx = PositionData.velx;
@@ -7502,6 +7497,22 @@ static void server_PerformBacktrace( ULONG ulClient )
 	{
 		debugMessage.Format( "%d: backtracing %s... ", gametic, players[ulClient].userinfo.GetName( ));
 
+		// [AK] Hijack the unlagged's sector reconciliation for the backtrace too.
+		int unlaggedIndex = pClient->OldData->ulSavedGametic % UNLAGGEDTICS;
+
+		// [AK] Save the current sector ceiling/floor heights, then set them to whatever they
+		// were on the gametic that we started extrapolating this player.
+		for ( int i = 0; i < numsectors; i++ )
+		{
+			sectors[i].floorplane.restoreD = sectors[i].floorplane.d;
+			sectors[i].ceilingplane.restoreD = sectors[i].ceilingplane.d;
+
+			sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
+			sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
+		}
+
+		// [AK] Save the player's current state and thrust, then move them back to where they
+		// were before they were extrapolated.
 		pClient->backtraceThrust[0] = players[ulClient].mo->velx - pClient->backtraceThrust[0];
 		pClient->backtraceThrust[1] = players[ulClient].mo->vely - pClient->backtraceThrust[1];
 		pClient->backtraceThrust[2] = players[ulClient].mo->velz - pClient->backtraceThrust[2];
@@ -7538,7 +7549,42 @@ static void server_PerformBacktrace( ULONG ulClient )
 			}
 
 			pClient->LastMoveCMD->process( ulClient );
+
+			// [AK] Adjust the sector ceiling/floor heights for the next tic that we extrapolated the player.
+			// We don't have to do this on the last tic that we extrapolated the player.
+			if ( ulTic < pClient->ulExtrapolatedTics )
+			{
+				unlaggedIndex = ( unlaggedIndex + 1 ) % UNLAGGEDTICS;
+
+				for ( int i = 0; i < numsectors; i++ )
+				{
+					sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
+					sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
+				}
+			}
 		}
+
+		APlayerPawn *pmo = players[ulClient].mo;
+		sector_t *pSector = pmo->Sector;
+
+		// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
+		for ( int i = 0; i < numsectors; i++ )
+		{
+			sectors[i].floorplane.d = sectors[i].floorplane.restoreD;
+			sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
+		}
+
+		// [AK] As a final measure, fix the player's floorz/ceilingz and to ensure that they don't
+		// get stuck in the floor/ceiling of whatever sector they're supposed to be in.
+		pmo->floorz = pSector->floorplane.ZatPoint( pmo->x, pmo->y );
+		pmo->ceilingz = pSector->ceilingplane.ZatPoint( pmo->x, pmo->y );
+		P_FindFloorCeiling( pmo, false );
+
+		if ( pmo->z + pmo->height > pmo->ceilingz )
+			pmo->z = pmo->ceilingz - pmo->height;
+		
+		if ( pmo->z < pmo->floorz )
+			pmo->z = pmo->floorz;
 
 		players[ulClient].mo->flags = flags;
 		players[ulClient].mo->flags2 = flags2;
@@ -7587,6 +7633,15 @@ static bool server_ShouldPerformBacktrace( ULONG ulClient )
 	else if ( g_aClients[ulClient].OldData->bTookEnvironmentalDamage )
 	{
 		reason = "took environmental damage during extrapolation";
+		bShouldPerform = false;
+	}
+	else if ( gametic - g_aClients[ulClient].OldData->ulSavedGametic >= UNLAGGEDTICS )
+	{
+		// [AK] Since the backtrace needs to hijack the unlagged's sector reconciliation, we don't want
+		// to backtrace a player if the amount of ticks since we started extrapolating them is greater
+		// than what the unlagged can support. A player might rarely lag out for more than 35 tics that
+		// this could become an issue.
+		reason = "lagged for too long";
 		bShouldPerform = false;
 	}
 	else
