@@ -120,6 +120,7 @@
 !	- The name of the server and the current game mode are now shown on the scoreboard's header. [Kaminsky]
 !	- Color codes are now omitted from the length of the player's name, allowing for more complex color schemes without reaching the limit. There's still a technical limitation so that names aren't too long when sent across the network. [Kaminsky]
 !	- The chasecam is temporarily disabled while the local player is in free spectate mode. [Kaminsky]
+!	- Replaced the executable icon with a more sleek, modern design originally made by Medicris. [Kaminsky]
 
 
 3.0.1
