@@ -7406,18 +7406,23 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 		case ACSF_SetPlayerClass:
 			{
-				player_t *player = &players[args[0]];
+				const ULONG ulPlayer = static_cast<ULONG>( args[0] );
+				const char *classname = FBehavior::StaticLookupString( args[1] );
 				const bool bRespawn = !!args[2];
 
 				// [AK] Don't allow the clients to change the player's class.
 				if ( NETWORK_InClientMode() )
 					return 0;
 
+				// [AK] Ignore invalid players.
+				if ( PLAYER_IsValidPlayer( ulPlayer ) == false )
+					return 0;
+
+				player_t *player = &players[ulPlayer];
+
 				// [AK] Don't bother changing the player's class if they're actually spectating.
 				if ( PLAYER_IsTrueSpectator( player ) )
 					return 0;
-
-				const char *classname = FBehavior::StaticLookupString( args[1] );
 
 				if ( stricmp( classname, "random" ) == 0 )
 				{
@@ -7425,7 +7430,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 					// [AK] In a singleplayer game, we must also change the class the player would start as.
 					if ( NETWORK_GetState() != NETSTATE_SERVER )
-						SinglePlayerClass[args[0]] = ( pr_classchoice() ) % PlayerClasses.Size();
+						SinglePlayerClass[ulPlayer] = ( pr_classchoice() ) % PlayerClasses.Size();
 				}
 				else
 				{
@@ -7444,10 +7449,18 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 					// [AK] In a singleplayer game, we must also change the class the player would start as.
 					if ( NETWORK_GetState() != NETSTATE_SERVER )
-						SinglePlayerClass[args[0]] = player->userinfo.GetPlayerClassNum();
+						SinglePlayerClass[ulPlayer] = player->userinfo.GetPlayerClassNum();
 				}
 
-				if ( bRespawn && PLAYER_IsValidPlayerWithMo( args[0] ) )
+				// [AK] If we're the server, tell the clients about the player's new class.
+				if ( NETWORK_GetState() == NETSTATE_SERVER )
+				{
+					std::set<FName> names;
+					names.insert( NAME_PlayerClass );
+					SERVERCOMMANDS_SetPlayerUserInfo( ulPlayer, names );
+				}
+
+				if ( bRespawn && PLAYER_IsValidPlayerWithMo( ulPlayer ) )
 				{
 					// [AK] Only respawn the player if they still have enough lives left.
 					if ( !GAMEMODE_AreLivesLimited() || GAMEMODE_GetState() < GAMESTATE_INPROGRESS || player->ulLivesLeft > 0 )
@@ -7464,7 +7477,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 							SERVERCOMMANDS_DestroyThing( pmo );
 
 						pmo->Destroy();
-						GAMEMODE_SpawnPlayer( player - players );
+						GAMEMODE_SpawnPlayer( ulPlayer );
 					}
 				}
 
