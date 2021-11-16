@@ -7491,6 +7491,7 @@ static void server_PrintWithIP( FString message, const NETADDRESS_s &address )
 static void server_PerformBacktrace( ULONG ulClient )
 {
 	CLIENT_s *pClient = &g_aClients[ulClient];
+	APlayerPawn *pmo = players[ulClient].mo;
 	FString debugMessage;
 
 	if ( server_ShouldPerformBacktrace( ulClient ))
@@ -7513,20 +7514,20 @@ static void server_PerformBacktrace( ULONG ulClient )
 
 		// [AK] Save the player's current state and thrust, then move them back to where they
 		// were before they were extrapolated.
-		pClient->backtraceThrust[0] = players[ulClient].mo->velx - pClient->backtraceThrust[0];
-		pClient->backtraceThrust[1] = players[ulClient].mo->vely - pClient->backtraceThrust[1];
-		pClient->backtraceThrust[2] = players[ulClient].mo->velz - pClient->backtraceThrust[2];
+		pClient->backtraceThrust[0] = pmo->velx - pClient->backtraceThrust[0];
+		pClient->backtraceThrust[1] = pmo->vely - pClient->backtraceThrust[1];
+		pClient->backtraceThrust[2] = pmo->velz - pClient->backtraceThrust[2];
 
 		CLIENT_PLAYER_DATA_s oldData( &players[ulClient] );
 		pClient->OldData->Restore( &players[ulClient], false );
 
 		// [AK] During the backtrace, the player shouldn't be shootable or able to pick up items.
-		int flags = players[ulClient].mo->flags;
-		players[ulClient].mo->flags &= ~( MF_SHOOTABLE | MF_PICKUP );
+		int flags = pmo->flags;
+		pmo->flags &= ~( MF_SHOOTABLE | MF_PICKUP );
 
 		// [AK] Also make them able to walk through other actors and unable to push.
-		int flags2 = players[ulClient].mo->flags2;
-		players[ulClient].mo->flags2 |= ( MF2_CANNOTPUSH | MF2_THRUACTORS );
+		int flags2 = pmo->flags2;
+		pmo->flags2 |= ( MF2_CANNOTPUSH | MF2_THRUACTORS );
 
 		ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
 		LONG lOldLastMoveTickProcess = pClient->lLastMoveTickProcess;
@@ -7564,7 +7565,6 @@ static void server_PerformBacktrace( ULONG ulClient )
 			}
 		}
 
-		APlayerPawn *pmo = players[ulClient].mo;
 		sector_t *pSector = pmo->Sector;
 
 		// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
@@ -7586,8 +7586,8 @@ static void server_PerformBacktrace( ULONG ulClient )
 		if ( pmo->z < pmo->floorz )
 			pmo->z = pmo->floorz;
 
-		players[ulClient].mo->flags = flags;
-		players[ulClient].mo->flags2 = flags2;
+		pmo->flags = flags;
+		pmo->flags2 = flags2;
 		pClient->lLastMoveTickProcess = lOldLastMoveTickProcess;
 
 		// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
@@ -7599,9 +7599,9 @@ static void server_PerformBacktrace( ULONG ulClient )
 		}
 		else
 		{
-			players[ulClient].mo->velx += pClient->backtraceThrust[0];
-			players[ulClient].mo->vely += pClient->backtraceThrust[1];
-			players[ulClient].mo->velz += pClient->backtraceThrust[2];
+			pmo->velx += pClient->backtraceThrust[0];
+			pmo->vely += pClient->backtraceThrust[1];
+			pmo->velz += pClient->backtraceThrust[2];
 
 			debugMessage += "accepted";
 		}
