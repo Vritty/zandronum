@@ -248,6 +248,7 @@ struct CLIENT_PLAYER_DATA_s
 	fixed_t				crouchViewDelta;
 	bool				bTookEnvironmentalDamage;
 	bool				bTeleported;
+	bool				bActivatedSpecial;
 
 	CLIENT_PLAYER_DATA_s ( player_t *player );
 

@@ -7004,6 +7004,15 @@ bool P_ActivateThingSpecial(AActor * thing, AActor * trigger, bool death)
 		if (death || (thing->activationtype & THINGSPEC_ClearSpecial && res)) thing->special = 0;
 	}
 
+	// [AK] We should double-check if a player triggered a thing's special but wasn't the activator.
+	// In case they're being extrapolated, play it safe and don't perform a backtrace in case something
+	// happened. Note that it's possible for ACS_ExecuteWithResult to execute but still return zero.
+	if (( trigger ) && ( trigger->player ) && ( res || thing->special == ACS_ExecuteWithResult ))
+	{
+		if ( SERVER_IsExtrapolatingPlayer( trigger->player - players ))
+			SERVER_GetClient( trigger->player - players )->OldData->bActivatedSpecial = true;
+	}
+
 	// Returns the result
 	return res;
 }
