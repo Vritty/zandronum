@@ -7426,6 +7426,10 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 				if ( stricmp( classname, "random" ) == 0 )
 				{
+					// [AK] Stop if choosing random player classes is forbidden.
+					if ( gameinfo.norandomplayerclass )
+						return 0;
+
 					player->userinfo.PlayerClassNumChanged( -1 );
 
 					// [AK] In a singleplayer game, we must also change the class the player would start as.
