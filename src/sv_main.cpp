@@ -5509,7 +5509,14 @@ void SERVER_ResetClientTicBuffer( ULONG ulClient )
 
 	// [AK] Clear all stored commands in the tic buffer.
 	for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
+	{
+		// [AK] Set the client's gametic to the last command in their tic buffer that has a non-zero
+		// gametic. This way, any old and therefore invalid backup commands will be rejected.
+		if ( g_aClients[ulClient].MoveCMDs[i]->getClientTic( ) != 0 )
+			g_aClients[ulClient].ulClientGameTic = g_aClients[ulClient].MoveCMDs[i]->getClientTic( );
+
 		delete g_aClients[ulClient].MoveCMDs[i];
+	}
 
 	g_aClients[ulClient].MoveCMDs.Clear( );
 
