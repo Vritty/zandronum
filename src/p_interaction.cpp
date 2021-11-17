@@ -3480,9 +3480,9 @@ bool PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, AActor *pInf
 	// [AK] One of the actors must be a player, at least.
 	if (( pActor1 && pActor2 ) && ( pActor1->player || pActor2->player ))
 	{
-		// [AK] Make sure the other actor is a teammate of the first actor. Otherwise,
-		// their attacks should still hit and push each other.
-		if (( pActor1 != pActor2 ) && ( pActor1->IsTeammate( pActor2 )))
+		// [AK] Make sure the other actor is a teammate or friend of the first actor.
+		// Otherwise, their attacks should still hit and push each other.
+		if (( pActor1 != pActor2 ) && ( pActor1->IsTeammate( pActor2 ) || pActor1->IsFriend( pActor2 )))
 			return true;
 	}
 
