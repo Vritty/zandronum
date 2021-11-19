@@ -324,17 +324,9 @@ void P_Ticker (void)
 					continue;
 
 				CLIENT_s *client = SERVER_GetClient( ulIdx );
-				ULONG ulNumMoveCMDs = 0;
-
-				// [AK] Count how many movement commands are inside the client's tic buffer.
-				for ( unsigned int i = 0; i < client->MoveCMDs.Size( ); i++ )
-				{
-					if ( client->MoveCMDs[i]->isMoveCmd( ))
-						ulNumMoveCMDs++;
-				}
 
 				// [AK] Handle the skip correction.
-				SERVER_HandleSkipCorrection( ulIdx, ulNumMoveCMDs );
+				SERVER_HandleSkipCorrection( ulIdx );
 
 				while ( client->MoveCMDs.Size( ) != 0 )
 				{

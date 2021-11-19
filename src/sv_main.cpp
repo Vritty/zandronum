@@ -5309,9 +5309,10 @@ void CLIENT_PLAYER_DATA_s::Restore ( player_t *player, bool bMoveOnly )
 
 //*****************************************************************************
 //
-void SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
+void SERVER_HandleSkipCorrection( ULONG ulClient )
 {
 	CLIENT_s *pClient = &g_aClients[ulClient];
+	ULONG ulNumMoveCMDs = 0;
 	FString debugMessage;
 
 	// [AK] Don't handle the skip correction if it's supposed to be disabled.
@@ -5322,6 +5323,13 @@ void SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 	// correction on them once per tic.
 	if (( players[ulClient].mo == NULL ) || ( pClient->lLastMoveTickProcess == gametic ))
 		return;
+
+	// [AK] Count how many movement commands are inside the client's tic buffer.
+	for ( unsigned int i = 0; i < pClient->MoveCMDs.Size( ); i++ )
+	{
+		if ( pClient->MoveCMDs[i]->isMoveCmd( ))
+			ulNumMoveCMDs++;
+	}
 
 	// When a player is experiencing ping spikes or packet loss and we don't have any commands
 	// left in their buffer, we will try to predict where they will be for at least the next few tics
