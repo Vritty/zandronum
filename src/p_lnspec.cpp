@@ -3925,16 +3925,7 @@ int P_ExecuteSpecial(int			num,
 {
 	if (num >= 0 && num <= 255)
 	{
-		// [AK] If the activator is a player who executed a special while they're being extrapolated,
-		// then play it safe and don't perform a backtrace in case something happened. Note that it's
-		// possible for ACS_ExecuteWithResult to execute but still return zero.
-		int result = LineSpecials[num](line, activator, backSide, arg1, arg2, arg3, arg4, arg5);
-		if (( activator ) && ( activator->player ) && ( result || num == ACS_ExecuteWithResult ))
-		{
-			if ( SERVER_IsExtrapolatingPlayer( activator->player - players ))
-				SERVER_GetClient( activator->player - players )->OldData->bActivatedSpecial = true;
-		}
-		return result;
+		return LineSpecials[num](line, activator, backSide, arg1, arg2, arg3, arg4, arg5);
 	}
 	return 0;
 }
