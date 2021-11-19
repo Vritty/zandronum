@@ -5520,6 +5520,7 @@ void SERVER_ResetClientExtrapolation( ULONG ulClient )
 	}
 
 	g_aClients[ulClient].ulExtrapolatedTics = 0;
+	g_aClients[ulClient].ExtrapolatedSpecials.Clear( );
 	g_aClients[ulClient].bIsBacktracing = false;
 }
 

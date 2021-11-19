@@ -230,6 +230,14 @@ struct CLIENT_MOVE_COMMAND_s
 };
 
 //*****************************************************************************
+struct CLIENT_SAVED_SPECIAL_s
+{
+	int				num;
+	line_t			*line;
+	bool			backSide;
+};
+
+//*****************************************************************************
 struct CLIENT_PLAYER_DATA_s
 {
 	ULONG				ulSavedGametic;
@@ -463,6 +471,9 @@ struct CLIENT_s
 
 	// [AK] The number of tics we extrapolated this player's movement.
 	ULONG			ulExtrapolatedTics;
+
+	// [AK] A list of specials this player executed while being extrapolated.
+	TArray<CLIENT_SAVED_SPECIAL_s>	ExtrapolatedSpecials;
 
 	// [AK] The player might have already been pushed before we start performing a backtrace on them, so
 	// we need to know how much thrust we need to add back in case the backtrace succeeds.
