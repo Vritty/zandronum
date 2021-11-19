@@ -287,58 +287,49 @@ CVAR( Int, sv_smoothplayers_debuginfo, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY ) // [AK]
 
 //*****************************************************************************
 // [AK] Smooths the movement of lagging players using extrapolation and correction.
-CUSTOM_CVAR( Bool, sv_smoothplayers, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO ) 
+CUSTOM_CVAR( Int, sv_smoothplayers, 0, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO ) 
 {
+	// [AK] We can't extrapolate for a negative number of tics.
+	if ( self < 0 )
+	{
+		self = 0;
+		return;
+	}
+
+	// [AK] Don't extrapolate for more than 3 tics. The longer the server has to predict
+	// a player's movement, the more likely that prediction errors will occur.
+	if ( self > 3 )
+	{
+		Printf( "A player's movement can only be extrapolated for up to 3 tics.\n" );
+		self = 3;
+		return;
+	}
+
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		static bool bOldValue = self;
+		static int oldValue = self;
 
 		// [AK] Print a message indicating that the skip correction is enabled/disabled.
-		if ( self != bOldValue )
+		if ( self != oldValue )
 		{
 			// [AK] Reset the extrapolation for all clients if we disable the skip correction.
 			if ( !self )
 			{
 				for ( ULONG ulClient = 0; ulClient < MAXPLAYERS; ulClient++ )
 					SERVER_ResetClientExtrapolation( ulClient );
+
+				SERVER_Printf( "Skip correction disabled.\n" );
+			}
+			else
+			{
+				SERVER_Printf( "Players will now be extrapolated for %d tics.\n", *self );
 			}
 
-			SERVER_Printf( "Skip correction %s.\n", self ? "enabled" : "disabled" );
-			bOldValue = self;
+			oldValue = self;
+
+			// [AK] Notify the clients about any changes to the skip correction.
+			SERVERCOMMANDS_SetCVar( self );
 		}
-	}
-}
-
-//*****************************************************************************
-// [AK] How many tics a player's movement will be extrapolated if there's no move commands left.
-CUSTOM_CVAR( Int, sv_extrapolatetics, 3, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
-{
-	// [AK] Always extrapolate for at least one tic.
-	if ( self < 1 )
-		self = 1;
-	
-	// [AK] Don't extrapolate for more than 7 tics. The longer the server has to predict
-	// a player's movement, the more likely that prediction errors will occur.
-	if ( self > 7 )
-	{
-		Printf( "A player's movement can only be extrapolated for up to 7 tics.\n" );
-		self = 7;
-	}
-}
-
-//*****************************************************************************
-// [AK] How much error, in map units, is allowed after a backtrace for it to still be acceptable.
-CUSTOM_CVAR( Float, sv_backtracethreshold, 0.0f, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
-{
-	if ( self < 0 )
-		self = 0;
-
-	// [AK] The maximum backtrace threshold is 96 map units, so players don't end up too
-	// far away from where they were extrapolated.
-	if ( self > 96.0f )
-	{
-		Printf( "The maximum threshold is 96 map units.\n" );
-		self = 96.0f;
 	}
 }
 
@@ -1417,6 +1408,9 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 
 	// [AK] Send the name of the server.
 	SERVERCOMMANDS_SetCVar( sv_hostname, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+
+	// [AK] Send the current state of the skip correction.
+	SERVERCOMMANDS_SetCVar( sv_smoothplayers, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 	// Send dmflags.
 	SERVERCOMMANDS_SetGameDMFlags( g_lCurrentClient, SVCF_ONLYTHISCLIENT );
@@ -5416,7 +5410,7 @@ bool SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs )
 
 			// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing
 			// the last movement command we received from them, but we won't extrapolate more than we should.
-			if (( ulNumMoveCMDs == 0 ) && ( pClient->LastMoveCMD != NULL ) && ( pClient->ulExtrapolatedTics < static_cast<ULONG>( sv_extrapolatetics )))
+			if (( ulNumMoveCMDs == 0 ) && ( pClient->LastMoveCMD != NULL ) && ( pClient->ulExtrapolatedTics < static_cast<ULONG>( sv_smoothplayers )))
 			{
 				// [AK] Save the player's current position, velocity, and orientation before we start extrapolating.
 				if ( pClient->ulExtrapolatedTics++ == 0 )
@@ -7676,20 +7670,6 @@ static bool server_ShouldPerformBacktrace( ULONG ulClient )
 //
 static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData, FString &debugMessage )
 {
-	float fX = FIXED2FLOAT( players[ulClient].mo->x - OldData.x );
-	float fY = FIXED2FLOAT( players[ulClient].mo->y - OldData.y );
-	float fZ = FIXED2FLOAT( players[ulClient].mo->z - OldData.z );
-
-	float fDiff = static_cast<float>( TVector3<float>( fX, fY, fZ ).Length( ));
-
-	// [AK] Don't accept the backtrace if the player ended up in a spot that's too far than where we
-	// extrapolated them to, depending on how much error we can accept with predicting their movement.
-	if (( sv_backtracethreshold != 0.0f ) && ( fDiff > sv_backtracethreshold ))
-	{
-		debugMessage.AppendFormat( "failed (exceeded threshold - %.4f vs. %.4f)", fDiff, static_cast<float>( sv_backtracethreshold ));
-		return false;
-	}
-
 	// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
 	if ( P_TestMobjLocation( players[ulClient].mo ) == false )
 	{
