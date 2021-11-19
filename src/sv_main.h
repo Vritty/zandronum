@@ -421,9 +421,6 @@ struct CLIENT_s
 	// Last tick we processed a movement command.
 	LONG			lLastMoveTickProcess;
 
-	// [AK] Last tic we processed a backtrace on this client.
-	LONG			lLastBacktraceTic;
-
 	// [AK] The last movement command we received from this client.
 	ClientMoveCommand	*LastMoveCMD;
 
@@ -646,7 +643,7 @@ void		SERVER_KillCheat( const char* what );
 void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
 void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
 bool		SERVER_ShouldProcessMoveCommand( ULONG ulClient, ULONG ulNumMoveCMDs );
-bool		SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs );
+void		SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs );
 bool		SERVER_IsExtrapolatingPlayer( ULONG ulClient );
 bool		SERVER_IsBacktracingPlayer( ULONG ulClient );
 void		SERVER_ResetClientTicBuffer( ULONG ulClient );

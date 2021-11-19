@@ -336,10 +336,8 @@ void P_Ticker (void)
 				// [AK] Check if we should process this client's movement commands.
 				bool bProcessMoveCMD = SERVER_ShouldProcessMoveCommand( ulIdx, ulNumMoveCMDs );
 
-				// [AK] Handle the skip correction. If it explicity returns false, then we won't process two
-				// movement commands during this tic for the client.
-				if (( sv_smoothplayers ) && ( SERVER_HandleSkipCorrection( ulIdx, ulNumMoveCMDs ) == false ))
-					continue;
+				// [AK] Handle the skip correction.
+				SERVER_HandleSkipCorrection( ulIdx, ulNumMoveCMDs );
 
 				while ( client->MoveCMDs.Size( ) != 0 )
 				{
