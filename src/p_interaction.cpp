@@ -1687,14 +1687,7 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
 		if ( player )
-		{
 			SERVERCOMMANDS_DamagePlayer( ULONG( player - players ));
-
-			// [AK] If the player is being extrapolated and they received damage from the environment
-			// (i.e. no source), don't allow a backtrace to be performed.
-			if (( SERVER_IsExtrapolatingPlayer( player - players )) && ( source == NULL && inflictor == NULL ))
-				SERVER_GetClient( player - players )->OldData->bTookEnvironmentalDamage = true;
-		}
 	}
 
 	if (target->health <= 0)
