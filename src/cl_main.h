@@ -62,7 +62,7 @@
 #define	GAMESTATE_RESEND_TIME		( 3 * TICRATE )
 
 // [AK] The maximum number of move commands we're allowed to send per tic.
-#define MAX_BACKUP_COMMANDS			3
+#define MAX_BACKUP_COMMANDS			4
 
 //*****************************************************************************
 enum CONNECTIONSTATE_e

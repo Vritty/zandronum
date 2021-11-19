@@ -432,7 +432,7 @@ void CLIENTCOMMANDS_ClientMove( void )
 	CLIENT_MOVE_COMMAND_s moveCMD = clientcommand_CreateMoveCommand( );
 
 	// [AK] If we don't want to send backup commands, send only this one and that's it.
-	if ( cl_backupcommands == 0 )
+	if (( sv_smoothplayers == 0 ) || ( cl_backupcommands == 0 ))
 	{
 		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
 		clientcommand_WriteMoveCommandToBuffer( moveCMD );
@@ -455,10 +455,8 @@ void CLIENTCOMMANDS_ClientMove( void )
 		ULONG ulNumCMDsToSend = MIN( ulNumSavedCMDs, ulNumExpectedCMDs );
 		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVEBACKUP );
 
-		// [AK] We need to tell the server the number of movement commands we sent, and
-		// up to how many movment commands we actually want to send.
-		CLIENT_GetLocalBuffer( )->ByteStream.WriteShortByte( ulNumCMDsToSend, 4 );
-		CLIENT_GetLocalBuffer( )->ByteStream.WriteShortByte( ulNumExpectedCMDs, 4 );
+		// [AK] We need to tell the server the number of movement commands we sent.
+		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( ulNumCMDsToSend );
 
 		// [AK] Older movement commands must be written to the buffer before newer ones.
 		for ( int i = ulNumCMDsToSend; i >= 1; i-- )

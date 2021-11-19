@@ -479,14 +479,6 @@ struct CLIENT_s
 	// we need to know how much thrust we need to add back in case the backtrace succeeds.
 	fixed_t			backtraceThrust[3];
 
-	// [AK] How many movement commands did this player send us in the last packet? If this is greater than
-	// one, that means they also sent us backups of older commands.
-	ULONG			ulNumSentCMDs;
-
-	// [AK] How many movement commands are we expecting from this player? If this is greater than one, that
-	// means we're expecting them to also send us backups of older commands.
-	ULONG			ulNumExpectedCMDs;
-
 	// [BB] Variables for the account system
 	FString username;
 	unsigned int clientSessionID;
@@ -647,7 +639,6 @@ void		SERVER_SyncServerModCVars ( const int PlayerToSync );
 void		SERVER_KillCheat( const char* what );
 void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
 void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
-bool		SERVER_ShouldProcessMoveCommand( ULONG ulClient, ULONG ulNumMoveCMDs );
 void		SERVER_HandleSkipCorrection( ULONG ulClient, ULONG ulNumMoveCMDs );
 bool		SERVER_IsExtrapolatingPlayer( ULONG ulClient );
 bool		SERVER_IsBacktracingPlayer( ULONG ulClient );

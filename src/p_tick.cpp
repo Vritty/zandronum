@@ -333,9 +333,6 @@ void P_Ticker (void)
 						ulNumMoveCMDs++;
 				}
 
-				// [AK] Check if we should process this client's movement commands.
-				bool bProcessMoveCMD = SERVER_ShouldProcessMoveCommand( ulIdx, ulNumMoveCMDs );
-
 				// [AK] Handle the skip correction.
 				SERVER_HandleSkipCorrection( ulIdx, ulNumMoveCMDs );
 
@@ -343,10 +340,9 @@ void P_Ticker (void)
 				{
 					// Process only one movement command.
 					const bool bMovement = client->MoveCMDs[0]->isMoveCmd( );
-
-					// [AK] Only update the last movement command if we're supposed to be processing any
-					// movement commands in the buffer at this time.
-					if (( bProcessMoveCMD ) && ( bMovement ))
+					client->MoveCMDs[0]->process( ulIdx );
+ 
+					if ( bMovement )
 					{
 						if ( client->LastMoveCMD != NULL )
 							delete client->LastMoveCMD;
@@ -355,14 +351,8 @@ void P_Ticker (void)
 						client->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( client->MoveCMDs[0] ));
 					}
 
-					// [AK] Only process movement commands if we're allowed to at this time. On the other
-					// hand, we can still process other commands in the buffer.
-					if (( bProcessMoveCMD ) || ( bMovement == false ))
-					{
-						client->MoveCMDs[0]->process( ulIdx );
-						delete client->MoveCMDs[0];
-						client->MoveCMDs.Delete( 0 );
-					}
+					delete client->MoveCMDs[0];
+					client->MoveCMDs.Delete(0);
 
 					if ( bMovement == true )
 						break;

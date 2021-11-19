@@ -5200,7 +5200,7 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 
 	if ( sv_useticbuffer )
 	{
-		if (( sv_smoothplayers ) && ( bIsMoveCMD ))
+		if ( sv_smoothplayers )
 		{
 			// [AK] It's possible this was a command that arrived late and we already extrapolated
 			// the player's movement at this tic. In this case, we'll store these commands into a
@@ -5250,40 +5250,6 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 	const bool retValue = cmd->process ( g_lCurrentClient );
 	delete cmd;
 	return retValue;
-}
-
-//*****************************************************************************
-//
-bool SERVER_ShouldProcessMoveCommand( ULONG ulClient, ULONG ulNumMoveCMDs )
-{
-	// [AK] If the client isn't sending us backup commands, then always process movement commands.
-	if ( g_aClients[ulClient].ulNumExpectedCMDs == 1 )
-		return true;
-
-	// [AK] If the client is sending us backup commands and their tic buffer is getting too full, we
-	// must always process their movement commands. This condition is true when the number of commands
-	// stored in the buffer exceeds the number of commands we expect them to send us per tic.
-	if ( ulNumMoveCMDs >= g_aClients[ulClient].ulNumExpectedCMDs )
-		return true;
-
-	// [AK] Don't execute this block if we already processed a movement commands on this tic.
-	if ( g_aClients[ulClient].lLastMoveTickProcess != gametic )
-	{
-		// [AK] We have received enough movement commands from this client to process them, but we can only
-		// do this once per tic. Otherwise, their tic buffer will become too empty for us to process any
-		// backup commands properly.
-		if ( g_aClients[ulClient].ulNumSentCMDs == g_aClients[ulClient].ulNumExpectedCMDs )
-			return true;
-
-		// [AK] Are we still waiting for the client to send us more movement commands than we expect? In case
-		// case they suffer from packet loss, we don't want to wait forever to receive all of them , so we'll
-		// just have process whatever we have. To do this, increment the counter once per tic, which will
-		// eventually satisfy the condition above this one.
-		if ( g_aClients[ulClient].lLastMoveTick != gametic )
-			g_aClients[ulClient].ulNumSentCMDs++;
-	}
-
-	return false;
 }
 
 //*****************************************************************************
@@ -5497,9 +5463,6 @@ void SERVER_ResetClientTicBuffer( ULONG ulClient )
 		g_aClients[ulClient].LastMoveCMD = NULL;
 	}
  
-	// [AK] Also reset the backup command counters.
-	g_aClients[ulClient].ulNumSentCMDs = g_aClients[ulClient].ulNumExpectedCMDs = 1;
-
 	SERVER_ResetClientExtrapolation( ulClient );
 }
 
@@ -5791,21 +5754,11 @@ static bool server_ClientMove( BYTESTREAM_s *pByteStream, bool bSentBackup )
 	// we process for a player in a given tic to prevent the player from
 	// seemingly teleporting in case too many movement commands arrive at once.
 	if ( !bSentBackup )
-	{
-		g_aClients[g_lCurrentClient].ulNumSentCMDs = 1;
-		g_aClients[g_lCurrentClient].ulNumExpectedCMDs = 1;
-
 		return server_ParseBufferedCommand<ClientMoveCommand>( pByteStream );
-	}
 
 	// [AK] If we get to this point, that means the client also wanted to
-	// send us backup movement commands. Here, we'll determine how many commands
-	// they actually sent us (ulNumSentCMDs), and how many commands they're
-	// trying to send to us per tic (ulNumExpectedCMDs = cl_backupcommands + 1).
-	ULONG ulNumSentCMDs = pByteStream->ReadShortByte( 4 );
-	ULONG ulNumExpectedCMDs = pByteStream->ReadShortByte( 4 );
-
-	ULONG ulOldBufferSize = g_aClients[g_lCurrentClient].MoveCMDs.Size( );
+	// send us backup movement commands. Get how many commands they sent us.
+	ULONG ulNumSentCMDs = pByteStream->ReadByte( );
 	bool result = false;
 
 	// [AK] Parse all of the movement commands, but also remember if the client
@@ -5814,16 +5767,6 @@ static bool server_ClientMove( BYTESTREAM_s *pByteStream, bool bSentBackup )
 	{
 		if ( server_ParseBufferedCommand<ClientMoveCommand>( pByteStream ))
 			result = true;
-	}
-
-	// [AK] We only want to update the number of sent/expected commands from
-	// the client if these movement commands weren't treated as late commands
-	// because of the skip correction. We can figure this out by checking if
-	// the size of the tic buffer changed at all.
-	if ( ulOldBufferSize != g_aClients[g_lCurrentClient].MoveCMDs.Size( ))
-	{
-		g_aClients[g_lCurrentClient].ulNumSentCMDs = ulNumSentCMDs;
-		g_aClients[g_lCurrentClient].ulNumExpectedCMDs = ulNumExpectedCMDs;
 	}
 
 	return result;
