@@ -180,6 +180,8 @@ CUSTOM_CVAR( Int, cl_backupcommands, 0, CVAR_ARCHIVE )
 
 	if ( self > MAX_BACKUP_COMMANDS - 1 )
 		self = MAX_BACKUP_COMMANDS - 1;
+
+	CLIENT_ClearBackupCommands( );
 }
 
 //*****************************************************************************
