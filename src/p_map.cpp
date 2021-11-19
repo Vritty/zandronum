@@ -6956,10 +6956,6 @@ bool P_ActivateThingSpecial(AActor * thing, AActor * trigger, bool death)
 {
 	bool res = false;
 
-	// [AK] Don't let players activate a thing's special while being backtraced unless it died.
-	if (( !death ) && ( trigger ) && ( trigger->player ) && ( SERVER_IsBacktracingPlayer( trigger->player - players )))
-		return false;
-
 	// Target switching mechanism
 	if (thing->activationtype & THINGSPEC_ThingTargets)		thing->target = trigger;
 	if (thing->activationtype & THINGSPEC_TriggerTargets)	trigger->target = thing;
