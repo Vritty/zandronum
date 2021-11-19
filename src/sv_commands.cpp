@@ -5082,17 +5082,6 @@ void SERVERCOMMANDS_ResetMapRotation( ULONG ulPlayerExtra, ServerCommandFlags fl
 }
 
 //*****************************************************************************
-// [AK]
-void SERVERCOMMANDS_SyncSkipCorrectionInfo( ULONG ulPlayerExtra, ServerCommandFlags flags )
-{
-	NetCommand command ( SVC2_SYNCSKIPCORRECTIONINFO );
-	command.addBit( sv_smoothplayers );
-	command.addShortByte( sv_extrapolatetics, 7 );
-	command.addFloat( sv_backtracethreshold );
-	command.sendCommandToClients( ulPlayerExtra, flags );
-}
-
-//*****************************************************************************
 void APathFollower::SyncWithClient ( const ULONG ulClient )
 {
 	if ( !EnsureActorHasNetID (this) )

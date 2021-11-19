@@ -2338,24 +2338,6 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 				}
 				break;
 
-			case SVC2_SYNCSKIPCORRECTIONINFO:
-				{
-					UCVarValue	Value;
-
-					// Read in and set the value for sv_smoothplayers.
-					Value.Bool = pByteStream->ReadBit();
-					sv_smoothplayers.ForceSet( Value, CVAR_Bool );
-
-					// Read in and set the value for sv_extrapolatetics.
-					Value.Int = pByteStream->ReadShortByte( 7 );
-					sv_extrapolatetics.ForceSet( Value, CVAR_Int );
-
-					// Read in and set the value for sv_backtracethreshold.
-					Value.Float = pByteStream->ReadFloat();
-					sv_backtracethreshold.ForceSet( Value, CVAR_Float );
-				}
-				break;
-
 			default:
 				sprintf( szString, "CLIENT_ParsePacket: Illegible server message: %d\nLast command: %d\n", static_cast<int> (lExtCommand), static_cast<int> (g_lLastCmd) );
 				CLIENT_QuitNetworkGame( szString );
