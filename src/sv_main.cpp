@@ -174,7 +174,6 @@ static	bool	server_CheckLogin( const ULONG ulClient );
 static	void	server_PrintWithIP( FString message, const NETADDRESS_s &address );
 static	void	server_PerformBacktrace( ULONG ulClient );
 static	bool	server_ShouldPerformBacktrace( ULONG ulClient );
-static	bool	server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData, FString &debugMessage );
 
 // [RC]
 #ifdef CREATE_PACKET_LOG
@@ -7501,89 +7500,85 @@ static void server_PerformBacktrace( ULONG ulClient )
 		CLIENT_PLAYER_DATA_s oldData( &players[ulClient] );
 		pClient->OldData->Restore( &players[ulClient], false );
 
-		// [AK] During the backtrace, the player shouldn't be shootable or able to pick up items.
-		int flags = pmo->flags;
-		pmo->flags &= ~( MF_SHOOTABLE | MF_PICKUP );
-
-		// [AK] Also make them able to walk through other actors and unable to push.
-		int flags2 = pmo->flags2;
-		pmo->flags2 |= ( MF2_CANNOTPUSH | MF2_THRUACTORS );
-
-		ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
-		LONG lOldLastMoveTickProcess = pClient->lLastMoveTickProcess;
-
-		pClient->bIsBacktracing = true;
-		pClient->lLastMoveTickProcess = gametic;
-
-		// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
-		// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"
-		// by re-processing the command we last processed until every tic is accounted for.
-		for ( ULONG ulTic = 1; ulTic <= pClient->ulExtrapolatedTics; ulTic++ )
+		// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
+		if ( P_TestMobjLocation( players[ulClient].mo ))
 		{
-			if (( pClient->LateMoveCMDs.Size( ) > 0 ) && ( pClient->LateMoveCMDs[0]->getClientTic( ) == ulExtrapolateStartTic + ulTic ))
+			ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
+			LONG lOldLastMoveTickProcess = pClient->lLastMoveTickProcess;
+
+			pClient->bIsBacktracing = true;
+			pClient->lLastMoveTickProcess = gametic;
+
+			// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
+			// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"
+			// by re-processing the command we last processed until every tic is accounted for.
+			for ( ULONG ulTic = 1; ulTic <= pClient->ulExtrapolatedTics; ulTic++ )
 			{
-				delete pClient->LastMoveCMD;
-				pClient->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( pClient->LateMoveCMDs[0] ));
-							
-				delete pClient->LateMoveCMDs[0];
-				pClient->LateMoveCMDs.Delete( 0 );
-			}
-
-			pClient->LastMoveCMD->process( ulClient );
-
-			// [AK] Adjust the sector ceiling/floor heights for the next tic that we extrapolated the player.
-			// We don't have to do this on the last tic that we extrapolated the player.
-			if ( ulTic < pClient->ulExtrapolatedTics )
-			{
-				unlaggedIndex = ( unlaggedIndex + 1 ) % UNLAGGEDTICS;
-
-				for ( int i = 0; i < numsectors; i++ )
+				if (( pClient->LateMoveCMDs.Size( ) > 0 ) && ( pClient->LateMoveCMDs[0]->getClientTic( ) == ulExtrapolateStartTic + ulTic ))
 				{
-					sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
-					sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
+					delete pClient->LastMoveCMD;
+					pClient->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( pClient->LateMoveCMDs[0] ));
+							
+					delete pClient->LateMoveCMDs[0];
+					pClient->LateMoveCMDs.Delete( 0 );
+				}
+
+				pClient->LastMoveCMD->process( ulClient );
+
+				// [AK] Adjust the sector ceiling/floor heights for the next tic that we extrapolated the player.
+				// We don't have to do this on the last tic that we extrapolated the player.
+				if ( ulTic < pClient->ulExtrapolatedTics )
+				{
+					unlaggedIndex = ( unlaggedIndex + 1 ) % UNLAGGEDTICS;
+
+					for ( int i = 0; i < numsectors; i++ )
+					{
+						sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
+						sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
+					}
 				}
 			}
-		}
 
-		sector_t *pSector = pmo->Sector;
+			sector_t *pSector = pmo->Sector;
 
-		// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
-		for ( int i = 0; i < numsectors; i++ )
-		{
-			sectors[i].floorplane.d = sectors[i].floorplane.restoreD;
-			sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
-		}
+			// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
+			for ( int i = 0; i < numsectors; i++ )
+			{
+				sectors[i].floorplane.d = sectors[i].floorplane.restoreD;
+				sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
+			}
 
-		// [AK] As a final measure, fix the player's floorz/ceilingz and to ensure that they don't
-		// get stuck in the floor/ceiling of whatever sector they're supposed to be in.
-		pmo->floorz = pSector->floorplane.ZatPoint( pmo->x, pmo->y );
-		pmo->ceilingz = pSector->ceilingplane.ZatPoint( pmo->x, pmo->y );
-		P_FindFloorCeiling( pmo, false );
+			// [AK] As a final measure, fix the player's floorz/ceilingz and to ensure that they don't
+			// get stuck in the floor/ceiling of whatever sector they're supposed to be in.
+			pmo->floorz = pSector->floorplane.ZatPoint( pmo->x, pmo->y );
+			pmo->ceilingz = pSector->ceilingplane.ZatPoint( pmo->x, pmo->y );
+			P_FindFloorCeiling( pmo, false );
 
-		if ( pmo->z + pmo->height > pmo->ceilingz )
-			pmo->z = pmo->ceilingz - pmo->height;
+			if ( pmo->z + pmo->height > pmo->ceilingz )
+				pmo->z = pmo->ceilingz - pmo->height;
 		
-		if ( pmo->z < pmo->floorz )
-			pmo->z = pmo->floorz;
+			if ( pmo->z < pmo->floorz )
+				pmo->z = pmo->floorz;
 
-		pmo->flags = flags;
-		pmo->flags2 = flags2;
-		pClient->lLastMoveTickProcess = lOldLastMoveTickProcess;
+			pClient->lLastMoveTickProcess = lOldLastMoveTickProcess;
 
-		// [AK] After finishing the backtrace, we need to perform a final check to make sure the player
-		// didn't move too far away into a spot that's blocking them or out of sight. If this check fails,
-		// we have to move the player back to their original position before the backtrace happened.
-		if ( server_ShouldAcceptBacktraceResult( ulClient, oldData.PositionData, debugMessage ) == false )
-		{
-			oldData.Restore( &players[ulClient], true );
-		}
-		else
-		{
 			pmo->velx += pClient->backtraceThrust[0];
 			pmo->vely += pClient->backtraceThrust[1];
 			pmo->velz += pClient->backtraceThrust[2];
 
 			debugMessage += "accepted";
+		}
+		else
+		{
+			// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
+			for ( int i = 0; i < numsectors; i++ )
+			{
+				sectors[i].floorplane.d = sectors[i].floorplane.restoreD;
+				sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
+			}
+
+			oldData.Restore( &players[ulClient], true );
+			debugMessage.AppendFormat( "not enough room" );
 		}
 
 		if ( sv_smoothplayers_debuginfo )
@@ -7656,29 +7651,6 @@ static bool server_ShouldPerformBacktrace( ULONG ulClient )
 		Printf( "%d: cannot backtrace %s (%s).\n", gametic, players[ulClient].userinfo.GetName( ), reason.GetChars( ));
 
 	return bShouldPerform;
-}
-
-//*****************************************************************************
-//
-static bool server_ShouldAcceptBacktraceResult( ULONG ulClient, MOVE_THING_DATA_s OldData, FString &debugMessage )
-{
-	// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
-	if ( P_TestMobjLocation( players[ulClient].mo ) == false )
-	{
-		debugMessage.AppendFormat( "failed (not enough room)" );
-		return false;
-	}
-
-	// [AK] Also check if there's some line of sight between where we originally extrapolated them to
-	// and where they're located now. We'll spawn a dummy actor at their old position to determine this.
-	AActor *temp = Spawn( players[ulClient].mo->GetClass( ), OldData.x, OldData.y, OldData.z, ALLOW_REPLACE );
-	bool bCanSee = P_CheckSight( players[ulClient].mo, temp );
-	temp->Destroy( );
-
-	if ( bCanSee == false )
-		debugMessage.AppendFormat( "failed (no line of sight)" );
-
-	return bCanSee;
 }
 
 //*****************************************************************************
