@@ -2022,7 +2022,6 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	g_aClients[lClient].IgnoredAddresses.clear();
 	g_aClients[lClient].ScreenWidth = 0;
 	g_aClients[lClient].ScreenHeight = 0;
-	g_aClients[lClient].ulExtraDelay = 0;
 	g_aClients[lClient].ulClientGameTic = 0;
 	// [CK] Since the client is not up to date at all, the farthest the client
 	// should be able to go back is the gametic they connected with.
@@ -6135,27 +6134,12 @@ static bool server_UpdateClientPing( BYTESTREAM_s *pByteStream )
 	}
 	else
 	{
-		// [AK] Adjust the client's old ping based on the extra delay there is due to them sending us backup
-		// commands. We must do this so that the ping calculation below produces a consistent result.
-		ULONG oldPing = p->ulPing - g_aClients[g_lCurrentClient].ulExtraDelay;
-
-		p->ulPing = ( p->ulPingAverages * oldPing + currentPing ) / ( 1 + p->ulPingAverages );
+		ULONG oldPing = p->ulPing;
+		ULONG ulPingAverages = p->ulPingAverages;
+		p->ulPing = ( p->ulPingAverages * p->ulPing + currentPing ) / ( 1 + p->ulPingAverages );
 		// [BB] The most recent ping measurement should always have a noticeable influence on the average ping.
 		if ( p->ulPingAverages < 20 )
 			p->ulPingAverages++;
-
-		// [AK] If the client is sending us backup commands, we always have to delay their input enough so that
-		// we get all the commands at the right time. Therefore, we also increase the client's ping proportionally
-		// to the number of expected backup commands to indicate this delay to everyone.
-		if (( p->bSpectating == false ) && ( g_aClients[g_lCurrentClient].ulNumExpectedCMDs > 1 ))
-		{
-			g_aClients[g_lCurrentClient].ulExtraDelay = ( g_aClients[g_lCurrentClient].ulNumExpectedCMDs - 1 ) * ticLength;
-			p->ulPing += g_aClients[g_lCurrentClient].ulExtraDelay;
-		}
-		else
-		{
-			g_aClients[g_lCurrentClient].ulExtraDelay = 0;
-		}
 	}
 
 	return ( false );

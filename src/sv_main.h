@@ -487,10 +487,6 @@ struct CLIENT_s
 	// means we're expecting them to also send us backups of older commands.
 	ULONG			ulNumExpectedCMDs;
 
-	// [AK] How much artificial delay there is in the client's inputs due to them sending us backup commands.
-	// Each backup command received per tic delays the client's ping by ~29 ms.
-	ULONG			ulExtraDelay;
-
 	// [BB] Variables for the account system
 	FString username;
 	unsigned int clientSessionID;
