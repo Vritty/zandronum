@@ -260,7 +260,7 @@ struct CLIENT_PLAYER_DATA_s
 
 	// [AK] Restore's the player's data to whatever's stored in the structure.
 	// We won't restore the morphed player class though.
-	void Restore ( player_t *player, bool bMoveOnly );
+	void Restore ( player_t *player );
 };
 
 //*****************************************************************************

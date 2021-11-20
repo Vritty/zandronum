@@ -5275,14 +5275,14 @@ CLIENT_PLAYER_DATA_s::CLIENT_PLAYER_DATA_s ( player_t *player )
 
 //*****************************************************************************
 //
-void CLIENT_PLAYER_DATA_s::Restore ( player_t *player, bool bMoveOnly )
+void CLIENT_PLAYER_DATA_s::Restore ( player_t *player )
 {
 	// [AK] Set the actor's position. Despite the name of the function, the clients don't execute this
 	// function here, but CLIENT_MoveThing adds checks upon calling AActor::SetOrigin that correct the
 	// player's floorz value after they've been moved.
 	CLIENT_MoveThing( player->mo, PositionData.x, PositionData.y, PositionData.z );
 
-	// [AK] Set the player's velocity, orientation, and reactiontime.
+	// [AK] Set the player's velocity, orientation, and other data accordingly.
 	player->mo->velx = PositionData.velx;
 	player->mo->vely = PositionData.vely;
 	player->mo->velz = PositionData.velz;
@@ -5290,21 +5290,16 @@ void CLIENT_PLAYER_DATA_s::Restore ( player_t *player, bool bMoveOnly )
 	player->mo->angle = PositionData.angle;
 	player->mo->movedir = PositionData.movedir;
 	player->mo->reactiontime = reactionTime;
-
-	// [AK] Set the player's tics and crouch accordingly if we want to.
-	if ( bMoveOnly == false )
-	{
-		player->chickenPeck = chickenPeck;
-		player->morphTics = morphTics;
-		player->inventorytics = inventoryTics;
-		player->jumpTics = jumpTics;
-		player->turnticks = turnTics;
-		player->crouching = crouching;
-		player->crouchdir = crouchDirection;
-		player->crouchfactor = crouchFactor;
-		player->crouchoffset = crouchOffset;
-		player->crouchviewdelta = crouchViewDelta;
-	}
+	player->chickenPeck = chickenPeck;
+	player->morphTics = morphTics;
+	player->inventorytics = inventoryTics;
+	player->jumpTics = jumpTics;
+	player->turnticks = turnTics;
+	player->crouching = crouching;
+	player->crouchdir = crouchDirection;
+	player->crouchfactor = crouchFactor;
+	player->crouchoffset = crouchOffset;
+	player->crouchviewdelta = crouchViewDelta;
 }
 
 //*****************************************************************************
@@ -7432,7 +7427,7 @@ static void server_PerformBacktrace( ULONG ulClient )
 		pClient->backtraceThrust[2] = pmo->velz - pClient->backtraceThrust[2];
 
 		CLIENT_PLAYER_DATA_s oldData( &players[ulClient] );
-		pClient->OldData->Restore( &players[ulClient], false );
+		pClient->OldData->Restore( &players[ulClient] );
 
 		// [AK] Check if the player hasn't moved into a spot that's blocking them or something else.
 		if ( P_TestMobjLocation( players[ulClient].mo ))
@@ -7511,7 +7506,7 @@ static void server_PerformBacktrace( ULONG ulClient )
 				sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
 			}
 
-			oldData.Restore( &players[ulClient], true );
+			oldData.Restore( &players[ulClient] );
 			debugMessage.AppendFormat( "not enough room" );
 		}
 
