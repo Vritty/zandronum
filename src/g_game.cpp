@@ -1114,9 +1114,12 @@ static void ChangeSpy (int changespy)
 			// [AK] Also don't pick them if they're not a teammate. 
 			else if (( PLAYER_IsTrueSpectator( &players[consoleplayer] ) == false ) && ( players[pnum].mo->IsTeammate( players[consoleplayer].mo ) == false ))
 			{
-				// [AK] We can still spy on enemy players as a dead spectator if LMS_SPF_VIEW is enabled.
-				if (( players[consoleplayer].bDeadSpectator == false ) || ( lmsspectatorsettings & LMS_SPF_VIEW ) == false )
-					bFoundValidPlayer = false;
+				if ( CLIENTDEMO_IsPlaying( ) == false )
+				{
+					// [AK] We can still spy on enemy players as a dead spectator if LMS_SPF_VIEW is enabled.
+					if (( players[consoleplayer].bDeadSpectator == false ) || ( lmsspectatorsettings & LMS_SPF_VIEW ) == false )
+						bFoundValidPlayer = false;
+				}
 			}
 
 			if ( bFoundValidPlayer )
