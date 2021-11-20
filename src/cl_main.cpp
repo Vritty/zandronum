@@ -169,6 +169,9 @@ CVAR( Bool, cl_showpacketloss, false, CVAR_ARCHIVE )
 // [JS] Always makes us ready when we are in intermission.
 CVAR( Bool, cl_autoready, false, CVAR_ARCHIVE )
 
+// [AK] Restores the old mouse behaviour from Skulltag.
+CVAR( Bool, cl_useskulltagmouse, false, CVAR_GLOBALCONFIG | CVAR_ARCHIVE )
+
 // [AK] Let the user send backup copies of old commands, in case of packet loss.
 CUSTOM_CVAR( Int, cl_backupcommands, 0, CVAR_ARCHIVE )
 {
