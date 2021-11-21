@@ -1696,7 +1696,12 @@ void S_StopAllUnattachedSounds ()
 		FSoundChan *next = chan->NextChan;
 		if ((chan->SourceType == SOURCE_None) || (chan->SourceType == SOURCE_Unattached))
 		{
-			S_StopChannel(chan);
+			// [AK] We should ignore any UI sounds. This prevents the announcer's "fight!"
+			// sound from not playing at the start of a round.
+			if ((chan->ChanFlags & CHAN_UI) == false)
+			{
+				S_StopChannel(chan);
+			}
 		}
 
 		chan = next;
