@@ -619,7 +619,7 @@ void V_CleanPlayerName( FString &String, bool bPrintWarning )
 	else if (( String.Len() == MAXPLAYERNAMEBUFFER ) && ( String[MAXPLAYERNAMEBUFFER - 2] != TEXTCOLOR_ESCAPE ))
 	{
 		if ( bPrintWarning )
-			Printf( PRINT_MEDIUM, "You didn't leave enough room for the terminating (\\c-) color code.\n", MAXPLAYERNAMEBUFFER );
+			Printf( PRINT_MEDIUM, "You didn't leave enough room for the terminating (\\c-) color code.\n" );
 
 		String.Truncate( MAXPLAYERNAMEBUFFER - 2 );	
 	}
