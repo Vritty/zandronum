@@ -103,6 +103,12 @@ static	player_t	*g_pArtifactCarrier = NULL;
 // [AK] Who are the two duelers?
 static	player_t	*g_pDuelers[2];
 
+// [AK] How long we have to wait until we can respawn, used for displaying on the screen if sv_respawndelaytime is greater than 1.
+static	LONG		g_lRespawnDelay = -1;
+
+// [AK] At what tic will we be able to respawn?
+static	LONG		g_lRespawnGametic = 0;
+
 //*****************************************************************************
 //	PROTOTYPES
 
@@ -529,6 +535,18 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 		}
 	}
 
+	// [AK] Show how much time is left before we can respawn if we had to wait for more than one second.
+	if (( players[consoleplayer].bSpectating == false ) && ( players[consoleplayer].playerstate == PST_DEAD ))
+	{
+		if ( g_lRespawnGametic > level.time )
+		{
+			ULONG ulTimeLeft = MIN( g_lRespawnDelay, 1 + ( g_lRespawnGametic - level.time ) / TICRATE );
+
+			bottomString += "\n" TEXTCOLOR_GREEN;
+			bottomString.AppendFormat( "Ready to respawn in %d second%s", ulTimeLeft, ulTimeLeft != 1 ? "s" : "" );
+		}
+	}
+
 	// If the console player is spectating, draw the spectator message.
 	// [BB] Only when not in free spectate mode.
 	if (( r_drawspectatingstring ) && ( players[consoleplayer].bSpectating ) && ( CLIENTDEMO_IsInFreeSpectateMode( ) == false ))
@@ -949,6 +967,18 @@ ULONG HUD_GetRank( void )
 LONG HUD_GetSpread( void )
 {
 	return ( g_lSpread );
+}
+
+//*****************************************************************************
+//
+void HUD_SetRespawnTimeLeft( LONG lRespawnTime )
+{
+	// [AK] The server shouldn't execute this.
+	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+		return;
+
+	g_lRespawnDelay = lRespawnTime;
+	g_lRespawnGametic = level.time + g_lRespawnDelay * TICRATE;
 }
 
 //*****************************************************************************

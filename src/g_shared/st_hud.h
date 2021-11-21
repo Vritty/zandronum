@@ -82,6 +82,7 @@ ULONG	HUD_GetNumPlayers( void );
 ULONG	HUD_GetNumSpectators( void );
 ULONG	HUD_GetRank( void );
 LONG	HUD_GetSpread( void );
+void	HUD_SetRespawnTimeLeft( LONG lRespawnTime );
 FString	HUD_SpellOrdinal( int ranknum, bool bColored = false );
 FString HUD_BuildPointString( void );
 FString HUD_BuildPlaceString( ULONG ulPlayer );

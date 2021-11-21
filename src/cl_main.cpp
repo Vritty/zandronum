@@ -3980,6 +3980,17 @@ void ServerCommands::KillPlayer::Execute()
 		ClientObituary( players[ulPlayer].mo, pInflictor, NULL, MOD );
 */
 
+	// [AK] If we died, show how long we must wait before we can respawn if it's more than one second.
+	if ( player - players == consoleplayer )
+	{
+		bool bNoMoreLivesLeft = ( GAMEMODE_AreLivesLimited( ) && GAMEMODE_IsGameInProgress( ) && ( player->ulLivesLeft == 0 ));
+
+		if (( sv_respawndelaytime > 1 ) && ( player->mo->DamageType != NAME_SpawnTelefrag ) && ( bNoMoreLivesLeft == false ))
+			HUD_SetRespawnTimeLeft( sv_respawndelaytime );
+		else
+			HUD_SetRespawnTimeLeft( -1 );
+	}
+
 	// Refresh the HUD, since this could affect the number of players left in an LMS game.
 	HUD_Refresh( );
 }
@@ -5902,6 +5913,10 @@ static void client_SetGameModeLimits( BYTESTREAM_s *pByteStream )
 	// [AK] Read in, and set the value for sv_allowprivatechat.
 	Value.Int = pByteStream->ReadByte();
 	sv_allowprivatechat.ForceSet( Value, CVAR_Int );
+
+	// [AK] Read in, and set the value for sv_respawndelaytime.
+	Value.Int = pByteStream->ReadByte();
+	sv_respawndelaytime.ForceSet( Value, CVAR_Int );
 }
 
 //*****************************************************************************

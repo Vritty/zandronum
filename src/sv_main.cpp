@@ -267,7 +267,6 @@ CVAR( Bool, sv_defaultdmflags, false, 0 )
 CVAR( Bool, sv_forcepassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 CVAR( Bool, sv_forcejoinpassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 CVAR( Int, sv_forcerespawntime, 0, CVAR_ARCHIVE|CVAR_SERVERINFO ) // [RK]
-CVAR( Int, sv_respawndelaytime, 1, CVAR_ARCHIVE|CVAR_SERVERINFO ) // [AK]
 CVAR( Bool, sv_showlauncherqueries, false, CVAR_ARCHIVE )
 CVAR( Bool, sv_timestamp, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Int, sv_timestampformat, 0, CVAR_ARCHIVE|CVAR_NOSETBYACS )
@@ -444,6 +443,29 @@ CUSTOM_CVAR( Int, sv_allowprivatechat, PRIVATECHAT_EVERYONE, CVAR_ARCHIVE | CVAR
 	else if ( self > PRIVATECHAT_TEAMMATESONLY )
 	{
 		self = PRIVATECHAT_TEAMMATESONLY;
+		return;
+	}
+
+	// [AK] Notify the clients about the change.
+	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
+	{
+		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), self.GetGenericRep( CVAR_Int ).Int );
+		SERVERCOMMANDS_SetGameModeLimits( );
+	}
+}
+
+//*****************************************************************************
+//
+CUSTOM_CVAR( Int, sv_respawndelaytime, 1, CVAR_ARCHIVE | CVAR_SERVERINFO )
+{
+	if ( self < 1 )
+	{
+		self = 1;
+		return;
+	}
+	else if ( self > 255 )
+	{
+		self = 255;
 		return;
 	}
 

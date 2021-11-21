@@ -758,9 +758,21 @@ void AActor::Die (AActor *source, AActor *inflictor, int dmgflags)
 			// [AK] The respawn delay can be adjusted, but the minimum is one second. This only works if
 			// the player wasn't spawn telefragged and still has lives left.
 			if (( sv_respawndelaytime > 1 ) && ( player->bSpawnTelefragged == false ) && ( bNoMoreLivesLeft == false ))
+			{
 				player->respawn_time = level.time + sv_respawndelaytime * TICRATE;
+
+				// [AK] Show how long we must wait until we can respawn on the screen.
+				if ( player - players == consoleplayer )
+					HUD_SetRespawnTimeLeft( sv_respawndelaytime );
+			}
 			else
+			{
 				player->respawn_time = level.time + TICRATE;
+				
+				// [AK] We don't need to show how long to wait before we can respawn here.
+				if ( player - players == consoleplayer )
+					HUD_SetRespawnTimeLeft( -1 );
+			}
 
 			// [BC] Don't respawn quite so fast on forced respawn. It sounds weird when your
 			// scream isn't completed.
