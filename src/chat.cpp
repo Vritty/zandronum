@@ -780,7 +780,7 @@ void CHAT_Render( void )
 	}
 
 	FString note;
-	positionY = static_cast<int>( positionY * g_rYScale - SmallFont->GetHeight( ) * 2 + 1 );
+	positionY -= SmallFont->GetHeight( ) * 2 + 1;
 
 	// [RC] Tell chatters about the iron curtain of LMS chat.
 	if ( GAMEMODE_AreSpectatorsForbiddenToChatToPlayers() )
