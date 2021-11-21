@@ -3862,12 +3862,14 @@ void P_PlayerThink (player_t *player)
 			}
 		}
 
+		// Cycle psprites
+		// [AK] Don't do this while extrapolating the player's movement.
+		if ( SERVER_IsExtrapolatingPlayer( player - players ) == false )
+			P_MovePsprites (player);
+
 		// [AK] Stop here if we're backtracing the player's movement.
 		if ( SERVER_IsBacktracingPlayer( player - players ))
 			return;
-
-		// Cycle psprites
-		P_MovePsprites (player);
 
 		// Other Counters
 		if (player->damagecount)

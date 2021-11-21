@@ -5860,8 +5860,8 @@ bool ClientMoveCommand::process( const ULONG ulClient ) const
 		g_aClients[ulClient].lLastServerGametic = moveCmd.ulServerGametic; // [CK] Use the gametic from what we saw
 
 	// If the client is attacking, he always sends the name of the weapon he's using.
-	// [AK] Only do this when we're not backtracing this player's movement.
-	if (( pCmd->ucmd.buttons & BT_ATTACK ) && ( SERVER_IsBacktracingPlayer( ulClient ) == false ))
+	// [AK] Only do this when we're not extrapolating this player's movement.
+	if (( pCmd->ucmd.buttons & BT_ATTACK ) && ( SERVER_IsExtrapolatingPlayer( ulClient ) == false ))
 	{
 		// If the name of the weapon the client is using doesn't match the name of the
 		// weapon we think he's using, do something to rectify the situation.
@@ -7413,8 +7413,8 @@ static void server_PerformBacktrace( ULONG ulClient )
 		// were on the gametic that we started extrapolating this player.
 		for ( int i = 0; i < numsectors; i++ )
 		{
-			sectors[i].floorplane.restoreD = sectors[i].floorplane.d;
-			sectors[i].ceilingplane.restoreD = sectors[i].ceilingplane.d;
+			sectors[i].floorplane.backtraceRestoreD = sectors[i].floorplane.d;
+			sectors[i].ceilingplane.backtraceRestoreD = sectors[i].ceilingplane.d;
 
 			sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
 			sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
@@ -7473,8 +7473,8 @@ static void server_PerformBacktrace( ULONG ulClient )
 			// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
 			for ( int i = 0; i < numsectors; i++ )
 			{
-				sectors[i].floorplane.d = sectors[i].floorplane.restoreD;
-				sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
+				sectors[i].floorplane.d = sectors[i].floorplane.backtraceRestoreD;
+				sectors[i].ceilingplane.d = sectors[i].ceilingplane.backtraceRestoreD;
 			}
 
 			// [AK] As a final measure, fix the player's floorz/ceilingz and to ensure that they don't
@@ -7502,8 +7502,8 @@ static void server_PerformBacktrace( ULONG ulClient )
 			// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
 			for ( int i = 0; i < numsectors; i++ )
 			{
-				sectors[i].floorplane.d = sectors[i].floorplane.restoreD;
-				sectors[i].ceilingplane.d = sectors[i].ceilingplane.restoreD;
+				sectors[i].floorplane.d = sectors[i].floorplane.backtraceRestoreD;
+				sectors[i].ceilingplane.d = sectors[i].ceilingplane.backtraceRestoreD;
 			}
 
 			oldData.Restore( &players[ulClient] );
