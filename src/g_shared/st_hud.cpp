@@ -813,7 +813,7 @@ static void HUD_RenderCountdown( ULONG ulTimeLeft )
 		text = invasion ? INVASION_GetCurrentWaveString( ) : GAMEMODE_GetCurrentName( );
 
 		// [AK] Append "co-op" to the end of "survival".
-		if ( survival )
+		if (( survival ) && ( text.CompareNoCase( "Survival" ) == 0 ))
 			text += " Co-op";
 
 		HUD_DrawTextCleanCentered( BigFont, ulTitleColor, ulYPos, text );
