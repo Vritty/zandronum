@@ -7555,7 +7555,19 @@ bool AActor::IsTeammate (AActor *other)
 		return false;
 	// Allow co-op players to be teammates.
 	else if ((( deathmatch == false ) && ( teamgame == false )) && player && other->player)
+	{
+		// [AK] Not if they're supposed to be on different teams.
+		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
+		{
+			if ( !player->bOnTeam || !other->player->bOnTeam )
+				return ( false );
+
+			if ( player->Team != other->player->Team )
+				return ( false );
+		}
+
 		return ( true );
+	}
 
 	// Can't be an enemy of ourselves!
 	if ( this == other )
