@@ -6568,8 +6568,10 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 
 	if ( GAMEMODE_GetCurrentFlags() & GMF_TEAMGAME )
 		G_TeamgameSpawnPlayer( g_lCurrentClient, players[g_lCurrentClient].Team, true );
-	else
+	else if ( GAMEMODE_GetCurrentFlags() & GMF_DEATHMATCH )
 		G_DeathMatchSpawnPlayer( g_lCurrentClient, true );
+	else
+		G_CooperativeSpawnPlayer( g_lCurrentClient, true );
 
 	// Tell the join queue that a player "sort of" left the game.
 	JOINQUEUE_PlayerLeftGame( g_lCurrentClient, false );

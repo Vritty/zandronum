@@ -2305,8 +2305,10 @@ CCMD( changeteam )
 
 		if ( GAMEMODE_GetCurrentFlags() & GMF_TEAMGAME )
 			G_TeamgameSpawnPlayer( consoleplayer, players[consoleplayer].Team, true );
-		else
+		else if ( GAMEMODE_GetCurrentFlags() & GMF_DEATHMATCH )
 			G_DeathMatchSpawnPlayer( consoleplayer, true );
+		else
+			G_CooperativeSpawnPlayer( consoleplayer, true );
 	}
 }
 
