@@ -2550,11 +2550,11 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		for ( ulIdx = 0; ulIdx < teams.Size( ); ulIdx++ )
 		{
 			if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-				SERVERCOMMANDS_SetTeamWins( ulIdx, TEAM_GetWinCount( ulIdx ), false, ulClient, SVCF_ONLYTHISCLIENT );
+				SERVERCOMMANDS_SetTeamScore( ulIdx, TEAMSCORE_WINS, false, ulClient, SVCF_ONLYTHISCLIENT );
 			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
-				SERVERCOMMANDS_SetTeamScore( ulIdx, TEAM_GetScore( ulIdx ), false, ulClient, SVCF_ONLYTHISCLIENT );
+				SERVERCOMMANDS_SetTeamScore( ulIdx, TEAMSCORE_POINTS, false, ulClient, SVCF_ONLYTHISCLIENT );
 			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
-				SERVERCOMMANDS_SetTeamFrags( ulIdx, TEAM_GetFragCount( ulIdx ), false, ulClient, SVCF_ONLYTHISCLIENT );
+				SERVERCOMMANDS_SetTeamScore( ulIdx, TEAMSCORE_FRAGS, false, ulClient, SVCF_ONLYTHISCLIENT );
 		}
 	}
 

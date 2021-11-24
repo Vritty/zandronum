@@ -234,6 +234,14 @@ enum UpdateMapRotationType
 	UPDATE_MAPROTATION_RESET,
 };
 
+// [AK] What kind of team score are we sending to clients?
+enum TeamScoreType
+{
+	TEAMSCORE_FRAGS,
+	TEAMSCORE_POINTS,
+	TEAMSCORE_WINS,
+};
+
 // Which actor sound is being updated?
 #define	ACTORSOUND_SEESOUND			1
 #define	ACTORSOUND_ATTACKSOUND		2

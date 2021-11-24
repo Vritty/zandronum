@@ -2493,43 +2493,33 @@ void SERVERCOMMANDS_SetDominationPointOwnership( ULONG ulPoint, ULONG ulPlayer, 
 
 //*****************************************************************************
 //
-void SERVERCOMMANDS_SetTeamFrags( ULONG ulTeam, LONG lFrags, bool bAnnounce, ULONG ulPlayerExtra, ServerCommandFlags flags )
+void SERVERCOMMANDS_SetTeamScore( ULONG ulTeam, ULONG ulType, bool bAnnounce, ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
 	if ( TEAM_CheckIfValid( ulTeam ) == false )
 		return;
 
-	NetCommand command( SVC_SETTEAMFRAGS );
-	command.addByte( ulTeam );
-	command.addShort( lFrags );
-	command.addByte( bAnnounce );
-	command.sendCommandToClients( ulPlayerExtra, flags );
-}
+	LONG lScore = 0;
 
-//*****************************************************************************
-//
-void SERVERCOMMANDS_SetTeamScore( ULONG ulTeam, LONG lScore, bool bAnnounce, ULONG ulPlayerExtra, ServerCommandFlags flags )
-{
-	if ( TEAM_CheckIfValid( ulTeam ) == false )
-		return;
+	switch ( ulType )
+	{
+		case TEAMSCORE_FRAGS:
+			lScore = TEAM_GetFragCount( ulTeam );
+			break;
+
+		case TEAMSCORE_POINTS:
+			lScore = TEAM_GetScore( ulTeam );
+			break;
+		
+		case TEAMSCORE_WINS:
+			lScore = TEAM_GetWinCount( ulTeam );
+			break;
+	}
 
 	NetCommand command( SVC_SETTEAMSCORE );
 	command.addByte( ulTeam );
-	command.addShort( lScore );
-	command.addByte( bAnnounce );
-	command.sendCommandToClients( ulPlayerExtra, flags );
-}
-
-//*****************************************************************************
-//
-void SERVERCOMMANDS_SetTeamWins( ULONG ulTeam, LONG lWins, bool bAnnounce, ULONG ulPlayerExtra, ServerCommandFlags flags )
-{
-	if ( TEAM_CheckIfValid( ulTeam ) == false )
-		return;
-
-	NetCommand command( SVC_SETTEAMWINS );
-	command.addByte( ulTeam );
-	command.addShort( lWins );
-	command.addByte( bAnnounce );
+	command.addBit( bAnnounce );
+	command.addShortByte( ulType, 5 );
+	command.addVariable( lScore );
 	command.sendCommandToClients( ulPlayerExtra, flags );
 }
 

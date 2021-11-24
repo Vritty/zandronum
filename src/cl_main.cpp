@@ -214,9 +214,7 @@ static	void	client_SetDominationState( BYTESTREAM_s *pByteStream );
 static	void	client_SetDominationPointOwnership( BYTESTREAM_s *pByteStream );
 
 // Team commands.
-static	void	client_SetTeamFrags( BYTESTREAM_s *pByteStream );
 static	void	client_SetTeamScore( BYTESTREAM_s *pByteStream );
-static	void	client_SetTeamWins( BYTESTREAM_s *pByteStream );
 static	void	client_SetTeamReturnTicks( BYTESTREAM_s *pByteStream );
 static	void	client_TeamFlagReturned( BYTESTREAM_s *pByteStream );
 static	void	client_TeamFlagDropped( BYTESTREAM_s *pByteStream );
@@ -1679,17 +1677,9 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 		client_SetDominationPointOwnership( pByteStream );
 		break;
-	case SVC_SETTEAMFRAGS:
-
-		client_SetTeamFrags( pByteStream );
-		break;
 	case SVC_SETTEAMSCORE:
 
 		client_SetTeamScore( pByteStream );
-		break;
-	case SVC_SETTEAMWINS:
-
-		client_SetTeamWins( pByteStream );
 		break;
 	case SVC_SETTEAMRETURNTICKS:
 
@@ -6193,76 +6183,38 @@ static void client_SetDominationPointOwnership( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
-static void client_SetTeamFrags( BYTESTREAM_s *pByteStream )
-{
-	ULONG	ulTeam;
-	LONG	lFragCount;
-	bool	bAnnounce;
-
-	// Read in the team.
-	ulTeam = pByteStream->ReadByte();
-
-	// Read in the fragcount.
-	lFragCount = pByteStream->ReadShort();
-
-	// Announce a lead change... but don't do it if we're receiving a snapshot of the level!
-	bAnnounce = !!pByteStream->ReadByte();
-	if ( g_ConnectionState != CTS_ACTIVE )
-		bAnnounce = false;
-
-	// Finally, set the team's fragcount.
-	TEAM_SetFragCount( ulTeam, lFragCount, bAnnounce );
-}
-
-//*****************************************************************************
-//
 static void client_SetTeamScore( BYTESTREAM_s *pByteStream )
 {
-	ULONG	ulTeam;
-	LONG	lScore;
-	bool	bAnnounce;
-
 	// Read in the team having its score updated.
-	ulTeam = pByteStream->ReadByte();
-
-	// Read in the team's new score.
-	lScore = pByteStream->ReadShort();
+	ULONG ulTeam = pByteStream->ReadByte();
 
 	// Should it be announced?
-	bAnnounce = !!pByteStream->ReadByte();
-	
+	bool bAnnounce = !!pByteStream->ReadBit();
+
+	// Read in the team's new score.
+	ULONG ulType = pByteStream->ReadShortByte( 5 );
+	LONG lScore = pByteStream->ReadVariable();
+
 	// Don't announce the score change if we're receiving a snapshot of the level!
 	if ( g_ConnectionState != CTS_ACTIVE )
 		bAnnounce = false;
 
-	TEAM_SetScore( ulTeam, lScore, bAnnounce );
+	switch ( ulType )
+	{
+		case TEAMSCORE_FRAGS:
+			TEAM_SetFragCount( ulTeam, lScore, bAnnounce );
+			break;
+
+		case TEAMSCORE_POINTS:
+			TEAM_SetScore( ulTeam, lScore, bAnnounce );
+			break;
+		
+		case TEAMSCORE_WINS:
+			TEAM_SetWinCount( ulTeam, lScore, bAnnounce );
+			break;
+	}
 
 	HUD_Refresh( );
-}
-
-//*****************************************************************************
-//
-static void client_SetTeamWins( BYTESTREAM_s *pByteStream )
-{
-	ULONG	ulTeamIdx;
-	LONG	lWinCount;
-	bool	bAnnounce;
-
-	// Read in the team.
-	ulTeamIdx = pByteStream->ReadByte();
-
-	// Read in the wins.
-	lWinCount = pByteStream->ReadShort();
-
-	// Read in whether or not it should be announced.	
-	bAnnounce = !!pByteStream->ReadByte();
-
-	// Don't announce if we're receiving a snapshot of the level!
-	if ( g_ConnectionState != CTS_ACTIVE )
-		bAnnounce = false;
-
-	// Finally, set the team's win count.
-	TEAM_SetWinCount( ulTeamIdx, lWinCount, bAnnounce );
 }
 
 //*****************************************************************************

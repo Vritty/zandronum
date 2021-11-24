@@ -1056,7 +1056,7 @@ void TEAM_SetScore( ULONG ulTeamIdx, LONG lScore, bool bAnnouncer )
 	// If we're the server, tell clients about the team score update.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		SERVERCOMMANDS_SetTeamScore( ulTeamIdx, lScore, bAnnouncer );
+		SERVERCOMMANDS_SetTeamScore( ulTeamIdx, TEAMSCORE_POINTS, bAnnouncer );
 
 		// Also, update the scoreboard.
 		SERVERCONSOLE_UpdateScoreboard( );
@@ -1333,7 +1333,7 @@ void TEAM_SetFragCount( ULONG ulTeamIdx, LONG lFragCount, bool bAnnounce )
 	// If we're the server, let clients know that the score has changed.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		SERVERCOMMANDS_SetTeamFrags( ulTeamIdx, lFragCount, bAnnounce );
+		SERVERCOMMANDS_SetTeamScore( ulTeamIdx, TEAMSCORE_FRAGS, bAnnounce );
 
 		// Also, update the scoreboard.
 		SERVERCONSOLE_UpdateScoreboard( );
@@ -1399,7 +1399,7 @@ void TEAM_SetWinCount( ULONG ulTeamIdx, LONG lWinCount, bool bAnnounce )
 	// If we're the server, tell clients about the team score update.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 	{
-		SERVERCOMMANDS_SetTeamWins( ulTeamIdx, lWinCount, bAnnounce );
+		SERVERCOMMANDS_SetTeamScore( ulTeamIdx, TEAMSCORE_WINS, bAnnounce );
 
 		// Also, update the scoreboard.
 		SERVERCONSOLE_UpdateScoreboard( );
