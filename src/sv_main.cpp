@@ -5814,7 +5814,6 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 
 	// Read in the information the client is sending us.
 	const ULONG ulBits = pByteStream->ReadByte();
-	bPressedAnything = !!ulBits;
 
 	if ( ulBits & CLIENT_UPDATE_YAW )
 		pCmd->ucmd.yaw = pByteStream->ReadShort();
@@ -7566,27 +7565,6 @@ static bool server_ShouldPerformBacktrace( ULONG ulClient )
 		// this could become an issue.
 		reason = "lagged for too long";
 		bShouldPerform = false;
-	}
-	else
-	{
-		bool bPressedAnything = false;
-
-		// [AK] Check that the player was actually pressing inputs, and therefore wasn't just standing
-		// still during the ping spike. Otherwise, we shouldn't perform a backtrace.
-		for ( unsigned int i = 0; i < g_aClients[ulClient].LateMoveCMDs.Size( ); i++ )
-		{
-			if ( g_aClients[ulClient].LateMoveCMDs[i]->pressedAnything( ))
-			{
-				bPressedAnything = true;
-				break;
-			}
-		}
-
-		if ( bPressedAnything == false )
-		{
-			reason = "didn't press anything";
-			bShouldPerform = false;
-		}
 	}
 
 	// [AK] Explain why we didn't backtrace their movement.
