@@ -174,6 +174,7 @@ static	bool	server_CheckLogin( const ULONG ulClient );
 static	void	server_PrintWithIP( FString message, const NETADDRESS_s &address );
 static	void	server_PerformBacktrace( ULONG ulClient );
 static	bool	server_ShouldPerformBacktrace( ULONG ulClient );
+static	void	server_FixZFromBacktrace( APlayerPawn *pmo, fixed_t oldFloorZ );
 
 // [RC]
 #ifdef CREATE_PACKET_LOG
@@ -7496,6 +7497,7 @@ static void server_PerformBacktrace( ULONG ulClient )
 		{
 			ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
 			ULONG ulNumExtrapolatedTics = pClient->ulExtrapolatedTics;
+			fixed_t oldFloorZ = 0;
 
 			pClient->bIsBacktracing = true;
 			pClient->ulExtrapolatedTics = 0;
@@ -7528,6 +7530,13 @@ static void server_PerformBacktrace( ULONG ulClient )
 
 				pClient->LastMoveCMD->process( ulClient );
 
+				// [AK] Now we have to tick this player's body and set the proper psprite settings.
+				pmo->Tick( );		
+				P_NewPspriteTick( &players[ulClient] );
+
+				pClient->lLastMoveTickProcess--;
+				oldFloorZ = pmo->floorz;
+
 				// [AK] Adjust the sector ceiling/floor heights for the next tic that we extrapolated the player.
 				// We don't have to do this on the last tic that we extrapolated the player.
 				if ( ulTic < ulNumExtrapolatedTics )
@@ -7539,10 +7548,11 @@ static void server_PerformBacktrace( ULONG ulClient )
 						sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
 						sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
 					}
+
+					// [AK] Make sure the player doesn't get stuck in the floor/ceiling in case they moved.
+					server_FixZFromBacktrace( pmo, oldFloorZ );
 				}
 			}
-
-			sector_t *pSector = pmo->Sector;
 
 			// [AK] Restore the sector ceiling/floor heights back to what they were before the backtrace.
 			for ( int i = 0; i < numsectors; i++ )
@@ -7553,15 +7563,7 @@ static void server_PerformBacktrace( ULONG ulClient )
 
 			// [AK] As a final measure, fix the player's floorz/ceilingz and to ensure that they don't
 			// get stuck in the floor/ceiling of whatever sector they're supposed to be in.
-			pmo->floorz = pSector->floorplane.ZatPoint( pmo->x, pmo->y );
-			pmo->ceilingz = pSector->ceilingplane.ZatPoint( pmo->x, pmo->y );
-			P_FindFloorCeiling( pmo, false );
-
-			if ( pmo->z + pmo->height > pmo->ceilingz )
-				pmo->z = pmo->ceilingz - pmo->height;
-		
-			if ( pmo->z < pmo->floorz )
-				pmo->z = pmo->floorz;
+			server_FixZFromBacktrace( pmo, oldFloorZ );
 
 			pmo->velx += pClient->backtraceThrust[0];
 			pmo->vely += pClient->backtraceThrust[1];
@@ -7622,6 +7624,40 @@ static bool server_ShouldPerformBacktrace( ULONG ulClient )
 		Printf( "%d: cannot backtrace %s (%s).\n", gametic, players[ulClient].userinfo.GetName( ), reason.GetChars( ));
 
 	return bShouldPerform;
+}
+
+//*****************************************************************************
+//
+static void server_FixZFromBacktrace( APlayerPawn *pmo, fixed_t oldFloorZ )
+{
+	pmo->floorz = pmo->Sector->floorplane.ZatPoint( pmo->x, pmo->y );
+	pmo->ceilingz = pmo->Sector->ceilingplane.ZatPoint( pmo->x, pmo->y );
+	P_FindFloorCeiling( pmo, false );
+
+	if ( pmo->z + pmo->height > pmo->ceilingz )
+		pmo->z = pmo->ceilingz - pmo->height;
+
+	if ( pmo->z < pmo->floorz )
+	{
+		pmo->z = pmo->floorz;
+	}
+	else
+	{
+		// [AK] Check if the player should move with the floor if it moved, similarly to PIT_FloorDrop.
+		if (( pmo->velz == 0 ) && (!( pmo->flags & MF_NOGRAVITY ) || ( pmo->z == oldFloorZ && !( pmo->flags & MF_NOLIFTDROP ))))
+		{
+			if (( pmo->flags & MF_NOGRAVITY) || ( pmo->flags5 & MF5_MOVEWITHSECTOR ) ||
+				( pmo->Sector->Flags & SECF_FLOORDROP ) || ( pmo->z - pmo->floorz <= 9 * FRACUNIT ))
+			{
+				pmo->z = pmo->floorz;
+			}
+		}
+		else if ( pmo->z != oldFloorZ && !( pmo->flags & MF_NOLIFTDROP ))
+		{
+			if (( pmo->flags & MF_NOGRAVITY ) && ( pmo->flags6 & MF6_RELATIVETOFLOOR ))
+				pmo->z = pmo->z - oldFloorZ + pmo->floorz;
+		}
+	}
 }
 
 //*****************************************************************************
