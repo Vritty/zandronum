@@ -5222,22 +5222,22 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 
 	if ( sv_useticbuffer )
 	{
-		if ( sv_smoothplayers )
-		{
-			// [AK] It's possible this was a command that arrived late and we already extrapolated
-			// the player's movement at this tic. In this case, we'll store these commands into a
-			// separate buffer so we can backtrace the player's actual movement.
-			if (( g_aClients[g_lCurrentClient].LastMoveCMD != NULL ) && ( g_aClients[g_lCurrentClient].ulExtrapolatedTics > 0 ))
-			{
-				// [AK] We want to try filling this buffer only when the client is suffering from a ping
-				// spike, not when they're experiencing packet loss.
-				if ( ulClientTic <= g_aClients[g_lCurrentClient].ulClientGameTic + g_aClients[g_lCurrentClient].ulExtrapolatedTics )
-					buffer = &g_aClients[g_lCurrentClient].LateMoveCMDs;
-			}
-		}
-
 		if ( ulClientTic != 0 )
 		{
+			if ( sv_smoothplayers )
+			{
+				// [AK] It's possible this was a command that arrived late and we already extrapolated
+				// the player's movement at this tic. In this case, we'll store these commands into a
+				// separate buffer so we can backtrace the player's actual movement.
+				if (( g_aClients[g_lCurrentClient].LastMoveCMD != NULL ) && ( g_aClients[g_lCurrentClient].ulExtrapolatedTics > 0 ))
+				{
+					// [AK] We want to try filling this buffer only when the client is suffering from a ping
+					// spike, not when they're experiencing packet loss.
+					if ( ulClientTic <= g_aClients[g_lCurrentClient].ulClientGameTic + g_aClients[g_lCurrentClient].ulExtrapolatedTics )
+						buffer = &g_aClients[g_lCurrentClient].LateMoveCMDs;
+				}
+			}
+
 			for ( unsigned int i = 0; i < buffer->Size( ); i++ )
 			{
 				ULONG ulBufferClientTic = (*buffer)[i]->getClientTic( );
