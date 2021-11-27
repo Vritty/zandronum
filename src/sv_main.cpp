@@ -5330,6 +5330,7 @@ void SERVER_HandleSkipCorrection( ULONG ulClient )
 {
 	CLIENT_s *pClient = &g_aClients[ulClient];
 	ULONG ulNumMoveCMDs = 0;
+	ULONG ulNumLateMoveCMDs = 0;
 	FString debugMessage;
 
 	// [AK] Don't handle the skip correction if it's supposed to be disabled.
@@ -5346,6 +5347,13 @@ void SERVER_HandleSkipCorrection( ULONG ulClient )
 	{
 		if ( pClient->MoveCMDs[i]->isMoveCmd( ))
 			ulNumMoveCMDs++;
+	}
+
+	// [AK] We might already have some late commands but count the ones that are movement commands.
+	for ( unsigned int i = 0; i < pClient->LateMoveCMDs.Size( ); i++ )
+	{
+		if ( pClient->LateMoveCMDs[i]->isMoveCmd( ))
+			ulNumLateMoveCMDs++;
 	}
 
 	// When a player is experiencing ping spikes or packet loss and we don't have any commands
@@ -5389,7 +5397,7 @@ void SERVER_HandleSkipCorrection( ULONG ulClient )
 
 		// [AK] If we have enough late commands in the buffer, process them all immediately, so as long
 		// as they hadn't morphed or unmorphed at any point during extrapolation.
-		if (( ulNumMoveCMDs > 0 ) && ( pClient->LateMoveCMDs.Size( ) > 0 ) && ( pClient->OldData != NULL ))
+		if (( ulNumLateMoveCMDs > 0 ) && ( ulNumMoveCMDs > 0 || ulNumLateMoveCMDs == pClient->ulExtrapolatedTics ) && ( pClient->OldData != NULL ))
 			server_PerformBacktrace( ulClient );
 
 		// [AK] If there are no movement commands left in the client's tic buffer then we'll keep processing
@@ -5493,10 +5501,41 @@ void SERVER_ResetClientTicBuffer( ULONG ulClient )
 
 //*****************************************************************************
 //
-void SERVER_ResetClientExtrapolation( ULONG ulClient )
+void SERVER_ResetClientExtrapolation( ULONG ulClient, bool bAfterBacktrace )
 {
-	for ( unsigned int i = 0; i < g_aClients[ulClient].LateMoveCMDs.Size( ); i++ )
+	bool bUpdatedLastMoveCMD = false;
+
+	for ( int i = g_aClients[ulClient].LateMoveCMDs.Size( ) - 1; i >= 0; i-- )
+	{
+		if ( bAfterBacktrace )
+		{
+			if ( g_aClients[ulClient].LateMoveCMDs[i]->isMoveCmd( ))
+			{
+				// [AK] In case we didn't perform a backtrace, we still need to update the client's last move command
+				// to the last late command we received from them and update their gametic.
+				if ( bUpdatedLastMoveCMD == false )
+				{
+					ULONG ulNewClientGametic = g_aClients[ulClient].LastMoveCMD->getClientTic( ) + g_aClients[ulClient].ulExtrapolatedTics;
+
+					delete g_aClients[ulClient].LastMoveCMD;
+					g_aClients[ulClient].LastMoveCMD = static_cast<ClientMoveCommand *>( g_aClients[ulClient].LateMoveCMDs[i] );
+
+					g_aClients[ulClient].LastMoveCMD->setClientTic( ulNewClientGametic );
+					bUpdatedLastMoveCMD = true;
+					continue;
+				}
+			}
+			else
+			{
+				// [AK] If we still have any late weapon select commands from this client that haven't been processed,
+				// move them all to the start of the their tic buffer.
+				g_aClients[ulClient].MoveCMDs.Insert( 0, g_aClients[ulClient].LateMoveCMDs[i] );
+				continue;
+			}
+		}
+
 		delete g_aClients[ulClient].LateMoveCMDs[i];
+	}
 
 	g_aClients[ulClient].LateMoveCMDs.Clear( );
 
@@ -7456,18 +7495,30 @@ static void server_PerformBacktrace( ULONG ulClient )
 		if ( P_TestMobjLocation( players[ulClient].mo ))
 		{
 			ULONG ulExtrapolateStartTic = pClient->LastMoveCMD->getClientTic( );
-			LONG lOldLastMoveTickProcess = pClient->lLastMoveTickProcess;
+			ULONG ulNumExtrapolatedTics = pClient->ulExtrapolatedTics;
 
 			pClient->bIsBacktracing = true;
-			pClient->lLastMoveTickProcess = gametic;
+			pClient->ulExtrapolatedTics = 0;
 
 			// [AK] Ideally, we want to have as many late move commands in the buffer as the number of tics we
 			// extrapolated this player for. If that's not the case, however, then we'll try "filling in the gaps"
 			// by re-processing the command we last processed until every tic is accounted for.
-			for ( ULONG ulTic = 1; ulTic <= pClient->ulExtrapolatedTics; ulTic++ )
+			for ( ULONG ulTic = 1; ulTic <= ulNumExtrapolatedTics; ulTic++ )
 			{
 				if (( pClient->LateMoveCMDs.Size( ) > 0 ) && ( pClient->LateMoveCMDs[0]->getClientTic( ) == ulExtrapolateStartTic + ulTic ))
 				{
+					// [AK] If this is a weapon select command, just process it and move onto the next late command.
+					if ( pClient->LateMoveCMDs[0]->isMoveCmd( ) == false )
+					{
+						pClient->LateMoveCMDs[0]->process( ulClient );
+
+						delete pClient->LateMoveCMDs[0];
+						pClient->LateMoveCMDs.Delete( 0 );
+
+						ulTic--;
+						continue;
+					}
+
 					delete pClient->LastMoveCMD;
 					pClient->LastMoveCMD = new ClientMoveCommand( *static_cast<ClientMoveCommand *>( pClient->LateMoveCMDs[0] ));
 							
@@ -7479,7 +7530,7 @@ static void server_PerformBacktrace( ULONG ulClient )
 
 				// [AK] Adjust the sector ceiling/floor heights for the next tic that we extrapolated the player.
 				// We don't have to do this on the last tic that we extrapolated the player.
-				if ( ulTic < pClient->ulExtrapolatedTics )
+				if ( ulTic < ulNumExtrapolatedTics )
 				{
 					unlaggedIndex = ( unlaggedIndex + 1 ) % UNLAGGEDTICS;
 
@@ -7512,12 +7563,11 @@ static void server_PerformBacktrace( ULONG ulClient )
 			if ( pmo->z < pmo->floorz )
 				pmo->z = pmo->floorz;
 
-			pClient->lLastMoveTickProcess = lOldLastMoveTickProcess;
-
 			pmo->velx += pClient->backtraceThrust[0];
 			pmo->vely += pClient->backtraceThrust[1];
 			pmo->velz += pClient->backtraceThrust[2];
 
+			pClient->LastMoveCMD->setClientTic( ulExtrapolateStartTic + ulNumExtrapolatedTics );
 			debugMessage += "accepted";
 		}
 		else
@@ -7537,7 +7587,7 @@ static void server_PerformBacktrace( ULONG ulClient )
 			Printf( "%s.\n", debugMessage.GetChars( ));
 	}
 
-	SERVER_ResetClientExtrapolation( ulClient );
+	SERVER_ResetClientExtrapolation( ulClient, true );
 }
 
 //*****************************************************************************

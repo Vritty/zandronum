@@ -303,6 +303,11 @@ public:
 	{
 		return moveCmd.ulGametic;
 	}
+
+	void setClientTic( ULONG ulTic )
+	{
+		moveCmd.ulGametic = ulTic;
+	}
 };
 
 //*****************************************************************************
@@ -630,7 +635,7 @@ void		SERVER_HandleSkipCorrection( ULONG ulClient );
 bool		SERVER_IsExtrapolatingPlayer( ULONG ulClient );
 bool		SERVER_IsBacktracingPlayer( ULONG ulClient );
 void		SERVER_ResetClientTicBuffer( ULONG ulClient );
-void		SERVER_ResetClientExtrapolation( ULONG ulClient );
+void		SERVER_ResetClientExtrapolation( ULONG ulClient, bool bAfterBacktrace = false );
 
 // From sv_master.cpp
 void		SERVER_MASTER_Construct( void );
