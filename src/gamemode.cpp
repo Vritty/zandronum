@@ -1093,7 +1093,7 @@ LONG GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const i
 	// actor pointers that were responsible for calling the event
 	// become NULL after one tic.
 	// Also allow chat events to be executed immediately.
-	bool bRunNow = ( Event == GAMEEVENT_ACTOR_SPAWNED || Event == GAMEEVENT_ACTOR_DAMAGED || Event == GAMEEVENT_CHAT );
+	const bool bRunNow = ( Event == GAMEEVENT_ACTOR_SPAWNED || Event == GAMEEVENT_ACTOR_DAMAGED || Event == GAMEEVENT_ACTOR_ARMORDAMAGED || Event == GAMEEVENT_CHAT );
 
 	// [BB] The activator of the event activates the event script.
 	// The first argument is the type, e.g. GAMEEVENT_PLAYERFRAGS,
@@ -1111,7 +1111,7 @@ LONG GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const i
 
 //*****************************************************************************
 //
-bool GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *source, int &damage, FName mod )
+bool GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *source, int &damage, FName mod, bool bBeforeArmor )
 {
 	// [AK] Don't run any scripts if the target doesn't allow executing GAMEEVENT_ACTOR_DAMAGED.
 	if ( target->STFlags & STFL_NODAMAGEEVENTSCRIPT )
@@ -1122,6 +1122,8 @@ bool GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *sou
 	if ((( target->STFlags & STFL_USEDAMAGEEVENTSCRIPT ) == false ) && ( gameinfo.bForceDamageEventScripts == false ))
 		return true;
 	
+	const GAMEEVENT_e DamageEvent = bBeforeArmor ? GAMEEVENT_ACTOR_ARMORDAMAGED : GAMEEVENT_ACTOR_DAMAGED;
+
 	// [AK] We somehow need to pass all the actor pointers into the script itself. A simple way
 	// to do this is temporarily spawn a temporary actor and change its actor pointers to the target,
 	// source, and inflictor. We can then use these to initialize the AAPTR_DAMAGE_TARGET,
@@ -1133,7 +1135,7 @@ bool GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *sou
 	temp->tracer = inflictor;
 
 	GAMEMODE_SetEventResult( damage );
-	damage = GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, temp, damage, GlobalACSStrings.AddString( mod ));
+	damage = GAMEMODE_HandleEvent( DamageEvent, temp, damage, GlobalACSStrings.AddString( mod ));
 
 	// [AK] Destroy the temporary actor after executing all event scripts.
 	temp->Destroy( );

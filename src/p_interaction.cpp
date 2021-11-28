@@ -1552,6 +1552,11 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			if (!(flags & DMG_NO_ARMOR) && player->mo->Inventory != NULL)
 			{
+				// [AK] Trigger an event script indicating that the player has taken damage before any damage
+				// can be absorbed by their armor. If the event returns 0, don't do anything else.
+				if ( GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod, true ) == false )
+					return -1;
+
 				int newdam = damage;
 				player->mo->Inventory->AbsorbDamage (damage, mod, newdam);
 				damage = newdam;
@@ -1647,6 +1652,11 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 		// Armor for monsters.
 		if (!(flags & (DMG_NO_ARMOR|DMG_FORCED)) && target->Inventory != NULL && damage > 0)
 		{
+			// [AK] Trigger an event script indicating that the actor has taken damage before any damage
+			// can be absorbed by their armor. If the event returns 0, don't do anything else.
+			if ( GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod, true ) == false )
+				return -1;
+
 			int newdam = damage;
 			target->Inventory->AbsorbDamage (damage, mod, newdam);
 			damage = newdam;

@@ -11735,11 +11735,11 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, const ScriptPtr
 	// [TP] We need to store this as activefontname instead.
 	activefontname = "SmallFont";
 
-	// [AK] Check if this is an event script triggered by GAMEEVENT_ACTOR_DAMAGED. This is
-	// where we initialize the script's target, source, and inflictor pointers by using the
-	// temporary activator's own pointers.
+	// [AK] Check if this is an event script triggered by GAMEEVENT_ACTOR_DAMAGED or
+	// GAMEEVENT_ACTOR_ARMORDAMAGED. This is where we initialize the script's target,
+	// source, and inflictor pointers by using the temporary activator's own pointers.
 	if (( NETWORK_InClientMode( ) == false ) && ( who != NULL ) &&
-		( code->Type == SCRIPT_Event ) && ( args[0] == GAMEEVENT_ACTOR_DAMAGED ))
+		( code->Type == SCRIPT_Event ) && ( args[0] == GAMEEVENT_ACTOR_DAMAGED || args[0] == GAMEEVENT_ACTOR_ARMORDAMAGED ))
 	{
 		pDamageTarget = who->target;
 		pDamageSource = who->master;

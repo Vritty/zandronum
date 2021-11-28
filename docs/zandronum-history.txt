@@ -58,6 +58,7 @@
 +	- Added all of the text colors from "New Text Colors", originally made by FuzzballFox. [Kaminsky]
 +	- Added the EVENT script type: GAMEEVENT_PLAYERCONNECT, indicating when a client or bot joins the server. [Kaminsky]
 +	- Added the EVENT script type GAMEEVENT_ACTOR_SPAWNED and GAMEVENT_ACTOR_DAMAGED, which are triggered just before an actor's first tic and when an actor takes damage. Note that for performance reasons, these events are disabled by default so modders have to enable them by themselves. [Kaminsky]
++	- Added the EVENT script type GAMEEVENT_ACTOR_ARMORDAMAGED that's triggered just before an actor's armor absorbs any damage inflicted on it. [Kaminsky]
 +	- Added DMFlags: "sv_shootthroughallies" and "sv_dontpushallies", so a player's attacks can pass through and not push their allies. [Kaminsky]
 +	- Added packet loss mitigation, which the client can control using the CVar "cl_backupcommands". [Kaminsky]
 +	- Added the server CVAR "sv_country", which allows servers to present their country to launchers. [Sean]
