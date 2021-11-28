@@ -1056,32 +1056,20 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 
 	OutString += ChatString;
 
-	Printf( ulChatLevel, "%s\n", OutString.GetChars() );
-
-	// [BB] If the user doesn't want to see the messages, they shouldn't make a sound.
-	// [AK] Also take into account the minimum message level.
-	if (( show_messages ) && ( ulChatLevel >= C_GetMessageLevel() ))
-	{
-		// [RC] User can choose the chat sound.
-		int sound = ( ulMode > CHATMODE_TEAM ) ? privatechat_sound : chat_sound;
-
-		if ( sound == 1 ) // Default
-			S_Sound( CHAN_VOICE | CHAN_UI, gameinfo.chatSound, 1, ATTN_NONE );
-		else if ( sound == 2 ) // Doom 1
-			S_Sound( CHAN_VOICE | CHAN_UI, "misc/chat2", 1, ATTN_NONE );
-		else if ( sound == 3 ) // Doom 2
-			S_Sound( CHAN_VOICE | CHAN_UI, "misc/chat", 1, ATTN_NONE );
-	}
-
 	// [AK] Only save chat messages for non-private chat messages.
 	if (( ulMode != CHATMODE_PRIVATE_SEND ) && ( ulMode != CHATMODE_PRIVATE_RECEIVE ))
 	{
-		g_SavedChatMessages[ulPlayer].put( pszString );
+		// [AK] Remove any color codes that may still be in the chat message.
+		V_RemoveColorCodes( ChatString );
+
+		g_SavedChatMessages[ulPlayer].put( ChatString );
 
 		// [AK] Trigger an event script indicating that a chat message was received.
-		GAMEMODE_HandleEvent( GAMEEVENT_CHAT, 0, ulPlayer != MAXPLAYERS ? ulPlayer : -1, ulMode - CHATMODE_GLOBAL );
+		// If the event returns 0, then don't print the message.
+		if ( GAMEMODE_HandleEvent( GAMEEVENT_CHAT, NULL, ulPlayer != MAXPLAYERS ? ulPlayer : -1, ulMode - CHATMODE_GLOBAL ) == 0 )
+			return;
 
-		BOTCMD_SetLastChatString( pszString );
+		BOTCMD_SetLastChatString( ChatString );
 		BOTCMD_SetLastChatPlayer( PLAYER_IsValidPlayer( ulPlayer ) ? players[ulPlayer].userinfo.GetName() : "" );
 
 		for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
@@ -1097,6 +1085,23 @@ void CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString )
 			if ( players[ulIdx].pSkullBot )
 				players[ulIdx].pSkullBot->PostEvent( BOTEVENT_PLAYER_SAY );
 		}
+	}
+
+	Printf( ulChatLevel, "%s\n", OutString.GetChars() );
+
+	// [BB] If the user doesn't want to see the messages, they shouldn't make a sound.
+	// [AK] Also take into account the minimum message level.
+	if (( show_messages ) && ( ulChatLevel >= C_GetMessageLevel() ))
+	{
+		// [RC] User can choose the chat sound.
+		int sound = ( ulMode > CHATMODE_TEAM ) ? privatechat_sound : chat_sound;
+
+		if ( sound == 1 ) // Default
+			S_Sound( CHAN_VOICE | CHAN_UI, gameinfo.chatSound, 1, ATTN_NONE );
+		else if ( sound == 2 ) // Doom 1
+			S_Sound( CHAN_VOICE | CHAN_UI, "misc/chat2", 1, ATTN_NONE );
+		else if ( sound == 3 ) // Doom 2
+			S_Sound( CHAN_VOICE | CHAN_UI, "misc/chat", 1, ATTN_NONE );
 	}
 }
 

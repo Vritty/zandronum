@@ -1231,11 +1231,18 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 	}
 	else
 	{
-		SERVERCOMMANDS_PlayerSay( ulPlayer, pszString, ulMode, bForbidChatToPlayers );
-		CHAT_AddChatMessage( ulPlayer, pszString );
+		// [AK] Remove any color codes that may still be in the chat message.
+		FString cleanedStringWithoutColor = cleanedChatString;
+		V_RemoveColorCodes( cleanedStringWithoutColor );
+
+		CHAT_AddChatMessage( ulPlayer, cleanedStringWithoutColor );
 
 		// [AK] Trigger an event script indicating that a chat message was received.
-		GAMEMODE_HandleEvent( GAMEEVENT_CHAT, 0, ulPlayer != MAXPLAYERS ? ulPlayer : -1, ulMode - CHATMODE_GLOBAL );
+		// If the event returns 0, then don't print the message or send it to the clients.
+		if ( GAMEMODE_HandleEvent( GAMEEVENT_CHAT, NULL, ulPlayer != MAXPLAYERS ? ulPlayer : -1, ulMode - CHATMODE_GLOBAL ) == 0 )
+			return;
+
+		SERVERCOMMANDS_PlayerSay( ulPlayer, pszString, ulMode, bForbidChatToPlayers );
 	}
 
 	if ( ulMode == CHATMODE_PRIVATE_SEND )
