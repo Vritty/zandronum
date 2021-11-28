@@ -3929,7 +3929,9 @@ int P_ExecuteSpecial(int			num,
 		// or backtraced right now. We want to keep track of any specials this player has executed while
 		// being extrapolated so that if they're backtraced and execute the exact same special again, we
 		// can simply cancel the execution.
-		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( activator ) && ( activator->player ))
+		// Ignore line specials LS_ThrustThing (72) and LS_ThrustThingZ (128), as we should allow these
+		// specials to be repeated by the player during a backtrace.
+		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( num != 72 && num != 128 ) && ( activator ) && ( activator->player ))
 		{
 			CLIENT_s *pClient = SERVER_GetClient( activator->player - players );
 			CLIENT_SAVED_SPECIAL_s savedSpecial;
