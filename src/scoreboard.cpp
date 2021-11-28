@@ -574,7 +574,7 @@ static void scoreboard_DrawHeader( ULONG ulPlayer )
 	}
 
 	// Draw the team scores and their relation (tied, red leads, etc).
-	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+	if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) && (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNKILLS ) == false ))
 	{
 		if ( gamestate != GS_LEVEL )
 			g_ulCurYPos += SmallFont->GetHeight( ) + 1;

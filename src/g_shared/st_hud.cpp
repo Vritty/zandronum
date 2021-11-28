@@ -1068,6 +1068,10 @@ FString HUD_BuildPointString( void )
 		scoreName = "frag";
 		scoreFunction = &TEAM_GetFragCount;
 	}
+	else
+	{
+		return "";
+	}
 
 	// [AK] Get the score of any available teams;
 	for ( ULONG ulTeam = 0; ulTeam < teams.Size( ); ulTeam++ )
