@@ -467,10 +467,6 @@ struct CLIENT_s
 	// [AK] A list of specials this player executed while being extrapolated.
 	TArray<CLIENT_SAVED_SPECIAL_s>	ExtrapolatedSpecials;
 
-	// [AK] The player might have already been pushed before we start performing a backtrace on them, so
-	// we need to know how much thrust we need to add back in case the backtrace succeeds.
-	fixed_t			backtraceThrust[3];
-
 	// [BB] Variables for the account system
 	FString username;
 	unsigned int clientSessionID;

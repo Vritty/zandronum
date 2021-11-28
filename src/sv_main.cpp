@@ -698,23 +698,6 @@ void SERVER_Tick( void )
 		// [BB] Tick the unlagged module.
 		UNLAGGED_Tick( );
 
-		// [AK] If the skip correction is enabled, also record their velocities before they move.
-		// This way, we can determine how much the player is thrusted, in case we need to perform a
-		// backtrace on them, so we can re-add the thrust velocity afterwards.
-		if ( sv_smoothplayers )
-		{
-			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-			{
-				if (( SERVER_IsValidClient( ulIdx )) && ( players[ulIdx].mo ))
-				{
-					CLIENT_s *client = SERVER_GetClient( ulIdx );
-					client->backtraceThrust[0] = players[ulIdx].mo->velx;
-					client->backtraceThrust[1] = players[ulIdx].mo->vely;
-					client->backtraceThrust[2] = players[ulIdx].mo->velz;
-				}
-			}
-		}
-
 		G_Ticker ();
 
 		// However we need to spawn the unlagged debug actors here i.e. after having processed their
@@ -7490,12 +7473,6 @@ static void server_PerformBacktrace( ULONG ulClient )
 			sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
 		}
 
-		// [AK] Save the player's current state and thrust, then move them back to where they
-		// were before they were extrapolated.
-		pClient->backtraceThrust[0] = pmo->velx - pClient->backtraceThrust[0];
-		pClient->backtraceThrust[1] = pmo->vely - pClient->backtraceThrust[1];
-		pClient->backtraceThrust[2] = pmo->velz - pClient->backtraceThrust[2];
-
 		CLIENT_PLAYER_DATA_s oldData( &players[ulClient] );
 		pClient->OldData->Restore( &players[ulClient] );
 
@@ -7571,10 +7548,6 @@ static void server_PerformBacktrace( ULONG ulClient )
 			// [AK] As a final measure, fix the player's floorz/ceilingz and to ensure that they don't
 			// get stuck in the floor/ceiling of whatever sector they're supposed to be in.
 			server_FixZFromBacktrace( pmo, oldFloorZ );
-
-			pmo->velx += pClient->backtraceThrust[0];
-			pmo->vely += pClient->backtraceThrust[1];
-			pmo->velz += pClient->backtraceThrust[2];
 
 			pClient->LastMoveCMD->setClientTic( ulExtrapolateStartTic + ulNumExtrapolatedTics );
 			debugMessage += "accepted";
