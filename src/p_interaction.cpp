@@ -1573,7 +1573,10 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 			}
 			
 			// [AK] Trigger an event script indicating that the player has taken damage, if we can.
-			GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod );
+			// If the event returns 0, then the target doesn't take damage and we do nothing.
+			if ( GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod ) == false )
+				return -1;
+
 			bDamageEventHandled = true;
 
 			if (damage >= player->health
@@ -1585,8 +1588,9 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 		}
 
 		// [AK] If we haven't done so already, trigger an event script indicating that the player has taken damage.
-		if ( bDamageEventHandled == false )
-			GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod );
+		// If the event returns 0, then the target doesn't take damage and we do nothing.
+		if (( bDamageEventHandled == false ) && ( GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod ) == false ))
+			return -1;
 
 		player->health -= damage;		// mirror mobj health here for Dave
 		// [RH] Make voodoo dolls and real players record the same health
@@ -1653,7 +1657,9 @@ int P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage,
 		}
 	
 		// [AK] Trigger an event script indicating that the target actor has taken damage, if we can.
-		GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod );
+		// If the event returns 0, then the target doesn't take damage and we do nothing.
+		if ( GAMEMODE_HandleDamageEvent( target, inflictor, source, damage, mod ) == false )
+			return -1;
 
 		target->health -= damage;	
 	}

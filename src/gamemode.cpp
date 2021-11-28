@@ -1110,16 +1110,16 @@ LONG GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const i
 
 //*****************************************************************************
 //
-void GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *source, int damage, FName mod )
+bool GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *source, int &damage, FName mod )
 {
 	// [AK] Don't run any scripts if the target doesn't allow executing GAMEEVENT_ACTOR_DAMAGED.
 	if ( target->STFlags & STFL_NODAMAGEEVENTSCRIPT )
-		return;
+		return true;
 
 	// [AK] Don't run any scripts if the target can't execute GAMEEVENT_ACTOR_DAMAGED unless
 	// all actors are forced to execute it.
 	if ((( target->STFlags & STFL_USEDAMAGEEVENTSCRIPT ) == false ) && ( gameinfo.bForceDamageEventScripts == false ))
-		return;
+		return true;
 	
 	// [AK] We somehow need to pass all the actor pointers into the script itself. A simple way
 	// to do this is temporarily spawn a temporary actor and change its actor pointers to the target,
@@ -1131,10 +1131,14 @@ void GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *sou
 	temp->master = source;
 	temp->tracer = inflictor;
 
-	GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, temp, damage, GlobalACSStrings.AddString( mod ));
+	GAMEMODE_SetEventResult( damage );
+	damage = GAMEMODE_HandleEvent( GAMEEVENT_ACTOR_DAMAGED, temp, damage, GlobalACSStrings.AddString( mod ));
 
 	// [AK] Destroy the temporary actor after executing all event scripts.
 	temp->Destroy( );
+
+	// [AK] If the new damage is zero, that means the target shouldn't take damage in P_DamageMobj.
+	return ( damage != 0 );
 }
 
 //*****************************************************************************
