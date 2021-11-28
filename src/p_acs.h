@@ -1176,6 +1176,7 @@ FArchive &operator<< (FArchive &arc, acsdefered_t *&defer);
 //	PROTOTYPES
 
 bool	ACS_IsCalledFromConsoleCommand( void );
+bool	ACS_IsEventScript( int script ); // [AK]
 bool	ACS_IsCalledFromScript( void ); // [AK]
 bool	ACS_IsScriptClientSide( int script );
 bool	ACS_IsScriptClientSide( const ScriptPtr *pScriptData );

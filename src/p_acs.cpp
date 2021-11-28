@@ -7814,6 +7814,14 @@ int DLevelScript::RunScript ()
 
 	switch (state)
 	{
+	// [AK] If this is the first tic of an event script, initialize the result value to whatever the current
+	// event's result value is supposed to be at this moment. This is so that in case there's multiple event
+	// scripts, the result of the event can easily be transferred from one script to the next.
+	case SCRIPT_Running:
+		if ( ACS_IsEventScript( script ))
+			resultValue = GAMEMODE_GetEventResult( );
+		break;
+
 	case SCRIPT_Delayed:
 		// Decrement the delay counter and enter state running
 		// if it hits 0
@@ -11668,6 +11676,10 @@ scriptwait:
 	// [AK] We're done running this script so any action or line specials activated now aren't done in ACS.
 	g_pCurrentScript = NULL;
 
+	// [AK] If this is an event script and the result value differs from the event's result value, update it.
+	if (( ACS_IsEventScript( script )) && ( resultValue != GAMEMODE_GetEventResult( )))
+		GAMEMODE_SetEventResult( resultValue );
+
 	// [BB] Stop the net traffic measurement and add the result to this script's traffic.
 	NETTRAFFIC_AddACSScriptTraffic ( script, NETWORK_StopTrafficMeasurement ( ) );
 
@@ -12273,6 +12285,19 @@ bool ACS_IsCalledFromConsoleCommand( void )
 bool ACS_IsCalledFromScript( void )
 {
 	return ( g_pCurrentScript != NULL );
+}
+
+//*****************************************************************************
+//
+bool ACS_IsEventScript( int script )
+{
+	FBehavior *pModule = NULL;
+	const ScriptPtr *pScriptData = FBehavior::StaticFindScript( script, pModule );
+
+	if ( pScriptData == NULL )
+		return ( false );
+
+	return ( pScriptData->Type == SCRIPT_Event );
 }
 
 //*****************************************************************************

@@ -89,6 +89,9 @@ static	GAMEMODE_s				g_GameModes[NUM_GAMEMODES];
 // Our current game mode.
 static	GAMEMODE_e				g_CurrentGameMode;
 
+// [AK] The result value of the current event being executed.
+static	LONG					g_lEventResult = 1;
+
 // [BB] Implement the string table and the conversion functions for the GMF and GAMEMODE enums.
 #define GENERATE_ENUM_STRINGS  // Start string generation
 #include "gamemode_enums.h"
@@ -1079,11 +1082,11 @@ void GAMEMODE_SetState( GAMESTATE_e GameState )
 
 //*****************************************************************************
 //
-void GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const int DataOne, const int DataTwo )
+LONG GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const int DataOne, const int DataTwo )
 {
 	// [BB] Clients don't start scripts.
 	if ( NETWORK_InClientMode() )
-		return;
+		return 1;
 
 	// [AK] Allow events that are triggered by an actor spawning or
 	// taking damage to be executed immediately, in case any of the
@@ -1096,6 +1099,13 @@ void GAMEMODE_HandleEvent ( const GAMEEVENT_e Event, AActor *pActivator, const i
 	// the second and third are specific to the event, e.g. the second is the number of the fragged player.
 	// The third argument will be zero if it isn't used in the script.
 	FBehavior::StaticStartTypedScripts( SCRIPT_Event, pActivator, true, Event, bRunNow, false, DataOne, DataTwo );
+
+	// [AK] Get the result value of the event, then reset it back to the default value.
+	LONG lResult = GAMEMODE_GetEventResult( );
+	GAMEMODE_SetEventResult( 1 );
+
+	// [AK] Return the result value of the event.
+	return lResult;
 }
 
 //*****************************************************************************
@@ -1125,6 +1135,20 @@ void GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *sou
 
 	// [AK] Destroy the temporary actor after executing all event scripts.
 	temp->Destroy( );
+}
+
+//*****************************************************************************
+//
+LONG GAMEMODE_GetEventResult( )
+{
+	return g_lEventResult;
+}
+
+//*****************************************************************************
+//
+void GAMEMODE_SetEventResult( LONG lResult )
+{
+	g_lEventResult = lResult;
 }
 
 //*****************************************************************************
