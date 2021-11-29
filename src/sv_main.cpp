@@ -7621,7 +7621,7 @@ static void server_FixZFromBacktrace( APlayerPawn *pmo, fixed_t oldFloorZ )
 	{
 		pmo->z = pmo->floorz;
 	}
-	else
+	else if ( oldFloorZ != pmo->floorz )
 	{
 		// [AK] Check if the player should move with the floor if it moved, similarly to PIT_FloorDrop.
 		if (( pmo->velz == 0 ) && (!( pmo->flags & MF_NOGRAVITY ) || ( pmo->z == oldFloorZ && !( pmo->flags & MF_NOLIFTDROP ))))
