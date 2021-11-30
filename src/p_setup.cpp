@@ -4680,6 +4680,16 @@ void P_SetupLevel (char *lumpname, int position)
 		// [BB] We have to reset the state though when this is a new game.
 		if ( ( SURVIVAL_GetState( ) == SURVS_COUNTDOWN ) || ( gameaction == ga_newgame ) )
 			SURVIVAL_SetState( SURVS_WAITINGFORPLAYERS );
+
+		// [AK] If we still advanced to the next map when the mission failed, then either the countdown
+		// if there's still people playing, or reset the state entirely.
+		if ( SURVIVAL_GetState( ) == SURVS_MISSIONFAILED )
+		{
+			if ( SERVER_CalcNumNonSpectatingPlayers( MAXPLAYERS ) < 1 )
+				SURVIVAL_SetState( SURVS_WAITINGFORPLAYERS );
+			else
+				SURVIVAL_StartCountdown(( sv_survivalcountdowntime > 0 ? sv_survivalcountdowntime : 20 ) * TICRATE - 1 );
+		}
 	}
 
 	if ( NETWORK_InClientMode() == false )
