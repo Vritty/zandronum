@@ -1123,6 +1123,7 @@ bool GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *sou
 		return true;
 	
 	const GAMEEVENT_e DamageEvent = bBeforeArmor ? GAMEEVENT_ACTOR_ARMORDAMAGED : GAMEEVENT_ACTOR_DAMAGED;
+	const int originalDamage = damage;
 
 	// [AK] We somehow need to pass all the actor pointers into the script itself. A simple way
 	// to do this is temporarily spawn a temporary actor and change its actor pointers to the target,
@@ -1141,7 +1142,8 @@ bool GAMEMODE_HandleDamageEvent ( AActor *target, AActor *inflictor, AActor *sou
 	temp->Destroy( );
 
 	// [AK] If the new damage is zero, that means the target shouldn't take damage in P_DamageMobj.
-	return ( damage != 0 );
+	// Allow P_DamageMobj to execute anyways if the original damage was zero (i.e. NODAMAGE flag).
+	return ( originalDamage == 0 || damage != 0 );
 }
 
 //*****************************************************************************
