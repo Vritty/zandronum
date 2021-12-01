@@ -3380,9 +3380,17 @@ void SERVERCOMMANDS_SoundActor( AActor *pActor, LONG lChannel, const char *pszSo
 	if ( pActor == NULL )
 		return;
 
-	// [AK] If the actor is a player, don't tell clients to play the sound while we're backtracing their movement.
+	// [AK] There's a few sounds that we shouldn't play if it originated from a player who we're backtracing.
 	if (( pActor->player ) && ( SERVER_IsBacktracingPlayer( pActor->player - players )))
-		return;
+	{
+		static const char *pszRestrictedSounds[7] = { "*grunt", "*land", "*falling", "*jump", "*dive", "*surface", "*gasp" };
+
+		for ( unsigned int i = 0; i < 7; i++ )
+		{
+			if ( stricmp( pszSound, pszRestrictedSounds[i] ) == 0 )
+				return;
+		}
+	}
 
 	// [BB] If the actor doesn't have a NetID, we have to instruct the clients differently how to play the sound.
 	if ( pActor->NetID == -1 )
