@@ -82,6 +82,9 @@
 // Amount of time the client has to report his checksum of the level.
 #define	CLIENT_CHECKSUM_WAITTIME	( 15 * TICRATE )
 
+// [AK] Maximum amount of gametics of recent commands from a client that we can store.
+#define MAX_RECENT_COMMANDS			15
+
 // This is for the server console, but since we normally can't include that (win32 stuff),
 // we can just put it here.
 #define	UDF_NAME					0x00000001
@@ -391,6 +394,12 @@ struct CLIENT_s
 
 	// [BB] A record of the gametics the client called protected minor commands, e.g. toggleconsole.
 	RingBuffer<LONG, 100> minorCommandInstances;
+
+	// [AK] A list of gametics of the last few movement commands the client sent us.
+	RingBuffer<ULONG, MAX_RECENT_COMMANDS>	recentMoveCMDs;
+
+	// [AK] A list of (non-zero) gametics of the last few weapon select commands the client sent us.
+	RingBuffer<ULONG, MAX_RECENT_COMMANDS>	recentSelectCMDs;
 
 	// A record of the gametic the client spoke at. We store the last MAX_CHATINSTANCE_STORAGE
 	// times the client chatted. This is used to chat spam protection.

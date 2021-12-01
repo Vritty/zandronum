@@ -2040,6 +2040,10 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	// should be able to go back is the gametic they connected with.
 	g_aClients[lClient].lLastServerGametic = gametic;
 
+	// [AK] Clear any recent command gametics from the client.
+	g_aClients[lClient].recentMoveCMDs.clear();
+	g_aClients[lClient].recentSelectCMDs.clear();
+
 	// [AK] Reset the client's tic buffer.
 	SERVER_ResetClientTicBuffer( lClient );
 
@@ -5202,13 +5206,27 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 	const ULONG ulClientTic = cmd->getClientTic( );
 	const bool bIsMoveCMD = cmd->isMoveCmd( );
 
-	// [AK] Ignore commands that arrived too late or are duplicates of commands we already processed,
-	// neither of which we can account for anymore. This way, we aren't processing the same commands
-	// again, or that happened too far into the past.
-	if (( ulClientTic != 0 ) && ( ulClientTic <= g_aClients[g_lCurrentClient].ulClientGameTic ))
+	// [AK] Ignore commands that are duplicates of commands we already received and/or processed.
+	// This way, we won't process the exact same commands multiple times.
+	if ( ulClientTic != 0 )
 	{
-		delete cmd;
-		return false;
+		RingBuffer<ULONG, MAX_RECENT_COMMANDS> *recentCMDs;
+
+		// [AK] Move commands and weapon select commands each have their own ring buffers, since
+		// a movement and weapon select commands with the same gametic can co-exist.
+		recentCMDs = bIsMoveCMD ? &g_aClients[g_lCurrentClient].recentMoveCMDs : &g_aClients[g_lCurrentClient].recentSelectCMDs;
+
+		for ( unsigned int i = 0; i < MAX_RECENT_COMMANDS; i++ )
+		{
+			if ( recentCMDs->getOldestEntry( i ) == ulClientTic )
+			{
+				delete cmd;
+				return false;
+			}
+		}
+
+		// [AK] Save this gametic into the ring buffer for later use.
+		recentCMDs->put( ulClientTic );
 	}
 
 	if ( sv_useticbuffer )
@@ -5238,25 +5256,11 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 			{
 				ULONG ulBufferClientTic = (*buffer)[i]->getClientTic( );
 
-				if ( ulBufferClientTic != 0 )
+				// [AK] Reorganize the commands in case they arrived in the wrong order.
+				if (( ulBufferClientTic != 0 ) && ( ulClientTic < ulBufferClientTic ))
 				{
-					// [AK] Double-check to make sure we don't already have this command stored anywhere in the buffer.
-					// If it's not a late command, we also need to make sure there aren't any newer move commands already
-					// in the tic buffer. If any of these conditions fail, we have to ignore this command.
-					// Movement and weapon select commands with the same gametic can co-exist in the tic buffer, as
-					// they're not the same command, but two movement or weapon select commands cannot.
-					if (( ulBufferClientTic == ulClientTic ) && ( bIsMoveCMD == (*buffer)[i]->isMoveCmd( )))
-					{
-						delete cmd;
-						return false;
-					}
-
-					// [AK] Reorganize the commands in case they arrived in the wrong order.
-					if ( ulClientTic < ulBufferClientTic )
-					{
-						buffer->Insert( i, cmd );
-						return false;
-					}
+					buffer->Insert( i, cmd );
+					return false;
 				}
 			}
 		}
@@ -5465,14 +5469,7 @@ void SERVER_ResetClientTicBuffer( ULONG ulClient )
 
 	// [AK] Clear all stored commands in the tic buffer.
 	for ( unsigned int i = 0; i < g_aClients[ulClient].MoveCMDs.Size( ); i++ )
-	{
-		// [AK] Set the client's gametic to the last command in their tic buffer that has a non-zero
-		// gametic. This way, any old and therefore invalid backup commands will be rejected.
-		if ( g_aClients[ulClient].MoveCMDs[i]->getClientTic( ) != 0 )
-			g_aClients[ulClient].ulClientGameTic = g_aClients[ulClient].MoveCMDs[i]->getClientTic( );
-
 		delete g_aClients[ulClient].MoveCMDs[i];
-	}
 
 	g_aClients[ulClient].MoveCMDs.Clear( );
 
@@ -5502,12 +5499,9 @@ void SERVER_ResetClientExtrapolation( ULONG ulClient, bool bAfterBacktrace )
 				// to the last late command we received from them and update their gametic.
 				if ( bUpdatedLastMoveCMD == false )
 				{
-					ULONG ulNewClientGametic = g_aClients[ulClient].LastMoveCMD->getClientTic( ) + g_aClients[ulClient].ulExtrapolatedTics;
-
 					delete g_aClients[ulClient].LastMoveCMD;
 					g_aClients[ulClient].LastMoveCMD = static_cast<ClientMoveCommand *>( g_aClients[ulClient].LateMoveCMDs[i] );
 
-					g_aClients[ulClient].LastMoveCMD->setClientTic( ulNewClientGametic );
 					bUpdatedLastMoveCMD = true;
 					continue;
 				}
