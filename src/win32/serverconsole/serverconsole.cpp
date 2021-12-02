@@ -512,8 +512,7 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 			RECT			ThisWindowRect;
 			ANIMATIONINFO	AnimationInfo;
 			NOTIFYICONDATA	NotifyIconData;
-			UCVarValue		Val;
-			char			szString[64];
+			FString			uncolorizedHostname;
 
 			AnimationInfo.cbSize = sizeof( AnimationInfo );
 			SystemParametersInfo( SPI_GETANIMATION, sizeof( AnimationInfo ), &AnimationInfo, 0 );
@@ -547,10 +546,12 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 			NotifyIconData.uCallbackMessage = UWM_TRAY_TRAYID;
 			NotifyIconData.hIcon = g_hSmallIcon;
 			
-			Val = sv_hostname.GetGenericRep( CVAR_String );
-			strncpy( szString, Val.String, 63 );
-			szString[63] = 0;
-			lstrcpy( NotifyIconData.szTip, szString );
+			// [AK] Remove any color codes in the server name before sending it off.
+			uncolorizedHostname = sv_hostname.GetGenericRep( CVAR_String ).String;
+			V_ColorizeString( uncolorizedHostname );
+			V_RemoveColorCodes( uncolorizedHostname );
+
+			lstrcpy( NotifyIconData.szTip, uncolorizedHostname.GetChars( ));
 
 			Shell_NotifyIcon( NIM_ADD, &NotifyIconData );
 			break;
