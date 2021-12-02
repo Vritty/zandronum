@@ -1243,7 +1243,8 @@ void TEAM_UpdateCarriers( void )
 //
 player_t *TEAM_GetCarrier( ULONG ulTeamIdx )
 {
-	if ( TEAM_CheckIfValid( ulTeamIdx ))
+	// [AK] Also make sure that this team's carrier is still valid.
+	if (( TEAM_CheckIfValid( ulTeamIdx )) && ( PLAYER_IsValidPlayerWithMo( teams[ulTeamIdx].g_pCarrier - players )))
 		return ( teams[ulTeamIdx].g_pCarrier );
 
 	return ( NULL );
