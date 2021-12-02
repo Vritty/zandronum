@@ -432,7 +432,7 @@ void CLIENTCOMMANDS_ClientMove( void )
 	CLIENT_MOVE_COMMAND_s moveCMD = clientcommand_CreateMoveCommand( );
 
 	// [AK] If we don't want to send backup commands, send only this one and that's it.
-	if (( sv_smoothplayers == 0 ) || ( cl_backupcommands == 0 ))
+	if ( cl_backupcommands == 0 )
 	{
 		CLIENT_GetLocalBuffer( )->ByteStream.WriteByte( CLC_CLIENTMOVE );
 		clientcommand_WriteMoveCommandToBuffer( moveCMD );
