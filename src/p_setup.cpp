@@ -4670,6 +4670,11 @@ void P_SetupLevel (char *lumpname, int position)
 	// a "map" map change during possessions hold countdown to a CTF/ST map, the counter would stay
 	// on the screen of the clients after the map change.
 	{
+		// [AK] In case we changed levels in the middle of a duel's win sequence, just start a new duel
+		// so the loser still gets sent to spectators.
+		if (( DUEL_GetState( ) == DS_WINSEQUENCE ) && ( DUEL_GetStartNextDuelOnLevelLoad( ) == false ))
+			DUEL_SetStartNextDuelOnLevelLoad( true );
+
 		DUEL_SetState( DS_WAITINGFORPLAYERS );
 		LASTMANSTANDING_SetState( LMSS_WAITINGFORPLAYERS );
 		POSSESSION_SetState( PSNS_WAITINGFORPLAYERS );
