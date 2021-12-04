@@ -543,7 +543,7 @@ static void HUD_DrawBottomString( ULONG ulDisplayPlayer )
 			ULONG ulTimeLeft = MIN( g_lRespawnDelay, 1 + ( g_lRespawnGametic - level.time ) / TICRATE );
 
 			bottomString += "\n" TEXTCOLOR_GREEN;
-			bottomString.AppendFormat( "Ready to respawn in %d second%s", ulTimeLeft, ulTimeLeft != 1 ? "s" : "" );
+			bottomString.AppendFormat( "Ready to respawn in %lu second%s", ulTimeLeft, ulTimeLeft != 1 ? "s" : "" );
 		}
 	}
 
