@@ -1447,6 +1447,10 @@ void GAMEMODE_SetLimit( GAMELIMIT_e GameLimit, int value )
 		case GAMELIMIT_WAVES:
 			wavelimit.ForceSet( Val, CVAR_Int );
 			break;
+
+		default:
+			I_Error( "GAMEMODE_SetLimit: Unhandled GameLimit\n." );
+			break;
 	}
 }
 
