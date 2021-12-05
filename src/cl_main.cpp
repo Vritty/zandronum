@@ -3494,7 +3494,7 @@ void ServerCommands::SpawnPlayer::Execute()
 	const BYTE oldPlayerClass = pPlayer->CurrentPlayerClass;
 
 	// Set up the player class.
-	pPlayer->CurrentPlayerClass = playerClass;
+	pPlayer->CurrentPlayerClass = clamp<int>( playerClass, 0, PlayerClasses.Size() -1 );
 	pPlayer->cls = PlayerClasses[pPlayer->CurrentPlayerClass].Type;
 
 	if ( isMorphed )
@@ -5787,7 +5787,7 @@ static void client_SetGameSkill( BYTESTREAM_s *pByteStream )
 	UCVarValue	Value;
 
 	// Read in the gameskill setting, and set gameskill to this setting.
-	Value.Int = pByteStream->ReadByte();
+	Value.Int = clamp<int>( pByteStream->ReadByte(), 0, AllSkills.Size() - 1);
 	gameskill.ForceSet( Value, CVAR_Int );
 
 	// Do the same for botskill.
