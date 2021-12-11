@@ -45,8 +45,8 @@ unsigned int GetRevisionNumber();
 /** Lots of different version numbers **/
 
 #define GAME_MAJOR_VERSION 3
-#define GAME_MINOR_VERSION 0
-#define GAMEVER_STRING "3.0.1"
+#define GAME_MINOR_VERSION 1
+#define GAMEVER_STRING "3.1"
 #define DOTVERSIONSTR GAMEVER_STRING
 #define VERSIONSTR DOTVERSIONSTR
 
@@ -80,9 +80,7 @@ unsigned int GetRevisionNumber();
 // [BB] Use the revision number to automatically make builds from
 // different revisions incompatible. Skulltag only uses one byte
 // to transfer NETGAMEVERSION, so we need to limit its value to [0,255].
-//#define NETGAMEVERSION (GetRevisionNumber() % 256)
-// [BB] Stay network compatible with 3.0.
-#define NETGAMEVERSION (1504266050 % 256)
+#define NETGAMEVERSION (GetRevisionNumber() % 256)
 
 // Version stored in the ini's [LastRun] section.
 // Bump it if you made some configuration change that you want to
