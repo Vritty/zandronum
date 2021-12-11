@@ -286,7 +286,7 @@ CVAR( Int, sv_smoothplayers_debuginfo, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY ) // [AK]
 
 //*****************************************************************************
 // [AK] Smooths the movement of lagging players using extrapolation and correction.
-CUSTOM_CVAR( Int, sv_smoothplayers, 0, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO ) 
+CUSTOM_CVAR( Int, sv_smoothplayers, 0, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO|CVAR_DEBUGONLY )
 {
 	// [AK] We can't extrapolate for a negative number of tics.
 	if ( self < 0 )
@@ -1422,7 +1422,7 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 	SERVERCOMMANDS_SetCVar( sv_hostname, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 	// [AK] Send the current state of the skip correction.
-	SERVERCOMMANDS_SetCVar( sv_smoothplayers, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+	// SERVERCOMMANDS_SetCVar( sv_smoothplayers, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 	// Send dmflags.
 	SERVERCOMMANDS_SetGameDMFlags( g_lCurrentClient, SVCF_ONLYTHISCLIENT );
