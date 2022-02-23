@@ -155,33 +155,22 @@ if( WIN32 )
 	if( NOT DX_LIBS_FOUND )
 		message( FATAL_ERROR "Could not find DirectX 9 libraries" )
 	endif( NOT DX_LIBS_FOUND )
- 	if( NOT NO_OPENAL )
- 
- 		message( STATUS "Looking for al.h" )
- 		set( OPENAL_SEARCH_PATHS
- 			ENV ALSDK_DIR
- 			ENV MINGDIR
- 			"C:/Program Files/OpenAL 1.1 SDK"
- 			"C:/Program Files (x86)/OpenAL 1.1 SDK"
- 			"E:/Programs/Dev/OpenAL"
- 			"E:/Program Files (x86)/OpenAL 1.1 SDK" )
- 
- 		find_path( OPENAL_INCLUDE_DIR al.h
- 		PATHS ${OPENAL_SEARCH_PATHS}
- 		PATH_SUFFIXES include include/AL )
- 		if( OPENAL_INCLUDE_DIR )
- 			message( STATUS "Looking for al.h - found: ${OPENAL_INCLUDE_DIR}" )
- 		else( OPENAL_INCLUDE_DIR )
- 			message( STATUS "Looking for al.h - not found" )
- 		endif( OPENAL_INCLUDE_DIR )
-  
- 		if( NOT OPENAL_INCLUDE_DIR )
- 			set( NO_OPENAL ON )
- 		else( NOT OPENAL_INCLUDE_DIR )
- 			include_directories( ${OPENAL_INCLUDE_DIR} )
- 		endif( NOT OPENAL_INCLUDE_DIR )
- 	endif( NOT NO_OPENAL )
-  
+
+	if( NOT NO_OPENAL )
+	find_package( OpenAL )
+	mark_as_advanced(CLEAR OPENAL_INCLUDE_DIR)
+	if( OPENAL_INCLUDE_DIR )
+		include_directories( ${OPENAL_INCLUDE_DIR} )
+		mark_as_advanced(CLEAR OPENAL_LIBRARY)
+		if( OPENAL_LIBRARY )
+			set( ZDOOM_LIBS ${OPENAL_LIBRARY} ${ZDOOM_LIBS} )
+		else()
+			set( NO_OPENAL ON )
+		endif( OPENAL_LIBRARY )
+	endif( OPENAL_INCLUDE_DIR )
+	else()
+		set( NO_OPENAL ON )
+	endif( NOT NO_OPENAL )
 
 	set( ZDOOM_LIBS
 		wsock32
@@ -197,22 +186,7 @@ if( WIN32 )
 		setupapi
 		oleaut32 
 		DelayImp )
-  	if( NOT NO_OPENAL )
-  		message( STATUS "Looking for OpenAL library" )
-  		find_library( OPENAL_LIBRARY NAMES OpenAL32
-  			PATHS ${OPENAL_SEARCH_PATHS}
-  			PATH_SUFFIXES lib )
-   
-  		if( NOT OPENAL_LIBRARY )
-  			set( NO_OPENAL ON )
-  			message( STATUS "Looking for OpenAL library - not found" )
-  		else( NOT OPENAL_LIBRARY )
-  			set( ZDOOM_LIBS ${ZDOOM_LIBS} "${OPENAL_LIBRARY}" )
-  			message( STATUS "Looking for OpenAL library - found" )
-  		endif( NOT OPENAL_LIBRARY )
-   
-  	endif( NOT NO_OPENAL )
-else( WIN32 )
+
 	if( APPLE )
 		set( FMOD_SEARCH_PATHS "/Developer/FMOD Programmers API Mac/api" )
 		set( FMOD_INC_PATH_SUFFIXES PATH_SUFFIXES inc )
@@ -276,14 +250,7 @@ else( WIN32 )
 			else( XCURSOR_HEADER )
 				unset( XCURSOR_LIB )
 			endif( XCURSOR_HEADER )
-		endif( XCURSOR_LIB )
-  		pkg_check_modules( OPENAL openal )
-  		if( NOT OPENAL_FOUND )
-  			set( NO_OPENAL ON )
-  		else( NOT OPENAL_FOUND )
-  			set( ZDOOM_LIBS ${ZDOOM_LIBS} ${OPENAL_LIBRARIES} )
-  			include_directories( ${OPENAL_INCLUDE_DIRS} )
-  		endif( NOT OPENAL_FOUND )
+		endif( XCURSOR_LIB ))
 	endif( APPLE )
 	set( NASM_NAMES nasm )
 	
@@ -398,19 +365,21 @@ endif( NOT NO_FMOD )
 if( NO_FMOD )
  	add_definitions( -DNO_FMOD=1 )
 endif( NO_FMOD )
+
 if( NO_OPENAL )
- 	add_definitions( -DNO_OPENAL=1 )
-elseif( WITH_GSTREAMER )
- 	add_definitions( -DWITH_GSTREAMER=1 )
-endif( NO_OPENAL )
+	add_definitions( -DNO_OPENAL=1 )
 
-# Search for libSndFile
+	set(MPG123_FOUND NO)
+	set(SNDFILE_FOUND NO)
+else()
+	# Search for libSndFile
 
-find_package( SndFile )
+	find_package( SndFile )
 
-# Search for libmpg123
+	# Search for libmpg123
 
-find_package( MPG123 )
+	find_package( MPG123 )
+endif()
 
 # Search for FluidSynth
 
