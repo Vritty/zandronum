@@ -156,8 +156,6 @@ if( WIN32 )
 		message( FATAL_ERROR "Could not find DirectX 9 libraries" )
 	endif( NOT DX_LIBS_FOUND )
 
-
-
 	set( ZDOOM_LIBS
 		wsock32
 		winmm
@@ -172,6 +170,8 @@ if( WIN32 )
 		setupapi
 		oleaut32 
 		DelayImp )
+
+else( WIN32 )
 
 	if( APPLE )
 		set( FMOD_SEARCH_PATHS "/Developer/FMOD Programmers API Mac/api" )
