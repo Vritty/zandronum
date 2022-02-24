@@ -296,7 +296,7 @@ FluidSynthMIDIDevice::FluidSynthMIDIDevice()
 		fluid_chorus_speed, fluid_chorus_depth, fluid_chorus_type);
 	if (0 == LoadPatchSets(fluid_patchset))
 	{
-#if 1 //def unix
+#ifdef unix
 		// This is the standard location on ZDoom for Pandora :).
 		if (0 == LoadPatchSets("/mnt/utmp/zdoom/share/FluidR3_GS.sf2:/mnt/utmp/zdoom/share/TimGM6mb.sf2"))
 		{
