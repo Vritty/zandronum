@@ -1,4 +1,4 @@
-#include <SDL_joystick.h>
+#include <SDL.h>
 
 #include "doomdef.h"
 #include "templates.h"
@@ -35,7 +35,7 @@ public:
 
 	FString GetName()
 	{
-		return SDL_JoystickName(DeviceIndex);
+		return SDL_JoystickName(Device);
 	}
 	float GetSensitivity()
 	{

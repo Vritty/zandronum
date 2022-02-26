@@ -35,6 +35,8 @@ endif( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" S
 
 option( DYN_FLUIDSYNTH "Dynamically load fluidsynth" ON )
 
+
+
 if( CMAKE_SIZEOF_VOID_P MATCHES "8" )
 	set( X64 64 )
 endif( CMAKE_SIZEOF_VOID_P MATCHES "8" )
@@ -62,33 +64,28 @@ set( MINOR_VERSIONS "64" "61" "50" "49" "48" "47" "46" "45" "44" "43" "42" "41"
 set( MAJOR_VERSIONS "44" "34" "28" "26" "24" "22" "20" )
 
 if( NOT FMOD_DIR_VERSIONS )
-	set( FMOD_DIR_VERSIONS "" )
+    set( FMOD_DIR_VERSIONS "" )
 endif( NOT FMOD_DIR_VERSIONS )
 if( NOT FMOD_VERSIONS )
-	set( FMOD_VERSIONS "" )
+    set( FMOD_VERSIONS "" )
 endif( NOT FMOD_VERSIONS )
 if( NOT FMOD_LOCAL_INC_DIRS )
-	set( FMOD_LOCAL_INC_DIRS "" )
+    set( FMOD_LOCAL_INC_DIRS "" )
 endif( NOT FMOD_LOCAL_INC_DIRS )
 if( NOT FMOD_LOCAL_LIB_DIRS )
-	set( FMOD_LOCAL_LIB_DIRS "" )
+    set( FMOD_LOCAL_LIB_DIRS "" )
 endif( NOT FMOD_LOCAL_LIB_DIRS )
 
 set( FMOD_DIR_VERSIONS ${FMOD_DIR_VERSIONS} "../fmod" )
 foreach( majver ${MAJOR_VERSIONS} )
-	foreach( minver ${MINOR_VERSIONS} )
-		set( FMOD_VERSIONS ${FMOD_VERSIONS} "fmodex${X64}-4.${majver}.${minver}" )
-		# FMOD Ex version 4.44 unified 32-bit and 64-bit linux packages into one.
-		if( NOT majver EQUAL "44" )
-			set( FMOD_DIR_VERSIONS ${FMOD_DIR_VERSIONS} "${CMAKE_HOME_DIRECTORY}/fmodapi4${majver}${minver}linux${X64}" )
-		else()
-			set( FMOD_DIR_VERSIONS ${FMOD_DIR_VERSIONS} "${CMAKE_HOME_DIRECTORY}/fmodapi4${majver}${minver}linux" )
-		endif()
-	endforeach( minver ${MINOR_VERSIONS} )
-	foreach( dir ${FMOD_DIR_VERSIONS} )
-		set( FMOD_LOCAL_INC_DIRS ${FMOD_LOCAL_INC_DIRS} "${dir}/api/inc" )
-		set( FMOD_LOCAL_LIB_DIRS ${FMOD_LOCAL_LIB_DIRS} "${dir}/api/lib" )
-	endforeach( dir ${FMOD_DIR_VERSIONS} )
+    foreach( minver ${MINOR_VERSIONS} )
+        set( FMOD_VERSIONS ${FMOD_VERSIONS} "fmodex${X64}-4.${majver}.${minver}" )
+        set( FMOD_DIR_VERSIONS ${FMOD_DIR_VERSIONS} "${CMAKE_HOME_DIRECTORY}/fmodapi4${majver}${minver}linux${X64}" )
+    endforeach( minver ${MINOR_VERSIONS} )
+    foreach( dir ${FMOD_DIR_VERSIONS} )
+        set( FMOD_LOCAL_INC_DIRS ${FMOD_LOCAL_INC_DIRS} "${dir}/api/inc" )
+        set( FMOD_LOCAL_LIB_DIRS ${FMOD_LOCAL_LIB_DIRS} "${dir}/api/lib" )
+    endforeach( dir ${FMOD_DIR_VERSIONS} )
 endforeach( majver ${MAJOR_VERSIONS} )
 
 if( NOT ZDOOM_LIBS )
@@ -170,9 +167,7 @@ if( WIN32 )
 		setupapi
 		oleaut32 
 		DelayImp )
-
 else( WIN32 )
-
 	if( APPLE )
 		set( FMOD_SEARCH_PATHS "/Developer/FMOD Programmers API Mac/api" )
 		set( FMOD_INC_PATH_SUFFIXES PATH_SUFFIXES inc )
@@ -245,15 +240,12 @@ else( WIN32 )
 	endif( NO_GTK )
 	
 	# Non-Windows version also needs SDL
-	find_package( SDL )
-	if( NOT SDL_FOUND )
-		message( SEND_ERROR "SDL is required for building." )
-	endif( NOT SDL_FOUND )
-	set( ZDOOM_LIBS ${ZDOOM_LIBS} "${SDL_LIBRARY}" )
-	# [BB] Don't put the SDL path in inverted commas. At least on FreeBSD 8.1 this
-	# variable contains two directories.
-	include_directories( ${SDL_INCLUDE_DIR} )
-
+    if( NOT APPLE OR NOT OSX_COCOA_BACKEND )
+        find_package( SDL2 REQUIRED )
+        include_directories( "${SDL2_INCLUDE_DIR}" )
+        set( ZDOOM_LIBS ${ZDOOM_LIBS} "${SDL2_LIBRARY}" )
+    endif( NOT APPLE OR NOT OSX_COCOA_BACKEND )
+    
 	find_path( FPU_CONTROL_DIR fpu_control.h )
 	if( FPU_CONTROL_DIR )
 		include_directories( ${FPU_CONTROL_DIR} )
@@ -382,7 +374,6 @@ else()
 
 	find_package( MPG123 )
 endif()
-
 # Search for FluidSynth
 
 find_package( FluidSynth )
@@ -486,20 +477,6 @@ if( NOT NO_ASM )
 	ENDMACRO( ADD_ASM_FILE )
 endif( NOT NO_ASM )
 
-# OpenGL on OS X: Search for GLEW include files
-
-if( APPLE )
-	find_path( GLEW_INCLUDE_DIR GL/glew.h
-		PATHS "/usr/include"
-		"/usr/local/include" )
-
-	if( GLEW_INCLUDE_DIR )
-		message( STATUS "GLEW include files found at ${GLEW_INCLUDE_DIR}" )
-	else( GLEW_INCLUDE_DIR )
-		message( SEND_ERROR "Could not find GLEW include files" )
-	endif( GLEW_INCLUDE_DIR )
-endif( APPLE )
-
 # Decide on SSE setup
 
 set( SSE_MATTERS NO )
@@ -549,9 +526,10 @@ if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
 	endif( PROFILE )
 
 	set( REL_CXX_FLAGS "-fno-rtti" )
-	if( NOT PROFILE )
-		set( REL_CXX_FLAGS "${REL_CXX_FLAGS} -fomit-frame-pointer" )
-	endif( NOT PROFILE )
+    if( NOT PROFILE )
+        # On OS X frame pointers are required for exception handling, at least with Clang
+        set( REL_CXX_FLAGS "${REL_CXX_FLAGS} -fomit-frame-pointer" )
+    endif( NOT PROFILE )
 	set( CMAKE_CXX_FLAGS_RELEASE "${REL_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}" )
 	set( CMAKE_CXX_FLAGS_MINSIZEREL "${REL_CXX_FLAGS} ${CMAKE_CXX_FLAGS_MINSIZEREL}" )
 	set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${REL_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}" )
@@ -694,7 +672,7 @@ message( STATUS "Fluid synth libs: ${FLUIDSYNTH_LIBRARIES}" )
 set( ZDOOM_LIBS ${ZDOOM_LIBS} "${ZLIB_LIBRARIES}" "${JPEG_LIBRARIES}" "${BZIP2_LIBRARIES}" "${GME_LIBRARIES}" )
 # [BB] Without sound, we don't need FMOD.
 if ( NOT NO_SOUND )
- 	set( ZDOOM_LIBS ${ZDOOM_LIBS} )
+    set( ZDOOM_LIBS ${ZDOOM_LIBS} "${FMOD_LIBRARY}" )
  	if( NOT NO_FMOD )
  		set( ZDOOM_LIBS ${ZDOOM_LIBS} "${FMOD_LIBRARY}" )
  	endif( NOT NO_FMOD )
@@ -727,12 +705,6 @@ if( NOT DYN_FLUIDSYNTH)
 else( NOT DYN_FLUIDSYNTH )
 	set( ZDOOM_LIBS ${ZDOOM_LIBS} ${CMAKE_DL_LIBS} )
 endif( NOT DYN_FLUIDSYNTH )
-
-# OpenGL on OS X: GLEW include directory
-
-if( APPLE )
-	include_directories( "${GLEW_INCLUDE_DIR}" )
-endif( APPLE )
 
 # Start defining source files for ZDoom
 set( PLAT_WIN32_SOURCES
@@ -782,18 +754,21 @@ set( PLAT_SDL_SOURCES
 	sdl/crashcatcher.c
 	sdl/hardware.cpp
 	sdl/i_cd.cpp
-	sdl/i_input.cpp
+    sdl/i_gui.cpp
+    sdl/i_input.cpp
 	sdl/i_joystick.cpp
 	sdl/i_main.cpp
 	sdl/i_movie.cpp
 	sdl/i_system.cpp
+    sdl/i_timer.cpp
 	sdl/sdlvideo.cpp
 	sdl/sdlglvideo.cpp
 	sdl/st_start.cpp )
 set( PLAT_MAC_SOURCES
-	sdl/SDLMain.m
-	sdl/iwadpicker_cocoa.mm
-	sdl/i_system_cocoa.mm )
+	sdl/osx/iwadpicker_cocoa.mm
+	sdl/i_system_cocoa.mm
+    sdl/osx/zandronum.icns )
+    
 if( WIN32 )
 	set( SYSTEM_SOURCES_DIR win32 )
 	set( SYSTEM_SOURCES ${PLAT_WIN32_SOURCES} )
@@ -811,16 +786,16 @@ if( WIN32 )
 		set( SYSTEM_SOURCES ${SYSTEM_SOURCES} win32/serverconsole/serverconsole.rc )
 	endif( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
 
-else( WIN32 )
-	set( SYSTEM_SOURCES_DIR sdl )
-	set( SYSTEM_SOURCES ${PLAT_SDL_SOURCES} )
-	if( APPLE )
+elseif( APPLE )
+        set( SYSTEM_SOURCES_DIR sdl )
+        set( SYSTEM_SOURCES ${PLAT_SDL_SOURCES} )
 		set( SYSTEM_SOURCES ${SYSTEM_SOURCES} ${PLAT_MAC_SOURCES} )
 		set( OTHER_SYSTEM_SOURCES ${PLAT_WIN32_SOURCES} )
-	else( APPLE )
-		set( OTHER_SYSTEM_SOURCES ${PLAT_WIN32_SOURCES} ${PLAT_MAC_SOURCES} )
-	endif( APPLE )
-endif( WIN32 )
+        set_source_files_properties( sdl/osx/zandronum.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources )
+        set_source_files_properties( sdl/osx/iwadpicker_cocoa.mm PROPERTIES COMPILE_FLAGS -fobjc-exceptions )
+        set_source_files_properties("${SDL2_LIBRARY}" PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+        set_source_files_properties("${FMOD_LIBRARY}" PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+endif()
 
 if( NO_ASM )
 	add_definitions( -DNOASM )
@@ -881,7 +856,7 @@ endif( DYN_FLUIDSYNTH )
 # [BB] Only complile the gl sources, if we want GL support.
 if( NOT NO_GL )
 	set( GL_SOURCES
-		gl/api/gl_api.cpp
+		gl/glad/glad.c
 		gl/data/gl_sections.cpp
 		gl/data/gl_data.cpp
 		gl/data/gl_portaldata.cpp
@@ -947,9 +922,9 @@ endif( NOT NO_GL )
 # there's generally a new cpp for every header so this file will get changed
 if( WIN32 )
 	set( EXTRA_HEADER_DIRS win32/*.h )
-else( WIN32 )
+elseif ( APPLE )
 	set( EXTRA_HEADER_DIRS sdl/*.h )
-endif( WIN32 )
+endif()
 file( GLOB HEADER_FILES
 	${EXTRA_HEADER_DIRS}
 	fragglescript/*.h
@@ -972,7 +947,7 @@ file( GLOB HEADER_FILES
 	thingdef/*.h
 	xlat/*.h
 	gl/*.h
-	gl/api/*.h
+	gl/glad/*.h
 	gl/data/*.h
 	gl/dynlights/*.h
 	gl/hqnx/*.h
@@ -1101,7 +1076,7 @@ set( NOT_COMPILED_SOURCE_FILES
 # if it doesn't exist yet.
 set_source_files_properties( ${CMAKE_CURRENT_SOURCE_DIR}/network/servercommands.cpp PROPERTIES GENERATED TRUE )
 
-add_executable( zdoom WIN32
+add_executable( zdoom WIN32 MACOSX_BUNDLE
 	${HEADER_FILES}
 	${NOT_COMPILED_SOURCE_FILES}
 	__autostart.cpp
@@ -1632,6 +1607,31 @@ if ( WIN32 )
 	endif ( USE_G15 )
 endif ( WIN32 )
 
+if( APPLE )
+    set( LINK_FRAMEWORKS "-framework CoreFoundation -framework Carbon -framework Cocoa -framework IOKit -framework OpenGL")
+    
+    set_target_properties(zdoom PROPERTIES
+        LINK_FLAGS "${LINK_FRAMEWORKS}"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/sdl/osx/zandronum-info.plist"
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development" )
+            
+    if( NOT NO_SOUND )
+        # Fix fmod link so that it can be found in the app bundle.
+        find_program( OTOOL otool HINTS "/usr/bin" "${OSX_DEVELOPER_ROOT}/usr/bin" )
+        find_program( INSTALL_NAME_TOOL install_name_tool HINTS "/usr/bin" "${OSX_DEVELOPER_ROOT}/usr/bin" )
+        execute_process( COMMAND "${OTOOL}" -L "${FMOD_LIBRARY}"
+            COMMAND grep "libfmodex.dylib (compat"
+            COMMAND head -n1
+            COMMAND awk "{print $1}"
+            OUTPUT_VARIABLE FMOD_LINK
+            OUTPUT_STRIP_TRAILING_WHITESPACE )
+        add_custom_command( TARGET zdoom POST_BUILD
+            COMMAND "${INSTALL_NAME_TOOL}" -change "${FMOD_LINK}" @executable_path/../Frameworks/libfmodex.dylib "$<TARGET_FILE:zdoom>"
+            COMMENT "Relinking FMOD Ex" )
+    endif( NOT NO_SOUND )
+
+endif()
+
 source_group("Assembly Files\\ia32" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/asm_ia32/.+")
 source_group("Assembly Files\\x86_64" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/asm_x86_64/.+")
 source_group("Audio Files" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/sound/.+")
@@ -1669,6 +1669,7 @@ source_group("Render Data\\Textures" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE
 source_group("Render Interface" FILES r_defs.h r_renderer.h r_sky.cpp r_sky.h r_state.h r_utility.cpp r_utility.h)
 source_group("Resource Files" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/resourcefiles/.+")
 source_group("SDL Files" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/sdl/.+")
+source_group("OS X Files" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/sdl/osx/.+")
 source_group("SFMT" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/sfmt/.+")
 source_group("Shared Game" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/g_shared/.+")
 source_group("Versioning" FILES version.h win32/zdoom.rc)

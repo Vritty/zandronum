@@ -249,9 +249,6 @@ void gl_LoadExtensions()
 		glDisableVertexAttribArray= (PFNGLDISABLEVERTEXATTRIBARRAYPROC)myGetProcAddress("glDisableVertexAttribArray");
 		glVertexAttribPointer		= (PFNGLVERTEXATTRIBPOINTERPROC)myGetProcAddress("glVertexAttribPointer");
 
-		// what'S the equivalent of this in GL 2.0???
-		glGetObjectParameteriv = (PFNGLGETOBJECTPARAMETERIVARBPROC)myGetProcAddress("glGetObjectParameterivARB");
-
 		// Rules:
 		// SM4 will always use shaders. No option to switch them off is needed here.
 		// SM3 has shaders optional but they are off by default (they will have a performance impact

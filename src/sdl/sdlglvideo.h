@@ -15,68 +15,69 @@ FRenderer *gl_CreateInterface();
 class SDLGLVideo : public IVideo
 {
  public:
-	SDLGLVideo (int parm);
-	~SDLGLVideo ();
+    SDLGLVideo (int parm);
+    ~SDLGLVideo ();
 
-	EDisplayType GetDisplayType () { return DISPLAY_Both; }
-	void SetWindowedScale (float scale);
+    EDisplayType GetDisplayType () { return DISPLAY_Both; }
+    void SetWindowedScale (float scale);
 
-	DFrameBuffer *CreateFrameBuffer (int width, int height, bool fs, DFrameBuffer *old);
+    DFrameBuffer *CreateFrameBuffer (int width, int height, bool fs, DFrameBuffer *old);
 
-	void StartModeIterator (int bits, bool fs);
-	bool NextMode (int *width, int *height, bool *letterbox);
-	bool SetResolution (int width, int height, int bits);
+    void StartModeIterator (int bits, bool fs);
+    bool NextMode (int *width, int *height, bool *letterbox);
+    bool SetResolution (int width, int height, int bits);
 
-	bool SetupPixelFormat(bool allowsoftware, int multisample);
-	bool InitHardware (bool allowsoftware, int multisample);
+    bool SetupPixelFormat(bool allowsoftware, int multisample);
+    bool InitHardware (bool allowsoftware, int multisample);
 
 private:
-	int IteratorMode;
-	int IteratorBits;
-	bool IteratorFS;
+    int IteratorMode;
+    int IteratorBits;
 };
 class SDLGLFB : public DFrameBuffer
 {
-	DECLARE_CLASS(SDLGLFB, DFrameBuffer)
+    DECLARE_CLASS(SDLGLFB, DFrameBuffer)
 public:
-	// this must have the same parameters as the Windows version, even if they are not used!
-	SDLGLFB (void *hMonitor, int width, int height, int, int, bool fullscreen); 
-	~SDLGLFB ();
+    // this must have the same parameters as the Windows version, even if they are not used!
+    SDLGLFB (void *hMonitor, int width, int height, int, int, bool fullscreen);
+    ~SDLGLFB ();
 
-	void ForceBuffering (bool force);
-	bool Lock(bool buffered);
-	bool Lock ();
-	void Unlock();
-	bool IsLocked ();
+    void ForceBuffering (bool force);
+    bool Lock(bool buffered);
+    bool Lock ();
+    void Unlock();
+    bool IsLocked ();
 
-	bool IsValid ();
-	bool IsFullscreen ();
+    bool IsValid ();
+    bool IsFullscreen ();
 
-	virtual void SetVSync( bool vsync );
-	void SwapBuffers();
-	
-	void NewRefreshRate ();
+    virtual void SetVSync( bool vsync );
+    void SwapBuffers();
+    
+    void NewRefreshRate ();
 
-	friend class SDLGLVideo;
+    friend class SDLGLVideo;
 
 //[C]
-	int GetTrueHeight() { return GetHeight();}
+    int GetTrueHeight() { return GetHeight();}
 
 protected:
-	bool CanUpdate();
-	void SetGammaTable(WORD *tbl);
-	void InitializeState();
+    bool CanUpdate();
+    void SetGammaTable(WORD *tbl);
+    void InitializeState();
 
-	SDLGLFB () {}
-	BYTE GammaTable[3][256];
-	bool UpdatePending;
-	
-	SDL_Surface *Screen;
-	
-	void UpdateColors ();
+    SDLGLFB () {}
+    BYTE GammaTable[3][256];
+    bool UpdatePending;
 
-	int m_Lock;
-	Uint16 m_origGamma[3][256];
-	bool m_supportsGamma;
+    SDL_Window *Screen;
+
+    SDL_GLContext GLContext;
+
+    void UpdateColors ();
+
+    int m_Lock;
+    Uint16 m_origGamma[3][256];
+    bool m_supportsGamma;
 };
 #endif

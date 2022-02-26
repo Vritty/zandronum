@@ -1,4 +1,4 @@
-// Emacs style mode select	 -*- C++ -*- 
+// Emacs style mode select     -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -15,7 +15,7 @@
 // for more details.
 //
 // DESCRIPTION:
-//		System specific interface stuff.
+//        System specific interface stuff.
 //
 //-----------------------------------------------------------------------------
 
@@ -38,10 +38,10 @@ struct WadStuff;
 // Index values into the LanguageIDs array
 enum
 {
-	LANGIDX_UserPreferred,
-	LANGIDX_UserDefault,
-	LANGIDX_SysPreferred,
-	LANGIDX_SysDefault
+    LANGIDX_UserPreferred,
+    LANGIDX_UserDefault,
+    LANGIDX_SysPreferred,
+    LANGIDX_SysDefault
 };
 extern DWORD LanguageIDs[4];
 extern void SetLanguageIDs ();
@@ -120,6 +120,12 @@ void I_SetIWADInfo ();
 // Pick from multiple IWADs to use
 int I_PickIWad (WadStuff *wads, int numwads, bool queryiwad, int defaultiwad);
 
+// [RH] Checks the registry for Steam's install path, so we can scan its
+// directories for IWADs if the user purchased any through Steam.
+TArray<FString> I_GetSteamPath();
+
+TArray<FString> I_GetGogPaths();
+
 // The ini could not be saved at exit
 bool I_WriteIniFailed ();
 
@@ -142,25 +148,25 @@ struct findstate_t
 void *I_FindFirst (const char *filespec, findstate_t *fileinfo);
 int I_FindNext (void *handle, findstate_t *fileinfo);
 int I_FindClose (void *handle);
-int I_FindAttr (findstate_t *fileinfo); 
+int I_FindAttr (findstate_t *fileinfo);
 
-#define I_FindName(a)	((a)->namelist[(a)->current]->d_name)
+#define I_FindName(a)    ((a)->namelist[(a)->current]->d_name)
 
-#define FA_RDONLY	1
-#define FA_HIDDEN	2
-#define FA_SYSTEM	4
-#define FA_DIREC	8
-#define FA_ARCH		16
+#define FA_RDONLY    1
+#define FA_HIDDEN    2
+#define FA_SYSTEM    4
+#define FA_DIREC    8
+#define FA_ARCH        16
 
 static inline char *strlwr(char *str)
 {
-	char *ptr = str;
-	while(*ptr)
-	{
-		*ptr = tolower(*ptr);
-		++ptr;
-	}
-	return str;
+    char *ptr = str;
+    while(*ptr)
+    {
+        *ptr = tolower(*ptr);
+        ++ptr;
+    }
+    return str;
 }
 
 #endif

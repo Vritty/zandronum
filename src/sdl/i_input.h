@@ -7,4 +7,3 @@ void I_SetMouseCapture();
 void I_ReleaseMouseCapture();
 
 #endif
-

@@ -408,7 +408,9 @@ public:
 	virtual void WipeCleanup();
 	virtual int GetPixelDoubling() const { return 0; }
 	virtual int GetTrueHeight() { return GetHeight(); }
-
+    
+    virtual void ScaleCoordsFromWindow(SWORD &x, SWORD &y) {}
+    
 	uint32 GetLastFPS() const { return LastCount; }
 
 #ifdef _WIN32

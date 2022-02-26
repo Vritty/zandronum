@@ -118,6 +118,12 @@ void OpenGLFrameBuffer::InitializeState()
 {
 	static bool first=true;
 
+    if (first)
+    {
+        gladLoadGL();
+    }
+
+    
 	gl_LoadExtensions();
 	Super::InitializeState();
 	if (first)

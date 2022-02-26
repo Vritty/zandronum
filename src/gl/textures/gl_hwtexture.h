@@ -56,6 +56,7 @@ private:
 	unsigned * GetTexID(int cm, int translation);
 
 	int GetDepthBuffer();
+    void Resize(int width, int height, unsigned char *src_data, unsigned char *dst_data);
 	void DeleteTexture(unsigned int texid);
 
 public:

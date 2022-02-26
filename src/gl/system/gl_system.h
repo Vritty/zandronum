@@ -68,7 +68,6 @@
 
 //GL headers
 #if defined(__APPLE__)
-#include <GL/glew.h>
 #include <OpenGL/OpenGL.h>
 #elif defined(__unix__)
 #include <GL/glew.h>
@@ -78,7 +77,7 @@
 #include <GL/glu.h>
 #include "gl/api/glext.h"
 #endif
-#include "gl/api/gl_api.h"
+#include "gl/glad/glad.h"
 
 #ifdef _WIN32
 #define DWORD WINDOWS_DWORD	// I don't want to depend on this throughout the GL code!

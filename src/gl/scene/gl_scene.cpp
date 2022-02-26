@@ -248,6 +248,18 @@ void FGLRenderer::SetCameraPos(fixed_t viewx, fixed_t viewy, fixed_t viewz, angl
 	R_SetViewAngle();
 }
 	
+void perspectiveGL( GLdouble fovY, GLdouble aspect, GLdouble zNear, GLdouble zFar )
+{
+    const GLdouble pi = 3.1415926535897932384626433832795;
+    GLdouble fW, fH;
+
+    //fH = tan( (fovY / 2) / 180 * pi ) * zNear;
+    fH = tan( fovY / 360 * pi ) * zNear;
+    fW = fH * aspect;
+
+    glFrustum( -fW, fW, -fH, fH, zNear, zFar );
+}
+
 
 //-----------------------------------------------------------------------------
 //
@@ -264,7 +276,7 @@ void FGLRenderer::SetProjection(float fov, float ratio, float fovratio, float ey
 	float fovy = 2 * RAD2DEG(atan(tan(DEG2RAD(fov) / 2) / fovratio));
 	// [BB] Added eyeShift from GZ3Doom.
 	if ( eyeShift == 0 )
-		gluPerspective(fovy, ratio, 5.f, 65536.f);
+        perspectiveGL(fovy, ratio, 5.f, 65536.f);
 	else
 	{
 		const float zNear = 5.0f;
