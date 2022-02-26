@@ -1615,7 +1615,7 @@ if( APPLE )
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/sdl/osx/zandronum-info.plist"
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development" )
             
-    if( NOT NO_SOUND )
+    if( NOT NO_FMOD )
         # Fix fmod link so that it can be found in the app bundle.
         find_program( OTOOL otool HINTS "/usr/bin" "${OSX_DEVELOPER_ROOT}/usr/bin" )
         find_program( INSTALL_NAME_TOOL install_name_tool HINTS "/usr/bin" "${OSX_DEVELOPER_ROOT}/usr/bin" )
@@ -1628,7 +1628,7 @@ if( APPLE )
         add_custom_command( TARGET zdoom POST_BUILD
             COMMAND "${INSTALL_NAME_TOOL}" -change "${FMOD_LINK}" @executable_path/../Frameworks/libfmodex.dylib "$<TARGET_FILE:zdoom>"
             COMMENT "Relinking FMOD Ex" )
-    endif( NOT NO_SOUND )
+    endif( NOT NO_FMOD )
 
 endif()
 
