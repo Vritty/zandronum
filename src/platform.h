@@ -39,7 +39,9 @@ void I_Sleep( int iMS );
 char *I_ConsoleInput (void);
 
 typedef unsigned char UCHAR;
+#if defined ( __FreeBSD__ )
 typedef bool BOOL;
+#endif
 
 #endif
 
