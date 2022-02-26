@@ -189,12 +189,6 @@ void I_ReleaseMouseCapture()
     SDL_SetRelativeMouseMode (SDL_FALSE);
 }
 
-static void CenterMouse ()
-{
-	SDL_WarpMouse (screen->GetWidth()/2, screen->GetHeight()/2);
-	SDL_PumpEvents ();
-	SDL_GetRelativeMouseState (NULL, NULL);
-}
 static void PostMouseMove (int x, int y)
 {
     static int lastx = 0, lasty = 0;

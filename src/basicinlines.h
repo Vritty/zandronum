@@ -7,9 +7,8 @@
 // rely on any inline assembly.
 //
 
-#if _MSC_VER
 #pragma once
-#endif
+
 
 #if defined(__GNUC__) && !defined(__forceinline)
 #define __forceinline __inline__ __attribute__((always_inline))
