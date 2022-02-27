@@ -41,13 +41,6 @@ EXTERN_CVAR (Bool, fullscreen)
 extern int WaitingForKey;
 extern constate_e ConsoleState;
 
-extern SDL_Surface *cursorSurface;
-extern SDL_Rect cursorBlit;
-EXTERN_CVAR (Bool, fullscreen)
-
-extern int WaitingForKey;
-extern constate_e ConsoleState;
-
 static bool DownState[SDL_NUM_SCANCODES];
 
 static const SDL_Keycode DIKToKeySym[256] =
@@ -256,32 +249,32 @@ static bool inGame()
 
 static void I_CheckNativeMouse ()
 {
-    bool focus = SDL_GetKeyboardFocus() != NULL;
-    bool fs = screen->IsFullscreen();
-    
-    bool wantNative = !focus || (!use_mouse || GUICapture || paused || demoplayback || !inGame());
+	bool focus = SDL_GetKeyboardFocus() != NULL;
+	bool fs = screen->IsFullscreen();
+	
+	bool wantNative = !focus || (!use_mouse || GUICapture || paused || demoplayback || !inGame());
 
-    if (wantNative != NativeMouse)
-    {
-        NativeMouse = wantNative;
-        SDL_ShowCursor (wantNative);
-        if (wantNative)
-            I_ReleaseMouseCapture ();
-        else
-            I_SetMouseCapture ();
-    }
+	if (wantNative != NativeMouse)
+	{
+		NativeMouse = wantNative;
+		SDL_ShowCursor (wantNative);
+		if (wantNative)
+			I_ReleaseMouseCapture ();
+		else
+			I_SetMouseCapture ();
+	}
 }
 
 void MessagePump (const SDL_Event &sev)
 {
-    static int lastx = 0, lasty = 0;
-    int x, y;
-    event_t event = { 0,0,0,0,0,0,0 };
-    
-    switch (sev.type)
-    {
-    case SDL_QUIT:
-        exit (0);
+	static int lastx = 0, lasty = 0;
+	int x, y;
+	event_t event = { 0,0,0,0,0,0,0 };
+	
+	switch (sev.type)
+	{
+	case SDL_QUIT:
+		exit (0);
 
             
     case SDL_WINDOWEVENT:
@@ -293,211 +286,219 @@ void MessagePump (const SDL_Event &sev)
                 break;
         }
         break;
-            
 
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-    case SDL_MOUSEMOTION:
-        if (!GUICapture || sev.button.button == 4 || sev.button.button == 5)
-        {
-            if(sev.type != SDL_MOUSEMOTION)
-            {
-                event.type = sev.type == SDL_MOUSEBUTTONDOWN ? EV_KeyDown : EV_KeyUp;
-                /* These button mappings work with my Gentoo system using the
-                * evdev driver and a Logitech MX510 mouse. Whether or not they
-                * carry over to other Linux systems, I have no idea, but I sure
-                * hope so. (Though buttons 11 and 12 are kind of useless, since
-                * they also trigger buttons 4 and 5.)
-                */
-                switch (sev.button.button)
-                {
-                case SDL_BUTTON_LEFT:    event.data1 = KEY_MOUSE1;        break;
-                case SDL_BUTTON_MIDDLE:    event.data1 = KEY_MOUSE3;        break;
-                case SDL_BUTTON_RIGHT:    event.data1 = KEY_MOUSE2;        break;
-                case 8:        event.data1 = KEY_MOUSE4;        break; // For whatever reason my side mouse buttons are here.
-                case 9:        event.data1 = KEY_MOUSE5;        break;
-                case SDL_BUTTON_X1:        event.data1 = KEY_MOUSE6;        break; // And these don't exist
-                case SDL_BUTTON_X2:        event.data1 = KEY_MOUSE7;        break;
-                case 6:        event.data1 = KEY_MOUSE8;        break;
-                default:    printf("SDL mouse button %s %d\n",
-                    sev.type == SDL_MOUSEBUTTONDOWN ? "down" : "up", sev.button.button);    break;
-                }
-                if (event.data1 != 0)
-                {
-                    D_PostEvent(&event);
-                }
-            }
-        }
-        else if (sev.type == SDL_MOUSEMOTION || (sev.button.button >= 1 && sev.button.button <= 3))
-        {
-            int x, y;
-            SDL_GetMouseState (&x, &y);
+	case SDL_MOUSEBUTTONDOWN:
+	case SDL_MOUSEBUTTONUP:
+	case SDL_MOUSEMOTION:
+		if (!GUICapture || sev.button.button == 4 || sev.button.button == 5)
+		{
+			if(sev.type != SDL_MOUSEMOTION)
+			{
+				event.type = sev.type == SDL_MOUSEBUTTONDOWN ? EV_KeyDown : EV_KeyUp;
+				/* These button mappings work with my Gentoo system using the
+				* evdev driver and a Logitech MX510 mouse. Whether or not they
+				* carry over to other Linux systems, I have no idea, but I sure
+				* hope so. (Though buttons 11 and 12 are kind of useless, since
+				* they also trigger buttons 4 and 5.)
+				*/
+				switch (sev.button.button)
+				{
+				case SDL_BUTTON_LEFT:	event.data1 = KEY_MOUSE1;		break;
+				case SDL_BUTTON_MIDDLE:	event.data1 = KEY_MOUSE3;		break;
+				case SDL_BUTTON_RIGHT:	event.data1 = KEY_MOUSE2;		break;
+				case 8:		event.data1 = KEY_MOUSE4;		break; // For whatever reason my side mouse buttons are here.
+				case 9:		event.data1 = KEY_MOUSE5;		break;
+				case SDL_BUTTON_X1:		event.data1 = KEY_MOUSE6;		break; // And these don't exist
+				case SDL_BUTTON_X2:		event.data1 = KEY_MOUSE7;		break;
+				case 6:		event.data1 = KEY_MOUSE8;		break;
+				default:	printf("SDL mouse button %s %d\n",
+					sev.type == SDL_MOUSEBUTTONDOWN ? "down" : "up", sev.button.button);	break;
+				}
+				if (event.data1 != 0)
+				{
+					D_PostEvent(&event);
+				}
+			}
+		}
+		else if (sev.type == SDL_MOUSEMOTION || (sev.button.button >= 1 && sev.button.button <= 3))
+		{
+			int x, y;
+			SDL_GetMouseState (&x, &y);
 
-            event.data1 = x;
-            event.data2 = y;
+			event.data1 = x;
+			event.data2 = y;
 
-            screen->ScaleCoordsFromWindow(event.data1, event.data2);
-            
-            event.type = EV_GUI_Event;
-            if(sev.type == SDL_MOUSEMOTION)
-                event.subtype = EV_GUI_MouseMove;
-            else
-            {
-                event.subtype = sev.type == SDL_MOUSEBUTTONDOWN ? EV_GUI_LButtonDown : EV_GUI_LButtonUp;
-                event.subtype += (sev.button.button - 1) * 3;
-            }
-            D_PostEvent(&event);
-        }
-        break;
+			screen->ScaleCoordsFromWindow(event.data1, event.data2);
 
-    case SDL_MOUSEWHEEL:
-        if (GUICapture)
-        {
-            event.type = EV_GUI_Event;
-            event.subtype = sev.wheel.y > 0 ? EV_GUI_WheelUp : EV_GUI_WheelDown;
-            D_PostEvent (&event);
-        }
-        else
-        {
-            event.type = EV_KeyDown;
-            event.data1 = sev.wheel.y > 0 ? KEY_MWHEELUP : KEY_MWHEELDOWN;
-            D_PostEvent (&event);
-            event.type = EV_KeyUp;
-            D_PostEvent (&event);
-        }
-        break;
+			event.type = EV_GUI_Event;
+			if(sev.type == SDL_MOUSEMOTION)
+				event.subtype = EV_GUI_MouseMove;
+			else
+			{
+				event.subtype = sev.type == SDL_MOUSEBUTTONDOWN ? EV_GUI_LButtonDown : EV_GUI_LButtonUp;
+				event.subtype += (sev.button.button - 1) * 3;
+			}
 
-    case SDL_KEYDOWN:
-    case SDL_KEYUP:
-        if (!GUICapture)
-        {
-            event.type = sev.type == SDL_KEYDOWN ? EV_KeyDown : EV_KeyUp;
+			SDL_Keymod kmod = SDL_GetModState();
+			event.data3 = ((kmod & KMOD_SHIFT) ? GKM_SHIFT : 0) |
+				((kmod & KMOD_CTRL) ? GKM_CTRL : 0) |
+				((kmod & KMOD_ALT) ? GKM_ALT : 0);
 
-            // Try to look up our key mapped key for conversion to DirectInput.
-            // If that fails, then we'll do a lookup against the scan code,
-            // which may not return the right key, but at least the key should
-            // work in the game.
-            if (const BYTE *dik = KeySymToDIK.CheckKey (sev.key.keysym.sym))
-                event.data1 = *dik;
-            else if (const BYTE *dik = KeyScanToDIK.CheckKey (sev.key.keysym.scancode))
-                event.data1 = *dik;
+			D_PostEvent(&event);
+		}
+		break;
 
-            if (event.data1)
-            {
-                if (sev.key.keysym.sym < 256)
-                {
-                    event.data2 = sev.key.keysym.sym;
-                }
-                D_PostEvent (&event);
-            }
-        }
-        else
-        {
-            event.type = EV_GUI_Event;
-            event.subtype = sev.type == SDL_KEYDOWN ? EV_GUI_KeyDown : EV_GUI_KeyUp;
-            event.data3 = ((sev.key.keysym.mod & KMOD_SHIFT) ? GKM_SHIFT : 0) |
-                          ((sev.key.keysym.mod & KMOD_CTRL) ? GKM_CTRL : 0) |
-                          ((sev.key.keysym.mod & KMOD_ALT) ? GKM_ALT : 0);
+	case SDL_MOUSEWHEEL:
+		if (GUICapture)
+		{
+			event.type = EV_GUI_Event;
+			event.subtype = sev.wheel.y > 0 ? EV_GUI_WheelUp : EV_GUI_WheelDown;
+			SDL_Keymod kmod = SDL_GetModState();
+			event.data3 = ((kmod & KMOD_SHIFT) ? GKM_SHIFT : 0) |
+				((kmod & KMOD_CTRL) ? GKM_CTRL : 0) |
+				((kmod & KMOD_ALT) ? GKM_ALT : 0);
+			D_PostEvent (&event);
+		}
+		else
+		{
+			event.type = EV_KeyDown;
+			event.data1 = sev.wheel.y > 0 ? KEY_MWHEELUP : KEY_MWHEELDOWN;
+			D_PostEvent (&event);
+			event.type = EV_KeyUp;
+			D_PostEvent (&event);
+		}
+		break;
 
-            if (event.subtype == EV_GUI_KeyDown)
-            {
-                if (DownState[sev.key.keysym.scancode])
-                {
-                    event.subtype = EV_GUI_KeyRepeat;
-                }
-                DownState[sev.key.keysym.scancode] = 1;
-            }
-            else
-            {
-                DownState[sev.key.keysym.scancode] = 0;
-            }
+	case SDL_KEYDOWN:
+	case SDL_KEYUP:
+		if (!GUICapture)
+		{
+			if (sev.key.repeat)
+			{
+				break;
+			}
+			
+			event.type = sev.type == SDL_KEYDOWN ? EV_KeyDown : EV_KeyUp;
 
-            switch (sev.key.keysym.sym)
-            {
-            case SDLK_KP_ENTER:    event.data1 = GK_RETURN;    break;
-            case SDLK_PAGEUP:    event.data1 = GK_PGUP;        break;
-            case SDLK_PAGEDOWN:    event.data1 = GK_PGDN;        break;
-            case SDLK_END:        event.data1 = GK_END;        break;
-            case SDLK_HOME:        event.data1 = GK_HOME;        break;
-            case SDLK_LEFT:        event.data1 = GK_LEFT;        break;
-            case SDLK_RIGHT:    event.data1 = GK_RIGHT;        break;
-            case SDLK_UP:        event.data1 = GK_UP;        break;
-            case SDLK_DOWN:        event.data1 = GK_DOWN;        break;
-            case SDLK_DELETE:    event.data1 = GK_DEL;        break;
-            case SDLK_ESCAPE:    event.data1 = GK_ESCAPE;    break;
-            case SDLK_F1:        event.data1 = GK_F1;        break;
-            case SDLK_F2:        event.data1 = GK_F2;        break;
-            case SDLK_F3:        event.data1 = GK_F3;        break;
-            case SDLK_F4:        event.data1 = GK_F4;        break;
-            case SDLK_F5:        event.data1 = GK_F5;        break;
-            case SDLK_F6:        event.data1 = GK_F6;        break;
-            case SDLK_F7:        event.data1 = GK_F7;        break;
-            case SDLK_F8:        event.data1 = GK_F8;        break;
-            case SDLK_F9:        event.data1 = GK_F9;        break;
-            case SDLK_F10:        event.data1 = GK_F10;        break;
-            case SDLK_F11:        event.data1 = GK_F11;        break;
-            case SDLK_F12:        event.data1 = GK_F12;        break;
-            default:
-                if (sev.key.keysym.sym < 256)
-                {
-                    event.data1 = sev.key.keysym.sym;
-                }
-                break;
-            }
-            if (event.data1 < 128)
-            {
-                event.data1 = toupper(event.data1);
-                D_PostEvent (&event);
-            }
-        }
-        break;
+			// Try to look up our key mapped key for conversion to DirectInput.
+			// If that fails, then we'll do a lookup against the scan code,
+			// which may not return the right key, but at least the key should
+			// work in the game.
+			if (const uint8_t *dik = KeySymToDIK.CheckKey (sev.key.keysym.sym))
+				event.data1 = *dik;
+			else if (const uint8_t *dik = KeyScanToDIK.CheckKey (sev.key.keysym.scancode))
+				event.data1 = *dik;
 
-    case SDL_TEXTINPUT:
-        if (GUICapture)
-        {
-            event.type = EV_GUI_Event;
-            event.subtype = EV_GUI_Char;
-            event.data1 = sev.text.text[0];
-            D_PostEvent (&event);
-        }
-        break;
+			if (event.data1)
+			{
+				if (sev.key.keysym.sym < 256)
+				{
+					event.data2 = sev.key.keysym.sym;
+				}
+				D_PostEvent (&event);
+			}
+		}
+		else
+		{
+			event.type = EV_GUI_Event;
+			event.subtype = sev.type == SDL_KEYDOWN ? EV_GUI_KeyDown : EV_GUI_KeyUp;
+			SDL_Keymod kmod = SDL_GetModState();
+			event.data3 = ((kmod & KMOD_SHIFT) ? GKM_SHIFT : 0) |
+				((kmod & KMOD_CTRL) ? GKM_CTRL : 0) |
+				((kmod & KMOD_ALT) ? GKM_ALT : 0);
 
-    case SDL_JOYBUTTONDOWN:
-    case SDL_JOYBUTTONUP:
-        if (!GUICapture)
-        {
-            event.type = sev.type == SDL_JOYBUTTONDOWN ? EV_KeyDown : EV_KeyUp;
-            event.data1 = KEY_FIRSTJOYBUTTON + sev.jbutton.button;
-            if(event.data1 != 0)
-                D_PostEvent(&event);
-        }
-        break;
-    }
+			if (event.subtype == EV_GUI_KeyDown && sev.key.repeat)
+			{
+				event.subtype = EV_GUI_KeyRepeat;
+			}
+
+			switch (sev.key.keysym.sym)
+			{
+			case SDLK_KP_ENTER:	event.data1 = GK_RETURN;	break;
+			case SDLK_PAGEUP:	event.data1 = GK_PGUP;		break;
+			case SDLK_PAGEDOWN:	event.data1 = GK_PGDN;		break;
+			case SDLK_END:		event.data1 = GK_END;		break;
+			case SDLK_HOME:		event.data1 = GK_HOME;		break;
+			case SDLK_LEFT:		event.data1 = GK_LEFT;		break;
+			case SDLK_RIGHT:	event.data1 = GK_RIGHT;		break;
+			case SDLK_UP:		event.data1 = GK_UP;		break;
+			case SDLK_DOWN:		event.data1 = GK_DOWN;		break;
+			case SDLK_DELETE:	event.data1 = GK_DEL;		break;
+			case SDLK_ESCAPE:	event.data1 = GK_ESCAPE;	break;
+			case SDLK_F1:		event.data1 = GK_F1;		break;
+			case SDLK_F2:		event.data1 = GK_F2;		break;
+			case SDLK_F3:		event.data1 = GK_F3;		break;
+			case SDLK_F4:		event.data1 = GK_F4;		break;
+			case SDLK_F5:		event.data1 = GK_F5;		break;
+			case SDLK_F6:		event.data1 = GK_F6;		break;
+			case SDLK_F7:		event.data1 = GK_F7;		break;
+			case SDLK_F8:		event.data1 = GK_F8;		break;
+			case SDLK_F9:		event.data1 = GK_F9;		break;
+			case SDLK_F10:		event.data1 = GK_F10;		break;
+			case SDLK_F11:		event.data1 = GK_F11;		break;
+			case SDLK_F12:		event.data1 = GK_F12;		break;
+			default:
+				if (sev.key.keysym.sym < 256)
+				{
+					event.data1 = sev.key.keysym.sym;
+				}
+				break;
+			}
+			if (event.data1 < 128)
+			{
+				event.data1 = toupper(event.data1);
+				D_PostEvent (&event);
+			}
+		}
+		break;
+
+	case SDL_TEXTINPUT:
+		if (GUICapture)
+		{
+			event.type = EV_GUI_Event;
+			event.subtype = EV_GUI_Char;
+			event.data1 = sev.text.text[0];
+			event.data2 = !!(SDL_GetModState() & KMOD_ALT);
+			D_PostEvent (&event);
+		}
+		break;
+
+	case SDL_JOYBUTTONDOWN:
+	case SDL_JOYBUTTONUP:
+		if (!GUICapture)
+		{
+			event.type = sev.type == SDL_JOYBUTTONDOWN ? EV_KeyDown : EV_KeyUp;
+			event.data1 = KEY_FIRSTJOYBUTTON + sev.jbutton.button;
+			if(event.data1 != 0)
+				D_PostEvent(&event);
+		}
+		break;
+	}
 }
 
 void I_GetEvent ()
 {
-    SDL_Event sev;
-    
-    while (SDL_PollEvent (&sev))
-    {
-        MessagePump (sev);
-    }
-    if (use_mouse)
-    {
-        MouseRead ();
-    }
+	SDL_Event sev;
+	
+	while (SDL_PollEvent (&sev))
+	{
+		MessagePump (sev);
+	}
+	if (use_mouse)
+	{
+		MouseRead ();
+	}
 }
 
 void I_StartTic ()
 {
-    I_CheckGUICapture ();
-    I_CheckNativeMouse ();
-    I_GetEvent ();
+	I_CheckGUICapture ();
+	I_CheckNativeMouse ();
+	I_GetEvent ();
 }
 
 void I_ProcessJoysticks ();
 void I_StartFrame ()
 {
-    I_ProcessJoysticks();
+	I_ProcessJoysticks();
 }

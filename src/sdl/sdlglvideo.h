@@ -58,8 +58,8 @@ public:
 
     friend class SDLGLVideo;
 
-//[C]
-    int GetTrueHeight() { return GetHeight();}
+	int GetClientWidth();
+	int GetClientHeight();
 
 protected:
     bool CanUpdate();
