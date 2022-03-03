@@ -2330,6 +2330,7 @@ void V_InitFontColors ()
 			info.ParmLen[1] = info.ParmLen[0] = 0;
 			tparm.RangeEnd = tparm.RangeStart = -1;
 
+			std::atomic_thread_fence(std::memory_order_release);
 			while (sc.MustGetString(), !sc.Compare ("}"))
 			{
 				if (sc.Compare ("Console:"))
@@ -2403,6 +2404,7 @@ void V_InitFontColors ()
 					parms.Push (tparm);
 				}
 			}
+			std::atomic_thread_fence(std::memory_order_acquire);
 			info.ParmLen[parmchoice] = parms.Size() - info.StartParm[parmchoice];
 			if (info.ParmLen[0] == 0)
 			{
