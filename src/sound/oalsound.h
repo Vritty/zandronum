@@ -7,7 +7,7 @@
 
 #ifndef NO_OPENAL
 
-#ifndef APPLE
+#if defined (__APPLE__) && (_WIN32)
 #include <AL/al.h>
 #include <AL/alc.h>
 #else 
@@ -61,7 +61,7 @@
 #define AL_FORMAT_71CHN32                        0x1212
 #endif
 
-#ifndef APPLE
+#if defined (__APPLE__) && (_WIN32)
 #include <AL/efx.h>
 #else
 #include "efx.h"
