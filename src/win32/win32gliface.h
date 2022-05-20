@@ -6,6 +6,7 @@
 #include "win32iface.h"
 #include "v_video.h"
 #include "tarray.h"
+#include <win32/wglext.h>
 
 extern IVideo *Video;
 

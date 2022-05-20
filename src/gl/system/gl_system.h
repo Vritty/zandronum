@@ -21,6 +21,7 @@
 #include <windows.h>
 #include <mmsystem.h>
 #include <winsock.h>
+
 #ifndef __WINE__
 #include <dshow.h>
 #endif
@@ -75,7 +76,7 @@
 
 #ifdef _WIN32
 #define DWORD WINDOWS_DWORD	// I don't want to depend on this throughout the GL code!
-#include "gl/api/wglext.h"
+
 #ifndef __WINE__
 #undef DWORD
 #endif
