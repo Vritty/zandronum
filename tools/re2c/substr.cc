@@ -4,7 +4,7 @@
 #include "substr.h"
 #include "globals.h"
 
-#ifndef HAVE_STRNDUP
+#ifdef HAVE_STRNDUP
 
 char *strndup(const char *str, size_t len)
 {
