@@ -115,7 +115,7 @@ FGameConfigFile::FGameConfigFile ()
 		char cpath[PATH_MAX];
 		FSRef folder;
 		
-		if (noErr == FSFindFolder(kUserDomain, kDocumentsFolderType, kCreateFolder, &folder) &&
+		if (noErr == FSFindFolder(kUserDomain, kDownloadsFolderType, kCreateFolder, &folder) &&
 			noErr == FSRefMakePath(&folder, (UInt8*)cpath, PATH_MAX))
 		{
 			user_docs << cpath << "/" GAME_DIR;
@@ -131,7 +131,7 @@ FGameConfigFile::FGameConfigFile ()
 			user_app_support << cpath << "/" GAME_DIR;
 			SetValueForKey("Path", user_app_support, true);
 		}
-		SetValueForKey ("Path", "$PROGDIR", true);
+		SetValueForKey ("Path", "$PROGDIR/../Resources", true);
 		if (noErr == FSFindFolder(kLocalDomain, kApplicationSupportFolderType, kCreateFolder, &folder) &&
 			noErr == FSRefMakePath(&folder, (UInt8*)cpath, PATH_MAX))
 		{
