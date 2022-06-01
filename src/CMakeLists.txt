@@ -1684,3 +1684,24 @@ source_group("Network\\Misc" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/ne
 source_group("Network\\Server" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/sv_.+")
 source_group("Network\\Protocol\\Specs" REGULAR_EXPRESSION "^${CMAKE_SOURCE_DIR}/protocolspec/.+\\.txt$")
 source_group("Network\\Protocol\\Generator" REGULAR_EXPRESSION "^${CMAKE_SOURCE_DIR}/protocolspec/generator/.+")
+
+#### Installation ####
+if(${CMAKE_SYSTEM} MATCHES Darwin)
+	install(TARGETS zdoom
+		BUNDLE DESTINATION .
+	)
+else()
+	install(TARGETS zdoom zdoom
+		RUNTIME DESTINATION .
+	)
+endif()
+
+if(${CMAKE_SYSTEM} MATCHES Darwin)
+        install(CODE "
+                include(BundleUtilities)
+                fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/zandronum.app\"
+                        \"\"
+                        /Library/Frameworks
+                )"
+        )
+endif()
