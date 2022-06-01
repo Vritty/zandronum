@@ -9,26 +9,30 @@
 	<key>CFBundleIconFile</key>
 	<string>zandronum.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.drdteam.zandronum</string>
+	<string>com.microneering.zandronum</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>Zandronum</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleVersion</key>
+	<string>3.1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>Development Version</string>
+	<string>3.1</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.action-games</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.9</string>
+	<string>10.14</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>Doom Resource File</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleTypeExtensions</key>
