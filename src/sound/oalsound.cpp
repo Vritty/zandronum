@@ -808,7 +808,15 @@ OpenALSoundRenderer::OpenALSoundRenderer()
     alcGetIntegerv(Device, ALC_MONO_SOURCES, 1, &numMono);
     alcGetIntegerv(Device, ALC_STEREO_SOURCES, 1, &numStereo);
 
-    Sources.Resize(MIN<int>(MAX<int>(*snd_channels, 2), numMono+numStereo));
+    // OpenAL doesn't require alcGetIntegerv() to return meaningful values for
+    // ALC_MONO_SOURCES and ALC_STEREO_SOURCES. Apple's OpenAL returns zeroes
+    // even though it can generate a reasonable number of sources.
+    const int numChannels = MAX<int>(*snd_channels, 2);
+    int numSources = numMono + numStereo;
+    if (numSources == 0)
+        numSources = numChannels;
+
+    Sources.Resize(MIN<int>(numChannels, numSources));
     for(size_t i = 0;i < Sources.Size();i++)
     {
         alGenSources(1, &Sources[i]);
