@@ -947,6 +947,34 @@ void FScanner::CheckOpen()
 
 //==========================================================================
 //
+// [AK] FScanner :: MustGetEnumName
+//
+//==========================================================================
+
+int FScanner::MustGetEnumName(const char *EnumName, const char *FlagPrefix, int (*GetValueFromName) (const char *Name), const bool StringAlreadyParse)
+{
+	if (StringAlreadyParse == false)
+		MustGetString();
+	
+	FString flagname = FlagPrefix;
+	flagname += String;
+	flagname.ToUpper();
+
+	const int flagNum = GetValueFromName (flagname.GetChars());	
+	
+	if (flagNum == -1)
+	{
+		char pszLumpName[9];
+		pszLumpName[8] = 0;
+		Wads.GetLumpName (pszLumpName, LumpNum);
+		ScriptError ("Unknown %s '%s', on line %d in %s.", EnumName, String, Line, pszLumpName);
+	}
+	
+	return flagNum;
+}
+
+//==========================================================================
+//
 // a class that remembers a parser position
 //
 //==========================================================================

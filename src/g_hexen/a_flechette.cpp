@@ -106,6 +106,12 @@ bool AArtiPoisonBag3::Use (bool pickup)
 {
 	AActor *mo;
 
+	// [RK] Only the server handles the spawning and client-side handling will be ignored.
+	// We'll return true for the client since the server handles the inventory use amount.
+	// Plus we still want to play the inventory use sound for the client as well.
+	if ( NETWORK_InClientMode() )
+		return true;
+
 	mo = Spawn("ThrowingBomb", Owner->x, Owner->y, 
 		Owner->z-Owner->floorclip+35*FRACUNIT + (Owner->player? Owner->player->crouchoffset : 0), ALLOW_REPLACE);
 	if (mo)
@@ -137,6 +143,11 @@ bool AArtiPoisonBag3::Use (bool pickup)
 
 		mo->target = Owner;
 		mo->tics -= pr_poisonbag()&3;
+
+		// [RK] Spawn the flechette on the clients.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_SpawnMissile(mo);
+
 		P_CheckMissileSpawn(mo, Owner->radius);
 		return true;
 	}
@@ -393,7 +404,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_PoisonBagInit)
 		// [CK] This is executed both server and clientside, resulting in 
 		// clientside clouds with no netID, but the server does have a netID. 
 		// Clearing of clouds therefore fail because the client's poisoncloud 
-		// netID is -1.
+		// netID is 0.
 		// This is run on both the server and client, so since we can safely
 		// assume this is clientside only, we can ensure proper cleanup by
 		// setting NETFL_CLIENTSIDEONLY, resulting in proper removal when

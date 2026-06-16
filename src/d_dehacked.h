@@ -54,6 +54,8 @@ private:
 	AInventory *RealPickup;
 public:
 	bool droppedbymonster;
+	// [RK] Accessor
+	AInventory* GetRealPickup();
 };
 
 int D_LoadDehLumps();

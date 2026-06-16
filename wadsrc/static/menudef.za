@@ -11,6 +11,13 @@ OptionValue ZA_AllowSkins
 	2.0, "No cheat skins"
 }
 
+OptionValue ZA_ShowIcons
+{
+	0.0, "Never"
+	1.0, "Teams only"
+	2.0, "Always"
+}
+
 OptionValue ZA_OverridePlayerColors
 {
 	0.0, "Never"
@@ -25,47 +32,73 @@ OptionValue ZA_IdentifyTargetLevels
 	1.0, "Name"
 	2.0, "Health and armor"
 	3.0, "Weapon and ammo"
-	4.0, "Class or skin"
+	4.0, "Class and skin"
+}
+
+OptionValue ZA_IdentifyMonsterLevels
+{
+	0.0, "Off"
+	1.0, "Name"
+	2.0, "Drop items"
+	3.0, "Ghost"
+}
+
+OptionValue ZA_SpectatorMode
+{
+	0.0, "With physical restrictions"
+	1.0, "No physical restrictions"
 }
 
 OptionMenu ZA_MultiplayerOptions
 {
 	Title "MULTIPLAYER OPTIONS"
 
-	SubMenu		"Offline Skirmish",			"ZA_SkirmishMenu"
-	SubMenu		"Network Options",			"ZA_NetworkOptions"
-	SubMenu		"Log in",					"ZA_LoginMenu"
-	Submenu		"Server Administration",	"ZA_ServerSetupMenu"
-	SubMenu		"Browse servers",			"ZA_Browser"
+	SubMenu		"Offline Skirmish",		"ZA_SkirmishMenu"
+	SubMenu		"Browse servers",		"ZA_Browser"
 	StaticText	" "
-	Command		"Spectate",					"menu_spectate"
-	Command		"Switch teams",				"menu_changeteam"
-	Command		"Disconnect",				"menu_disconnect"
+	SubMenu		"Log in",			"ZA_LoginMenu"
 	StaticText	" "
-	SubMenu		"Call a vote",				"ZA_CallVote"
-	SubMenu		"Ignore a player",			"ZA_IgnoreMenu"
+	SubMenu		"Player list",			"ZA_PlayerListMenu"
+	SubMenu		"Call a vote",			"ZA_CallVote"
 	StaticText	" "
+	Command		"Spectate",			"menu_spectate"
+	Command		"Switch teams",			"menu_changeteam"
+	Command		"Disconnect",			"menu_disconnect"
+	StaticText	" "
+	SubMenu		"Network Options",		"ZA_NetworkOptions"
+	Submenu		"Server settings",		"ZA_ServerSetupMenu"
+	StaticText	" "
+
+	// [AK] cl_autologin only exists in Windows.
+	IfOption( Windows )
+	{
+		Option	"Auto-login",			"cl_autologin",			"YesNo"
+	}
+
 	Option		"Start as spectator",		"cl_startasspectator",		"YesNo"
-	TextField	"Server password",			"cl_password"
+	TextField	"Server password",		"cl_password"
 	TextField	"Server join password",		"cl_joinpassword"
 	Option		"Reset frags at join",		"cl_dontrestorefrags",		"YesNo"
-	Option		"Hide country",				"cl_hidecountry",			"YesNo"
-	Option		"Respawn using attack key",	"cl_respawnonfire",			"YesNo"
-	Option		"Show intermission timer",	"cl_intermissiontimer",		"YesNo"
-	Option		"Intermission auto-ready",	"cl_autoready",				"YesNo"
-
+	Option		"Hide country",			"cl_hidecountry",		"YesNo"
+	Option		"Respawn using attack key",	"cl_respawnonfire",		"YesNo"
+	Option		"Intermission auto-ready",	"cl_autoready",			"YesNo"
 	StaticText	" "
-	Option		"Skins",					"cl_skins",					"ZA_AllowSkins"
-	Option		"Taunts",					"cl_taunts",				"OnOff"
-	Option		"Icons",					"cl_icons",					"OnOff"
-	Option		"Identify player level",			"cl_identifytarget",		"ZA_IdentifyTargetLevels"
-	Option		"Show spawn spots",			"cl_showspawns",			"YesNo"
-	Option		"Teleport to spied player",	"cl_telespy",				"YesNo"
-	Slider		"Spectator move speed",		"cl_spectatormove",			0.1, 5.0, 0.1
+	Option		"Skins",			"cl_skins",			"ZA_AllowSkins"
+	Option		"Taunts",			"cl_taunts",			"OnOff"
+	Option		"Icons",			"cl_icons",			"OnOff"
+	Option		"Show ally icon",		"cl_showallyicon",		"ZA_ShowIcons",			"cl_icons"
+	Option		"Show enemy icon",		"cl_showenemyicon",		"ZA_ShowIcons",			"cl_icons"
+	Option		"Identify player level",	"cl_identifytarget",		"ZA_IdentifyTargetLevels"
+	Option		"Identify monster level",	"cl_identifymonsters",		"ZA_IdentifyMonsterLevels"
+	Option		"Show spawn spots",		"cl_showspawns",		"YesNo"
+	Option		"Free chasecam",		"cl_freechase",			"YesNo"
+	Option		"Teleport to spied player",	"cl_telespy",			"YesNo"
+	Option		"Spectator mode",		"cl_spectatormode",		"ZA_SpectatorMode"
+	Slider		"Spectator move speed",		"cl_spectatormove",		0.1, 5.0, 0.1
 	StaticText	" "
 	Option		"Override player colors",	"cl_overrideplayercolors",	"ZA_OverridePlayerColors"
-	ColorPicker	"Ally color",				"cl_allycolor"
-	ColorPicker	"Enemy color",				"cl_enemycolor"
+	ColorPicker	"Ally color",			"cl_allycolor"
+	ColorPicker	"Enemy color",			"cl_enemycolor"
 }
 
 // =================================================================================================
@@ -117,14 +150,98 @@ OptionMenu ZA_NetworkOptions
 	// to enable this, they should be made aware of this too.
 	StaticText	" "
 	StaticText	"--- WARNING ---"
-	StaticText	"Sending backup commands helps mitigate packet loss", 1
-	StaticText	"but increases outbound net traffic!", 1
+	StaticText	"Sending backup commands helps mitigate", 1
+	StaticText	"packet loss, but increases net traffic!", 1
 	StaticText	" "
-	StaticText	"You should only enable them if you're actually", 1
+	StaticText	"Only use this feature if you're actually", 1
 	StaticText	"suffering from severe packet loss!", 1
 	StaticText	" "
 
 	Option		"Send backup commands",		"cl_backupcommands",		"ZA_BackupRate"
+}
+
+// =================================================================================================
+//
+// VOICE CHAT OPTIONS
+//
+// =================================================================================================
+
+// [AK] This gets filled in by the engine.
+OptionValue ZA_RecordDrivers { }
+
+OptionValue ZA_VoiceMode
+{
+	0, "Off"
+	1, "Push-to-talk"
+	2, "Voice activity"
+}
+
+OptionValue ZA_VoiceChatFilter
+{
+	0, "Everyone"
+	1, "Teammates only"
+	2, "Players or spectators only"
+}
+
+OptionValue ZA_ShowVoicePanel
+{
+	0, "No"
+	1, "Top-left"
+	2, "Bottom-left"
+	3, "Top-right"
+	4, "Bottom-right"
+}
+
+OptionValue ZA_VoicePanelShowTeams
+{
+	0, "No"
+	1, "Name"
+	2, "Number"
+	3, "Asterisk"
+}
+
+OptionMenu "ZA_VoiceChatOptions"
+{
+	Title "VOICE CHAT OPTIONS"
+	Class "VoiceChatMenu"
+
+	Option		"Enable voice chat",		"voice_enable",			"ZA_VoiceMode"
+	Option		"Mute yourself",		"voice_muteself",		"YesNo",			"voice_enable"
+	Option		"Listen filter",		"voice_listenfilter",		"ZA_VoiceChatFilter",		"voice_enable"
+	Option		"Transmit filter",		"voice_transmitfilter",		"ZA_VoiceChatFilter",		"voice_enable"
+	StaticText	" "
+
+	// [AK] Tip message for Linux users if no input devices are listed.
+	IfOption( Unix )
+	{
+	StaticText	"If none of your input devices are listed,", 1
+	StaticText	"try switching the output to PulseAudio.", 1
+	StaticText	" "
+	}
+
+	Option		"Input device",			"voice_recorddriver",		"ZA_RecordDrivers"
+	Slider		"Input volume",			"voice_recordvolume",		0.0, 2.0, 0.05, 2
+	Slider		"Output volume",		"voice_outputvolume",		0.0, 1.0, 0.05, 2
+	Slider		"Voice sensitivity (dB)",	"voice_recordsensitivity",	-100, 0, 5
+	Option		"Use noise suppression",	"voice_suppressnoise",		"YesNo"
+	TextField	"RNNoise model file",		"voice_noisemodelfile",		"voice_suppressnoise"
+	StaticText	" "
+	Option		"Show voice panel",		"voice_showpanel",		"ZA_ShowVoicePanel"
+	TextField	"Panel x-pos",			"voice_panelx",			"voice_showpanel"
+	TextField	"Panel y-pos",			"voice_panely",			"voice_showpanel"
+	NumberField	"Max panel rows",		"voice_panelrows",		1, 64, 1,			"voice_showpanel"
+	Option		"Show teams",			"voice_panelshowteams",		"ZA_VoicePanelShowTeams",	"voice_showpanel"
+
+	// [AK] Tip message for testing the microphone.
+	StaticText	" "
+	StaticText	"If you're having microphone issues,", 1
+	StaticText	"start a test to play your voice back.", 1
+	StaticText	" "
+	StaticText	"If using voice activity, your volume must", 1
+	StaticText	"pass the dark green bar to be transmitted.", 1
+	StaticText	" "
+
+	MicTestBar	"Test microphone"
 }
 
 // =================================================================================================
@@ -243,6 +360,7 @@ OptionMenu ZA_Browser
 	Option		"Sort by",		"menu_browser_sortby",		"ZA_ServerSortType"
 	Option		"Show empty",		"menu_browser_showempty",		"YesNo"
 	Option		"Show full",		"menu_browser_showfull",		"YesNo"
+	TextField	"Filter name",		"menu_browser_filtername"
 	StaticText	" "
 	StaticText	" " // Header
 	StaticText	" "
@@ -256,8 +374,9 @@ OptionMenu ZA_Browser
 	ServerBrowserSlot 7
 	StaticText	" "
 	Command		"Refresh",			"querymaster"
+	Command		"Clear filter",			"menu_clear_browser_filter"
 	Submenu		"Get server info",			"ZA_ServerInfo"
-	Command		"Join game!",			"menu_join_selected_server"
+	SafeCommand	"Join game!",			"menu_join_selected_server"
 }
 
 // =================================================================================================
@@ -299,13 +418,15 @@ OptionValue ZA_VoteLimitTypes
 OptionMenu ZA_CallVote
 {
 	Title "CALL VOTE"
+	Class "CallVoteMenu"
 	NetGameOnly
 
-	SubMenu		"Kick a player",		"ZA_CallKickVote"
-	SubMenu		"Change the map",		"ZA_CallMapVote"
-	SubMenu		"Go to the next map",   "ZA_CallNextMapVote"
-	SubMenu		"Change a limit",		"ZA_CallLimitVote"
-	SubMenu		"Change a flag",		"ZA_CallFlagVote"
+	SubMenu		"Kick a player",			"ZA_CallKickVote"
+	SubMenu		"Change the map",			"ZA_CallMapVote"
+	SubMenu		"Go to the next map",   	"ZA_CallNextMapVote"
+	SubMenu		"Reset the current map",	"ZA_CallResetMapVote"
+	SubMenu		"Change a limit",			"ZA_CallLimitVote"
+	SubMenu		"Change a flag",			"ZA_CallFlagVote"
 }
 
 OptionMenu ZA_CallKickVote
@@ -365,11 +486,31 @@ OptionMenu ZA_CallNextMapVote
 	Command		"Vote!",					"menu_callnextmapvote"
 }
 
+OptionMenu ZA_CallResetMapVote
+{
+	Title		"RESET MAP"
+
+	TextField	"Reason for change",		"menu_callvotereason"
+	Command		"Vote!",					"menu_callresetmapvote"
+}
+
 // =================================================================================================
 //
-// IGNORE A PLAYER MENU
+// PLAYER LIST MENU
 //
 // =================================================================================================
+
+OptionValue ZA_IgnoreAction
+{
+	0, "Unignore"
+	1, "Ignore"
+}
+
+OptionValue ZA_IgnoreType
+{
+	0, "Chat messages"
+	1, "Voice"
+}
 
 OptionValue ZA_IgnoreDuration
 {
@@ -379,26 +520,30 @@ OptionValue ZA_IgnoreDuration
 	30, "30 minutes"
 }
 
-OptionValue ZA_IgnoreAction
+OptionMenu ZA_PlayerListMenu
 {
-	0, "Ignore"
-	1, "Unignore"
-}
-
-OptionMenu ZA_IgnoreMenu
-{
-	Title "IGNORE A PLAYER"
+	Title "PLAYER LIST"
+	Class "PlayerListMenu"
+	Indent 150
 	NetGameOnly
 
-	PlayerField	"Player",				"menu_ignoreplayer",			NoBots, NotSelf
+	PlayerField	"Player",			"menu_playerindex",		NoBots, NotSelf
+	StaticText	" "
+	StaticText	"Ignore or unignore them", 1
+	StaticText	" "
+	Option		"Action",			"menu_ignoreaction",		"ZA_IgnoreAction"
+	Option		"What",				"menu_ignoretype",		"ZA_IgnoreType"
 	// [TP] Perhaps this could be a slider? But then we need to somehow make it display
 	// 0 as "indefinitely". Qt solved this (although with spinboxes) with a "special value"
 	// attribute which is displayed instead of the value when the value is at the minimum.
 	// Maybe something similar could be done here? This needs to be coordinated with ZDoom though.
-	Option		"Duration",				"menu_ignoreduration",			"ZA_IgnoreDuration"
+	Option		"Duration",			"menu_ignoreduration",		"ZA_IgnoreDuration",	"menu_ignoreaction"
 	StaticText	" "
-	Option		"Action",				"menu_ignoreaction",			"ZA_IgnoreAction"
-	Command		"Execute!",				"menu_ignore"
+	Command		"Execute!",			"menu_ignore"
+	StaticText	" "
+	StaticText	"Adjust their VoIP channel volume", 1
+	StaticText	" "
+	Slider		"Volume",			"menu_voicevolume",		0.0, 2.0, 0.1
 }
 
 // =================================================================================================
@@ -483,6 +628,14 @@ OptionValue ZA_SwitchOnPickup
 	3, "Use PWO"
 }
 
+OptionValue ZA_SwitchWhileFiring
+{
+	0, "Yes"
+	1, "No primary fire"
+	2, "No seconday fire"
+	3, "Never"
+}
+
 OptionValue "ZA_WeaponBobStyle"
 {
 	0, "Normal"
@@ -504,10 +657,11 @@ OptionValue "ZA_WeaponSwayStyle"
 
 OptionValue "ZA_WeaponPitchStyle"
 {
-	0, "Full"
-	1, "Lower-half only"
-	2, "Upper-half only"
-	3, "Both upper and lower"
+	0, "Full Range"
+	1, "Raise looking up only"
+	2, "Raise looking down only"
+	3, "Raise looking up & down"
+	4, "Centered"
 }
 
 OptionMenu ZA_WeaponSetup
@@ -515,21 +669,28 @@ OptionMenu ZA_WeaponSetup
 	Title		"WEAPON SETUP"
 	Indent 170
 
-	Option		"Switch on pickup",		"switchonpickup",				"ZA_SwitchOnPickup"
-	Option		"Switch without ammo",	"cl_noammoswitch",				"YesNo"
-	Option		"Railgun color",		"railcolor",					"ZA_RailgunColors"
+	Option		"Switch on pickup",		"switchonpickup",		"ZA_SwitchOnPickup"
+	Option		"Switch while firing",		"cl_noswitchonfire",		"ZA_SwitchWhileFiring", 	"switchonpickup"
+	Option		"Switch without ammo",		"cl_noammoswitch",		"YesNo"
+	Option		"Railgun color",		"railcolor",			"ZA_RailgunColors"
 	StaticText	" "
-	Option		"Always bob weapon",	"cl_alwaysbob",					"YesNo"
-	Option		"Allow screen bob",		"cl_viewbob",					"YesNo"
-	Option		"Use custom bob",		"cl_usecustombob",				"YesNo"
-	Option		"Bob style",			"cl_bobstyle",					"ZA_WeaponBobStyle"
-	Slider		"Bob speed",			"cl_bobspeed",					0.0, 2.0, 0.1
+	Option		"Always bob weapon",		"cl_alwaysbob",			"YesNo"
+	Option		"Allow screen bob",		"cl_viewbob",			"YesNo"
+	Option		"Use custom bob",		"cl_usecustombob",		"YesNo"
+	Option		"Bob style",			"cl_bobstyle",			"ZA_WeaponBobStyle"
+	Slider		"Bob speed",			"cl_bobspeed",			0.0, 2.0, 0.1
+	Slider		"Still bob speed",		"cl_stillbobspeed",		0.0, 2.0, 0.1
+	Slider		"Still bob range",		"cl_stillbobrange",		0.0, 2.0, 0.1
 	StaticText	" "
-	Option		"Sway weapon",			"cl_swaystyle",					"ZA_WeaponSwayStyle"
-	Slider		"Sway multiplier",		"cl_swayspeed",					-5.0, 5.0, 0.5
+	Option		"Use custom sway",		"cl_usecustomsway",		"YesNo"
+	Option		"Sway weapon",			"cl_swaystyle",			"ZA_WeaponSwayStyle"
+	Slider		"View sway speed",		"cl_viewswayspeed",		-5.0, 5.0, 0.5
+	Slider		"Motion sway speed",		"cl_motionswayspeed",		-5.0, 5.0, 0.5
+	Slider		"Jump sway speed",		"cl_jumpswayspeed",		-5.0, 5.0, 0.5
 	StaticText	" "
-	Option		"Offset weapon pitch",	"cl_viewpitchstyle",			"ZA_WeaponPitchStyle"
-	Slider		"Offset multiplier",	"cl_viewpitchoffset",			-16.0, 16.0, 1.0
+	Option		"Use custom pitch",		"cl_usecustompitch",		"YesNo"
+	Option		"Offset weapon pitch",		"cl_viewpitchstyle",		"ZA_WeaponPitchStyle"
+	Slider		"Offset multiplier",		"cl_viewpitchoffset",		-16.0, 16.0, 1.0
 
 	Class WeaponSetupMenu
 }
@@ -544,7 +705,17 @@ OptionMenu ZA_LoginMenu
 {
 	NetGameOnly
 	Title "LOG IN"
+	Indent 150
 
+	StaticText	"To create an account, visit:", 1
+	StaticText	"https://auth.zandronum.com/register"
+	StaticText	" "
+	StaticText	"--- NOTICE ---"
+	StaticText	"If the server is using their own auth host,", 1
+	StaticText	"you must register there instead.", 1
+	StaticText	" "
+	StaticText	"Contact the server host for more info.", 1
+	StaticText	" "
 	TextField	"Username",				"menu_authusername"
 	TextField	"Password",				"menu_authpassword"
 	StaticText	" "
@@ -581,6 +752,14 @@ OptionValue ZA_AllowPrivateChat
 	2, "Teammates only"
 }
 
+OptionValue ZA_AllowVoiceChat
+{
+	0, "Never"
+	1, "Everyone"
+	2, "Teammates only"
+	3, "Players or spectators only"
+}
+
 OptionValue ZA_ExtrapolateLimit
 {
 	0, "Never"
@@ -598,6 +777,7 @@ OptionMenu ZA_ServerSetupMenu
 	Submenu		"Voting setup",				"ZA_VotingSetupMenu"
 	Submenu		"Gameplay Options",			"GameplayOptions"
 	Submenu		"Compatibility Options",	"CompatibilityOptions"
+	Command		"Log out of RCON",			"rcon_logout"
 	StaticText	" "
 	TextField	"Server name",				"sv_hostname"
 	TextField	"Website",					"sv_website"
@@ -609,7 +789,12 @@ OptionMenu ZA_ServerSetupMenu
 	TextField	"Join password",			"sv_joinpassword",			"sv_forcejoinpassword"
 	Option		"Require login to join",	"sv_forcelogintojoin",		"YesNo"
 	StaticText	" "
-	Option		"Allow private chat",		"sv_allowprivatechat",		"ZA_AllowPrivateChat"
+	Option		"Allow private chat",		"sv_allowprivatechat",			"ZA_AllowPrivateChat"
+	Option		"Allow voice chat",		"sv_allowvoicechat",			"ZA_AllowVoiceChat"
+	Option		"Use proximity chat",		"sv_proximityvoicechat",		"YesNo"
+	Slider		"Min rolloff distance",		"sv_minproximityrolloffdist",		0, 2400, 50
+	Slider		"Max rolloff distance",		"sv_maxproximityrolloffdist",		0, 2400, 50
+	StaticText	" "
 	// Option	"Smooth lagging players",	"sv_smoothplayers",			"ZA_ExtrapolateLimit"
 	NumberField	"Max connected clients",	"sv_maxclients",			0, 64
 	NumberField	"Max players",				"sv_maxplayers",			0, 64
@@ -657,9 +842,11 @@ OptionMenu ZA_RconLoginMenu
 {
 	NetGameOnly
 	Title "LOG IN TO RCON"
+	Indent 150
 
 	StaticText	"You must provide the RCON password", 1
 	StaticText	"to administer this server.", 1
+	StaticText	" "
 	TextField	"RCON Password",		"menu_rconpassword"
 	StaticText	" "
 	Command		"Log in",				"menu_rconlogin"

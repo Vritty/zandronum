@@ -172,5 +172,6 @@ bool	INVASION_IsMapThingInvasionSpot( const FMapThing *mthing );
 EXTERN_CVAR( Int, sv_invasioncountdowntime )
 EXTERN_CVAR( Int, wavelimit )
 EXTERN_CVAR( Bool, sv_usemapsettingswavelimit )
+EXTERN_CVAR( Bool, sv_respawninsurvivalinvasion )
 
 #endif	// __INVASION_H__

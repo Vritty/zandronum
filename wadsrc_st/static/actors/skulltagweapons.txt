@@ -138,6 +138,7 @@ ACTOR BFG10K : DoomWeapon 5013
 	Weapon.AmmoType "Cell"
 	Weapon.Kickback 100
 	Inventory.Pickupmessage "$PICKUP_BFG10K"
+	SelfObituary "$OB_BFG10K_SELF" // [SB]
 	+WEAPON.NOAUTOFIRE
 	+WEAPON.NOLMS
 	States
@@ -217,6 +218,7 @@ ACTOR BFG10kShot
 	SeeSound "weapons/bfg10kx"
 	AttackSound "weapons/bfg10kx"
 	Obituary "$OB_BFG10K"
+	SelfObituary "$OB_BFG10K_SELF" // [SB]
 	States
 	{
 	Spawn:
@@ -247,6 +249,7 @@ ACTOR GrenadeLauncher : DoomWeapon 5011
 	Weapon.AmmoType "RocketAmmo"
 	Weapon.Kickback 100
 	Inventory.PickupMessage "$PICKUP_GRENADELAUNCHER"
+	SelfObituary "$OB_GRENADE_SELF" // [SB]
 
 	States
 	{

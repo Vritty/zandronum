@@ -120,6 +120,30 @@ void P_SerializePlayers (FArchive &arc, bool skipload)
 		}
 		// Redo pitch limits, since the spawned player has them at 0.
 		players[consoleplayer].SendPitchLimits();
+
+		// [AK] Stuff to do if the local player was spectating.
+		if (players[consoleplayer].bSpectating)
+		{
+			// [AK] If they're a dead spectator, make them a true spectator.
+			if (players[consoleplayer].bDeadSpectator)
+				PLAYER_SetSpectator (&players[consoleplayer], false, false);
+
+			// [AK] Set the NOCLIP flag/cheats depending on whether or not
+			// there should be no physical restrictions.
+			if (players[consoleplayer].mo != nullptr)
+			{
+				if (P_IsSpectatorUnrestricted (players[consoleplayer].mo))
+				{
+					players[consoleplayer].mo->flags |= MF_NOCLIP;
+					players[consoleplayer].cheats |= (CF_FLY | CF_NOCLIP | CF_NOCLIP2);
+				}
+				else
+				{
+					players[consoleplayer].mo->flags &= ~MF_NOCLIP;
+					players[consoleplayer].cheats &= ~(CF_NOCLIP | CF_NOCLIP2);
+				}
+			}
+		}
 	}
 }
 

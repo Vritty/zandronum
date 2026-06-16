@@ -49,6 +49,11 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PodPain)
 	ACTION_PARAM_START(1);
 	ACTION_PARAM_CLASS(gootype, 0);
 
+	// [RK] Since velocity is involved, we'll let the server spawn
+	// the effect so that water splashes don't look out of sync.
+	if ( NETWORK_InClientModeAndActorNotClientHandled( self ))
+		return;
+
 	int count;
 	int chance;
 	AActor *goo;
@@ -65,6 +70,10 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_PodPain)
 		goo->velx = pr_podpain.Random2() << 9;
 		goo->vely = pr_podpain.Random2() << 9;
 		goo->velz = FRACUNIT/2 + (pr_podpain() << 9);
+
+		// [RK] Spawn the actor on the clients.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_SpawnMissileExact(goo, CM_VELX|CM_VELY|CM_VELZ);
 	}
 }
 

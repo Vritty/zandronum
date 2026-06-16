@@ -28,6 +28,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_IceGuyLook)
 {
 	fixed_t dist;
 	fixed_t an;
+	AActor *mo; // [RK] Added mo
 
 	CALL_ACTION(A_Look, self);
 	if (pr_iceguylook() < 64)
@@ -35,10 +36,19 @@ DEFINE_ACTION_FUNCTION(AActor, A_IceGuyLook)
 		dist = ((pr_iceguylook()-128)*self->radius)>>7;
 		an = (self->angle+ANG90)>>ANGLETOFINESHIFT;
 
-		Spawn (WispTypes[pr_iceguylook()&1],
+		mo = Spawn (WispTypes[pr_iceguylook()&1],
 			self->x+FixedMul(dist, finecosine[an]),
 			self->y+FixedMul(dist, finesine[an]),
 			self->z+60*FRACUNIT, ALLOW_REPLACE);
+
+		// [RK] Clients spawn these on their own. In order to prevent the 
+		// server from printing warnings when the server calls P_ExplodeMissile,
+		// we also mark this as SERVERSIDEONLY.
+		if ( NETWORK_GetState() == NETSTATE_SERVER && mo )
+		{
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->FreeNetID();
+		}
 	}
 }
 
@@ -70,6 +80,15 @@ DEFINE_ACTION_FUNCTION(AActor, A_IceGuyChase)
 			mo->vely = self->vely;
 			mo->velz = self->velz;
 			mo->target = self;
+
+			// [RK] Clients spawn these on their own. In order to prevent the 
+			// server from printing warnings when the server calls P_ExplodeMissile,
+			// we also mark this as SERVERSIDEONLY.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+			{
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->FreeNetID();
+			}
 		}
 	}
 }
@@ -133,10 +152,14 @@ DEFINE_ACTION_FUNCTION(AActor, A_IceGuyMissileExplode)
 	AActor *mo;
 	unsigned int i;
 
+	// [RK] The server does this.
+	if ( NETWORK_InClientMode() )
+		return;
+
 	for (i = 0; i < 8; i++)
 	{
 		mo = P_SpawnMissileAngleZ (self, self->z+3*FRACUNIT, 
-			PClass::FindClass("IceGuyFX2"), i*ANG45, (fixed_t)(-0.3*FRACUNIT));
+			PClass::FindClass("IceGuyFX2"), i*ANG45, (fixed_t)(-0.3*FRACUNIT), true); // [RK] Inform the clients.
 		if (mo)
 		{
 			mo->target = self->target;

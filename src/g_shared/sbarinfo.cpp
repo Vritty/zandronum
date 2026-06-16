@@ -373,6 +373,7 @@ enum //Key words
 	SBARINFO_STATUSBAR,
 	SBARINFO_MUGSHOT,
 	SBARINFO_CREATEPOPUP,
+	SBARINFO_APPENDSTATUSBAR, // [Binary] Additive SBARINFO implementation.
 };
 
 enum //Bar types
@@ -401,6 +402,7 @@ static const char *SBarInfoTopLevel[] =
 	"statusbar",
 	"mugshot",
 	"createpopup",
+	"appendstatusbar", // [Binary] Additive SBARINFO implementation.
 	NULL
 };
 
@@ -482,7 +484,9 @@ void SBarInfo::ParseSBarInfo(int lump)
 			continue;
 		}
 		int baselump = -2;
-		switch(sc.MustMatchString(SBarInfoTopLevel))
+		// [Binary] Store the command, used for the switch statement and case SBARINFO_APPENDSTATUSBAR.
+		const int command = sc.MustMatchString(SBarInfoTopLevel);
+		switch(command)
 		{
 			case SBARINFO_BASE:
 				baseSet = true;
@@ -623,6 +627,7 @@ void SBarInfo::ParseSBarInfo(int lump)
 				sc.MustGetToken(';');
 				break;
 			case SBARINFO_STATUSBAR:
+			case SBARINFO_APPENDSTATUSBAR: // [Binary] This uses the same code as the above case.
 			{
 				if(!baseSet) //If the user didn't explicitly define a base, do so now.
 					gameType = GAME_Any;
@@ -632,11 +637,19 @@ void SBarInfo::ParseSBarInfo(int lump)
 					sc.MustGetToken(TK_Identifier);
 					barNum = sc.MustMatchString(StatusBars);
 				}
-				if (this->huds[barNum] != NULL)
+				// [Binary] SBARINFO_APPENDSTATUSBAR shouldn't delete the old HUD if it exists.
+				if(command != SBARINFO_APPENDSTATUSBAR)
 				{
-					delete this->huds[barNum];
+					if (this->huds[barNum] != NULL)
+					{
+						delete this->huds[barNum];
+					}
+					this->huds[barNum] = new SBarInfoMainBlock(this);
 				}
-				this->huds[barNum] = new SBarInfoMainBlock(this);
+				else if(this->huds[barNum] == NULL)
+				{
+					sc.ScriptError("Status bar '%s' has not been created and cannot be appended to. Use 'StatusBar' instead.", StatusBars[barNum]);
+				}
 				if(barNum == STBAR_AUTOMAP)
 				{
 					automapbar = true;

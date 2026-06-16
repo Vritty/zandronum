@@ -699,8 +699,10 @@ void DrawFullHUD_GameInformation()
 	{
 		if ( possession || teampossession )
 			sprintf( szString, "%d", static_cast<int> (CPlayer->lPointCount) );
-		else if ( teamlms )
-			szString[0] = 0; // Frags would be distracting and confusing with the 'x left' being wins.
+		// Frags would be distracting and confusing with the 'x left' being wins.
+		// [AK] Players don't receive points in domination either, so don't draw anything.
+		else if (( teamlms ) || ( domination ))
+			szString[0] = 0;
 		else if ( lastmanstanding )
 			sprintf( szString, "%d", static_cast<unsigned int> (CPlayer->ulWins) );
 		else if ( deathmatch )
@@ -713,14 +715,22 @@ void DrawFullHUD_GameInformation()
 		LONG left = SCOREBOARD_GetLeftToLimit( );
 		if(left > 0)
 		{
+			const bool playersEarnKills = !!( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNKILLS );
+
 			// [BB Be careful when using sprintf to append something.
-			if ( ( dmflags2 & DF2_KILL_MONSTERS) == false )
-				sprintf( szString + strlen(szString), " \\cb(%d left)", static_cast<int> (left) );
+			// [AK] Using a percentage should only be done in game modes where players earn kills.
+			if (( playersEarnKills ) || ( cl_showscoreleft ))
+			{
+				if (( playersEarnKills ) && ( dmflags2 & DF2_KILL_MONSTERS ))
+					sprintf( szString + strlen( szString ), TEXTCOLOR_TAN " (%ld%% left)", left );
+				else
+					sprintf( szString + strlen( szString ), TEXTCOLOR_TAN " (%ld left)", left );
+			}
 			else
-				sprintf( szString + strlen(szString), " \\cb(%d%% left)", static_cast<int> (left) );
+			{
+				sprintf( szString + strlen( szString ), TEXTCOLOR_TAN " (%ld to win)", left );
+			}
 		}
-		
-		V_ColorizeString( szString );
 
 		HUD_DrawText( ConFont, CR_RED,
 				ulCurXPos - ConFont->StringWidth( szString ),
@@ -780,7 +790,7 @@ void DrawFullHUD_GameInformation()
 				ulCurXPos + TexMan[szPatchName]->GetWidth( ) / 2,
 				ulCurYPos );
 
-			sprintf( szString, "%d", static_cast<int>( TEAM_GetScore( i )));
+			sprintf( szString, "%d", static_cast<int>( TEAM_GetPointCount( i )));
 			HUD_DrawText( ConFont, TEAM_GetTextColor( i ),
 				ulCurXPos + TexMan[szPatchName]->GetWidth( ) + 16,
 				ulCurYPos - ( TexMan[szPatchName]->GetHeight( ) / 2 ) - ( ConFont->GetHeight( ) / 2 ),
@@ -808,7 +818,7 @@ void DrawFullHUD_GameInformation()
 		else
 		{
 			for ( ULONG i = 0; i < teams.Size( ); i++ )
-				lPoints[i] = TEAM_GetScore( i );
+				lPoints[i] = TEAM_GetPointCount( i );
 		}
 		ulCurXPos = 4;
 		ulCurYPos = screenHeight - 4 - ( TexMan["MEDIA0"]->GetHeight( ) + 4 ) - ( TexMan["ARM1A0"]->GetHeight( ) + 4 ) - 14;

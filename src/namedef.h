@@ -271,8 +271,6 @@ xx(MDK)
 xx(Cast) // 'damage type' for the cast call
 
 // [BB] Skulltag Damage types
-xx(Grenade)
-xx(BFG10k)
 xx(SpawnTelefrag)
 xx(Reflection)
 xx(DeadSpectate)
@@ -608,6 +606,12 @@ xx(CL_TicsPerUpdate)
 xx(CL_ConnectionType)
 // [CK] Client flags for various booleans masked in a bitfield.
 xx(CL_ClientFlags)
+// [AK] Let the user decide whether voice chat is on/off and how to transmit audio.
+xx(Voice_Enable)
+// [AK] Determines what kind of players the client can receive/send VoIP packets to/from.
+xx(Voice_ListenFilter)
+xx(Voice_TransmitFilter)
+
 // [BB] For the bot skill menu
 xx(BotSkillMenu)
 xx(ChooseBotSkill)
@@ -616,6 +620,10 @@ xx(ChooseBotSkill)
 xx(sv_nocallvote)
 xx(ZA_ServerSetupMenu)
 xx(ZA_RconLoginMenu)
+
+// [AK] For the login menu
+xx(ZA_LoginMenu)
+
 // [TP] Doom decal names, so we can send these over the network easier
 xx(BulletChip)
 xx(BloodSplat)

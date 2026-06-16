@@ -48,16 +48,14 @@ CVAR (Bool, var_friction, true, CVAR_SERVERINFO);
 CVAR (Bool, var_pushers, true, CVAR_SERVERINFO);
 
 // [WS] Changed CVAR to CUSTOM_CVAR as we need to send clients the updated state of this.
-CUSTOM_CVAR (Bool, alwaysapplydmflags, false, CVAR_SERVERINFO)
+// [AK] Added CVAR_GAMEPLAYSETTING.
+CUSTOM_CVAR (Bool, alwaysapplydmflags, false, CVAR_SERVERINFO | CVAR_GAMEPLAYSETTING)
 {
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (bool)self );
-		SERVERCOMMANDS_SetGameModeLimits( );
-	}
+	SERVER_SettingChanged( self, false );
 }
 
-CUSTOM_CVAR (Float, teamdamage, 0.f, CVAR_SERVERINFO)
+// [AK] Added CVAR_GAMEPLAYSETTING.
+CUSTOM_CVAR (Float, teamdamage, 0.f, CVAR_SERVERINFO | CVAR_GAMEPLAYSETTING)
 {
 	level.teamdamage = self;
 }

@@ -134,7 +134,7 @@ bool ARandomPowerup::Use (bool pickup)
 		break;
 	}
 
-	pItem = static_cast<AInventory *>( Spawn( pType, Owner->x, Owner->y, Owner->z, ALLOW_REPLACE ));
+	pItem = static_cast<AInventory *>( Spawn( pType, Owner->x, Owner->y, Owner->z, NO_REPLACE ));
 	if ( pItem != NULL )
 	{
 		bReturnValue = pItem->CallTryPickup( Owner );

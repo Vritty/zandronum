@@ -120,7 +120,6 @@ void I_EndRead(void)
 {
 }
 
-
 void I_WaitVBL (int count)
 {
     // I_WaitVBL is never used to actually synchronize to the

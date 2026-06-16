@@ -494,7 +494,7 @@ void DHUDMessage::DoDraw (int linenum, int x, int y, bool clean, int hudheight)
 				DTA_UseVirtualScreen, true, // [AK]
 				DTA_Alpha, Alpha,
 				DTA_RenderStyle, Style,
-				DTA_KeepRatio, true,
+				// DTA_KeepRatio, true, [AK] Respect con_scaletext_usescreenratio.
 				TAG_DONE);
 		}
 	}
@@ -597,7 +597,7 @@ void DHUDMessageFadeOut::DoDraw (int linenum, int x, int y, bool clean, int hudh
 					DTA_UseVirtualScreen, true, // [AK]
 					DTA_Alpha, trans,
 					DTA_RenderStyle, Style,
-					DTA_KeepRatio, true,
+					// DTA_KeepRatio, true, [AK] Respect con_scaletext_usescreenratio.
 					TAG_DONE);
 			}
 		}
@@ -697,7 +697,7 @@ void DHUDMessageFadeInOut::DoDraw (int linenum, int x, int y, bool clean, int hu
 					DTA_UseVirtualScreen, true, // [AK]
 					DTA_Alpha, trans,
 					DTA_RenderStyle, Style,
-					DTA_KeepRatio, true,
+					// DTA_KeepRatio, true, [AK] Respect con_scaletext_usescreenratio.
 					TAG_DONE);
 			}
 		}
@@ -873,7 +873,7 @@ void DHUDMessageTypeOnFadeOut::DoDraw (int linenum, int x, int y, bool clean, in
 				{
 					screen->DrawText (Font, TextColor, x, y, Lines[linenum].Text,
 						DTA_UseVirtualScreen, true, // [AK]
-						DTA_KeepRatio, true,
+						// DTA_KeepRatio, true, [AK] Respect con_scaletext_usescreenratio.
 						DTA_TextLen, LineVisible,
 						DTA_Alpha, Alpha,
 						DTA_RenderStyle, Style,

@@ -84,6 +84,7 @@
 #include "cooperative.h"
 #include "survival.h"
 #include "m_cheat.h"
+#include "gamemode.h"
 
 extern FILE *Logfile;
 extern bool insave;
@@ -96,7 +97,13 @@ extern char g_szActualLogFilename[512];
 
 // [AK] Don't let ConsoleCommand change the value of sv_cheats.
 CVAR (Bool, sv_cheats, false, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOSETBYACS)
-CVAR (Bool, sv_unlimited_pickup, false, CVAR_SERVERINFO)
+
+// [AK] Changed sv_unlimited_pickup to CUSTOM_CVAR, to sync the value with clients.
+CUSTOM_CVAR (Bool, sv_unlimited_pickup, false, CVAR_SERVERINFO)
+{
+	SERVER_SettingChanged(self, false);
+}
+
 CVAR (Bool, sv_logfilenametimestamp, true, CVAR_ARCHIVE)
 CVAR (Bool, sv_logfile_append, false, CVAR_ARCHIVE)
 
@@ -341,10 +348,30 @@ static bool CheckOnlineCheat ( ECheatCommand cheat )
 	return false;
 }
 
+//
+// [AK] CheckIfUsingUnrestrictedSpectatorMode
+//
+// Another helper function for noclip, noclip2, and fly.
+// Checks if the player is using the unrestricted spectator mode.
+//
+static bool CheckIfUsingUnrestrictedSpectatorMode ( FCommandLine &argv )
+{
+	player_t *const player = CLIENTDEMO_IsPlaying( ) ? CLIENTDEMO_GetFreeSpectatorPlayer( ) : &players[consoleplayer];
+
+	if ( P_IsSpectatorUnrestricted( player->mo ))
+	{
+		Printf( "You can't use %s while using the unrestricted spectator mode.\n", argv[0] );
+		return true;
+	}
+
+	return false;
+}
+
 CCMD (fly)
 {
 	// [TP] Check if this noclip needs to be handled some other way
-	if ( CheckOnlineCheat( CHT_FLY ))
+	// [AK] This can't be used while using the unrestricted spectator mode.
+	if (CheckIfUsingUnrestrictedSpectatorMode (argv) || CheckOnlineCheat (CHT_FLY))
 		return;
 
 	if (CheckCheatmode ())
@@ -364,7 +391,8 @@ argv(0) noclip
 CCMD (noclip)
 {
 	// [TP] Check if this noclip needs to be handled some other way
-	if ( CheckOnlineCheat( CHT_NOCLIP ))
+	// [AK] This can't be used while using the unrestricted spectator mode.
+	if (CheckIfUsingUnrestrictedSpectatorMode (argv) || CheckOnlineCheat (CHT_NOCLIP))
 		return;
 
 	if (CheckCheatmode ())
@@ -377,7 +405,8 @@ CCMD (noclip)
 CCMD (noclip2)
 {
 	// [TP] Check if this noclip needs to be handled some other way
-	if ( CheckOnlineCheat( CHT_NOCLIP2 ))
+	// [AK] This can't be used while using the unrestricted spectator mode.
+	if (CheckIfUsingUnrestrictedSpectatorMode (argv) || CheckOnlineCheat (CHT_NOCLIP2))
 		return;
 
 	if (CheckCheatmode ())
@@ -478,6 +507,9 @@ CCMD (chase)
 			chasedemo = true;
 			for (i = 0; i < MAXPLAYERS; i++)
 				players[i].cheats |= CF_CHASECAM;
+
+			// [AK] Reset the free chasecam's orientation when we enable the chasecam.
+			FreeChasecam::Reset();
 		}
 		R_ResetViewInterpolation ();
 	}
@@ -1262,7 +1294,7 @@ CCMD(linetarget)
 	if (linetarget)
 	{
 		// [TP] If we're the client, ask the server for information about the linetarget.
-		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->NetID != -1 )
+		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->NetID != 0 )
 		{
 			CLIENTCOMMANDS_InfoCheat( linetarget, false );
 			return;
@@ -1288,7 +1320,7 @@ CCMD(info)
 	if (linetarget)
 	{
 		// [TP] If we're the client, ask the server for information about the linetarget.
-		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->NetID != -1 )
+		if ( NETWORK_GetState() == NETSTATE_CLIENT && linetarget->NetID != 0 )
 		{
 			CLIENTCOMMANDS_InfoCheat( linetarget, true );
 			return;
@@ -1536,6 +1568,26 @@ CCMD(nextsecret)
 		Printf("no next secret map!\n");
 	}
 */
+}
+
+//*****************************************************************************
+//	[SB] Essentially just a console command version of the ACS ResetMap function
+CCMD( resetmap )
+{
+	if ( NETWORK_GetState() == NETSTATE_CLIENT )
+	{
+		Printf( "Only the server can reset the map.\n" );
+		return;
+	}
+
+	if ( GAMEMODE_GetCurrentFlags() & GMF_MAPRESETS )
+	{
+		GAME_RequestMapReset ( );
+	}
+	else
+	{
+		Printf ( "resetmap can only be used in game modes that support map resets.\n" );
+	}
 }
 
 //*****************************************************************************

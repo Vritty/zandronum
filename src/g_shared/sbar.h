@@ -430,7 +430,6 @@ private:
 	DBaseStatusBar() {}
 	bool RepositionCoords (int &x, int &y, int xo, int yo, const int w, const int h) const;
 	void DrawMessages (int layer, int bottom);
-	void DrawTargetName( );
 	void DrawWaiting () const;
 
 	TObjPtr<DHUDMessage> Messages[NUM_HUDMSGLAYERS];
@@ -466,16 +465,6 @@ enum DI_Flags
 	
 	DI_FORCESCALE = 0x40,
 	DI_ALTERNATEONFAIL = 0x80
-};
-
-// [AK] Message levels used for cl_identifytarget.
-enum
-{
-	IDENTIFY_TARGET_OFF,
-	IDENTIFY_TARGET_NAME,
-	IDENTIFY_TARGET_HEALTH,
-	IDENTIFY_TARGET_WEAPON,
-	IDENTIFY_TARGET_CLASS,
 };
 
 #endif /* __SBAR_H__ */

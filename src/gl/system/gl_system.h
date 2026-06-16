@@ -70,6 +70,13 @@
 //GL headers
 #if defined(__APPLE__)
 #include <OpenGL/OpenGL.h>
+#elif defined(__unix__)
+#include <GL/glew.h>
+// #include "gl/api/glext.h" [AK] Commented this out to fix compile errors on Fedora.
+#else // !__APPLE__ && !__unix__
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include "gl/api/glext.h"
 #endif
 
 #include "gl/glad/glad.h"

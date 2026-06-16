@@ -106,10 +106,14 @@ void JOINQUEUE_RemovePlayerAtPosition ( unsigned int position )
 {
 	if ( position < g_JoinQueue.Size() )
 	{
+		const unsigned int player = g_JoinQueue[position].player;
 		g_JoinQueue.Delete( position );
 
 		if ( NETWORK_GetState() == NETSTATE_SERVER )
 			SERVERCOMMANDS_RemoveFromJoinQueue( position );
+
+		// [AK] Trigger an event script when the player leaves the join queue.
+		GAMEMODE_HandleEvent( GAMEEVENT_JOINQUEUECHANGED, nullptr, player, -1 );
 
 		JOINQUEUE_QueueChanged();
 	}
@@ -145,6 +149,37 @@ static void JOINQUEUE_CheckSanity()
 		else
 			++i;
 	}
+}
+
+//*****************************************************************************
+//
+void JOINQUEUE_PlayerJoinsAtPosition( const unsigned int position )
+{
+	if ( position >= g_JoinQueue.Size( ))
+		return;
+
+	const JoinSlot slot = g_JoinQueue[position];
+
+	// [K6] Reset their AFK timer now - they may have been waiting in the queue silently and we don't want to kick them.
+	player_t* player = &players[slot.player];
+	CLIENT_s* client = SERVER_GetClient( slot.player );
+	client->lLastActionTic = gametic;
+	PLAYER_SpectatorJoinsGame( player );
+
+	// [BB/Spleen] The "lag interval" is only half of the "spectate info send" interval. Account for this here.
+	if (( gametic - client->ulLastCommandTic ) <= 2 * TICRATE )
+		client->ulClientGameTic += ( gametic - client->ulLastCommandTic );
+
+	if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS )
+	{
+		if ( TEAM_CheckIfValid( slot.team ))
+			PLAYER_SetTeam( player, slot.team, true );
+		else
+			PLAYER_SetTeam( player, TEAM_ChooseBestTeamForPlayer( ), true );
+	}
+
+	NETWORK_Printf( "%s joined the game.\n", player->userinfo.GetName( ));
+	JOINQUEUE_RemovePlayerAtPosition( position );
 }
 
 //*****************************************************************************
@@ -286,28 +321,10 @@ void JOINQUEUE_PopQueue( int slotCount )
 		if ( GAMEMODE_PreventPlayersFromJoining() )
 			break;
 
-		const JoinSlot& slot = g_JoinQueue[i];
-
 		// Found a player waiting in line. They will now join the game!
-		if ( playeringame[slot.player] )
+		if ( playeringame[g_JoinQueue[i].player] )
 		{
-			// [K6] Reset their AFK timer now - they may have been waiting in the queue silently and we don't want to kick them.
-			player_t* player = &players[slot.player];
-			CLIENT_s* client = SERVER_GetClient( slot.player );
-			client->lLastActionTic = gametic;
-			PLAYER_SpectatorJoinsGame ( player );
-
-			// [BB/Spleen] The "lag interval" is only half of the "spectate info send" interval. Account for this here.
-			if (( gametic - client->ulLastCommandTic ) <= 2*TICRATE )
-				client->ulClientGameTic += ( gametic - client->ulLastCommandTic );
-
-			if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-			{
-				if ( TEAM_CheckIfValid ( slot.team ) )
-					PLAYER_SetTeam( player, slot.team, true );
-				else
-					PLAYER_SetTeam( player, TEAM_ChooseBestTeamForPlayer( ), true );
-			}
+			JOINQUEUE_PlayerJoinsAtPosition( i );
 
 			// Begin the duel countdown.
 			if ( duel )
@@ -328,12 +345,6 @@ void JOINQUEUE_PopQueue( int slotCount )
 				else
 					LASTMANSTANDING_StartCountdown(( 10 * TICRATE ) - 1 );
 			}
-			else
-			{
-				NETWORK_Printf( "%s joined the game.\n", player->userinfo.GetName() );
-			}
-
-			JOINQUEUE_RemovePlayerAtPosition ( i );
 
 			if ( slotCount > 0 )
 				slotCount--;
@@ -363,6 +374,9 @@ unsigned int JOINQUEUE_AddPlayer( unsigned int player, unsigned int team )
 	// [TP] Tell clients of the join queue's most recent addition
 	if ( NETWORK_GetState() == NETSTATE_SERVER )
 		SERVERCOMMANDS_PushToJoinQueue();
+
+	// [AK] Trigger an event script when the player is added to the join queue.
+	GAMEMODE_HandleEvent( GAMEEVENT_JOINQUEUECHANGED, nullptr, player, JOINQUEUE_GetPositionInLine( player ));
 
 	JOINQUEUE_QueueChanged();
 	return result;

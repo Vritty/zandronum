@@ -76,6 +76,9 @@ bool ClientIterator::isCurrentValid ( ) const {
 	if ( ( _flags & SVCF_ONLY_CONNECTIONTYPE_1 ) && ( players[_current].userinfo.GetConnectionType() != 1 ) )
 		return false;
 
+	if ( ( _flags & SVCF_SKIP_CLIENTS_WITHOUT_FULLUPDATE ) && ( SERVER_GetClient( _current )->State == CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION ) && ( gamestate == GS_LEVEL ) )
+		return false;
+
 	return true;
 }
 
@@ -106,7 +109,6 @@ NetCommand::NetCommand ( const SVC Header ) :
 	_unreliable( false )
 {
 	_buffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-	_buffer.Clear();
 	addByte( Header );
 }
 
@@ -116,7 +118,6 @@ NetCommand::NetCommand ( const SVC2 Header2 ) :
 	_unreliable( false )
 {
 	_buffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-	_buffer.Clear();
 	addByte( SVC_EXTENDEDCOMMAND );
 	addByte( Header2 );
 }
@@ -233,6 +234,27 @@ void NetCommand::addString ( const char *pszString )
 }
 
 //*****************************************************************************
+// [AK]
+//
+void NetCommand::addBuffer ( const void *pvBuffer, const unsigned int length )
+{
+	if (( pvBuffer == NULL ) || ( length == 0 ))
+	{
+		Printf( "NetCommand::AddBuffer: Invalid or zero-length buffer! Header: %s\n", getHeaderAsString() );
+		return;
+	}
+
+	if (( _buffer.ByteStream.pbStream + length ) > _buffer.ByteStream.pbStreamEnd )
+	{
+		Printf( "NetCommand::AddBuffer: Overflow! Header: %s\n", getHeaderAsString() );
+		return;
+	}
+
+	_buffer.ByteStream.WriteBuffer( pvBuffer, length );
+	_buffer.ulCurrentSize = _buffer.CalcSize();
+}
+
+//*****************************************************************************
 //
 void NetCommand::addName ( FName name )
 {
@@ -277,6 +299,14 @@ BYTESTREAM_s& NetCommand::getBytestreamForClient( ULONG i ) const
 //
 void NetCommand::sendCommandToClients ( ULONG ulPlayerExtra, ServerCommandFlags flags )
 {
+	const SVC command = static_cast<SVC>( _buffer.pbData[0] );
+
+	// [AK] It's probably a good idea to still let clients that haven't received
+	// the full update yet know when a player has left the game. This way, they
+	// won't think they're still in the game when they aren't.
+	if ( ( flags == 0 ) && ( ulPlayerExtra == MAXPLAYERS ) && ( command != SVC_MAPAUTHENTICATE ) && ( command != SVC_DISCONNECTPLAYER ) )
+		flags |= SVCF_SKIP_CLIENTS_WITHOUT_FULLUPDATE;
+
 	for ( ClientIterator it ( ulPlayerExtra, flags ); it.notAtEnd(); ++it )
 		sendCommandToOneClient( *it );
 }

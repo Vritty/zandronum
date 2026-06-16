@@ -88,6 +88,7 @@
 #include "invasion.h"
 #include "unlagged.h"
 #include "network_enums.h"
+#include "st_hud.h"
 
 static FRandom pr_playerinspecialsector ("PlayerInSpecialSector");
 void P_SetupPortals();
@@ -178,8 +179,6 @@ CUSTOM_CVAR ( Int, sv_killallmonsters_percentage, 100, CVAR_SERVERINFO )
 	else if ( self < 0 )
 		self = 0;
 }
-
-FPlayerStart *SelectRandomCooperativeSpot( ULONG ulPlayer );
 
 // [RH] Check dmflags for noexit and respond accordingly
 bool CheckIfExitIsGood (AActor *self, level_info_t *info)
@@ -891,17 +890,18 @@ void P_UpdateSpecials ()
 {
 	// LEVEL TIMER
 	// [BB] The gamemode decides whether the timelimit is used.
-	if ( GAMEMODE_IsTimelimitActive() )
+	// [AK] Don't do anything here if the current level is being exited.
+	if (( gameaction != ga_completed ) && ( GAMEMODE_IsTimelimitActive( )))
 	{
 		// [RC] Play the five minute warning.
-		if ( level.time == (int)( ( timelimit - 5 ) * TICRATE * 60 ) ) // I'm amazed this works so well without a flag.
+		if ( level.time == static_cast<int>(( timelimit - 5 ) * TICRATE * 60 )) // I'm amazed this works so well without a flag.
 		{
 			Printf("Five minutes remain!\n");
 			ANNOUNCER_PlayEntry( cl_announcer, "FiveMinuteWarning" );
 		}
 
 		// [RC] Play the one minute warning.
-		else if ( level.time == (int)( ( timelimit - 1 ) * TICRATE * 60 ) )
+		else if ( level.time == static_cast<int>(( timelimit - 1 ) * TICRATE * 60 ))
 		{
 			Printf("One minute remains!\n");
 			ANNOUNCER_PlayEntry( cl_announcer, "OneMinuteWarning" );
@@ -909,7 +909,7 @@ void P_UpdateSpecials ()
 
 		if ( NETWORK_InClientMode() == false )
 		{
-			if (( level.time >= (int)( timelimit * TICRATE * 60 )) && ( GAME_GetEndLevelDelay( ) == 0 ))
+			if (( level.time >= static_cast<int>( timelimit * TICRATE * 60 )) && ( GAME_GetEndLevelDelay( ) == 0 ))
 			{
 				// Special game modes handle this differently.
 				if ( duel )
@@ -928,49 +928,48 @@ void P_UpdateSpecials ()
 				// End the level after one second.
 				else
 				{
-					ULONG				ulIdx;
-					LONG				lWinner;
-					LONG				lHighestFrags;
-					bool				bTied;
-					char				szString[64];
+					int winner = -1;
+					int highestFrags = INT_MIN;
+					bool tied = false;
+					EColorRange color = CR_RED;
+					FString message;
 
 					NETWORK_Printf( "%s\n", GStrings( "TXT_TIMELIMIT" ));
 					GAME_SetEndLevelDelay( 1 * TICRATE );
 
 					// Determine the winner.
-					lWinner = -1;
-					lHighestFrags = INT_MIN;
-					bTied = false;
-					for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+					for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
 					{
 						// [BB] Spectators can't win.
-						if ( ( playeringame[ulIdx] == false ) || players[ulIdx].bSpectating )
+						if ( ( playeringame[i] == false ) || players[i].bSpectating )
 							continue;
 
-						if ( players[ulIdx].fragcount > lHighestFrags )
+						if ( players[i].fragcount > highestFrags )
 						{
-							lWinner = ulIdx;
-							lHighestFrags = players[ulIdx].fragcount;
-							bTied = false;
+							winner = i;
+							highestFrags = players[i].fragcount;
+							tied = false;
 						}
-						else if ( players[ulIdx].fragcount == lHighestFrags )
-							bTied = true;
+						else if ( players[i].fragcount == highestFrags )
+							tied = true;
 					}
 
-					// [BB] In case there are no active players (only spectators), lWinner is -1.
-					if ( bTied || ( lWinner == -1 ) )
-						sprintf( szString, "\\cdDRAW GAME!" );
+					// [BB] In case there are no active players (only spectators), winner is -1.
+					if ( tied || ( winner == -1 ) )
+					{
+						message = "DRAW GAME!";
+						color = CR_GREEN;
+					}
 					else
 					{
-						if (( NETWORK_GetState( ) == NETSTATE_SINGLE_MULTIPLAYER ) && ( players[consoleplayer].mo->CheckLocalView( lWinner )))
-							sprintf( szString, "YOU WIN!" );
+						if (( NETWORK_GetState( ) == NETSTATE_SINGLE_MULTIPLAYER ) && ( players[consoleplayer].mo->CheckLocalView( winner )))
+							message = "YOU WIN!";
 						else
-							sprintf( szString, "%s \\c-WINS!", players[lWinner].userinfo.GetName() );
+							message.Format( "%s WINS!", players[winner].userinfo.GetName( ));
 					}
-					V_ColorizeString( szString );
 
 					// Display "%s WINS!" HUD message.
-					GAMEMODE_DisplayStandardMessage ( szString, true );
+					HUD_DrawStandardMessage( message.GetChars( ), color, false, 3.0f, 2.0f, true );
 
 					GAME_SetEndLevelDelay( 5 * TICRATE );
 				}
@@ -2362,13 +2361,6 @@ static void P_SpawnFriction(void)
 {
 	int i;
 	line_t *l = lines;
-
-	// [BC] Don't do this in client mode, because the friction for the sector could
-	// have changed at some point on the server end.
-	if ( NETWORK_InClientMode() )
-	{
-		return;
-	}
 
 	for (i = 0 ; i < numlines ; i++,l++)
 	{

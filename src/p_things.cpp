@@ -407,7 +407,8 @@ nolead:						mobj->angle = R_PointToAngle2 (mobj->x, mobj->y, targ->x, targ->y);
 					bMissileExplode = false;
 					if (mobj->flags & MF_MISSILE)
 					{
-						if (P_CheckMissileSpawn (mobj, spot->radius))
+						// [RK] Client doesn't have the missile yet so we pass false.
+						if (P_CheckMissileSpawn (mobj, spot->radius, true, false))
 						{
 							rtn = true;
 						}

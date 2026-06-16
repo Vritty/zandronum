@@ -186,6 +186,8 @@ ACTOR Actor native //: Thinker
 	action native A_FireAssaultGun();
 	action native A_CheckTerrain();
 	action native A_FaceConsolePlayer(float MaxTurnAngle = 0); // [Dusk]
+	action native A_ClientsideACSExecute(string script, int arg1=0, int arg2=0, int arg3=0, int arg4=0); // [JM]
+	action native A_GivePlayerMedal(name medal, bool silent, int giveto = AAPTR_DEFAULT); // [AK]
 
 	action native A_MissileAttack();
 	action native A_MeleeAttack();

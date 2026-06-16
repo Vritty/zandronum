@@ -1216,6 +1216,11 @@ void CALLBACK ExitFatally (ULONG_PTR dummy)
 //
 //==========================================================================
 
+namespace
+{
+	CONTEXT MainThreadContext;
+}
+
 LONG WINAPI CatchAllExceptions (LPEXCEPTION_POINTERS info)
 {
 #ifdef _DEBUG
@@ -1240,11 +1245,11 @@ LONG WINAPI CatchAllExceptions (LPEXCEPTION_POINTERS info)
 	// Otherwise, put the crashing thread to sleep and signal the main thread to clean up.
 	if (GetCurrentThreadId() == MainThreadID)
 	{
-#ifndef _M_X64
-		info->ContextRecord->Eip = (DWORD_PTR)ExitFatally;
+#ifdef _M_X64
+		*info->ContextRecord = MainThreadContext;
 #else
-		info->ContextRecord->Rip = (DWORD_PTR)ExitFatally;
-#endif
+		info->ContextRecord->Eip = (DWORD_PTR)ExitFatally;
+#endif // _M_X64
 	}
 	else
 	{
@@ -1336,6 +1341,17 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE nothing, LPSTR cmdline, int n
 	if (MainThread != INVALID_HANDLE_VALUE)
 	{
 		SetUnhandledExceptionFilter (CatchAllExceptions);
+
+#ifdef _M_X64
+		static bool setJumpResult = false;
+		RtlCaptureContext(&MainThreadContext);
+		if (setJumpResult)
+		{
+			ExitFatally(0);
+			return 0;
+		}
+		setJumpResult = true;
+#endif // _M_X64
 	}
 #endif
 
@@ -1373,6 +1389,21 @@ DWORD WINAPI MainDoomThread( LPVOID )
 	DuplicateHandle (GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &MainThread,
 		0, FALSE, DUPLICATE_SAME_ACCESS);
 	MainThreadID = GetCurrentThreadId();
+
+	// [AK] This was copied from the WinMain function above.
+#if !defined(_DEBUG) && defined(_M_X64)
+	if (MainThread != INVALID_HANDLE_VALUE)
+	{
+		static bool setJumpResult = false;
+		RtlCaptureContext(&MainThreadContext);
+		if (setJumpResult)
+		{
+			ExitFatally(0);
+			return 0;
+		}
+		setJumpResult = true;
+	}
+#endif
 
 	try
 	{

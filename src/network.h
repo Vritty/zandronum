@@ -86,8 +86,13 @@ enum
 enum
 {
 	PLAYER_VISIBLE		= 1 << 0,
-	PLAYER_ATTACK			= 1 << 1,
+	PLAYER_ATTACK		= 1 << 1,
 	PLAYER_ALTATTACK	= 1 << 2,
+	PLAYER_CROUCHING	= 1 << 3,
+	PLAYER_SENDVELX		= 1 << 4,
+	PLAYER_SENDVELY		= 1 << 5,
+	PLAYER_SENDVELZ		= 1 << 6,
+	PLAYER_ONLIFT		= 1 << 7,
 };
 
 /* [BB] This is not used anywhere anymore.
@@ -207,22 +212,18 @@ enum ActorScaleFlag
 	ACTORSCALE_Y = 2
 };
 
+enum SetPlayerStatusFlag
+{
+	SETPLAYERSTATUS_CLIENTSENDSUPDATE		= 1 << 0,
+	SETPLAYERSTATUS_SERVERCANTSENDUPDATE	= 1 << 1,
+};
+
 // [AK] What kind of translation are we sending to clients?
 enum CreateTranslationType
 {
 	CREATETRANSLATION_PALETTE,
 	CREATETRANSLATION_RGB,
 	CREATETRANSLATION_DESATURATED,
-};
-
-// [AK] What kind of player status are we trying to update?
-enum PlayerStatusType
-{
-	PLAYERSTATUS_CHATTING,
-	PLAYERSTATUS_INCONSOLE,
-	PLAYERSTATUS_INMENU,
-	PLAYERSTATUS_LAGGING,
-	PLAYERSTATUS_READYTOGOON,
 };
 
 // [AK] If we're updating the map rotation then what exactly are we doing?
@@ -232,6 +233,7 @@ enum UpdateMapRotationType
 	UPDATE_MAPROTATION_DELMAP,
 	UPDATE_MAPROTATION_CLEAR,
 	UPDATE_MAPROTATION_RESET,
+	UPDATE_MAPROTATION_SETNEXTPOSITION,
 };
 
 // [AK] What kind of team score are we sending to clients?
@@ -253,6 +255,9 @@ enum TeamScoreType
 // just send some key letter that identifies the actor, instead of the full name.
 #define NUMBER_OF_ACTOR_NAME_KEY_LETTERS	3
 #define NUMBER_OF_WEAPON_NAME_KEY_LETTERS	10
+
+// [AK] The country index that indicates a LAN connection.
+#define COUNTRYINDEX_LAN	UCHAR_MAX
 
 // [BB] 5 = 1 + 4 (SVC_HEADER + packet number)
 const int PACKET_HEADER_SIZE = 5;
@@ -276,6 +281,48 @@ enum
 };
 
 //*****************************************************************************
+//	CLASSES
+
+// [BB] Legacy interface that redirects all calls to Skulltag's old MD5 code to the ZDoom MD5 code.
+class CMD5Checksum
+{
+public:
+	static void GetMD5( const BYTE *pBuf, UINT nLength, FString &OutString );
+};
+
+//*****************************************************************************
+//	STRUCTURES
+
+// [AK] Buffer parameter type used by the network protocol.
+struct BufferParameter
+{
+public:
+	unsigned char *data;
+	unsigned short size;
+
+	BufferParameter( void ) : data( nullptr ), size( 0 ) { }
+	BufferParameter( unsigned char *_data, unsigned short _size ) : BufferParameter( ) { CopyData( _data, _size ); }
+	BufferParameter( const BufferParameter &other ) : BufferParameter( other.data, other.size ) { }
+	~BufferParameter( void ) { DeleteData( ); }
+
+	BufferParameter &operator() ( BYTESTREAM_s *byteStream );
+	BufferParameter &operator= ( const BufferParameter &other );
+
+private:
+	void DeleteData( void );
+	void CopyData( unsigned char *newData, unsigned short newSize );
+};
+
+//*****************************************************************************
+// [TP] Now a struct
+struct NetworkPWAD
+{
+	FString name;
+	FString checksum;
+	int wadnum; // [TP] Added wadnum
+};
+
+//*****************************************************************************
 //	VARIABLES
 
 extern FString g_lumpsAuthenticationChecksum;
@@ -296,18 +343,13 @@ NETADDRESS_s	NETWORK_GetCachedLocalAddress( void );
 NETBUFFER_s		*NETWORK_GetNetworkMessageBuffer( void );
 USHORT			NETWORK_ntohs( ULONG ul );
 bool			NETWORK_IsGeoIPAvailable( void );
-FString			NETWORK_GetCountryCodeFromAddress( NETADDRESS_s Address );
+ULONG			NETWORK_GetCountryIndexFromAddress( NETADDRESS_s Address );
+const char		*NETWORK_GetCountryCodeFromIndex( ULONG ulIndex, bool bGetAlpha3 );
+const char		*NETWORK_GetCountryNameFromIndex( ULONG ulIndex );
 USHORT			NETWORK_GetLocalPort( void );
 
-// [TP] Now a struct
-struct NetworkPWAD
-{
-	FString name;
-	FString checksum;
-	int wadnum; // [TP] Added wadnum
-};
-
 const TArray<NetworkPWAD>&	NETWORK_GetPWADList( void ); // [RC]
+const TArray<NetworkPWAD>&	NETWORK_GetAuthenticatedWADsList( void ); // [SB]
 const char		*NETWORK_GetIWAD( void );
 void			NETWORK_AddLumpForAuthentication( const LONG LumpNumber );
 void			NETWORK_GenerateLumpMD5Hash( const int LumpNum, FString &MD5Hash );
@@ -394,12 +436,5 @@ LONG NETWORK_GetFirstFreeID ( void )
 	Printf( "NETWORK_GetFirstFreeID: ID limit reached (>=8192)\n" );
 	return ( -1 );
 }
-
-// [BB] Legacy interface that redirects all calls to Skulltag's old MD5 code to the ZDoom MD5 code.
-class CMD5Checksum  
-{
-public:
-	static void GetMD5 ( const BYTE* pBuf, UINT nLength, FString &OutString );
-};
 
 #endif	// __NETWORK_H__

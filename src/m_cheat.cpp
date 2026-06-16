@@ -178,7 +178,11 @@ void cht_DoCheat (player_t *player, int cheat)
 	case CHT_CHASECAM:
 		player->cheats ^= CF_CHASECAM;
 		if (player->cheats & CF_CHASECAM)
+		{
+			// [AK] Reset the free chasecam's orientation when we enable the chasecam.
+			FreeChasecam::Reset();
 			msg = "chasecam ON";
+		}
 		else
 			msg = "chasecam OFF";
 		R_ResetViewInterpolation ();
@@ -1200,7 +1204,8 @@ public:
 	void Tick()
 	{
 		// [BB] Added safety check.
-		if ( Pawn )
+		// [AK] Also make sure that a spectator can't suicide here.
+		if (( Pawn ) && ( Pawn->player ) && ( Pawn->player->bSpectating == false ))
 		{
 			Pawn->flags |= MF_SHOOTABLE;
 			Pawn->flags2 &= ~MF2_INVULNERABLE;

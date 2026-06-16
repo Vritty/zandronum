@@ -223,6 +223,8 @@ TArray<FPlayerStart> TerminatorStarts(16);
 // [BB] All player starts, including those for voodoo dolls.
 TArray<FPlayerStart> AllStartsOfPlayer[MAXPLAYERS];
 
+// [AK] All available player starts, excluding those for voodoo dolls.
+TArray<FPlayerStart> AvailableCooperativeStarts;
 
 static void P_AllocateSideDefs (int count);
 
@@ -1789,6 +1791,9 @@ static void SetMapThingUserData(AActor *actor, unsigned udi)
 		else
 		{ // Set the value of the specified user variable.
 			*(int *)(reinterpret_cast<BYTE *>(actor) + var->offset) = value;
+
+			// [BOF] Store this value in another variable for map resets.
+			actor->savedUserVars.Insert(var, value);
 		}
 	}
 }
@@ -1947,8 +1952,14 @@ void P_SpawnThings (int position)
 		// [BB] When we are using unassigned voodoo dolls, we have to enforce the spawning
 		// of all dolls for all players (even those who are not in the game) now.
 		COOP_SpawnVoodooDollsForPlayerIfNecessary ( i, sv_coopunassignedvoodoodolls );
-		if (playeringame[i] && players[i].mo != NULL)
-			P_PlayerStartStomp(players[i].mo);
+
+		// [SB] If we are in online or multiplayer emulation, at this point we will be spawning voodoo dolls,
+		// but the actual player mobjs will be spawned later. As such, handling spawn telefragging now will
+		// only result in telefragging the voodoo dolls, which can cause havoc on maps like Plutonia MAP06.
+		// Since the multiplayer spawning code also handles telefragging, skip it here.
+		if ( NETWORK_GetState() == NETSTATE_SINGLE )
+			if (playeringame[i] && players[i].mo != NULL)
+				P_PlayerStartStomp(players[i].mo);
 	}
 	// [BB] When initially spawning the voodoo dolls, we also need to clear the stored pickups
 	// of the unassigned dolls.
@@ -3721,7 +3732,8 @@ void P_RemoveThings( void )
 		// to delete the white flags, which are used for one flag CTF.
 		if (( teamgame ) && ( oneflagctf == false ))
 		{
-			if ( pActor->IsKindOf( PClass::FindClass( "WhiteFlag" )))
+			// [TRSR] Unless a mod explicitly wants their WhiteFlag replacement to spawn in other modes.
+			if (( pActor->IsKindOf( PClass::FindClass( "WhiteFlag" ))) && ( pActor->flags & MF_NOTDMATCH ))
 			{
 				P_RemoveThingLocal( pActor );
 				continue;
@@ -4364,7 +4376,10 @@ void P_SetupLevel (char *lumpname, int position)
 // not assumed to be from this one.
 
 	for (i = 0; i < BODYQUESIZE; i++)
+	{
 		bodyque[i] = NULL;
+		bodyquePlayer[i] = nullptr; // [AK]
+	}
 
 	deathmatchstarts.Clear();
 	AllPlayerStarts.Clear();
@@ -4373,6 +4388,7 @@ void P_SetupLevel (char *lumpname, int position)
 	GenericInvasionStarts.Clear( );
 	PossessionStarts.Clear();
 	TerminatorStarts.Clear();
+	AvailableCooperativeStarts.Clear();
 	for (i = 0; i < MAXPLAYERS; ++i)
 		AllStartsOfPlayer[i].Clear();
 
@@ -4400,6 +4416,9 @@ void P_SetupLevel (char *lumpname, int position)
 			}
 		}
 	}
+
+	// [JM] Event for early setup before things are spawned and OPEN scripts are executed.
+	GAMEMODE_HandleEvent(GAMEEVENT_LEVEL_INIT, 0, 0, 0, true);
 
 	if (!buildmap)
 	{
@@ -4474,6 +4493,13 @@ void P_SetupLevel (char *lumpname, int position)
 	delete[] sidetemp;
 	sidetemp = NULL;
 
+	// [AK] If there's available start points for each player, add them to the list.
+	for ( i = 0; i < MAXPLAYERS; i++ )
+	{
+		if ( playerstarts[i].type != 0 )
+			AvailableCooperativeStarts.Push( playerstarts[i] );
+	}
+
 	/* [BC/BB] Zandronum handles spawning differently.
 	// if deathmatch, randomly spawn the active players
 	if (deathmatch)
@@ -4533,9 +4559,9 @@ void P_SetupLevel (char *lumpname, int position)
 					if ( players[i].bOnTeam && ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) )
 						PLAYER_SetTeam( &players[i], teams.Size( ), true );
 
-					// [BB] In duel the players should keep their position in line after a "changemap"
-					// map change.
-					if ( duel == false )
+					// [AK] Players only keep their position in line after a "changemap" map change
+					// if ZADF_DONT_KEEP_JOIN_QUEUE isn't enabled.
+					if ( zadmflags & ZADF_DONT_KEEP_JOIN_QUEUE )
 					{
 						// [BB] If the player was in the join queue, remove him.
 						JOINQUEUE_RemovePlayerFromQueue ( i );
@@ -4574,7 +4600,16 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 
 		if ( NETWORK_GetState( ) != NETSTATE_SINGLE )
+		{
+			// [AK] When a client changes their class (i.e. when the server gets their userinfo), cls is reset
+			// to NULL. We don't want them to change their class when travelling from one map to the next
+			// because a travelling player gets its inventory (from the previous class) from the last map.
+			// Unless they died and need to respawn with the new class, reset cls back to their current class.
+			if (( players[i].cls == NULL ) && ( players[i].playerstate == PST_LIVE ))
+				players[i].cls = PlayerClasses[players[i].CurrentPlayerClass].Type;
+
 			G_CooperativeSpawnPlayer( i, false );
+		}
 	}
 
 	// set up world state

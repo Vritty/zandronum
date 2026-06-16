@@ -77,6 +77,7 @@ void	DUEL_DoWinSequence( ULONG ulPlayer );
 void	DUEL_SendLoserToSpectators( void );
 bool	DUEL_IsDueler( ULONG ulPlayer );
 void	DUEL_TimeExpired( void );
+void	DUEL_FragLimitChanged( INT iFraglimit );
 
 // Access functions
 ULONG	DUEL_GetCountdownTicks( void );

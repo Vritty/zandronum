@@ -54,6 +54,15 @@ DEFINE_ACTION_FUNCTION(AActor, A_FogSpawn)
 		mo->args[3] = self->args[3];						// Set lifetime
 		mo->args[4] = 1;									// Set to moving
 		mo->special2 = pr_fogspawn()&63;
+
+		// [RK] Clients spawn these on their own. In order to prevent the 
+		// server from printing warnings when the server calls P_ExplodeMissile,
+		// we also mark this as SERVERSIDEONLY.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+		{
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->FreeNetID();
+		}
 	}
 }
 

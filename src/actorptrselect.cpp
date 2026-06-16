@@ -54,6 +54,14 @@ AActor *COPY_AAPTR(AActor *origin, int selector)
 				}
 			case AAPTR_PLAYER_GETCONVERSATION:
 				return origin->player->ConversationNPC;
+
+			// [AK] Returns the floaty icon above this player's head.
+			case AAPTR_PLAYER_GETFLOATYICON:
+				return origin->player->pIcon;
+
+			// [AK] Returns the actor that this player is looking from.
+			case AAPTR_PLAYER_GETCAMERA:
+				return origin->player->camera;
 			}
 		}
 

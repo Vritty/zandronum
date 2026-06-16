@@ -66,7 +66,9 @@
 
 #include <ctype.h>
 #include <math.h>
-#include <list>
+#include <set>
+#include <vector>
+#include <string>
 #include "../GeoIP/GeoIP.h"
 
 #include "c_console.h"
@@ -98,6 +100,55 @@ enum LumpAuthenticationMode {
 	ALL_LUMPS
 };
 
+// [AK] A structure for initializing lumps that are going to be authenticated.
+struct AUTHENTICATELUMP_s
+{
+	std::string Name;
+	LumpAuthenticationMode Mode;
+	namespace_t NameSpace;
+
+	// [AK] Determines what namespace is designated to this lump and returns a string of the namespace. By default,
+	// the namespace is global, in case an invalid namespace is provided.
+	FString GetNameSpace( FScanner &sc )
+	{
+		NameSpace = ns_global;
+		sc.MustGetString( );
+
+		if ( stricmp( sc.String, "sprite" ) == 0 )
+			NameSpace = ns_sprites;
+		else if ( stricmp( sc.String, "flat" ) == 0 )
+			NameSpace = ns_flats;
+		else if ( stricmp( sc.String, "texture" ) == 0 )
+			NameSpace = ns_newtextures;
+		else if ( stricmp( sc.String, "hires" ) == 0 )
+			NameSpace = ns_hires;
+		else if ( stricmp( sc.String, "voxel" ) == 0 )
+			NameSpace = ns_voxels;
+		else if ( stricmp( sc.String, "sound" ) == 0 )
+			NameSpace = ns_sounds;
+		else if ( stricmp( sc.String, "patch" ) == 0 )
+			NameSpace = ns_patches;
+		else if ( stricmp( sc.String, "graphics" ) == 0 )
+			NameSpace = ns_graphics;
+		else if ( stricmp( sc.String, "music" ) == 0 )
+			NameSpace = ns_music;
+		else if ( stricmp( sc.String, "global" ) != 0 )
+			sc.ScriptMessage( "Invalid namespace \"%s\" was declared, switching to global instead.", sc.String );
+
+		return ( NameSpace != ns_global ? sc.String : "global" );
+	}
+
+	// [AK] Comparison function, necessary for std::set. We're only concerned about a lump's name
+	// and namespace. The authentication mode (LAST_LUMP or ALL_LUMPS) isn't really important to check.
+	bool operator< ( const AUTHENTICATELUMP_s &Other ) const
+	{
+		if ( Name == Other.Name )
+			return ( NameSpace < Other.NameSpace );
+
+		return ( Name < Other.Name );
+	}
+};
+
 // [BB] Implement the string table and the conversion functions for the SVC and SVC2 enums.
 #include "network_enums.h"
 #define GENERATE_ENUM_STRINGS  // Start string generation
@@ -110,6 +161,7 @@ void SERVERCONSOLE_UpdateIP( NETADDRESS_s LocalAddress );
 //	VARIABLES
 
 static	TArray<NetworkPWAD>	g_PWADs;
+static	TArray<NetworkPWAD>	g_AuthenticatedWADs; // [SB] All authenticated WAD files, including IWAD and engine PK3
 static	FString		g_IWAD; // [RC/BB] Which IWAD are we using?
 
 FString g_lumpsAuthenticationChecksum;
@@ -160,6 +212,34 @@ static bool g_bDuplicateLumpAuthenticated = false;
 // already be off. So we create a special index of script names here.
 static TArray<FName> g_ACSNameIndex;
 
+// [SB] Hashes for Freedoom lumps that must be detected for Doom network compatibility.
+static const std::vector<std::string> g_FreedoomPlayPalHashes = {
+	"2e01ae6258f2a0fdad32125537efe1af", // Freedoom PLAYPAL hash
+	"4804c7f34b5285c334a7913dd98fae16", // Freedoom 0.8-beta1 PLAYPAL hash
+	"2e01ae6258f2a0fdad32125537efe1af", // Freedoom 0.11.3 PLAYPAL hash
+	"7fe3ed884aff7774526ed9b61018f6fe", // Freedoom 0.12.0 PLAYPAL hash
+	"c7ac0dbbebc979a2c948a4c9afd6b4af", // Freedoom 0.13.0 PLAYPAL hash
+};
+
+static const std::vector<std::string> g_FreedoomColormapHashes = {
+	"bb535e66cae508e3833a5d2de974267b", // Freedoom COLORMAP hash
+	"100c2c81afe87bb6dd1dbcadee9a7e58", // Freedoom 0.8-beta1 COLORMAP hash
+	"4c7d4028a88f7929d9c553f65bb265ba", // Freedoom 0.9 COLORMAP hash
+	"90d4527e1836e373f1cc6f2c9d5e3ba3", // Freedoom 0.12.0 COLORMAP hash
+};
+
+static const std::vector<std::string> g_FreedoomDehackedHashes = {
+	"3c48ccc87e71d791ee3df64668b3fb42", // Freedoom 0.8-beta1
+	"9de9ddd0bc435cb8572db76a13d3140f", // Freedoom 0.8
+	"90e9007b1efc1e35eeacc99c5971a15b", // Freedoom 0.9
+	"67b253fe502cbf269e2cd2f6b7e76f17", // Freedoom 0.10
+	"61f49a1c915c7ccaea016b51441bef1d", // Freedoom 0.11.3
+	"4004b707e3bbf28fe58a6d8282784fbc", // Freedoom Phase 1 0.12.0
+	"a87016a0610d8023e6fdae013c8c001c", // Freedoom Phase 2 0.12.0
+	"015a23f11718e5bc2fab7f3d6f946743", // Freedoom Phase 1 0.13.0
+	"0fe45773c7b9eefd1ca07f1f89d34b76", // Freedoom Phase 2 0.13.0
+};
+
 //*****************************************************************************
 //	PROTOTYPES
 
@@ -169,6 +249,8 @@ static	SOCKET			network_AllocateSocket( void );
 static	bool			network_BindSocketToPort( SOCKET Socket, ULONG ulInAddr, USHORT usPort, bool bReUse );
 static	bool			network_GenerateLumpMD5HashAndWarnIfNeeded( const int LumpNum, const char *LumpName, FString &MD5Hash );
 static	void			network_CheckIfDuplicateLump( const int LumpNum ); // [AK]
+static	void			network_AddSpritesToList( std::set<AUTHENTICATELUMP_s> &list, const char *name, const std::set<char> frames, const LumpAuthenticationMode mode ); // [AK]
+static	void			network_ParseLumpAuthenticationMode( FScanner &sc, LumpAuthenticationMode &mode );
 
 //*****************************************************************************
 //	FUNCTIONS
@@ -295,40 +377,154 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 	// can hold the biggest possible size we may get after decompressing (aka Huffman decoding)
 	// the incoming UDP packet.
 	g_NetworkMessage.Init( ((MAX_UDP_PACKET * 8) / 3 + 1), BUFFERTYPE_READ );
-	g_NetworkMessage.Clear();
 
 	// If hosting, update the server GUI.
 	if( NETWORK_GetState() == NETSTATE_SERVER )
 		SERVERCONSOLE_UpdateIP( g_LocalAddress );
 
 	// [BB] Initialize the checksum of the non-map lumps that need to be authenticated when connecting a new player.
-	std::vector<std::string>	lumpsToAuthenticate;
-	std::vector<LumpAuthenticationMode>	lumpsToAuthenticateMode;
+	// [AK] This is also a list of lumps that cannot be modified by AUTHINFO.
+	std::set<AUTHENTICATELUMP_s> lumpsToAuthenticate = {
+		{ "COLORMAP", LAST_LUMP, ns_global },
+		{ "PLAYPAL", LAST_LUMP, ns_global },
+		{ "HTICDEFS", ALL_LUMPS, ns_global },
+		{ "HEXNDEFS", ALL_LUMPS, ns_global },
+		{ "STRFDEFS", ALL_LUMPS, ns_global },
+		{ "DOOMDEFS", ALL_LUMPS, ns_global },
+		{ "GLDEFS", ALL_LUMPS, ns_global },
+		{ "DECORATE", ALL_LUMPS, ns_global },
+		{ "LOADACS", ALL_LUMPS, ns_global },
+		{ "DEHACKED", ALL_LUMPS, ns_global },
+		{ "GAMEMODE", ALL_LUMPS, ns_global },
+		{ "MAPINFO", ALL_LUMPS, ns_global },
+		{ "AUTHINFO", ALL_LUMPS, ns_global },
+		{ "VOTEINFO", ALL_LUMPS, ns_global },
+		{ "MEDALDEF", ALL_LUMPS, ns_global }
+	};
 
-	lumpsToAuthenticate.push_back( "COLORMAP" );
-	lumpsToAuthenticateMode.push_back( LAST_LUMP );
-	lumpsToAuthenticate.push_back( "PLAYPAL" );
-	lumpsToAuthenticateMode.push_back( LAST_LUMP );
-	lumpsToAuthenticate.push_back( "HTICDEFS" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "HEXNDEFS" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "STRFDEFS" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "DOOMDEFS" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "GLDEFS" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "DECORATE" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "LOADACS" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "DEHACKED" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "GAMEMODE" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
-	lumpsToAuthenticate.push_back( "MAPINFO" );
-	lumpsToAuthenticateMode.push_back( ALL_LUMPS );
+	// [AK] Add all "ALLYA" and "ENEMA" sprites to the authentication list.
+	network_AddSpritesToList( lumpsToAuthenticate, "ALLY", { 'A' }, LAST_LUMP );
+	network_AddSpritesToList( lumpsToAuthenticate, "ENEM", { 'A' }, LAST_LUMP );
+
+	// [AK] Parse any loaded AUTHINFO lumps, which might add new lumps to the authentication list.
+	if ( Wads.CheckNumForName( "AUTHINFO" ) != -1 )
+	{
+		std::set<AUTHENTICATELUMP_s> customLumpsToAuthenticate;
+		int currentLump, lastLump = 0;
+
+		Printf( "Authenticating custom protected lumps.\n" );
+
+		while (( currentLump = Wads.FindLump( "AUTHINFO", &lastLump )) != -1 )
+		{
+			FScanner sc( currentLump );
+
+			while ( sc.GetString( ) )
+			{
+				std::set<AUTHENTICATELUMP_s> parsedLumps;
+				FString nameSpaceText;
+				bool adding = false;
+
+				if ( stricmp( sc.String, "clearlumps" ) == 0 )
+				{
+					customLumpsToAuthenticate.clear( );
+					continue;
+				}
+				else if (( stricmp( sc.String, "addlump" ) == 0 ) || ( stricmp( sc.String, "removelump" ) == 0 ))
+				{
+					AUTHENTICATELUMP_s authenticatingLump;
+
+					adding = ( stricmp( sc.String, "addlump" ) == 0 );
+					nameSpaceText = authenticatingLump.GetNameSpace( sc );
+
+					sc.MustGetString( );
+					authenticatingLump.Name = sc.String;
+
+					// [AK] Parse the authentication mode if adding a new lump.
+					if ( adding )
+						network_ParseLumpAuthenticationMode( sc, authenticatingLump.Mode );
+
+					parsedLumps.insert( authenticatingLump );
+				}
+				else if (( stricmp( sc.String, "addsprites" ) == 0 ) || ( stricmp( sc.String, "removesprites" ) == 0 ))
+				{
+					std::set<char> frames;
+					LumpAuthenticationMode mode = LAST_LUMP;
+
+					adding = ( stricmp( sc.String, "addsprites" ) == 0 );
+					nameSpaceText = "sprite";
+
+					sc.MustGetString( );
+
+					// [AK] The sprite's name must be four characters long.
+					if ( sc.StringLen != 4 )
+						sc.ScriptError( "Invalid sprite name \"%s\". It must be 4 characters long.", sc.String );
+
+					const FString spriteName = sc.String;
+					sc.MustGetString( );
+
+					// [AK] Parse the listed frames, unless "all" of them should be authenticated.
+					if ( stricmp( sc.String, "all" ) != 0 )
+					{
+						for ( int i = 0; i < sc.StringLen; i++ )
+						{
+							sc.String[i] = toupper( sc.String[i] );
+
+							if ( static_cast<unsigned>( sc.String[i] - 'A' ) >= MAX_SPRITE_FRAMES )
+								sc.ScriptError( "Invalid sprite frame '%c'.", sc.String[i] );
+
+							frames.insert( sc.String[i] );
+						}
+					}
+
+					// [AK] Parse the authentication mode if adding new sprites.
+					if ( adding )
+						network_ParseLumpAuthenticationMode( sc, mode );
+
+					network_AddSpritesToList( parsedLumps, spriteName.GetChars( ), frames, mode );
+				}
+				else
+				{
+					sc.ScriptError( "Unknown option '%s', on line %d in AUTHINFO.", sc.String, sc.Line );
+				}
+
+				for ( std::set<AUTHENTICATELUMP_s>::iterator it = parsedLumps.begin( ); it != parsedLumps.end( ); it++ )
+				{
+					// [AK] Engineside protected lumps like COLORMAP, PLAYPAL, DECORATE, etc. cannot be modified
+					// or removed. Technically speaking, it shouldn't be possible to remove these lumps anyways
+					// because they're in a separate list, but the user should at least be made aware of this.
+					if ( lumpsToAuthenticate.find( *it ) != lumpsToAuthenticate.end( ))
+					{
+						sc.ScriptMessage( "\"%s\" is an engineside protected lump and cannot be %s.", it->Name.c_str( ), adding ? "modified" : "removed" );
+						continue;
+					}
+
+					if ( adding )
+					{
+						auto result = customLumpsToAuthenticate.insert( *it );
+
+						// [AK] If this lump is already on the list, just update the authentication mode (elements
+						// within a set are constant, so the existing entry must be removed first, and the new entry
+						// added in afterward). Also print a message to indicate that the lump was defined twice.
+						if ( result.second == false )
+						{
+							customLumpsToAuthenticate.erase( *it );
+							customLumpsToAuthenticate.insert( *it );
+
+							sc.ScriptMessage( "\"%s\" in the %s namespace is already on the authentication list.", it->Name.c_str( ), nameSpaceText.GetChars( ));
+						}
+					}
+					else
+					{
+						customLumpsToAuthenticate.erase( *it );
+					}
+				}
+			}
+		}
+
+		// [AK] Append the new lumps to the authentication list.
+		if ( customLumpsToAuthenticate.size( ) > 0 )
+			lumpsToAuthenticate.insert( customLumpsToAuthenticate.begin( ), customLumpsToAuthenticate.end( ));
+	}
 
 	FString checksum, longChecksum;
 	bool noProtectedLumpsAutoloaded = true;
@@ -361,21 +557,24 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 		Wads.LumpIsMandatory( g_LumpNumsToAuthenticate[i] );
 	}
 
-	for ( unsigned int i = 0; i < lumpsToAuthenticate.size(); i++ )
+	for ( auto it = lumpsToAuthenticate.begin(); it != lumpsToAuthenticate.end(); it++ )
 	{
-		switch ( lumpsToAuthenticateMode[i] ){
+		switch ( it->Mode ){
 			case LAST_LUMP:
 				int lump;
-				lump = Wads.CheckNumForName(lumpsToAuthenticate[i].c_str());
+
+				// [AK] Check for the lump in the proper namespace, this isn't always limited to the global namespace.
+				lump = Wads.CheckNumForName( it->Name.c_str(), it->NameSpace );
+
 				// [BB] Possibly we find the COLORMAP lump only in the colormaps name space.
-				if ( ( lump == -1 ) && ( lumpsToAuthenticate[i].compare ( "COLORMAP" ) == 0 ) )
+				if ( ( lump == -1 ) && ( it->Name.compare( "COLORMAP" ) == 0 ) )
 					lump = Wads.CheckNumForName("COLORMAP", ns_colormaps);
 				if ( lump == -1 )
 				{
-					Printf ( PRINT_BOLD, "Warning: Can't find lump %s for authentication!\n", lumpsToAuthenticate[i].c_str() );
+					Printf ( PRINT_BOLD, "Warning: Can't find lump %s for authentication!\n", it->Name.c_str() );
 					continue;
 				}
-				if ( !network_GenerateLumpMD5HashAndWarnIfNeeded( lump, lumpsToAuthenticate[i].c_str(), checksum ) )
+				if ( !network_GenerateLumpMD5HashAndWarnIfNeeded( lump, it->Name.c_str(), checksum ) )
 					noProtectedLumpsAutoloaded = false;
 
 				// [AK] Check if we're trying to authenticate a duplicate lump.
@@ -386,17 +585,12 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 
 				// [BB] To make Doom and Freedoom network compatible, substitue the Freedoom PLAYPAL/COLORMAP hash
 				// by the corresponding Doom hash.
+				// [SB] Use a list of the hashes instead of a long chain of conditions.
 				// 4804c7f34b5285c334a7913dd98fae16 Doom PLAYPAL hash
 				// 061a4c0f80aa8029f2c1bc12dc2e261e Doom COLORMAP hash
-				// 2e01ae6258f2a0fdad32125537efe1af Freedoom PLAYPAL hash
-				// bb535e66cae508e3833a5d2de974267b Freedoom COLORMAP hash
-				// 4804c7f34b5285c334a7913dd98fae16 Freedoom 0.8-beta1 PLAYPAL hash
-				// 100c2c81afe87bb6dd1dbcadee9a7e58 Freedoom 0.8-beta1 COLORMAP hash
-				// 4c7d4028a88f7929d9c553f65bb265ba Freedoom 0.9 COLORMAP hash
-				// 2e01ae6258f2a0fdad32125537efe1af Freedoom 0.11.3 PLAYPAL hash
-				if ( ( stricmp ( lumpsToAuthenticate[i].c_str(), "PLAYPAL" ) == 0 ) && ( ( stricmp ( checksum.GetChars(), "2e01ae6258f2a0fdad32125537efe1af" ) == 0 ) || ( stricmp ( checksum.GetChars(), "4804c7f34b5285c334a7913dd98fae16" ) == 0 ) || ( stricmp ( checksum.GetChars(), "2e01ae6258f2a0fdad32125537efe1af" ) == 0 ) ) )
+				if ( stricmp ( it->Name.c_str(), "PLAYPAL" ) == 0 && std::find( g_FreedoomPlayPalHashes.cbegin(), g_FreedoomPlayPalHashes.cend(), checksum.GetChars() ) != g_FreedoomPlayPalHashes.cend() )
 					checksum = "4804c7f34b5285c334a7913dd98fae16";
-				else if ( ( stricmp ( lumpsToAuthenticate[i].c_str(), "COLORMAP" ) == 0 ) && ( ( stricmp ( checksum.GetChars(), "bb535e66cae508e3833a5d2de974267b" ) == 0 ) || ( stricmp ( checksum.GetChars(), "100c2c81afe87bb6dd1dbcadee9a7e58" ) == 0 ) || ( stricmp ( checksum.GetChars(), "4c7d4028a88f7929d9c553f65bb265ba" ) == 0 ) ) )
+				else if ( stricmp ( it->Name.c_str(), "COLORMAP" ) == 0 && std::find( g_FreedoomColormapHashes.cbegin(), g_FreedoomColormapHashes.cend(), checksum.GetChars() ) != g_FreedoomColormapHashes.cend() )
 					checksum = "061a4c0f80aa8029f2c1bc12dc2e261e";
 
 				longChecksum += checksum;
@@ -404,11 +598,16 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 
 			case ALL_LUMPS:
 				int workingLump, lastLump;
-
 				lastLump = 0;
-				while ((workingLump = Wads.FindLump(lumpsToAuthenticate[i].c_str(), &lastLump)) != -1)
+
+				// [AK] We need to find lumps across all namespaces, as this isn't always limited to the global namespace.
+				while (( workingLump = Wads.FindLump( it->Name.c_str(), &lastLump, true )) != -1 )
 				{
-					if ( !network_GenerateLumpMD5HashAndWarnIfNeeded( workingLump, lumpsToAuthenticate[i].c_str(), checksum ) )
+					// [AK] Skip this lump if it doesn't belong in the proper namespace.
+					if ( Wads.GetLumpNamespace( workingLump ) != it->NameSpace )
+						continue;
+
+					if ( !network_GenerateLumpMD5HashAndWarnIfNeeded( workingLump, it->Name.c_str(), checksum ) )
 						noProtectedLumpsAutoloaded = false;
 
 					// [AK] Check if we're trying to authenticate a duplicate lump.
@@ -416,18 +615,12 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 
 					// [BB] To make Doom and Freedoom network compatible, we need to ignore its DEHACKED lump.
 					// Since this lump only changes some strings, this should cause no problems.
-					if ( ( stricmp ( lumpsToAuthenticate[i].c_str(), "DEHACKED" ) == 0 )
-						&& ( ( stricmp ( checksum.GetChars(), "3c48ccc87e71d791ee3df64668b3fb42" ) == 0 ) // Freedoom 0.8-beta1
-							|| ( stricmp ( checksum.GetChars(), "9de9ddd0bc435cb8572db76a13d3140f" ) == 0 ) // Freedoom 0.8
-							|| ( stricmp ( checksum.GetChars(), "90e9007b1efc1e35eeacc99c5971a15b" ) == 0 ) // Freedoom 0.9
-							|| ( stricmp ( checksum.GetChars(), "67b253fe502cbf269e2cd2f6b7e76f17" ) == 0 ) // Freedoom 0.10
-							|| ( stricmp ( checksum.GetChars(), "61f49a1c915c7ccaea016b51441bef1d" ) == 0 ) // Freedoom 0.11.3
-							) )
+					// [SB] Use a list of the hashes instead of a long chain of conditions.
+					if ( stricmp ( it->Name.c_str(), "DEHACKED" ) == 0 && std::find( g_FreedoomDehackedHashes.cbegin(), g_FreedoomDehackedHashes.cend(), checksum.GetChars() ) != g_FreedoomDehackedHashes.cend() )
 						continue;
 
 					// [TP] The wad that had this lump is no longer optional.
 					Wads.LumpIsMandatory( workingLump );
-
 					longChecksum += checksum;
 				}
 				break;
@@ -444,12 +637,16 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 		if ( NETWORK_GetState() == NETSTATE_SERVER )
 		{
 			message.AppendFormat( "Please resolve these issues before hosting again.\n" );
-			I_FatalError( message );
+			I_FatalError( "%s", message.GetChars() );
 		}
 
 		message.AppendFormat( "These issues must be resolved if you plan on hosting these files in online games.\n" );
 		Printf( TEXTCOLOR_RED "%s", message.GetChars() );
 	}
+
+	// [AK] We're done with authentication now, clear the duplicate lump lists to save memory.
+	DuplicateLumps.Clear( );
+	DuplicateLumpFilenames.Clear( );
 
 	// [BB] Warn the user about problematic auto-loaded files.
 	if ( noProtectedLumpsAutoloaded == false )
@@ -473,9 +670,6 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 		else
 			cls->ActorNetworkIndex = 0;
 	}
-
-	// [RC/BB] Init the list of PWADs.
-	network_InitPWADList( );
 
 	// [BB] Initialize the GeoIP database.
 	if( NETWORK_GetState() == NETSTATE_SERVER )
@@ -519,6 +713,10 @@ void NETWORK_Construct( USHORT usPort, bool bAllocateLANSocket )
 
 		delete mdata;
 	}
+
+	// [RC/BB] Init the list of PWADs.
+	// [SB] Moved this here so that WADs containing maps are correctly marked as authenticated.
+	network_InitPWADList( );
 
 	// Call NETWORK_Destruct() when Skulltag closes.
 	atterm( NETWORK_Destruct );
@@ -977,20 +1175,51 @@ bool NETWORK_IsGeoIPAvailable ( void )
 }
 
 //*****************************************************************************
-// [BB] 
-FString NETWORK_GetCountryCodeFromAddress( NETADDRESS_s Address )
+// [BB/AK]
+ULONG NETWORK_GetCountryIndexFromAddress( NETADDRESS_s Address )
 {
-	const char * addressString = Address.ToStringNoPort();
-	if ( ( strnicmp( "10.", addressString, 3 ) == 0 ) ||
-		 ( strnicmp( "192.168.", addressString, 8 ) == 0 ) ||
-		 ( strnicmp( "127.", addressString, 4 ) == 0 ) )
+	const char *addressString = Address.ToStringNoPort();
+
+	// [AK] IP addresses ranging between 172.16.0.0 to 172.31.255.255 are also
+	// private and should be treated as LAN.
+	if ((( Address.abIP[0] == 172 ) && ( Address.abIP[1] >= 16 ) && ( Address.abIP[1] <= 31 )) ||
+		( strnicmp( "10.", addressString, 3 ) == 0 ) ||
+		( strnicmp( "192.168.", addressString, 8 ) == 0 ) ||
+		( strnicmp( "127.", addressString, 4 ) == 0 ))
+	{
+		return COUNTRYINDEX_LAN;
+	}
+
+	if ( NETWORK_IsGeoIPAvailable() == false )
+		return 0;
+
+	return GeoIP_id_by_addr ( g_GeoIPDB, addressString );
+}
+
+//*****************************************************************************
+// [AK] Helper function to reduce code duplication.
+const char *network_GetCountryStringFromIndex( ULONG ulIndex, const char *( *funcName )( int ))
+{
+	if ( ulIndex == COUNTRYINDEX_LAN )
 		return "LAN";
 
-	if ( g_GeoIPDB == NULL )
-		return "";
+	// [AK] Invalid indices (e.g. those greater than COUNTRYINDEX_LAN) should always return NULL.
+	const char *pszString = funcName( ulIndex );
+	return (( pszString == NULL ) || ( strlen( pszString ) == 0 )) ? "N/A" : pszString;
+}
 
-	FString country = GeoIP_country_code_by_addr ( g_GeoIPDB, Address.ToStringNoPort() );
-	return country.IsEmpty() ? "N/A" : country;
+//*****************************************************************************
+// [AK]
+const char *NETWORK_GetCountryCodeFromIndex( ULONG ulIndex, bool bGetAlpha3 )
+{
+	return network_GetCountryStringFromIndex( ulIndex, bGetAlpha3 ? GeoIP_code3_by_id : GeoIP_code_by_id );
+}
+
+//*****************************************************************************
+// [AK]
+const char *NETWORK_GetCountryNameFromIndex( ULONG ulIndex )
+{
+	return network_GetCountryStringFromIndex( ulIndex, GeoIP_name_by_id );
 }
 
 //*****************************************************************************
@@ -998,6 +1227,13 @@ FString NETWORK_GetCountryCodeFromAddress( NETADDRESS_s Address )
 const TArray<NetworkPWAD>& NETWORK_GetPWADList( void )
 {
 	return g_PWADs;
+}
+
+//*****************************************************************************
+//
+const TArray<NetworkPWAD>& NETWORK_GetAuthenticatedWADsList( void )
+{
+	return g_AuthenticatedWADs;
 }
 
 //*****************************************************************************
@@ -1056,6 +1292,8 @@ bool network_GenerateLumpMD5HashAndWarnIfNeeded( const int LumpNum, const char *
 
 }
 
+//*****************************************************************************
+//
 void network_CheckIfDuplicateLump( const int LumpNum )
 {
 	const char *lumpName = Wads.GetLumpFullName( LumpNum );
@@ -1081,6 +1319,82 @@ void network_CheckIfDuplicateLump( const int LumpNum )
 			}
 		}
 	}
+}
+
+//*****************************************************************************
+//
+void network_AddSpritesToList( std::set<AUTHENTICATELUMP_s> &list, const char *name, const std::set<char> frames, const LumpAuthenticationMode mode )
+{
+	char lumpName[9];
+
+	if ( name == nullptr )
+		return;
+
+	// [AK] Search all of the loaded sprite lumps. Doing this isn't efficient,
+	// but since this only happens during startup, it shouldn't be a problem.
+	for ( int lump = 0; lump < Wads.GetNumLumps( ); lump++ )
+	{
+		if ( Wads.GetLumpNamespace( lump ) != ns_sprites )
+			continue;
+
+		Wads.GetLumpName( lumpName, lump );
+		lumpName[sizeof( lumpName ) - 1] = 0;
+
+		// [AK] Skip lumps that aren't using the sprite's name.
+		if ( strnicmp( lumpName, name, 4 ) != 0 )
+			continue;
+
+		bool lumpIsValidSprite = false;
+
+		// [AK] Verify that the lump uses the proper naming convention for sprites.
+		// The frame and rotation (e.g. XXXXA1 or XXXXA2A8) must be valid.
+		for ( unsigned int i = 4; i <= 6; i += 2 )
+		{
+			if ( static_cast<unsigned>( lumpName[i] - 'A' ) < MAX_SPRITE_FRAMES )
+			{
+				if ( R_IsCharUsuableAsSpriteRotation( lumpName[i + 1] ))
+				{
+					lumpIsValidSprite = true;
+					break;
+				}
+			}
+		}
+
+		if ( lumpIsValidSprite == false )
+			continue;
+
+		// [AK] If only certain frames of the sprite should be authenticated,
+		// check that the lump's name uses at least one the desired frames.
+		if (( frames.size( ) > 0 ) && ( frames.find( lumpName[4] ) == frames.end( )) && ( frames.find( lumpName[6] ) == frames.end( )))
+			continue;
+
+		AUTHENTICATELUMP_s authenticatingLump = { lumpName, mode, ns_sprites };
+		const auto result = list.insert( authenticatingLump );
+
+		// [AK] If this lump is already on the list, just update the authentication
+		// mode. Note that elements within a set are constant, so the mode can't
+		// be updated directly. The existing entry must be removed first, and
+		// the new entry added in afterward.
+		if (( result.second == false ) && ( result.first->Mode != mode ))
+		{
+			list.erase( authenticatingLump );
+			list.insert( authenticatingLump );
+		}
+	}
+}
+
+//*****************************************************************************
+//
+void network_ParseLumpAuthenticationMode( FScanner &sc, LumpAuthenticationMode &mode )
+{
+	sc.MustGetString( );
+
+	if ( stricmp( sc.String, "last" ) == 0 )
+		mode = LAST_LUMP;
+	else if ( stricmp( sc.String, "all" ) == 0 )
+		mode = ALL_LUMPS;
+	else
+		sc.ScriptError( "Unknown authentication mode \"%s\". It must be either \"last\" or \"all\".", sc.String );
 }
 
 //*****************************************************************************
@@ -1326,7 +1640,7 @@ bool NETWORK_IsActorClientHandled( const AActor *pActor )
 	if ( pActor == NULL )
 		return false;
 
-	return ( ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY ) || ( pActor->NetID == -1 ) );
+	return ( ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY ) || ( pActor->NetID == 0 ) );
 }
 
 //*****************************************************************************
@@ -1466,14 +1780,15 @@ static void network_InitPWADList( void )
 	// Collect all the PWADs into a list.
 	for ( ULONG ulIdx = 0; Wads.GetWadName( ulIdx ) != NULL; ulIdx++ )
 	{
-		// Skip the IWAD, zandronum.pk3, files that were automatically loaded from subdirectories (such as skin files), and WADs loaded automatically within pk3 files.
-		// [BB] The latter are marked as being loaded automatically.
-		if (( ulIdx == ulRealIWADIdx ) ||
-			( stricmp( Wads.GetWadName( ulIdx ), GAMENAMELOWERCASE ".pk3" ) == 0 ) ||
-			( Wads.GetLoadedAutomatically( ulIdx )) )
+		// [SB] Skip nested WADs, they can't be checksummed and only their parents matter anyway. 
+		if ( Wads.GetParentWad( ulIdx ) != static_cast<int>( ulIdx ))
 		{
 			continue;
 		}
+
+		const bool bIsIwad = ( ulIdx == ulRealIWADIdx );
+		const bool bIsBaseWad = ( stricmp( Wads.GetWadName( ulIdx ), BASEWAD ) == 0 ); // [SB] Corrected to use BASEWAD instead of GAMENAMELOWERCASE ".pk3"
+
 		char MD5Sum[33];
 		MD5SumOfFile ( Wads.GetWadFullName( ulIdx ), MD5Sum );
 
@@ -1481,7 +1796,19 @@ static void network_InitPWADList( void )
 		pwad.name = Wads.GetWadName( ulIdx );
 		pwad.checksum = MD5Sum;
 		pwad.wadnum = ulIdx;
-		g_PWADs.Push( pwad );
+
+		// Skip the IWAD, zandronum.pk3, files that were automatically loaded from subdirectories (such as skin files), and WADs loaded automatically within pk3 files.
+		// [BB] The latter are marked as being loaded automatically.
+		if ( !bIsIwad && !bIsBaseWad && !Wads.GetLoadedAutomatically( ulIdx ) )
+		{
+			g_PWADs.Push( pwad );
+		}
+
+		// [SB] Only add files that contain protected lumps or levels.
+		if ( Wads.WadContainsAuthenticatedLumps( ulIdx ) )
+		{
+			g_AuthenticatedWADs.Push( pwad );
+		}
 	}
 }
 
@@ -1550,8 +1877,8 @@ void I_DoSelect (void)
 
     FD_ZERO(&fdset);
     FD_SET(g_NetworkSocket, &fdset);
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 1000000 / TICRATE;
     if (select (static_cast<int>(g_NetworkSocket)+1, &fdset, NULL, NULL, &timeout) == -1)
         return;
 */
@@ -1564,8 +1891,8 @@ void I_DoSelect (void)
     	FD_SET(0, &fdset);
 
     FD_SET(g_NetworkSocket, &fdset);
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 1000000 / TICRATE;
     if (select (static_cast<int>(g_NetworkSocket)+1, &fdset, NULL, NULL, &timeout) == -1)
         return;
 
@@ -1590,6 +1917,58 @@ void CMD5Checksum::GetMD5(const BYTE* pBuf, UINT nLength, FString &OutString)
 	}
 	*MD5Sum = 0;
 	OutString = MD5SumFull;
+}
+
+//*****************************************************************************
+//
+BufferParameter &BufferParameter::operator() ( BYTESTREAM_s *byteStream )
+{
+	DeleteData( );
+
+	if ( byteStream != nullptr )
+	{
+		size = byteStream->ReadShort( );
+		data = new unsigned char[size];
+		byteStream->ReadBuffer( data, size );
+	}
+
+	return *this;
+}
+
+//*****************************************************************************
+//
+BufferParameter &BufferParameter::operator= ( const BufferParameter &other )
+{
+	if ( this != &other )
+		CopyData( other.data, other.size );
+
+	return *this;
+}
+
+//*****************************************************************************
+//
+void BufferParameter::DeleteData( void )
+{
+	if ( data != nullptr )
+	{
+		delete[] data;
+		data = nullptr;
+		size = 0;
+	}
+}
+
+//*****************************************************************************
+//
+void BufferParameter::CopyData( unsigned char *newData, unsigned short newSize )
+{
+	DeleteData( );
+
+	if (( newData != nullptr ) && ( newSize > 0 ))
+	{
+		data = new unsigned char[newSize];
+		size = newSize;
+		memcpy( data, newData, newSize );
+	}
 }
 
 //*****************************************************************************

@@ -25,6 +25,7 @@
 #include "cl_demo.h"
 #include "network.h"
 #include "sv_commands.h"
+#include "d_event.h"
 
 // [ZZ] PWO header file
 #include "pwo.h"
@@ -345,6 +346,24 @@ AInventory *AWeapon::CreateTossable ()
 //
 //===========================================================================
 
+// [AK] Enumerations used for cl_noswitchonfire.
+enum
+{
+	NOSWITCH_PRIMARYFIRE = 0x01,
+	NOSWITCH_SECONDARYFIRE = 0x02,
+
+	NOSWITCH_BOTH = NOSWITCH_PRIMARYFIRE | NOSWITCH_SECONDARYFIRE
+};
+
+// [AK] Prevents the user from switching to the weapon they picked up if they're pressing the fire button(s).
+CUSTOM_CVAR( Int, cl_noswitchonfire, 0, CVAR_ARCHIVE )
+{
+	const int clampedValue = clamp<int>( self, 0, NOSWITCH_BOTH );
+
+	if ( self != clampedValue )
+		self = clampedValue;
+}
+
 void AWeapon::AttachToOwner (AActor *other)
 {
 	// [BC]
@@ -396,7 +415,11 @@ void AWeapon::AttachToOwner (AActor *other)
 			// we always want to switch our weapon when we pickup a new one.
 			else if ( (Owner->player->userinfo.GetSwitchOnPickup() == 2) || ( zacompatflags & ZACOMPATF_OLD_WEAPON_SWITCH ) )
 			{
-				shouldSwitch  = true;
+				// [RK] Since there aren't any fist/staff pickups, this is probably being given in Server_ResetInventory.
+				if ((( GetClass()->IsDescendantOf( PClass::FindClass("Fist")) ) || ( GetClass()->IsDescendantOf( PClass::FindClass("Staff")) )) && pCompareWeapon != NULL)
+					shouldSwitch = false;
+				else
+					shouldSwitch = true;
 			}
 			// [BB] Because of ST's special switchonpickup == 1 handling, we have to make sure here
 			// that we don't pick a powered up version, if we don't have a PowerWeaponLevel2 active.
@@ -410,11 +433,42 @@ void AWeapon::AttachToOwner (AActor *other)
 				else if ( PWO_IsActive( Owner->player ))
 				{
 					shouldSwitch = PWO_ShouldSwitch( pCompareWeapon, this );
+
+					// [RK] Since there aren't any fist/staff pickups, this is probably being given in Server_ResetInventory.
+					if ( shouldSwitch && (( GetClass()->IsDescendantOf(PClass::FindClass("Fist")) ) || ( GetClass()->IsDescendantOf(PClass::FindClass("Staff")) )))
+						shouldSwitch = false;
 				}
 				// If it's 1, then only switch if it ranks higher than our current weapon.
 				else if (( Owner->player->userinfo.GetSwitchOnPickup() == 1 ) && ( SelectionOrder < pCompareWeapon->SelectionOrder ))
 				{
 					shouldSwitch = true;
+				}
+			}
+
+			// [AK] Don't switch the weapon if we don't want to while pressing the fire button(s).
+			if (( shouldSwitch ) && ( NETWORK_GetState( ) != NETSTATE_SERVER ) && (( Owner->player - players ) == consoleplayer ))
+			{
+				// [AK] It's common for players to respawn on top of weapons in deathmatch levels.
+				// It's reasonable to assume that the player would always want to switch to this
+				// weapon instead of keeping the one they spawned with (e.g. the pistol in Doom).
+				// Thus, don't check if they're pressing the fire button(s) for a short period after
+				// they respawned; ten ticks should be long enough.
+				unsigned int maxTicksSinceRespawn = 10;
+
+				// [AK] Take into account the player's ping too. It takes longer for a player with
+				// a higher ping to pick up a weapon than one with a lower ping. Always round up.
+				if ( NETWORK_InClientMode( ))
+					maxTicksSinceRespawn += static_cast<unsigned>( ceil( Owner->player->ulPing / MS_PER_TIC ));
+
+				if ( static_cast<unsigned>( gametic ) - Owner->player->lastRespawnTick > maxTicksSinceRespawn )
+				{
+					const DWORD buttons = Owner->player->cmd.ucmd.buttons;
+
+					if ((( cl_noswitchonfire & NOSWITCH_PRIMARYFIRE ) && ( buttons & BT_ATTACK )) ||
+						(( cl_noswitchonfire & NOSWITCH_SECONDARYFIRE ) && ( buttons & BT_ALTATTACK )))
+					{
+						shouldSwitch = false;
+					}
 				}
 			}
 
@@ -1989,6 +2043,38 @@ const PClass *Net_ReadWeapon(BYTE **stream)
 
 //===========================================================================
 //
+// [AK] P_SetPlayerWeaponZoomFactor
+//
+// A helper function originally taken from A_ZoomFactor that is also used by
+// the ACS function SetPlayerWeaponZoomFactor without any duplicate code.
+//
+// Returns true if the zoom factor was changed and false otherwise.
+//
+//===========================================================================
+
+bool P_SetPlayerWeaponZoomFactor(player_t *player, float zoom, const int flags)
+{
+	if (player != NULL && player->ReadyWeapon != NULL)
+	{
+		zoom = 1 / clamp(zoom, 0.1f, 50.f);
+		if (flags & 1)
+		{ // Make the zoom instant.
+			player->FOV = player->DesiredFOV * zoom;
+		}
+		if (flags & 2)
+		{ // Disable pitch/yaw scaling.
+			zoom = -zoom;
+		}
+		player->ReadyWeapon->FOVScale = zoom;
+
+		return true;
+	}
+
+	return false;
+}
+
+//===========================================================================
+//
 // A_ZoomFactor
 //
 //===========================================================================
@@ -1999,19 +2085,8 @@ DEFINE_ACTION_FUNCTION_PARAMS(AWeapon, A_ZoomFactor)
 	ACTION_PARAM_FLOAT(zoom, 0);
 	ACTION_PARAM_INT(flags, 1);
 
-	if (self->player != NULL && self->player->ReadyWeapon != NULL)
-	{
-		zoom = 1 / clamp(zoom, 0.1f, 50.f);
-		if (flags & 1)
-		{ // Make the zoom instant.
-			self->player->FOV = self->player->DesiredFOV * zoom;
-		}
-		if (flags & 2)
-		{ // Disable pitch/yaw scaling.
-			zoom = -zoom;
-		}
-		self->player->ReadyWeapon->FOVScale = zoom;
-	}
+	// [AK] Moved the code into a helper function.
+	P_SetPlayerWeaponZoomFactor(self->player, zoom, flags);
 }
 
 //===========================================================================

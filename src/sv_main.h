@@ -85,6 +85,12 @@
 // [AK] Maximum amount of gametics of recent commands from a client that we can store.
 #define MAX_RECENT_COMMANDS			15
 
+// [AK] Maximum amount of characters that can be put in sv_hostname.
+#define MAX_HOSTNAME_LENGTH			160
+
+// [AK] Divide milliseconds by this constant to get the number of ticks.
+#define MS_PER_TIC					( 1000.0 / TICRATE )
+
 // This is for the server console, but since we normally can't include that (win32 stuff),
 // we can just put it here.
 #define	UDF_NAME					0x00000001
@@ -139,13 +145,16 @@
 
 #define SQF2_PWAD_HASHES			0x00000001
 #define SQF2_COUNTRY				0x00000002
+#define SQF2_GAMEMODE_NAME			0x00000004
+#define SQF2_GAMEMODE_SHORTNAME		0x00000008
+#define SQF2_VOICECHAT				0x00000010
 
 #define	SQF_ALL						( SQF_NAME|SQF_URL|SQF_EMAIL|SQF_MAPNAME|SQF_MAXCLIENTS|SQF_MAXPLAYERS| \
 									  SQF_PWADS|SQF_GAMETYPE|SQF_GAMENAME|SQF_IWAD|SQF_FORCEPASSWORD|SQF_FORCEJOINPASSWORD|SQF_GAMESKILL| \
 									  SQF_BOTSKILL|SQF_DMFLAGS|SQF_LIMITS|SQF_TEAMDAMAGE|SQF_TEAMSCORES|SQF_NUMPLAYERS|SQF_PLAYERDATA|SQF_TEAMINFO_NUMBER|SQF_TEAMINFO_NAME|SQF_TEAMINFO_COLOR|SQF_TEAMINFO_SCORE| \
 									  SQF_TESTING_SERVER|SQF_DATA_MD5SUM|SQF_ALL_DMFLAGS|SQF_SECURITY_SETTINGS|SQF_OPTIONAL_WADS|SQF_DEH|SQF_EXTENDED_INFO )
 
-#define SQF2_ALL					( SQF2_PWAD_HASHES|SQF2_COUNTRY )
+#define SQF2_ALL					( SQF2_PWAD_HASHES|SQF2_COUNTRY|SQF2_GAMEMODE_NAME|SQF2_GAMEMODE_SHORTNAME|SQF2_VOICECHAT )
 
 #define	MAX_STORED_QUERY_IPS		512
 
@@ -174,6 +183,24 @@ enum CLIENTSTATE_e
 	// Client is in the game.
 	CLS_SPAWNED,
 
+};
+
+//*****************************************************************************
+//
+// [SB] Reasons a player disconnected from the server. Intended for GAMEEVENT_PLAYERLEAVESSERVER.
+//
+enum LEAVEREASON_e
+{
+	// Disconnected of their own accord.
+	LEAVEREASON_LEFT,
+	// Kicked by a server admin.
+	LEAVEREASON_KICKED,
+	// An error occurred.
+	LEAVEREASON_ERROR,
+	// The client timed out.
+	LEAVEREASON_TIMEOUT,
+	// The client is re-connecting, for example the map command was used.
+	LEAVEREASON_RECONNECT,
 };
 
 //*****************************************************************************
@@ -267,6 +294,25 @@ struct CLIENT_PLAYER_DATA_s
 };
 
 //*****************************************************************************
+struct ClientCommRule
+{
+	NETADDRESS_s	address;
+	bool			ignoreChat;
+	bool			ignoreVoice;
+	int				unignoreChatGametic;
+	int				unignoreVoiceGametic;
+	float			VoIPChannelVolume;
+
+	ClientCommRule( NETADDRESS_s address );
+
+	// [AK] Updates ignore (chat messages or voice) rules for this address.
+	void SetIgnore( const bool doVoice, const bool ignore, const int unignoreTick );
+
+	// [AK] Checks if this rule isn't needed anymore and should be deleted.
+	bool IsObsolete( void ) const;
+};
+
+//*****************************************************************************
 class ClientCommand
 {
 public:
@@ -285,6 +331,11 @@ public:
 	{
 		return 0;
 	}
+
+	virtual unsigned short getWeaponNetworkIndex ( ) const
+	{
+		return 0;
+	}
 };
 
 //*****************************************************************************
@@ -295,7 +346,7 @@ class ClientMoveCommand : public ClientCommand
 public:
 	ClientMoveCommand ( BYTESTREAM_s *pByteStream );
 
-	bool process ( const ULONG ulClient ) const;
+	virtual bool process ( const ULONG clientIndex ) const;
 
 	virtual bool isMoveCmd ( ) const
 	{
@@ -305,6 +356,11 @@ public:
 	virtual unsigned int getClientTic ( ) const
 	{
 		return moveCmd.ulGametic;
+	}
+
+	virtual unsigned short getWeaponNetworkIndex ( ) const
+	{
+		return moveCmd.usWeaponNetworkIndex;
 	}
 
 	void setClientTic( ULONG ulTic )
@@ -321,6 +377,11 @@ public:
 	ClientWeaponSelectCommand ( BYTESTREAM_s *pByteStream );
 
 	bool process ( const ULONG ulClient ) const;
+
+	virtual unsigned short getWeaponNetworkIndex ( ) const
+	{
+		return usActorNetworkIndex;
+	}
 };
 
 //*****************************************************************************
@@ -390,7 +451,7 @@ struct CLIENT_s
 	bool			bIsBacktracing;
 
 	// [BB] A record of the gametics the client called protected commands, e.g. send_password.
-	RingBuffer<LONG, 6> commandInstances;
+	RingBuffer<LONG, 8> commandInstances;
 
 	// [BB] A record of the gametics the client called protected minor commands, e.g. toggleconsole.
 	RingBuffer<LONG, 100> minorCommandInstances;
@@ -431,6 +492,9 @@ struct CLIENT_s
 	// [AK] The last movement command we received from this client.
 	ClientMoveCommand	*LastMoveCMD;
 
+	// [AK] The network index the client sent with their last weapon select command.
+	USHORT			usLastWeaponNetworkIndex;
+
 	// We keep track of how many extra movement commands we get from the client. If it
 	// exceeds a certain level over time, we kick him.
 	LONG			lOverMovementLevel;
@@ -450,11 +514,14 @@ struct CLIENT_s
 	// [BB] Amount of the consistency warnings the client caused since connecting to the server.
 	ULONG			ulNumConsistencyWarnings;
 
-	// What is the name of the client's skin?
-	char			szSkin[MAX_SKIN_NAME+1];
+	// [AK] The number of times a client's packet (e.g. CLC_CLIENTMOVE) was missing.
+	unsigned int	numMissingPackets;
 
-	// [RC] List of IP addresses that this client is ignoring.
-	std::list<STORED_QUERY_IP_s> IgnoredAddresses;
+	// What is the name of the client's skin?
+	FString			skinName;
+
+	// [AK] A list of IP addresses that this client has set up communication rules for.
+	std::list<ClientCommRule> commRules;
 
 	// [K6] Last tic we got some action from the client. Used to determine his presence.
 	LONG			lLastActionTic;
@@ -494,7 +561,8 @@ struct CLIENT_s
 	WORD			ScreenWidth;
 	WORD			ScreenHeight;
 
-	FString GetAccountName() const;
+	FString GetAccountName( void ) const;
+	void UpdateCommRules( void );
 };
 
 //*****************************************************************************
@@ -576,7 +644,7 @@ void		SERVER_SendFullUpdate( ULONG ulClient );
 void		SERVER_WriteCommands( void );
 bool		SERVER_IsValidClient( ULONG ulClient );
 void		SERVER_AdjustPlayersReactiontime( const ULONG ulPlayer );
-void		SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo );
+void		SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo, LEAVEREASON_e reason );
 void		SERVER_SendHeartBeat( void );
 void		STACK_ARGS SERVER_Printf( ULONG ulPrintLevel, const char *pszString, ... ) GCCPRINTF(2,3);
 void		STACK_ARGS SERVER_Printf( const char *pszString, ... ) GCCPRINTF(1,2);
@@ -596,7 +664,7 @@ void		SERVER_ForceToSpectate( ULONG ulPlayer, const char *pszReason );
 void		SERVER_AddCommand( const char *pszCommand );
 void		SERVER_DeleteCommand( void );
 bool		SERVER_IsEveryoneReadyToGoOn( void );
-LONG		SERVER_GetPlayerIgnoreTic( ULONG ulPlayer, NETADDRESS_s Address ); // [RC]
+LONG		SERVER_GetPlayerIgnoreTic( const unsigned int player, NETADDRESS_s address, const bool doVoice ); // [RC/AK]
 bool		SERVER_IsPlayerVisible( ULONG ulPlayer, ULONG ulPlayer2 );
 bool		SERVER_IsPlayerAllowedToKnowHealth( ULONG ulPlayer, ULONG ulPlayer2 );
 LONG		SERVER_AdjustDoorDirection( LONG lDirection );
@@ -607,7 +675,7 @@ ULONG		SERVER_GetMaxPacketSize( void );
 const char	*SERVER_GetMapMusic( void );
 int			SERVER_GetMapMusicOrder( void );
 void		SERVER_SetMapMusic( const char *pszMusic, int order );
-void		SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon = true );
+void		SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon = true, bool bGiveReverseOrder = true ); // [RK] Added bGiveReverseOrder
 void		SERVER_AddEditedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, ULONG ulPal1, ULONG ulPal2 );
 void		SERVER_AddEditedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, ULONG ulR1, ULONG ulG1, ULONG ulB1, ULONG ulR2, ULONG ulG2, ULONG ulB2 );
 void		SERVER_AddEditedDesaturatedTranslation( ULONG ulTranslation, ULONG ulStart, ULONG ulEnd, float fR1, float fG1, float fB1, float fR2, float fG2, float fB2 );
@@ -636,18 +704,20 @@ void		SERVER_SyncServerModCVars ( const int PlayerToSync );
 void		SERVER_KillCheat( const char* what );
 void STACK_ARGS SERVER_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
 void		SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags = 2 );
+void		SERVER_SettingChanged( FBaseCVar &cvar, bool bUpdateConsole, int maxDecimals = 0 );
 void		SERVER_HandleSkipCorrection( ULONG ulClient );
 bool		SERVER_IsExtrapolatingPlayer( ULONG ulClient );
 bool		SERVER_IsBacktracingPlayer( ULONG ulClient );
 void		SERVER_ResetClientTicBuffer( ULONG ulClient );
 void		SERVER_ResetClientExtrapolation( ULONG ulClient, bool bAfterBacktrace = false );
+void		SERVER_DestroyActorIfClientsidedOnly( AActor *actor );
 
 // From sv_master.cpp
 void		SERVER_MASTER_Construct( void );
 void		SERVER_MASTER_Destruct( void );
 void		SERVER_MASTER_Tick( void );
 void		SERVER_MASTER_Broadcast( void );
-void		SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ulTime, ULONG ulFlags2, bool bBroadcasting );
+void		SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ulTime, ULONG ulFlags2, bool bBroadcasting, bool bSegmentedResponse );
 const char	*SERVER_MASTER_GetGameName( void );
 NETADDRESS_s SERVER_MASTER_GetMasterAddress( void );
 void		SERVER_MASTER_HandleVerificationRequest( BYTESTREAM_s *pByteStream );
@@ -676,7 +746,7 @@ EXTERN_CVAR( Bool, sv_defaultdmflags );
 EXTERN_CVAR( Bool, sv_forcepassword );
 EXTERN_CVAR( Bool, sv_forcejoinpassword );
 EXTERN_CVAR( Int, sv_forcerespawntime ); // [RK] Delay used for forced respawn
-EXTERN_CVAR( Int, sv_respawndelaytime );
+EXTERN_CVAR( Float, sv_respawndelaytime );
 EXTERN_CVAR( Bool, sv_showlauncherqueries );
 EXTERN_CVAR( Int, sv_maxclients );
 EXTERN_CVAR( Int, sv_maxplayers );

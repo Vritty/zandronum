@@ -46,6 +46,7 @@
 #include "templates.h"
 #include "a_strifeglobal.h"
 #include "a_keys.h"
+#include "cl_commands.h"
 #include "p_enemy.h"
 #include "gstrings.h"
 #include "sound/i_music.h"
@@ -61,6 +62,7 @@
 #include "p_lnspec.h"
 #include "r_utility.h"
 #include "menu/menu.h"
+#include "sv_commands.h"
 
 // The conversations as they exist inside a SCRIPTxx lump.
 struct Response
@@ -602,6 +604,22 @@ static int FindNode (const FStrifeDialogueNode *node)
 
 //============================================================================
 //
+// ClearConversationStuff
+//
+// Clear the conversation pointers on the player
+//
+//============================================================================
+
+static void ClearConversationStuff(player_t* player)
+{
+	player->ConversationFaceTalker = false;
+	player->ConversationNPC = nullptr;
+	player->ConversationPC = nullptr;
+	player->ConversationNPCAngle = 0;
+}
+
+//============================================================================
+//
 // CheckStrifeItem
 //
 // Checks if you have an item. A NULL itemtype is always considered to be
@@ -830,6 +848,8 @@ public:
 		else if (mkey == MKEY_Back)
 		{
 			Net_WriteByte (DEM_CONVNULL);
+			// [SB] Tell the server we closed the conversation.
+			CLIENTCOMMANDS_ConversationClose( );
 			Close();
 			return true;
 		}
@@ -837,6 +857,8 @@ public:
 		{
 			if ((unsigned)mSelection >= mResponses.Size())
 			{
+				// [SB] Tell the server we closed the conversation.
+				CLIENTCOMMANDS_ConversationClose( );
 				Net_WriteByte(DEM_CONVCLOSE);
 			}
 			else
@@ -847,6 +869,8 @@ public:
 				Net_WriteByte(DEM_CONVREPLY);
 				Net_WriteWord(mCurNode->ThisNodeNum);
 				Net_WriteByte(mSelection);
+				// [SB] Tell the server we replied.
+				CLIENTCOMMANDS_ConversationReply( mSelection );
 			}
 			Close();
 			return true;
@@ -1090,10 +1114,6 @@ void P_FreeStrifeConversations ()
 
 void P_StartConversation (AActor *npc, AActor *pc, bool facetalker, bool saveangle)
 {
-	// [BB] The server doesn't have a screen, so we have to return here as workaround for a crash.
-	// TODO: Make this work in the client/server architecture.
-	if ( NETWORK_GetState() == NETSTATE_SERVER )
-		return;
 
 	AActor *oldtarget;
 	int i;
@@ -1168,13 +1188,28 @@ void P_StartConversation (AActor *npc, AActor *pc, bool facetalker, bool saveang
 		}
 	}
 
+	// [SB] When the player replies to a conversation, GZDoom's networking sends the node and
+	// response number, but Zandronum only sends the response number. As such, we need to update
+	// the NPC's current node so the server properly knows what node is being responded to in case
+	// we did a jump above.
+	npc->Conversation = CurNode;
+
+	// [SB] Tell clients we're entering a conversation.
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
+	{
+		SERVERCOMMANDS_StartConversation( npc, pc->player - players, CurNode->ThisNodeNum, facetalker, saveangle );
+	}
+
+	// [Nash] Play voice clip from the actor so that positional audio can be heard by all players
+	if (CurNode->SpeakerVoice != 0) S_Sound (npc, CHAN_VOICE|CHAN_NOPAUSE, CurNode->SpeakerVoice, 1, ATTN_NORM);
+
 	// The rest is only done when the conversation is actually displayed.
-	if (pc->player == &players[consoleplayer])
+	// [SB] But this stuff only matters on the client.
+	if (NETWORK_GetState() != NETSTATE_SERVER && pc->player == &players[consoleplayer])
 	{
 		if (CurNode->SpeakerVoice != 0)
 		{
 			I_SetMusicVolume (dlg_musicvolume);
-			S_Sound (npc, CHAN_VOICE|CHAN_NOPAUSE, CurNode->SpeakerVoice, 1, ATTN_NORM);
 		}
 
 		DConversationMenu *cmenu = new DConversationMenu(CurNode);
@@ -1240,6 +1275,12 @@ static void HandleReply(player_t *player, bool isconsole, int nodenum, int reply
 		return;
 	}
 
+	// [SB] Tell the clients about the reply.
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
+	{
+		SERVERCOMMANDS_ConversationReply( player - players, nodenum, replynum );
+	}
+
 	// Find the reply.
 	node = StrifeDialogues[nodenum];
 	for (i = 0, reply = node->Children; reply != NULL && i != replynum; ++i, reply = reply->Next)
@@ -1250,6 +1291,7 @@ static void HandleReply(player_t *player, bool isconsole, int nodenum, int reply
 		// The default reply was selected
 		npc->angle = player->ConversationNPCAngle;
 		npc->flags5 &= ~MF5_INCONVERSATION;
+		if (gameaction != ga_slideshow) ClearConversationStuff(player);
 		return;
 	}
 
@@ -1266,6 +1308,7 @@ static void HandleReply(player_t *player, bool isconsole, int nodenum, int reply
 			npc->ConversationAnimation(2);
 			npc->angle = player->ConversationNPCAngle;
 			npc->flags5 &= ~MF5_INCONVERSATION;
+			if (gameaction != ga_slideshow) ClearConversationStuff(player);
 			return;
 		}
 	}
@@ -1319,7 +1362,8 @@ static void HandleReply(player_t *player, bool isconsole, int nodenum, int reply
 		}
 	}
 
-	if (reply->ActionSpecial != 0)
+	// [SB] Let the server handle specials.
+	if (reply->ActionSpecial != 0 && !NETWORK_InClientMode())
 	{
 		takestuff |= !!P_ExecuteSpecial(reply->ActionSpecial, NULL, player->mo, false,
 			reply->Args[0], reply->Args[1], reply->Args[2], reply->Args[3], reply->Args[4]);
@@ -1369,7 +1413,8 @@ static void HandleReply(player_t *player, bool isconsole, int nodenum, int reply
 		if (reply->NextNode < 0)
 		{
 			npc->Conversation = StrifeDialogues[rootnode - reply->NextNode - 1];
-			if (gameaction != ga_slideshow)
+			// [SB] In multiplayer, the server initiates conversations.
+			if (gameaction != ga_slideshow && !NETWORK_InClientMode())
 			{
 				P_StartConversation (npc, player->mo, player->ConversationFaceTalker, false);
 				return;
@@ -1393,10 +1438,7 @@ static void HandleReply(player_t *player, bool isconsole, int nodenum, int reply
 	if (gameaction != ga_slideshow)
 	{
 		npc->flags5 &= ~MF5_INCONVERSATION;
-		player->ConversationFaceTalker = false;
-		player->ConversationNPC = NULL;
-		player->ConversationPC = NULL;
-		player->ConversationNPCAngle = 0;
+		ClearConversationStuff(player);
 	}
 
 	if (isconsole)
@@ -1440,11 +1482,48 @@ void P_ConversationCommand (int netcode, int pnum, BYTE **stream)
 		}
 		if (netcode == DEM_CONVNULL)
 		{
-			player->ConversationFaceTalker = false;
-			player->ConversationNPC = NULL;
-			player->ConversationPC = NULL;
-			player->ConversationNPCAngle = 0;
+			ClearConversationStuff(player);
 		}
+	}
+}
+
+//============================================================================
+//
+// P_ConversationReply
+//
+// [SB] Handles a conversation reply. Used by Zandronum's netcode.
+//
+//============================================================================
+
+void P_ConversationReply( int pnum, int node, int reply )
+{ 
+	HandleReply( &players[pnum], pnum == consoleplayer, node, reply );
+}
+
+//============================================================================
+//
+// P_ConversationClose
+//
+// [SB] Exits a conversation. Used by Zandronum's netcode.
+//
+//============================================================================
+
+void P_ConversationClose( int pnum )
+{
+	player_t *player = &players[pnum];
+
+	if ( player->ConversationNPC != NULL )
+	{
+		player->ConversationNPC->angle = player->ConversationNPCAngle;
+		player->ConversationNPC->flags5 &= ~MF5_INCONVERSATION;
+	}
+
+	ClearConversationStuff( player );
+
+	// [SB] Tell the client the conversation ended.
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
+	{
+		SERVERCOMMANDS_EndConversation( pnum );
 	}
 }
 

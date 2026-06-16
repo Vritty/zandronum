@@ -221,6 +221,7 @@ public:
 	int GetParentWad( int wadnum ) const;
 	bool IsWadOptional( int wadnum ) const;
 	void LumpIsMandatory( int lumpnum );
+	bool WadContainsAuthenticatedLumps( int wadnum ) const; // [SB]
 
 protected:
 

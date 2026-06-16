@@ -51,6 +51,8 @@
 #ifndef _WIN32
 #include <sys/utsname.h>
 #endif
+#include <map>
+#include <cmath>
 #include "networkheaders.h"
 #include "c_dispatch.h"
 #include "cooperative.h"
@@ -71,6 +73,17 @@
 #include "version.h"
 #include "d_dehacked.h"
 #include "v_text.h"
+#include "voicechat.h"
+
+// [SB] This is easier than updating the parameters for a load of functions every time I want to add something.
+struct LauncherResponseContext
+{
+	BYTESTREAM_s *pByteStream;
+	// Corrected flags.
+	ULONG ulFlags, ulFlags2;
+};
+
+using LauncherFieldFunction = void(*)(const LauncherResponseContext &);
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- VARIABLES -------------------------------------------------------------------------------------------------------------------------------------
@@ -81,6 +94,7 @@ static	NETADDRESS_s		g_AddressMasterServer;
 
 // Message buffer for sending messages to the master server.
 static	NETBUFFER_s			g_MasterServerBuffer;
+static	NETBUFFER_s			g_SegmentBuffer;
 
 // Port the master server is located on.
 static	USHORT				g_usMasterPort;
@@ -102,6 +116,428 @@ FString g_VersionWithOS;
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- FUNCTIONS -------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
+static void server_master_WriteName( const LauncherResponseContext &ctx )
+{
+	// [AK] Remove any color codes in the server name first.
+	FString uncolorizedHostname = sv_hostname.GetGenericRep( CVAR_String ).String;
+	V_ColorizeString( uncolorizedHostname );
+	V_RemoveColorCodes( uncolorizedHostname );
+
+	ctx.pByteStream->WriteString( uncolorizedHostname );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteURL( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( sv_website );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteEmail( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( sv_hostemail );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteMapName( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( level.mapname );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteMaxClients( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( sv_maxclients );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteMaxPlayers( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( sv_maxplayers );
+}
+
+//*****************************************************************************
+//
+static void server_master_WritePWADs( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( NETWORK_GetPWADList().Size( ));
+
+	for ( unsigned i = 0; i < NETWORK_GetPWADList().Size(); ++i )
+		ctx.pByteStream->WriteString( NETWORK_GetPWADList()[i].name );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteGameType( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( GAMEMODE_GetCurrentMode( ));
+	ctx.pByteStream->WriteByte( instagib );
+	ctx.pByteStream->WriteByte( buckshot );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteGameName( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( SERVER_MASTER_GetGameName( ));
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteIWAD( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( NETWORK_GetIWAD( ));
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteForcePassword( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( sv_forcepassword );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteForceJoinPassword( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( sv_forcejoinpassword );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteGameSkill( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( gameskill );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteBotSkill( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( botskill );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteDMFlags( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteLong( dmflags );
+	ctx.pByteStream->WriteLong( dmflags2 );
+	ctx.pByteStream->WriteLong( compatflags );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteLimits( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteShort( fraglimit );
+	ctx.pByteStream->WriteShort( static_cast<SHORT>(timelimit) );
+	// [BB] We have to base the decision on whether to send "time left" on the same rounded
+	// timelimit value we just sent to the client.
+	if ( static_cast<SHORT>(timelimit) )
+	{
+		LONG	lTimeLeft;
+
+		lTimeLeft = (LONG)( timelimit - ( level.time / ( TICRATE * 60 )));
+		if ( lTimeLeft < 0 )
+			lTimeLeft = 0;
+		ctx.pByteStream->WriteShort( lTimeLeft );
+	}
+	ctx.pByteStream->WriteShort( duellimit );
+	ctx.pByteStream->WriteShort( pointlimit );
+	ctx.pByteStream->WriteShort( winlimit );
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteTeamDamage( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteFloat( teamdamage );
+}
+
+//*****************************************************************************
+// [CW] This command is now deprecated as there are now more than two teams.
+// Send the team scores.
+static void server_master_WriteTeamScores( const LauncherResponseContext &ctx )
+{
+	for ( ULONG ulIdx = 0; ulIdx < 2; ulIdx++ )
+	{
+		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
+			ctx.pByteStream->WriteShort( TEAM_GetFragCount( ulIdx ));
+		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
+			ctx.pByteStream->WriteShort( TEAM_GetWinCount( ulIdx ));
+		else
+			ctx.pByteStream->WriteShort( TEAM_GetPointCount( ulIdx ));
+	}
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteNumPlayers( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( SERVER_CountPlayers( true ));
+}
+
+//*****************************************************************************
+//
+static void server_master_WritePlayerData( const LauncherResponseContext &ctx )
+{
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	{
+		if ( playeringame[ulIdx] == false )
+			continue;
+
+		ctx.pByteStream->WriteString( players[ulIdx].userinfo.GetName() );
+		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
+			ctx.pByteStream->WriteShort( players[ulIdx].lPointCount );
+		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
+			ctx.pByteStream->WriteShort( players[ulIdx].ulWins );
+		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
+			ctx.pByteStream->WriteShort( players[ulIdx].fragcount );
+		else
+			ctx.pByteStream->WriteShort( players[ulIdx].killcount );
+
+		ctx.pByteStream->WriteShort( players[ulIdx].ulPing );
+		ctx.pByteStream->WriteByte( PLAYER_IsTrueSpectator( &players[ulIdx] ));
+		ctx.pByteStream->WriteByte( players[ulIdx].bIsBot );
+
+		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
+		{
+			if ( players[ulIdx].bOnTeam == false )
+				ctx.pByteStream->WriteByte( 255 );
+			else
+				ctx.pByteStream->WriteByte( players[ulIdx].Team );
+		}
+
+		ctx.pByteStream->WriteByte( players[ulIdx].ulTime / ( TICRATE * 60 ));
+	}
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteTeamInfoNumber( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( TEAM_GetNumAvailableTeams( ));
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteTeamInfoName( const LauncherResponseContext &ctx )
+{
+	for ( ULONG ulIdx = 0; ulIdx < TEAM_GetNumAvailableTeams( ); ulIdx++ )
+		ctx.pByteStream->WriteString( TEAM_GetName( ulIdx ));
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteTeamInfoColor( const LauncherResponseContext &ctx )
+{
+	for ( ULONG ulIdx = 0; ulIdx < TEAM_GetNumAvailableTeams( ); ulIdx++ )
+		ctx.pByteStream->WriteLong( TEAM_GetColor( ulIdx ));
+}
+
+//*****************************************************************************
+//
+static void server_master_WriteTeamInfoScore( const LauncherResponseContext &ctx )
+{
+	for ( ULONG ulIdx = 0; ulIdx < TEAM_GetNumAvailableTeams( ); ulIdx++ )
+	{
+		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
+			ctx.pByteStream->WriteShort( TEAM_GetFragCount( ulIdx ));
+		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
+			ctx.pByteStream->WriteShort( TEAM_GetWinCount( ulIdx ));
+		else
+			ctx.pByteStream->WriteShort( TEAM_GetPointCount( ulIdx ));
+	}
+}
+
+//*****************************************************************************
+// [BB] Testing server and what's the binary name?
+static void server_master_WriteTestingServer( const LauncherResponseContext &ctx )
+{
+#if ( BUILD_ID == BUILD_RELEASE )
+	ctx.pByteStream->WriteByte( 0 );
+	ctx.pByteStream->WriteString( "" );
+#else
+	ctx.pByteStream->WriteByte( 1 );
+	// [BB] Name of the testing binary archive found in http://zandronum.com/
+	FString testingBinary;
+	testingBinary.Format ( "downloads/testing/%s/ZandroDev%s-%swindows.zip", GAMEVER_STRING, GAMEVER_STRING, GetGitTime() );
+	ctx.pByteStream->WriteString( testingBinary.GetChars() );
+#endif
+}
+
+//*****************************************************************************
+// [BB] We don't have a mandatory main data file anymore, so just send an empty string.
+static void server_master_WriteDataMD5Sum( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( "" );
+}
+
+//*****************************************************************************
+// [BB] Send all dmflags and compatflags.
+static void server_master_WriteAllDMFlags( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( 6 );
+	ctx.pByteStream->WriteLong( dmflags );
+	ctx.pByteStream->WriteLong( dmflags2 );
+	ctx.pByteStream->WriteLong( zadmflags );
+	ctx.pByteStream->WriteLong( compatflags );
+	ctx.pByteStream->WriteLong( zacompatflags );
+	ctx.pByteStream->WriteLong( compatflags2 );
+}
+
+//*****************************************************************************
+// [BB] Send special security settings like sv_enforcemasterbanlist.
+static void server_master_WriteSecuritySettings( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( sv_enforcemasterbanlist );
+}
+
+//*****************************************************************************
+// [TP] Send optional wad indices.
+static void server_master_WriteOptionalWADs( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( g_OptionalWadIndices.Size() );
+
+	for ( unsigned i = 0; i < g_OptionalWadIndices.Size(); ++i )
+		ctx.pByteStream->WriteByte( g_OptionalWadIndices[i] );
+}
+
+//*****************************************************************************
+// [TP] Send deh patches
+static void server_master_WriteDEH( const LauncherResponseContext &ctx )
+{
+	const TArray<FString>& names = D_GetDehFileNames();
+	ctx.pByteStream->WriteByte( names.Size() );
+
+	for ( unsigned i = 0; i < names.Size(); ++i )
+		ctx.pByteStream->WriteString( names[i] );
+}
+
+//*****************************************************************************
+// [SB] This now just sends the flags; the actual extended fields are handled by the packet assembly code
+static void server_master_WriteExtendedInfo( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteLong( ctx.ulFlags2 );
+}
+
+//*****************************************************************************
+// [SB] send MD5 hashes of PWADs
+static void server_master_WritePWADHashes( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( NETWORK_GetPWADList().Size( ) );
+
+	for ( unsigned i = 0; i < NETWORK_GetPWADList().Size(); ++i )
+		ctx.pByteStream->WriteString( NETWORK_GetPWADList()[i].checksum );
+}
+
+//*****************************************************************************
+// [SB] send the server's country code
+static void server_master_WriteCountry( const LauncherResponseContext &ctx )
+{
+	// [SB] The value of this field will always be 3 characters, so we can just use and
+	// send a char[3]
+	const size_t codeSize = 3;
+	char code[codeSize];
+
+	FString countryCode = sv_country.GetGenericRep( CVAR_String ).String;
+	countryCode.ToUpper();
+
+	// [SB] ISO 3166-1 alpha-3 codes in the range XAA-XZZ will never be allocated to actual
+	// countries. Therefore, we use these for our special codes:
+	//     XIP  -  launcher should try and use IP geolocation
+	//     XUN  -  launcher should display a generic unknown flag
+
+	if ( countryCode.CompareNoCase( "automatic" ) == 0 )
+	{
+		memcpy( code, "XIP", codeSize );
+	}
+	// [SB] We assume any 3 character long value is a valid country code, and leave it up
+	// the launcher to check if they have a flag for it
+	else if ( countryCode.Len() == 3 )
+	{
+		memcpy( code, countryCode.GetChars(), codeSize );
+	}
+	// [SB] Any other value results in the "unknown" value
+	else
+	{
+		memcpy( code, "XUN", codeSize );
+	}
+
+	ctx.pByteStream->WriteBuffer( code, codeSize );
+}
+
+//*****************************************************************************
+// [SB] Send the current game mode's name and short name.
+static void server_master_WriteGameModeName( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( GAMEMODE_GetName( GAMEMODE_GetCurrentMode() ));
+}
+
+static void server_master_WriteGameModeShortName( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteString( GAMEMODE_GetShortName( GAMEMODE_GetCurrentMode() ));
+}
+
+//*****************************************************************************
+// Send voice chat setting
+static void server_master_WriteVoicechat( const LauncherResponseContext &ctx )
+{
+	ctx.pByteStream->WriteByte( sv_allowvoicechat );
+}
+
+//*****************************************************************************
+// [SB] And now the big maps of functions.
+static const std::map<ULONG, LauncherFieldFunction> ResponseFunctions[] =
+{
+	{
+		{ SQF_NAME,					server_master_WriteName },
+		{ SQF_URL,					server_master_WriteURL },
+		{ SQF_EMAIL,				server_master_WriteEmail },
+		{ SQF_MAPNAME,				server_master_WriteMapName },
+		{ SQF_MAXCLIENTS,			server_master_WriteMaxClients },
+		{ SQF_MAXPLAYERS,			server_master_WriteMaxPlayers },
+		{ SQF_PWADS,				server_master_WritePWADs },
+		{ SQF_GAMETYPE,				server_master_WriteGameType },
+		{ SQF_GAMENAME,				server_master_WriteGameName },
+		{ SQF_IWAD,					server_master_WriteIWAD },
+		{ SQF_FORCEPASSWORD,		server_master_WriteForcePassword },
+		{ SQF_FORCEJOINPASSWORD,	server_master_WriteForceJoinPassword },
+		{ SQF_GAMESKILL,			server_master_WriteGameSkill },
+		{ SQF_BOTSKILL,				server_master_WriteBotSkill },
+		{ SQF_DMFLAGS,				server_master_WriteDMFlags },
+		{ SQF_LIMITS,				server_master_WriteLimits },
+		{ SQF_TEAMDAMAGE,			server_master_WriteTeamDamage },
+		{ SQF_TEAMSCORES,			server_master_WriteTeamScores },
+		{ SQF_NUMPLAYERS,			server_master_WriteNumPlayers },
+		{ SQF_PLAYERDATA,			server_master_WritePlayerData },
+		{ SQF_TEAMINFO_NUMBER,		server_master_WriteTeamInfoNumber },
+		{ SQF_TEAMINFO_NAME,		server_master_WriteTeamInfoName },
+		{ SQF_TEAMINFO_COLOR,		server_master_WriteTeamInfoColor },
+		{ SQF_TEAMINFO_SCORE,		server_master_WriteTeamInfoScore },
+		{ SQF_TESTING_SERVER,		server_master_WriteTestingServer },
+		{ SQF_DATA_MD5SUM,			server_master_WriteDataMD5Sum },
+		{ SQF_ALL_DMFLAGS,			server_master_WriteAllDMFlags },
+		{ SQF_SECURITY_SETTINGS,	server_master_WriteSecuritySettings },
+		{ SQF_OPTIONAL_WADS,		server_master_WriteOptionalWADs },
+		{ SQF_DEH,					server_master_WriteDEH },
+		{ SQF_EXTENDED_INFO,		server_master_WriteExtendedInfo },
+	},
+
+	{
+		{ SQF2_PWAD_HASHES,			server_master_WritePWADHashes },
+		{ SQF2_COUNTRY,				server_master_WriteCountry },
+		{ SQF2_GAMEMODE_NAME,		server_master_WriteGameModeName },
+		{ SQF2_GAMEMODE_SHORTNAME,	server_master_WriteGameModeShortName },
+		{ SQF2_VOICECHAT,			server_master_WriteVoicechat },
+	}
+};
 
 //*****************************************************************************
 //
@@ -111,7 +547,9 @@ void SERVER_MASTER_Construct( void )
 
 	// Setup our message buffer.
 	g_MasterServerBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-	g_MasterServerBuffer.Clear();
+
+	// [SB] Buffer for assembling segments.
+	g_SegmentBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
 
 	// Allow the user to specify which port the master server is on.
 	pszPort = Args->CheckValue( "-masterport" );
@@ -252,19 +690,19 @@ void SERVER_MASTER_Broadcast( void )
 #endif
 
 	// Broadcast our packet.
-	SERVER_MASTER_SendServerInfo( AddressBroadcast, SQF_ALL, 0, SQF2_ALL, true );
+	SERVER_MASTER_SendServerInfo( AddressBroadcast, SQF_ALL, 0, SQF2_ALL, true, false );
 //	NETWORK_WriteLong( &g_MasterServerBuffer, MASTER_CHALLENGE );
 //	NETWORK_LaunchPacket( g_MasterServerBuffer, AddressBroadcast, true );
 }
 
 //*****************************************************************************
 //
-void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ulTime, ULONG ulFlags2, bool bBroadcasting )
+void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ulTime, ULONG ulFlags2, bool bBroadcasting, bool bSegmentedResponse )
 {
 	IPStringArray szAddress;
 	ULONG		ulIdx;
 	ULONG		ulBits;
-	ULONG 		ulBits2;
+	ULONG 		ulBits2 = 0;
 
 	// Let's just use the master server buffer! It gets cleared again when we need it anyway!
 	g_MasterServerBuffer.Clear();
@@ -335,7 +773,11 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	}
 
 	// Write our header.
-	g_MasterServerBuffer.ByteStream.WriteLong( SERVER_LAUNCHER_CHALLENGE );
+	// [SB] But skip the response code in the segmented response as it's unneeded.
+	if ( !bSegmentedResponse )
+	{
+		g_MasterServerBuffer.ByteStream.WriteLong( SERVER_LAUNCHER_CHALLENGE );
+	}
 
 	// Send the time the launcher sent to us.
 	g_MasterServerBuffer.ByteStream.WriteLong( ulTime );
@@ -375,298 +817,104 @@ void SERVER_MASTER_SendServerInfo( NETADDRESS_s Address, ULONG ulFlags, ULONG ul
 	if ( D_GetDehFileNames().Size() == 0 )
 		ulBits &= ~SQF_DEH;
 
-	// [SB] If the client didn't send any extended flags, don't send any extended info
-	if ( ulFlags2 == 0 )
-		ulBits &= ~SQF_EXTENDED_INFO;
-
-	g_MasterServerBuffer.ByteStream.WriteLong( ulBits );
-
-	// Send the server name.
-	if ( ulBits & SQF_NAME )
-	{
-		// [AK] Remove any color codes in the server name first.
-		FString uncolorizedHostname = sv_hostname.GetGenericRep( CVAR_String ).String;
-		V_ColorizeString( uncolorizedHostname );
-		V_RemoveColorCodes( uncolorizedHostname );
-
-		g_MasterServerBuffer.ByteStream.WriteString( uncolorizedHostname );
-	}
-
-	// Send the website URL.
-	if ( ulBits & SQF_URL )
-		g_MasterServerBuffer.ByteStream.WriteString( sv_website );
-
-	// Send the host's e-mail address.
-	if ( ulBits & SQF_EMAIL )
-		g_MasterServerBuffer.ByteStream.WriteString( sv_hostemail );
-
-	if ( ulBits & SQF_MAPNAME )
-		g_MasterServerBuffer.ByteStream.WriteString( level.mapname );
-
-	if ( ulBits & SQF_MAXCLIENTS )
-		g_MasterServerBuffer.ByteStream.WriteByte( sv_maxclients );
-
-	if ( ulBits & SQF_MAXPLAYERS )
-		g_MasterServerBuffer.ByteStream.WriteByte( sv_maxplayers );
-
-	// Send out the PWAD information.
-	if ( ulBits & SQF_PWADS )
-	{
-		g_MasterServerBuffer.ByteStream.WriteByte( NETWORK_GetPWADList().Size( ));
-
-		for ( unsigned i = 0; i < NETWORK_GetPWADList().Size(); ++i )
-			g_MasterServerBuffer.ByteStream.WriteString( NETWORK_GetPWADList()[i].name );
-	}
-
-	if ( ulBits & SQF_GAMETYPE )
-	{
-		g_MasterServerBuffer.ByteStream.WriteByte( GAMEMODE_GetCurrentMode( ));
-		g_MasterServerBuffer.ByteStream.WriteByte( instagib );
-		g_MasterServerBuffer.ByteStream.WriteByte( buckshot );
-	}
-
-	if ( ulBits & SQF_GAMENAME )
-		g_MasterServerBuffer.ByteStream.WriteString( SERVER_MASTER_GetGameName( ));
-
-	if ( ulBits & SQF_IWAD )
-		g_MasterServerBuffer.ByteStream.WriteString( NETWORK_GetIWAD( ));
-
-	if ( ulBits & SQF_FORCEPASSWORD )
-		g_MasterServerBuffer.ByteStream.WriteByte( sv_forcepassword );
-
-	if ( ulBits & SQF_FORCEJOINPASSWORD )
-		g_MasterServerBuffer.ByteStream.WriteByte( sv_forcejoinpassword );
-
-	if ( ulBits & SQF_GAMESKILL )
-		g_MasterServerBuffer.ByteStream.WriteByte( gameskill );
-
-	if ( ulBits & SQF_BOTSKILL )
-		g_MasterServerBuffer.ByteStream.WriteByte( botskill );
-
-	if ( ulBits & SQF_DMFLAGS )
-	{
-		g_MasterServerBuffer.ByteStream.WriteLong( dmflags );
-		g_MasterServerBuffer.ByteStream.WriteLong( dmflags2 );
-		g_MasterServerBuffer.ByteStream.WriteLong( compatflags );
-	}
-
-	if ( ulBits & SQF_LIMITS )
-	{
-		g_MasterServerBuffer.ByteStream.WriteShort( fraglimit );
-		g_MasterServerBuffer.ByteStream.WriteShort( static_cast<SHORT>(timelimit) );
-		// [BB] We have to base the decision on whether to send "time left" on the same rounded
-		// timelimit value we just sent to the client.
-		if ( static_cast<SHORT>(timelimit) )
-		{
-			LONG	lTimeLeft;
-
-			lTimeLeft = (LONG)( timelimit - ( level.time / ( TICRATE * 60 )));
-			if ( lTimeLeft < 0 )
-				lTimeLeft = 0;
-			g_MasterServerBuffer.ByteStream.WriteShort( lTimeLeft );
-		}
-		g_MasterServerBuffer.ByteStream.WriteShort( duellimit );
-		g_MasterServerBuffer.ByteStream.WriteShort( pointlimit );
-		g_MasterServerBuffer.ByteStream.WriteShort( winlimit );
-	}
-
-	// Send the team damage scale.
-	if ( teamplay || teamgame || teamlms || teampossession || (( deathmatch == false ) && ( teamgame == false )))
-	{
-		if ( ulBits & SQF_TEAMDAMAGE )
-			g_MasterServerBuffer.ByteStream.WriteFloat( teamdamage );
-	}
-
-	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-	{
-		// [CW] This command is now deprecated as there are now more than two teams.
-		// Send the team scores.
-		if ( ulBits & SQF_TEAMSCORES )
-		{
-			for ( ulIdx = 0; ulIdx < 2; ulIdx++ )
-			{
-				if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
-					g_MasterServerBuffer.ByteStream.WriteShort( TEAM_GetFragCount( ulIdx ));
-				else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-					g_MasterServerBuffer.ByteStream.WriteShort( TEAM_GetWinCount( ulIdx ));
-				else
-					g_MasterServerBuffer.ByteStream.WriteShort( TEAM_GetScore( ulIdx ));
-			}
-		}
-	}
-
-	if ( ulBits & SQF_NUMPLAYERS )
-		g_MasterServerBuffer.ByteStream.WriteByte( SERVER_CountPlayers( true ));
-
-	if ( ulBits & SQF_PLAYERDATA )
-	{
-		for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
-		{
-			if ( playeringame[ulIdx] == false )
-				continue;
-
-			g_MasterServerBuffer.ByteStream.WriteString( players[ulIdx].userinfo.GetName() );
-			if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS )
-				g_MasterServerBuffer.ByteStream.WriteShort( players[ulIdx].lPointCount );
-			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-				g_MasterServerBuffer.ByteStream.WriteShort( players[ulIdx].ulWins );
-			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
-				g_MasterServerBuffer.ByteStream.WriteShort( players[ulIdx].fragcount );
-			else
-				g_MasterServerBuffer.ByteStream.WriteShort( players[ulIdx].killcount );
-
-			g_MasterServerBuffer.ByteStream.WriteShort( players[ulIdx].ulPing );
-			g_MasterServerBuffer.ByteStream.WriteByte( PLAYER_IsTrueSpectator( &players[ulIdx] ));
-			g_MasterServerBuffer.ByteStream.WriteByte( players[ulIdx].bIsBot );
-
-			if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-			{
-				if ( players[ulIdx].bOnTeam == false )
-					g_MasterServerBuffer.ByteStream.WriteByte( 255 );
-				else
-					g_MasterServerBuffer.ByteStream.WriteByte( players[ulIdx].Team );
-			}
-
-			g_MasterServerBuffer.ByteStream.WriteByte( players[ulIdx].ulTime / ( TICRATE * 60 ));
-		}
-	}
-
-	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
-	{
-		if ( ulBits & SQF_TEAMINFO_NUMBER )
-			g_MasterServerBuffer.ByteStream.WriteByte( TEAM_GetNumAvailableTeams( ));
-
-		if ( ulBits & SQF_TEAMINFO_NAME )
-			for ( ulIdx = 0; ulIdx < TEAM_GetNumAvailableTeams( ); ulIdx++ )
-				g_MasterServerBuffer.ByteStream.WriteString( TEAM_GetName( ulIdx ));
-
-		if ( ulBits & SQF_TEAMINFO_COLOR )
-			for ( ulIdx = 0; ulIdx < TEAM_GetNumAvailableTeams( ); ulIdx++ )
-				g_MasterServerBuffer.ByteStream.WriteLong( TEAM_GetColor( ulIdx ));
-
-		if ( ulBits & SQF_TEAMINFO_SCORE )
-		{
-			for ( ulIdx = 0; ulIdx < TEAM_GetNumAvailableTeams( ); ulIdx++ )
-			{
-				if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
-					g_MasterServerBuffer.ByteStream.WriteShort( TEAM_GetFragCount( ulIdx ));
-				else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
-					g_MasterServerBuffer.ByteStream.WriteShort( TEAM_GetWinCount( ulIdx ));
-				else
-					g_MasterServerBuffer.ByteStream.WriteShort( TEAM_GetScore( ulIdx ));
-			}
-		}
-	}
-
-	// [BB] Testing server and what's the binary name?
-	if ( ulBits & SQF_TESTING_SERVER )
-	{
-#if ( BUILD_ID == BUILD_RELEASE )
-		g_MasterServerBuffer.ByteStream.WriteByte( 0 );
-		g_MasterServerBuffer.ByteStream.WriteString( "" );
-#else
-		g_MasterServerBuffer.ByteStream.WriteByte( 1 );
-		// [BB] Name of the testing binary archive found in http://zandronum.com/
-		FString testingBinary;
-		testingBinary.Format ( "downloads/testing/%s/ZandroDev%s-%swindows.zip", GAMEVER_STRING, GAMEVER_STRING, GetGitTime() );
-		g_MasterServerBuffer.ByteStream.WriteString( testingBinary.GetChars() );
-#endif
-	}
-
-	// [BB] We don't have a mandatory main data file anymore, so just send an empty string.
-	if ( ulBits & SQF_DATA_MD5SUM )
-		g_MasterServerBuffer.ByteStream.WriteString( "" );
-
-	// [BB] Send all dmflags and compatflags.
-	if ( ulBits & SQF_ALL_DMFLAGS )
-	{
-		g_MasterServerBuffer.ByteStream.WriteByte( 6 );
-		g_MasterServerBuffer.ByteStream.WriteLong( dmflags );
-		g_MasterServerBuffer.ByteStream.WriteLong( dmflags2 );
-		g_MasterServerBuffer.ByteStream.WriteLong( zadmflags );
-		g_MasterServerBuffer.ByteStream.WriteLong( compatflags );
-		g_MasterServerBuffer.ByteStream.WriteLong( zacompatflags );
-		g_MasterServerBuffer.ByteStream.WriteLong( compatflags2 );
-	}
-
-	// [BB] Send special security settings like sv_enforcemasterbanlist.
-	if ( ulBits & SQF_SECURITY_SETTINGS )
-		g_MasterServerBuffer.ByteStream.WriteByte( sv_enforcemasterbanlist );
-
-	// [TP] Send optional wad indices.
-	if ( ulBits & SQF_OPTIONAL_WADS )
-	{
-		g_MasterServerBuffer.ByteStream.WriteByte( g_OptionalWadIndices.Size() );
-
-		for ( unsigned i = 0; i < g_OptionalWadIndices.Size(); ++i )
-			g_MasterServerBuffer.ByteStream.WriteByte( g_OptionalWadIndices[i] );
-	}
-
-	// [TP] Send deh patches
-	if ( ulBits & SQF_DEH )
-	{
-		const TArray<FString>& names = D_GetDehFileNames();
-		g_MasterServerBuffer.ByteStream.WriteByte( names.Size() );
-
-		for ( unsigned i = 0; i < names.Size(); ++i )
-			g_MasterServerBuffer.ByteStream.WriteString( names[i] );
-	}
-
-	// [SB] handle extended flags
-	if ( ulBits & SQF_EXTENDED_INFO ) 
+	// [SB] Validate the extended flags
+	if ( ulBits & SQF_EXTENDED_INFO )
 	{
 		ulBits2 = ulFlags2;
 		ulBits2 &= SQF2_ALL;
 
-		g_MasterServerBuffer.ByteStream.WriteLong( ulBits2 );
+		// [SB] If there are no extended flags to return, don't send any extended info
+		if ( ulBits2 == 0 )
+			ulBits &= ~SQF_EXTENDED_INFO;
+	}
 
-		// [SB] send MD5 hashes of PWADs
-		if ( ulBits2 & SQF2_PWAD_HASHES )
+	const ULONG flags[] = { ulBits, ulBits2 }; // [SB] The bits for each field set we'll be sending.
+	ULONG ulCurrentSetNum = 0; // [SB] Current field set. 0 -> SQF_, 1 -> SQF2_
+	const LauncherResponseContext ctx{ &g_MasterServerBuffer.ByteStream, ulBits, ulBits2 };
+
+	g_MasterServerBuffer.ByteStream.WriteLong( ulBits );
+
+	// [SB] Reworked the packet assembly logic so that it tests each field and calls the relevant function,
+	// instead of being a giant list of bit-testing if statements.
+	for ( ULONG ulBit = 0; ulBit < 32; )
+	{
+		const ULONG ulCurrentSetValue = flags[ulCurrentSetNum];
+		const ULONG ulField = 1U << ulBit;
+
+		if ( ulCurrentSetValue & ulField )
 		{
-			g_MasterServerBuffer.ByteStream.WriteByte( NETWORK_GetPWADList().Size( ) );
+			const auto &map = ResponseFunctions[ulCurrentSetNum];
 
-			for ( unsigned i = 0; i < NETWORK_GetPWADList().Size(); ++i )
-				g_MasterServerBuffer.ByteStream.WriteString( NETWORK_GetPWADList()[i].checksum );
+			if ( map.count( ulField ) )
+			{
+				const auto pFunction = map.at( ulField );
+				pFunction( ctx );
+			}
 		}
 
-		// [SB] send the server's country code
-		if ( ulBits2 & SQF2_COUNTRY )
+		// [SB] We exhausted all the bits in this set.
+		if ( ulBit == 31 )
 		{
-			// [SB] The value of this field will always be 3 characters, so we can just use and
-			// send a char[3]
-			const size_t codeSize = 3;
-			char code[codeSize];
-
-			FString countryCode = sv_country.GetGenericRep( CVAR_String ).String;
-			countryCode.ToUpper();
-
-			// [SB] ISO 3166-1 alpha-3 codes in the range XAA-XZZ will never be allocated to actual
-			// countries. Therefore, we use these for our special codes:
-			//     XIP  -  launcher should try and use IP geolocation
-			//     XUN  -  launcher should display a generic unknown flag
-
-			if ( countryCode.CompareNoCase( "automatic" ) == 0 )
+			// [SB] Move onto the next set of fields, if there is one.
+			if ( ulCurrentSetNum < countof( flags ) - 1 )
 			{
-				memcpy( code, "XIP", codeSize );
+				ulBit = 0;
+				ulCurrentSetNum++;
 			}
-			// [SB] We assume any 3 character long value is a valid country code, and leave it up
-			// the launcher to check if they have a flag for it
-			else if ( countryCode.Len() == 3 )
-			{
-				memcpy( code, countryCode.GetChars(), codeSize );
-			}
-			// [SB] Any other value results in the "unknown" value
 			else
 			{
-				memcpy( code, "XUN", codeSize );
+				// [SB] Nothing more we can send.
+				break;
 			}
-
-			g_MasterServerBuffer.ByteStream.WriteBuffer( code, codeSize );
+		}
+		else
+		{
+			ulBit++;
 		}
 	}
 
-//	NETWORK_LaunchPacket( &g_MasterServerBuffer, Address, true );
-	NETWORK_LaunchPacket( &g_MasterServerBuffer, Address );
+	// [SB] Handle a segmented response.
+	if ( bSegmentedResponse )
+	{
+		// [SB] Size of the segment header, as written in the loop below.
+		constexpr LONG segmentHeaderSize = 12;
+
+		const LONG sourceBufferSize = g_MasterServerBuffer.CalcSize();
+		const LONG segmentMaxSize = static_cast<LONG>( sv_maxpacketsize ) - segmentHeaderSize;
+		const LONG numSegments = static_cast<LONG>( std::ceil( static_cast<double>( sourceBufferSize ) / static_cast<double>( segmentMaxSize ) ) );
+
+		LONG segmentNumber = 0;
+		LONG offset = 0;
+
+		// [SB] Now assemble segments until we've exhausted the buffer.
+		while ( offset < sourceBufferSize )
+		{
+			// [SB] (std::min) prevents macro expansion of min.
+			const LONG readSize = (std::min)( segmentMaxSize, sourceBufferSize - offset );
+
+			g_SegmentBuffer.Clear();
+
+			// [SB] segmentHeaderSize must be equal to the byte size of this header, including the challenge.
+			g_SegmentBuffer.ByteStream.WriteLong( SERVER_LAUNCHER_CHALLENGE_SEGMENTED );
+			g_SegmentBuffer.ByteStream.WriteByte( segmentNumber );
+			g_SegmentBuffer.ByteStream.WriteByte( numSegments );
+			g_SegmentBuffer.ByteStream.WriteShort( offset );
+			g_SegmentBuffer.ByteStream.WriteShort( readSize );
+			g_SegmentBuffer.ByteStream.WriteShort( sourceBufferSize );
+
+			// [SB] Read from the master buffer directly into the segment buffer.
+			memcpy( g_SegmentBuffer.ByteStream.pbStream, g_MasterServerBuffer.pbData + offset, readSize );
+			offset += readSize;
+			g_SegmentBuffer.ByteStream.pbStream += readSize;
+
+			NETWORK_LaunchPacket( &g_SegmentBuffer, Address );
+			segmentNumber++;
+		}
+	}
+	else
+	{
+		NETWORK_LaunchPacket( &g_MasterServerBuffer, Address );
+	}
 }
 
 //*****************************************************************************
@@ -754,6 +1002,45 @@ CUSTOM_CVAR( Bool, sv_broadcast, true, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 // Name of this server on launchers.
 CUSTOM_CVAR( String, sv_hostname, "Unnamed " GAMENAME " server", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 {
+	FString tempHostname = self.GetGenericRep( CVAR_String ).String;
+	FString cleanedHostname;
+
+	// [AK] Uncolorize the string, just in case, before we clean it up.
+	V_UnColorizeString( tempHostname );
+
+	// [AK] Remove any unacceptable characters from the string.
+	for ( unsigned int i = 0; i < tempHostname.Len( ); i++ )
+	{
+		// [AK] Don't accept undisplayable system ASCII.
+		if ( tempHostname[i] <= 31 )
+			continue;
+
+		// [AK] Don't accept escape codes unless they're used before color codes (e.g. '\c').
+		if (( tempHostname[i] == 92 ) && (( i >= tempHostname.Len( ) - 1 ) || ( tempHostname[i+1] != 'c' )))
+			continue;
+
+		cleanedHostname += tempHostname[i];
+	}
+
+	// [AK] Truncate incredibly long hostnames. Whatever limit that we allow should be more than enough.
+	cleanedHostname.Truncate( MAX_HOSTNAME_LENGTH );
+
+	// [AK] Finally, remove any trailing crap from the cleaned hostname string.
+	V_RemoveTrailingCrapFromFString( cleanedHostname );
+
+	// [AK] If the string is empty, then there was only crap. Reset sv_hostname back to default.
+	// Likewise, if the string is different from the original, set sv_hostname to the cleaned string.
+	if ( cleanedHostname.IsEmpty( ))
+	{
+		self.ResetToDefault( );
+		return;
+	}
+	else if ( tempHostname.Compare( cleanedHostname ) != 0 )
+	{
+		self = cleanedHostname;
+		return;
+	}
+
 	SERVERCONSOLE_UpdateTitleString( (const char *)self );
 
 	// [AK] Notify the clients about the new hostname.

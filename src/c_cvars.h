@@ -84,8 +84,11 @@ enum
 	// synchronized to clients with RCON access.
 	CVAR_SENSITIVESERVERSETTING = 1048576,
 
-	// [AK] The CVar is locked for a particular game mode and cannot be set from the console during play.
-	CVAR_GAMEMODELOCK = 2097152,
+	// [AK] The CVar is a flagset whose flags can be configured in the GAMEMODE lump.
+	CVAR_GAMEPLAYFLAGSET = 2097152,
+
+	// [AK] The CVar is gameplay-related and can be configured in the GAMEMODE lump.
+	CVAR_GAMEPLAYSETTING = 4194304,
 };
 
 union UCVarValue
@@ -187,10 +190,14 @@ private:
 	friend FBaseCVar *FindCVar (const char *var_name, FBaseCVar **prev);
 	friend FBaseCVar *FindCVarSub (const char *var_name, int namelen);
 	friend void UnlatchCVars (void);
+	friend void DestroyCVarsFlagged (DWORD flags);
 	friend void C_ArchiveCVars (FConfigFile *f, uint32 filter);
 	friend void C_SetCVarsToDefaults (void);
 	friend void FilterCompactCVars (TArray<FBaseCVar *> &cvars, uint32 filter);
 	friend void C_DeinitConsole();
+
+	// [AK] CHAT_Destruct needs access to FBaseCVar::m_UseCallback.
+	friend void CHAT_Destruct (void);
 };
 
 // Returns a string with all cvars whose flags match filter. In compact mode,
@@ -217,6 +224,9 @@ FBaseCVar *C_CreateCVar(const char *var_name, ECVarType var_type, DWORD flags);
 
 // Called from G_InitNew()
 void UnlatchCVars (void);
+
+// Destroy CVars with the matching flags; called from CCMD(restart)
+void DestroyCVarsFlagged (DWORD flags);
 
 // archive cvars to FILE f
 void C_ArchiveCVars (FConfigFile *f, uint32 filter);

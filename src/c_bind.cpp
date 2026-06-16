@@ -118,7 +118,6 @@ static const FBinding DefBindings[] =
 	{ "q", "weapswap" },
 	{ "g", "weapdrop" },
 	{ "r", "+reload" },
-	{ "m", "+showmedals" }, // [BC] New buttons below for Skulltag.
 	{ "u", "taunt" },
 	{ "pgup", "vote_yes" },
 	{ "pgdn", "vote_no" },

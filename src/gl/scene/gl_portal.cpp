@@ -61,6 +61,8 @@
 #include "gl/utility/gl_clock.h"
 #include "gl/utility/gl_templates.h"
 #include "gl/utility/gl_geometric.h"
+// [AK] New #includes.
+#include "c_console.h"
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -616,10 +618,13 @@ void GLSkyboxPortal::DrawContents()
 
 	glDisable(GL_DEPTH_CLAMP_NV);
 
-	viewx = origin->PrevX + FixedMul(r_TicFrac, origin->x - origin->PrevX);
-	viewy = origin->PrevY + FixedMul(r_TicFrac, origin->y - origin->PrevY);
-	viewz = origin->PrevZ + FixedMul(r_TicFrac, origin->z - origin->PrevZ);
-	viewangle += origin->PrevAngle + FixedMul(r_TicFrac, origin->angle - origin->PrevAngle);
+	// [AK] Don't interpolate the skybox if the game is supposed to be paused
+	// but the console is still interpolated. Otherwise, it will appear jittery.
+	const fixed_t ticFracToUse = C_ShouldForceInterpolation() ? FRACUNIT : r_TicFrac;
+	viewx = origin->PrevX + FixedMul(ticFracToUse, origin->x - origin->PrevX);
+	viewy = origin->PrevY + FixedMul(ticFracToUse, origin->y - origin->PrevY);
+	viewz = origin->PrevZ + FixedMul(ticFracToUse, origin->z - origin->PrevZ);
+	viewangle += origin->PrevAngle + FixedMul(ticFracToUse, origin->angle - origin->PrevAngle);
 
 	// Don't let the viewpoint be too close to a floor or ceiling!
 	fixed_t floorh = origin->Sector->floorplane.ZatPoint(origin->x, origin->y);

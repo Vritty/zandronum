@@ -102,6 +102,7 @@ public:
 	void addBit ( const bool value );
 	void addVariable ( const int value );
 	void addShortByte ( int value, int bits );
+	void addBuffer( const void *pvBuffer, const unsigned int length );
 	void writeCommandToStream ( BYTESTREAM_s &ByteStream ) const;
 	NETBUFFER_s& getBufferForClient( ULONG i ) const;
 	BYTESTREAM_s& getBytestreamForClient( ULONG i ) const;

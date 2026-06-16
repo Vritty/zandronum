@@ -469,7 +469,7 @@ manual_plat:
 		plat->m_Wait = delay;
 
 		// [BC] Potentially create the platform's network ID.
-		if ( NETWORK_InClientMode() == false )
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
 			plat->m_PlatID = P_GetFirstFreePlatID( );
 
 		//jff 1/26/98 Avoid raise plat bouncing a head off a ceiling and then
@@ -762,27 +762,5 @@ DPlat *P_GetPlatByID( LONG lID )
 //
 LONG P_GetFirstFreePlatID( void )
 {
-	LONG		lIdx;
-	DPlat		*pPlat;
-	bool		bIDIsAvailable;
-
-	for ( lIdx = 0; lIdx < 8192; lIdx++ )
-	{
-		TThinkerIterator<DPlat>		Iterator;
-
-		bIDIsAvailable = true;
-		while (( pPlat = Iterator.Next( )))
-		{
-			if ( pPlat->GetID( ) == lIdx )
-			{
-				bIDIsAvailable = false;
-				break;
-			}
-		}
-
-		if ( bIDIsAvailable )
-			return ( lIdx );
-	}
-
-	return ( -1 );
+	return NETWORK_GetFirstFreeID<DPlat>();
 }

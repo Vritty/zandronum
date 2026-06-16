@@ -3,6 +3,7 @@
 #include "info.h"
 #include "d_player.h"
 #include "farchive.h"
+#include "medal.h"
 
 IMPLEMENT_CLASS( AFloatyIcon )
 
@@ -54,12 +55,7 @@ void AFloatyIcon::Tick( )
 		}
 	}
 
-	// If the tracer has some type of visibility affect, apply it to the icon.
-	if ( !(tracer->RenderStyle == LegacyRenderStyles[STYLE_Normal]) || tracer->alpha != OPAQUE )
-	{
-		this->RenderStyle = tracer->RenderStyle;
-		this->alpha = tracer->alpha;
-	}
+	CopyTracerTranslucency( );
 }
 
 void AFloatyIcon::SetTracer( AActor *pTracer )
@@ -72,11 +68,19 @@ void AFloatyIcon::SetTracer( AActor *pTracer )
 
 	// Make the icon float directly above the tracer's head.
 	SetOrigin( tracer->x, tracer->y, tracer->z + tracer->height + ( 4 * FRACUNIT ));
+	CopyTracerTranslucency( );
+}
+
+void AFloatyIcon::CopyTracerTranslucency( )
+{
+	// [AK] Don't do this when the ally icon is used, so that it's easy to spot teammates.
+	if (( currentSprite == SPRITE_ALLY ) || ( tracer == nullptr ))
+		return;
 
 	// If the tracer has some type of visibility affect, apply it to the icon.
-	if ( !(tracer->RenderStyle == LegacyRenderStyles[STYLE_Normal]) || tracer->alpha != OPAQUE )
+	if ( !( tracer->RenderStyle == LegacyRenderStyles[STYLE_Normal] ) || tracer->alpha != OPAQUE )
 	{
-		this->RenderStyle = tracer->RenderStyle;
-		this->alpha = tracer->alpha;
+		RenderStyle = tracer->RenderStyle;
+		alpha = tracer->alpha;
 	}
 }

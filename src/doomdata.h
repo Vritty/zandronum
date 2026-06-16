@@ -445,6 +445,9 @@ extern	TArray<FPlayerStart>	GenericInvasionStarts;
 // [BB] All player starts, including those for voodoo dolls.
 extern	TArray<FPlayerStart>	AllStartsOfPlayer[MAXPLAYERS];
 
+// [AK] All available player starts, excluding those for voodoo dolls.
+extern	TArray<FPlayerStart>	AvailableCooperativeStarts;
+
 // Player spawn spots.
 extern FPlayerStart playerstarts[MAXPLAYERS];
 extern TArray<FPlayerStart> AllPlayerStarts;

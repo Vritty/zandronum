@@ -51,6 +51,8 @@
 #include "p_acs.h"
 
 #include <map>
+#include <vector>
+#include <algorithm>
 
 //*****************************************************************************
 //	VARIABLES
@@ -109,14 +111,34 @@ CCMD( dumptrafficmeasure )
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 		return;
 
+	// [SB] Sort ascending by default, so the actors and scripts using the most bandwidth
+	// are more immediately visible when viewed in the console.
+	const bool bSortDescending = argv.argc() > 1 && stricmp( argv[1], "desc" ) == 0;
+
+	const auto sortComparator = [=]( const auto &a, const auto &b )
+	{
+		return bSortDescending ? ( a.second > b.second ) : ( a.second < b.second );
+	};
+
 	Printf ( "Network traffic (in bytes) caused by actor code pointers:\n" );
 
-	for ( std::map<const char*, int, ltstr>::const_iterator it = g_actorTrafficMap.begin(); it != g_actorTrafficMap.end(); ++it )
-		Printf ( "%s %d\n", (*it).first, (*it).second );
+	{
+		std::vector<std::pair<const char*, int>> pairs( g_actorTrafficMap.cbegin(), g_actorTrafficMap.cend() );
+		std::sort( pairs.begin(), pairs.end(), sortComparator );
+
+		for ( auto it = pairs.cbegin(); it != pairs.cend(); ++it )
+			Printf ( "%s %d\n", (*it).first, (*it).second );
+	}
 
 	Printf ( "\nNetwork traffic (in bytes) caused by ACS scripts:\n" );
-	for ( std::map<int, int>::const_iterator it = g_ACSScriptTrafficMap.begin(); it != g_ACSScriptTrafficMap.end(); ++it )
-		Printf ( "Script %s: %d\n", FBehavior::RepresentScript( (*it).first ).GetChars(), (*it).second );
+
+	{
+		std::vector<std::pair<int, int>> pairs( g_ACSScriptTrafficMap.cbegin(), g_ACSScriptTrafficMap.cend() );
+		std::sort( pairs.begin(), pairs.end(), sortComparator );
+
+		for ( auto it = pairs.cbegin(); it != pairs.cend(); ++it )
+			Printf ( "Script %s: %d\n", FBehavior::RepresentScript( (*it).first ).GetChars(), (*it).second );
+	}
 }
 
 //*****************************************************************************

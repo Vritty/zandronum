@@ -65,6 +65,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_commands.h"
+#include "network/cl_auth.h"
 
 //
 // Todo: Move these elsewhere
@@ -342,12 +343,8 @@ void M_StartControlPanel (bool makeSound)
 	BackbuttonAlpha = 0;
 
 	// [BB] Don't change the displayed menu status when a demo is played.
-	if ( CLIENTDEMO_IsPlaying() == false )
-		players[consoleplayer].bInMenu = true;
-
-	// [RC] Tell the server so we get an "in menu" icon.
-	if ( NETWORK_GetState() == NETSTATE_CLIENT )
-		CLIENTCOMMANDS_EnterMenu();
+	if ( CLIENTDEMO_IsPlaying( ) == false )
+		PLAYER_SetStatus( &players[consoleplayer], PLAYERSTATUS_INMENU, true, SETPLAYERSTATUS_CLIENTSENDSUPDATE );
 }
 
 //=============================================================================
@@ -499,6 +496,29 @@ void M_SetMenu(FName menu, int param)
 		// [TP] Make the server setup menu redirect to RCON login if not logged in yet
 		if (( NETWORK_GetState() == NETSTATE_CLIENT ) && ( CLIENT_HasRCONAccess() == false ))
 			menu = NAME_ZA_RconLoginMenu;
+		break;
+
+	case NAME_ZA_LoginMenu:
+		// [AK] Prevent the login menu from opening if the client is already logged in.
+		if (( NETWORK_GetState() == NETSTATE_CLIENT ) && ( CLIENT_IsLoggedIn()))
+		{
+			M_StartMessage( "You are already logged in.\n\npress a key.", 1 );
+			return;
+		}
+
+#ifdef WIN32
+		FBaseCVar *usernameCVar = FindCVar( "menu_authusername", nullptr );
+
+		// [AK] Set the username in the login menu to the client's default username when the menu's opened
+		// for the first time (i.e. "menu_authusername" hasn't been changed yet).
+		if (( usernameCVar != nullptr ) && ( strlen( usernameCVar->GetGenericRep( CVAR_String ).String ) == 0 ))
+		{
+			UCVarValue val;
+			val.String = login_default_user.GetGenericRep( CVAR_String ).String;
+			usernameCVar->SetGenericRep( val, CVAR_String );
+		}
+#endif
+
 		break;
 	}
 
@@ -870,17 +890,9 @@ void M_ClearMenus ()
 	ServerSetupMenu = NULL;
 	ServerMenuEnabled = false;
 
-	// [BB] We are not in menu anymore, so set bInMenu if necessary.
-	if ( players[consoleplayer].bInMenu )
-	{
-		// [BB] Don't change the displayed menu status when a demo is played.
-		if ( CLIENTDEMO_IsPlaying() == false )
-			players[consoleplayer].bInMenu = false;
-
-		// [RC] Tell the server so our "in Menu" icon is removed.
-		if ( NETWORK_GetState() == NETSTATE_CLIENT )
-			CLIENTCOMMANDS_ExitMenu();
-	}
+	// [BB] Don't change the displayed menu status when a demo is played.
+	if ( CLIENTDEMO_IsPlaying( ) == false )
+		PLAYER_SetStatus( &players[consoleplayer], PLAYERSTATUS_INMENU, false, SETPLAYERSTATUS_CLIENTSENDSUPDATE );
 }
 
 //=============================================================================
@@ -916,6 +928,28 @@ void M_EnableMenu (bool on)
 bool M_InServerSetupMenu (void)
 {
 	return ServerMenuEnabled;
+}
+
+//=============================================================================
+//
+// [AK] Returns true if the given name points to a valid menu, or false otherwise.
+//
+//=============================================================================
+
+bool M_IsValidMenu( const char *name )
+{
+	if (( name == nullptr ) || ( strlen( name ) == 0 ))
+		return false;
+
+	if ( MenuDescriptors.CheckKey( name ) == nullptr )
+	{
+		const PClass *menuClass = PClass::FindClass( name );
+
+		if (( menuClass == nullptr ) || ( menuClass->IsDescendantOf( RUNTIME_CLASS( DMenu )) == false ))
+			return false;
+	}
+
+	return true;
 }
 
 //=============================================================================

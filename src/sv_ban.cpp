@@ -62,8 +62,11 @@
 //-- VARIABLES -------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
-static	IPList	g_ServerBans;
-static	IPList	g_ServerBanExemptions;
+static	TArray<IPList>	g_ServerBans;
+static	TArray<IPList>	g_ServerBanExemptions;
+
+// [AK] Pending changes to the ban lists from the server console window.
+static	TArray<IPList>	g_ServerConsoleBanUpdates;
 
 static	IPList	g_MasterServerBans;
 static	IPList	g_MasterServerBanExemptions;
@@ -74,10 +77,17 @@ static	ULONG	g_ulReParseTicker;
 //-- PROTOTYPES ------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
+static	void	serverban_LoadFilesFromCVar( TArray<IPList> &lists, FStringCVar &cvar );
 static	void	serverban_LoadBansAndBanExemptions( void );
 static	void	serverban_KickBannedPlayers( void );
 static	LONG	serverban_ExtractBanLength( FString fSearchString, const char *pszPattern );
 static	time_t	serverban_CreateBanDate( LONG lAmount, ULONG ulUnitSize, time_t tNow );
+static	void	serverban_ExecuteGetIPCmd( FCommandLine &argv, bool isIndexCmd );
+static	void	serverban_ExecuteBanCmd( FCommandLine &argv, bool isIndexCmd );
+static	void	serverban_ExecuteAddOrDelBanCmd( TArray<IPList> &lists, FCommandLine &argv, bool isDelCmd );
+static	void	serverban_ListAddresses( const IPList &list );
+static	void	serverban_ListFilesAndAddresses( const TArray<IPList> &lists );
+static	void	serverban_RetrieveFileIndices( const TArray<IPList> &lists, FString &string );
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- CVARS -----------------------------------------------------------------------------------------------------------------------------------------
@@ -105,8 +115,7 @@ CUSTOM_CVAR( String, sv_banfile, "banlist.txt", CVAR_ARCHIVE|CVAR_NOSETBYACS|CVA
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 		return;
 
-	if ( !( g_ServerBans.clearAndLoadFromFile( sv_banfile )))
-		Printf( "%s", g_ServerBans.getErrorMessage( ));
+	serverban_LoadFilesFromCVar( g_ServerBans, sv_banfile );
 
 	// Re-parse the file periodically.
 	g_ulReParseTicker = sv_banfilereparsetime * TICRATE;
@@ -119,8 +128,7 @@ CUSTOM_CVAR( String, sv_banexemptionfile, "whitelist.txt", CVAR_ARCHIVE|CVAR_NOS
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 		return;
 
-	if ( ! ( g_ServerBanExemptions.clearAndLoadFromFile( sv_banexemptionfile )))
-		Printf( "%s", g_ServerBanExemptions.getErrorMessage( ));
+	serverban_LoadFilesFromCVar( g_ServerBanExemptions, sv_banexemptionfile );
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
@@ -132,7 +140,8 @@ CUSTOM_CVAR( String, sv_banexemptionfile, "whitelist.txt", CVAR_ARCHIVE|CVAR_NOS
 void SERVERBAN_Tick( void )
 {
 	// [RC] Remove any old tempbans.
-	g_ServerBans.removeExpiredEntries( );
+	for ( unsigned int i = 0; i < g_ServerBans.Size( ); i++ )
+		g_ServerBans[i].removeExpiredEntries( );
 
 	// Is it time to re-parse the ban lists?
 	if ( g_ulReParseTicker && (( --g_ulReParseTicker ) == 0 ))
@@ -142,62 +151,160 @@ void SERVERBAN_Tick( void )
 		// Parse again periodically.
 		g_ulReParseTicker = sv_banfilereparsetime * TICRATE;
 	}
+
+	// [AK] Any pending changes to the ban lists that were made from the server
+	// console window should be applied now.
+	if ( g_ServerConsoleBanUpdates.Size( ) > 0 )
+	{
+		FString listString;
+		UCVarValue val;
+
+		for ( unsigned int i = 0; i < g_ServerConsoleBanUpdates.Size( ); i++ )
+		{
+			if ( i > 0 )
+				listString += ';';
+
+			listString += g_ServerConsoleBanUpdates[i].getFilename( );
+		}
+
+		val.String = listString.GetChars( );
+
+		// [AK] Update sv_banfile so that the ban files are loaded.
+		sv_banfile.SetGenericRep( val, CVAR_String );
+
+		// [AK] Refresh all of the ban lists that are loaded now.
+		for ( unsigned int i = 0; i < g_ServerConsoleBanUpdates.Size( ); i++ )
+		{
+			// Clear out the ban list, and then add all the bans in the ban list.
+			SERVERBAN_ClearBans( i );
+
+			for ( unsigned int j = 0; j < g_ServerConsoleBanUpdates[i].size( ); j++ )
+			{
+				const IPADDRESSBAN_s &entry = g_ServerConsoleBanUpdates[i].getVector( )[j];
+				std::string message;
+
+				SERVERBAN_GetBanList( )[i].addEntry( entry.szIP, "", entry.szComment, message, entry.tExpirationDate );
+			}
+		}
+
+		// [AK] Kick any players that might be banned now.
+		serverban_KickBannedPlayers( );
+		g_ServerConsoleBanUpdates.Clear( );
+	}
 }
 
 //*****************************************************************************
 //
-bool SERVERBAN_IsIPBanned( const IPStringArray &szAddress )
+bool SERVERBAN_IsIPBanned( const IPStringArray &Address )
 {
-	// Is this address is banned on the master server?
-	if ( sv_enforcemasterbanlist && g_MasterServerBans.isIPInList( szAddress ) && !g_MasterServerBanExemptions.isIPInList( szAddress ))
+	// Is this address banned on the master server?
+	if ( SERVERBAN_IsIPMasterBanned( Address ))
 		return true;
 
 	// If not, let the server decide.
-	return ( sv_enforcebans && g_ServerBans.isIPInList( szAddress ) && !g_ServerBanExemptions.isIPInList( szAddress ));
-}
+	if (( sv_enforcebans ) && ( SERVERBAN_GetBanInformation( Address )))
+	{
+		bool foundInExemptions = false;
 
-//*****************************************************************************
-//
-bool SERVERBAN_IsIPMasterBanned( const NETADDRESS_s &Address )
-{
-	return sv_enforcemasterbanlist
-		&& g_MasterServerBans.isIPInList( Address )
-		&& g_MasterServerBanExemptions.isIPInList( Address ) == false;
+		for ( unsigned int j = 0; j < g_ServerBanExemptions.Size( ); j++ )
+		{
+			if ( g_ServerBanExemptions[j].isIPInList( Address ))
+			{
+				foundInExemptions = true;
+				break;
+			}
+		}
+
+		if ( foundInExemptions == false )
+			return true;
+	}
+
+	return false;
 }
 
 //*****************************************************************************
 //
 bool SERVERBAN_IsIPBanned( const NETADDRESS_s &Address )
 {
-	// Is this address is banned on the master server?
-	if ( SERVERBAN_IsIPMasterBanned( Address ))
-		return true;
+	IPStringArray convertedAddress;
+	convertedAddress.SetFrom( Address );
 
-	// If not, let the server decide.
-	return ( sv_enforcebans && g_ServerBans.isIPInList( Address ) && !g_ServerBanExemptions.isIPInList( Address ));
+	return SERVERBAN_IsIPBanned( convertedAddress );
 }
 
 //*****************************************************************************
 //
-void SERVERBAN_ClearBans( void )
+bool SERVERBAN_IsIPMasterBanned( const IPStringArray &Address )
 {
-	FILE		*pFile;
+	return ( sv_enforcemasterbanlist && g_MasterServerBans.isIPInList( Address ) && !g_MasterServerBanExemptions.isIPInList( Address ));
+}
+
+//*****************************************************************************
+//
+bool SERVERBAN_IsIPMasterBanned( const NETADDRESS_s &Address )
+{
+	IPStringArray convertedAddress;
+	convertedAddress.SetFrom( Address );
+
+	return SERVERBAN_IsIPMasterBanned( convertedAddress );
+}
+
+//*****************************************************************************
+//
+IPADDRESSBAN_s *SERVERBAN_GetBanInformation( const IPStringArray &Address )
+{
+	// [AK] Find an entry comment in one of the ban files that corresponds
+	// to the player's IP address, and include it with the ban reason.
+	for ( unsigned int i = 0; i < g_ServerBans.Size( ); i++ )
+	{
+		unsigned int index = g_ServerBans[i].getFirstMatchingEntryIndex( Address );
+
+		if ( index < g_ServerBans[i].size( ))
+			return &g_ServerBans[i].getVector( )[index];
+	}
+
+	return nullptr;
+}
+
+//*****************************************************************************
+//
+IPADDRESSBAN_s *SERVERBAN_GetBanInformation( const NETADDRESS_s &Address )
+{
+	IPStringArray convertedAddress;
+	convertedAddress.SetFrom( Address );
+
+	return SERVERBAN_GetBanInformation( convertedAddress );
+}
+
+//*****************************************************************************
+//
+void SERVERBAN_ClearBans( unsigned int fileIndex )
+{
+	FILE *file = nullptr;
+
+	if ( fileIndex >= g_ServerBans.Size( ))
+	{
+		Printf( "Error: file index is invalid.\n" );
+		return;
+	}
 
 	// Clear out the existing bans in memory.
-	g_ServerBans.clear( );
+	g_ServerBans[fileIndex].clear( );
 
 	// Export the cleared banlist.
-	if (( pFile = fopen( sv_banfile, "w" )) != NULL )
+	if (( file = fopen( g_ServerBans[fileIndex].getFilename( ), "w" )) != nullptr )
 	{
 		FString message;
 		message.AppendFormat( "// This is a %s server IP list.\n// Format: 0.0.0.0 <mm/dd/yy> :optional comment\n\n", GAMENAME );
-		fputs( message.GetChars(), pFile );
-		fclose( pFile );
+		fputs( message.GetChars( ), file );
+		fclose( file );
 
-		Printf( "Banlist cleared.\n" );
+		Printf( "Banlist file \"%s\" cleared.\n", g_ServerBans[fileIndex].getFilename( ));
 	}
 	else
-		Printf( "SERVERBAN_ClearBans: Could not open %s for writing: %s\n", *sv_banfile, strerror( errno ));
+	{
+		Printf( "SERVERBAN_ClearBans: Could not open \"%s\" for writing: %s\n", g_ServerBans[fileIndex].getFilename( ), strerror( errno ));
+	}
 }
 
 //*****************************************************************************
@@ -381,61 +488,129 @@ time_t SERVERBAN_ParseBanLength( const char *szLengthString )
 
 //*****************************************************************************
 //
-IPList *SERVERBAN_GetBanList( void )
+TArray<IPList> &SERVERBAN_GetBanList( void )
 {
-	return &g_ServerBans;
+	return g_ServerBans;
 }
 
 //*****************************************************************************
 //
-IPList *SERVERBAN_GetBanExemptionList( void )
-{
-	return &g_ServerBanExemptions;
-}
-
-//*****************************************************************************
-//
-void SERVERBAN_BanPlayer( ULONG ulPlayer, const char *pszBanLength, const char *pszBanReason )
+void SERVERBAN_BanPlayer( unsigned int player, const char *length, const char *reason, unsigned int fileIndex )
 {
 	// Make sure the target is valid and applicable.
-	if (( ulPlayer >= MAXPLAYERS ) || ( !playeringame[ulPlayer] ) || players[ulPlayer].bIsBot )
+	if (( player >= MAXPLAYERS ) || ( !playeringame[player] ) || players[player].bIsBot )
 	{
 		Printf("Error: bad player index, or player is a bot.\n");
 		return;
 	}
 
+	SERVERBAN_BanAddress( SERVER_GetClient( player )->Address.ToString( ), length, reason, fileIndex );
+}
+
+//*****************************************************************************
+//
+void SERVERBAN_BanAddress( const char *address, const char *length, const char *reason, unsigned int fileIndex )
+{
+	// [AK] Added sanity checks to ensure the address and ban length are valid.
+	if (( address == nullptr ) || ( length == nullptr ))
+		return;
+
 	// [RC] Read the ban length.
-	time_t tExpiration = SERVERBAN_ParseBanLength( pszBanLength );
-	if ( tExpiration == -1 )
+	const time_t expiration = SERVERBAN_ParseBanLength( length );
+	std::string message;
+
+	if ( expiration == -1 )
 	{
-		Printf("Error: couldn't read that length. Try something like " TEXTCOLOR_RED "6day" TEXTCOLOR_NORMAL " or " TEXTCOLOR_RED "\"5 hours\"" TEXTCOLOR_NORMAL ".\n");
+		Printf( "Error: couldn't read that length. Try something like " TEXTCOLOR_RED "6day" TEXTCOLOR_NORMAL " or " TEXTCOLOR_RED "\"5 hours\"" TEXTCOLOR_NORMAL ".\n" );
+		return;
+	}
+	else if ( fileIndex >= g_ServerBans.Size( ))
+	{
+		Printf( "Error: file index is invalid.\n" );
 		return;
 	}
 
-	// Removes the color codes from the player name, for the ban record.
-	char	szPlayerName[64];
-	sprintf( szPlayerName, "%s", players[ulPlayer].userinfo.GetName() );
-	V_RemoveColorCodes( szPlayerName );
+	// [AK] Get the index of the player who has this address.
+	NETADDRESS_s convertedAddress;
+	const int player = convertedAddress.LoadFromString( address ) ? SERVER_FindClientByAddress( convertedAddress ) : -1;
 
-	// Add the ban and kick the player.
-	std::string message;
-	g_ServerBans.addEntry( SERVER_GetClient( ulPlayer )->Address.ToString(), szPlayerName, pszBanReason, message, tExpiration );
-	Printf( "addban: %s", message.c_str() );
-	SERVER_KickPlayer( ulPlayer, pszBanReason ? pszBanReason : "" );  // [RC] serverban_KickBannedPlayers would cover this, but we want the messages to be distinct so there's no confusion.
+	// Add the ban.
+	if ( player != -1 )
+	{
+		// Removes the color codes from the player name, for the ban record.
+		FString playerName = players[player].userinfo.GetName( );
+		V_RemoveColorCodes( playerName );
 
-	// Kick any other players using the newly-banned address.
+		g_ServerBans[fileIndex].addEntry( address, playerName.GetChars( ), reason, message, expiration );
+	}
+	else
+	{
+		g_ServerBans[fileIndex].addEntry( address, nullptr, reason, message, expiration );
+	}
+
+	Printf( "addban: %s", message.c_str( ));
+
+	// Kick the player.
+	// [RC] serverban_KickBannedPlayers would cover this, but we want the
+	// messages to be distinct so there's no confusion.
+	if ( player != -1 )
+		SERVER_KickPlayer( player, reason != nullptr ? reason : "" );
+
+	// Kick any players using the newly-banned address.
 	serverban_KickBannedPlayers( );
+}
+
+//*****************************************************************************
+//
+void SERVERBAN_UpdateBansFromServerConsole( const TArray<IPList> &lists )
+{
+	g_ServerConsoleBanUpdates = lists;
+}
+
+//*****************************************************************************
+//
+static void serverban_LoadFilesFromCVar( TArray<IPList> &lists, FStringCVar &cvar )
+{
+	FString cvarValue = cvar.GetGenericRep( CVAR_String ).String;
+	FString filename;
+
+	// [AK] The CVar's value should never be empty. At least one banfile is
+	// needed, so revert back to its default value if this happens.
+	if ( cvarValue.Len( ) == 0 )
+	{
+		const UCVarValue defaultVal = cvar.GetGenericRepDefault( CVAR_String );
+
+		Printf( "No filename(s) provided for \"%s\". Reverting to \"%s\" instead.", cvar.GetName( ), defaultVal.String );
+		cvar.SetGenericRep( defaultVal, CVAR_String );
+		return;
+	}
+
+	lists.Clear( );
+
+	for ( unsigned int i = 0; i <= cvarValue.Len( ); i++ )
+	{
+		if (( i < cvarValue.Len( )) && ( cvarValue[i] != ';' ))
+		{
+			filename += cvarValue[i];
+		}
+		else if ( filename.Len( ) > 0 )
+		{
+			lists.Push( IPList( ));
+
+			if ( lists.Last( ).clearAndLoadFromFile( filename.GetChars( )) == false )
+				Printf( "%s", lists.Last( ).getErrorMessage( ));
+
+			filename.Truncate( 0 );
+		}
+	}
 }
 
 //*****************************************************************************
 //
 static void serverban_LoadBansAndBanExemptions( void )
 {
-	if ( !( g_ServerBans.clearAndLoadFromFile( sv_banfile )))
-		Printf( "%s", g_ServerBans.getErrorMessage( ));
-
-	if ( !( g_ServerBanExemptions.clearAndLoadFromFile( sv_banexemptionfile )))
-		Printf( "%s", g_ServerBanExemptions.getErrorMessage( ));
+	serverban_LoadFilesFromCVar( g_ServerBans, sv_banfile );
+	serverban_LoadFilesFromCVar( g_ServerBanExemptions, sv_banexemptionfile );
 
 	// Kick any players using a banned address.
 	serverban_KickBannedPlayers( );
@@ -447,20 +622,22 @@ static void serverban_LoadBansAndBanExemptions( void )
 //
 static void serverban_KickBannedPlayers( void )
 {
-	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
 	{
-		if ( SERVER_GetClient( ulIdx )->State == CLS_FREE )
+		if ( SERVER_GetClient( i )->State == CLS_FREE )
 			continue;
 
-		if ( SERVERBAN_IsIPBanned( SERVER_GetClient( ulIdx )->Address ))
+		if ( SERVERBAN_IsIPBanned( SERVER_GetClient( i )->Address ))
 		{
-			const char *pszReason = g_ServerBans.getEntryComment( SERVER_GetClient( ulIdx )->Address );
-			FString fsReason = "IP is now banned";
+			IPADDRESSBAN_s *entry = SERVERBAN_GetBanInformation( SERVER_GetClient( i )->Address );
+			FString reason = "IP is now banned";
 
-			if ( pszReason != NULL )
-				fsReason.AppendFormat( " - %s", pszReason );
+			// [AK] Find an entry comment that corresponds to the player's IP
+			// address, and include it with the ban reason.
+			if (( entry != nullptr ) && ( strlen( entry->szComment ) != 0 ))
+				reason.AppendFormat( " - %s", entry->szComment );
 
-			SERVER_KickPlayer( ulIdx, fsReason );
+			SERVER_KickPlayer( i, reason.GetChars( ));
 		}
 	}
 }
@@ -496,128 +673,193 @@ static time_t serverban_CreateBanDate( LONG lAmount, ULONG ulUnitSize, time_t tN
 		return 0;
 }
 
+//*****************************************************************************
+//
+// [AK] Helper function for executing the "getIP" and "getIP_idx" CCMDs.
+//
+static void serverban_ExecuteGetIPCmd( FCommandLine &argv, bool isIndexCmd )
+{
+	int playerIndex = MAXPLAYERS;
+
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
+	// Only the server can look this up.
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+		return;
+
+	if ( argv.argc( ) < 2 )
+	{
+		FString message;
+		message.Format( "Usage: %s <player %s>\nDescription: Returns the player's IP address", argv[0], isIndexCmd ? "index" : "name" );
+
+		// [AK] Add extra information for the index version of the command.
+		if ( isIndexCmd )
+			message.AppendFormat( ", via their index. You can get the list of players' indexes via the \"playerinfo\" CCMD" );
+
+		Printf( "%s.\n", message.GetChars( ));
+		return;
+	}
+
+	// Look up the player, and make sure they're valid.
+	if ( argv.GetPlayerFromArg( playerIndex, 1, isIndexCmd, true ))
+		Printf( "%s's IP is: %s\n", players[playerIndex].userinfo.GetName( ), SERVER_GetClient( playerIndex )->Address.ToString( ));
+}
+
+//*****************************************************************************
+//
+// [AK] Helper function for executing the "ban" and "ban_idx" CCMDs.
+//
+static void serverban_ExecuteBanCmd( FCommandLine &argv, bool isIndexCmd )
+{
+	int playerIndex = MAXPLAYERS;
+
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
+	// Only the server can ban players!
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+		return;
+
+	if ( argv.argc( ) < 3 )
+	{
+		FString message;
+		message.Format( "Usage: %s <player %s> <duration> [reason] [file index]\nDescription: Bans the player", argv[0], isIndexCmd ? "index" : "name" );
+
+		if ( isIndexCmd )
+			message += ", via their index,";
+
+		message += " for the given duration (\"perm\" for a permanent ban). ";
+
+		if ( isIndexCmd )
+			message += "To see the list of players' indexes, try the \"playerinfo\" CCMD. ";
+
+		serverban_RetrieveFileIndices( g_ServerBans, message );
+		Printf( "%s", message.GetChars( ));
+		return;
+	}
+
+	// Look up the player, and make sure they're valid.
+	if ( argv.GetPlayerFromArg( playerIndex, 1, isIndexCmd, true ))
+		SERVERBAN_BanPlayer( playerIndex, argv[2], ( argv.argc( ) >= 4 ) ? argv[3] : nullptr, ( argv.argc( ) >= 5 ) ? atoi( argv[4] ) : 0 );
+}
+
+//*****************************************************************************
+//
+// [AK] Helper function for executing the "delban", "addbanexemption" and "delbanexemption" CCMDs.
+// Note that the "addban" CCMD works differently, so this can't be used for it.
+//
+static void serverban_ExecuteAddOrDelBanCmd( TArray<IPList> &lists, FCommandLine &argv, bool isDelCmd )
+{
+	std::string message;
+
+	// [AK] This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
+	if ( argv.argc( ) < 2 )
+	{
+		FString message;
+		message.Format( "Usage: %s <IP address>%s [file index]\n", argv[0], isDelCmd ? "" : " [comment]" );
+
+		serverban_RetrieveFileIndices( lists, message );
+		Printf( "%s", message.GetChars( ));
+		return;
+	}
+
+	const int fileIndexArg = isDelCmd ? 2 : 3;
+	const unsigned int fileIndex = ( argv.argc( ) >= fileIndexArg + 1 ) ? atoi( argv[fileIndexArg] ) : 0;
+
+	if ( fileIndex >= lists.Size( ))
+	{
+		Printf( "Error: file index is invalid.\n" );
+		return;
+	}
+
+	if ( isDelCmd )
+		lists[fileIndex].removeEntry( argv[1], message );
+	else
+		lists[fileIndex].addEntry( argv[1], nullptr, ( argv.argc( ) >= 3 ) ? argv[2] : nullptr, message, 0 );
+
+	Printf( "%s: %s", argv[0], message.c_str( ));
+}
+
+//*****************************************************************************
+//
+// [AK] Helper function for listing addresses via CCMDs (e.g. "viewbanlist").
+//
+static void serverban_ListAddresses( const IPList &list )
+{
+	for ( unsigned int i = 0; i < list.size( ); i++ )
+		Printf( "%s", list.getEntryAsString( i ).c_str( ));
+}
+
+//*****************************************************************************
+//
+// [AK] Helper function for listing addresses from multiple files.
+//
+static void serverban_ListFilesAndAddresses( const TArray<IPList> &lists )
+{
+	for ( unsigned int i = 0; i < lists.Size( ); i++ )
+	{
+		if ( lists[i].size( ) == 0 )
+			continue;
+
+		// [AK] Print the name of the file too.
+		Printf( "From \"%s\": \n", lists[i].getFilename( ));
+		serverban_ListAddresses( lists[i] );
+	}
+}
+
+//*****************************************************************************
+//
+// [AK] Helper function for listing ban (exemption) files indices.
+//
+static void serverban_RetrieveFileIndices( const TArray<IPList> &lists, FString &string )
+{
+	if ( lists.Size( ) == 0 )
+	{
+		string += "No files are available\n";
+	}
+	else
+	{
+		string += "File indices are:\n";
+
+		for ( unsigned int i = 0; i < lists.Size( ); i++ )
+			string.AppendFormat( "%u. %s%s\n", i, lists[i].getFilename( ), i == 0 ? " (default)" : "" );
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- CCMDS -----------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
 CCMD( getIP )
 {
-	// Only the server can look this up.
-	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-		return;
-
-	if ( argv.argc( ) < 2 )
-	{
-		Printf( "Usage: getIP <playername> \nDescription: Returns the player's IP address.\n" );
-		return;
-	}
-
-	// Look up the player.
-	ULONG ulIdx = SERVER_GetPlayerIndexFromName( argv[1], true, false );
-	if ( SERVER_IsValidClient( ulIdx ))
-		Printf( "%s's IP is: %s\n", players[ulIdx].userinfo.GetName(), SERVER_GetClient( ulIdx )->Address.ToString() );
-	else
-	{
-		if ( SERVER_GetPlayerIndexFromName( argv[1], true, true ) != MAXPLAYERS )
-			Printf( "%s" TEXTCOLOR_NORMAL " is a bot.\n", argv[1] );
-		else
-			Printf( "Unknown player: %s" TEXTCOLOR_NORMAL "\n",argv[1] );
-	}
+	serverban_ExecuteGetIPCmd( argv, false );
 }
 
 //*****************************************************************************
 //
 CCMD( getIP_idx )
 {
-	// Only the server can look this up.
-	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-		return;
-
-	if ( argv.argc( ) < 2 )
-	{
-		Printf( "Usage: getIP_idx <player index>\nDescription: Returns the player's IP, via his index. You can get the list of players' indexes via the ccmd playerinfo.\n" );
-		return;
-	}
-
-	int playerIndex;
-	if ( argv.SafeGetNumber( 1, playerIndex ) == false )
-		return;
-
-	// Make sure the target is valid.
-	if (( playerIndex >= MAXPLAYERS ) || ( !playeringame[playerIndex] ))
-		return;
-
-	if ( players[playerIndex].bIsBot )
-		Printf( "%s is a bot.\n", players[playerIndex].userinfo.GetName() );
-	else
-		Printf( "%s's IP is: %s\n", players[playerIndex].userinfo.GetName(), SERVER_GetClient( playerIndex )->Address.ToString() );
-}
-
-//*****************************************************************************
-//
-CCMD( ban_idx )
-{
-	// [AK] This function may not be used by ConsoleCommand.
-	if ( ACS_IsCalledFromConsoleCommand( ))
-		return;
-
-	// Only the server can ban players!
-	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-		return;
-
-	if ( argv.argc( ) < 3 )
-	{
-		Printf( "Usage: ban_idx <player index> <duration> [reason]\nDescriptions: Bans the player, via his index, for the given duration (\"perm\" for a permanent ban).\n To see the list of players' indexes, try the ccmd playerinfo.\n" );
-		return;
-	}
-
-	int playerIndex;
-	if ( argv.SafeGetNumber( 1, playerIndex ) == false )
-		return;
-
-	SERVERBAN_BanPlayer( playerIndex, argv[2], (argv.argc( ) >= 4) ? argv[3] : NULL );
-
+	serverban_ExecuteGetIPCmd( argv, true );
 }
 
 //*****************************************************************************
 //
 CCMD( ban )
 {
-	ULONG	ulIdx;
+	serverban_ExecuteBanCmd( argv, false );
+}
 
-	// [AK] This function may not be used by ConsoleCommand.
-	if ( ACS_IsCalledFromConsoleCommand( ))
-		return;
-
-	// Only the server can ban players!
-	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-		return;
-
-	if ( argv.argc( ) < 3 )
-	{
-		Printf( "Usage: ban <playername> <duration> [reason]\nDescription: Bans the player for the given duration  (\"perm\" for a permanent ban).\n" );
-		return;
-	}
-
-	// Get the index.
-	ulIdx = SERVER_GetPlayerIndexFromName( argv[1], true, false );
-
-	// Found him?
-	if ( ulIdx != MAXPLAYERS )
-	{
-		char	szString[256];
-
-		// Ban via the index.
-		sprintf( szString, "ban_idx %lu \"%s\" \"%s\"", ulIdx, argv[2], (argv.argc( ) >= 4) ? argv[3] : "" );
-		SERVER_AddCommand( szString );
-	}
-	else
-	{
-		if ( SERVER_GetPlayerIndexFromName( argv[1], true, true ) != MAXPLAYERS )
-			Printf( "%s" TEXTCOLOR_NORMAL " is a bot.\n", argv[1] );
-		else
-			Printf( "Unknown player: %s" TEXTCOLOR_NORMAL "\n",argv[1] );
-	}
+//*****************************************************************************
+//
+CCMD( ban_idx )
+{
+	serverban_ExecuteBanCmd( argv, true );
 }
 
 //*****************************************************************************
@@ -630,112 +872,63 @@ CCMD( addban )
 
 	if ( argv.argc( ) < 3 )
 	{
-		Printf( "Usage: addban <IP address> <duration> [comment]\nDescription: bans the given IP address.\n" );
+		FString message = "Usage: addban <IP address> <duration> [comment] [file index]\nDescription: bans the given IP address. ";
+		serverban_RetrieveFileIndices( g_ServerBans, message );
+
+		Printf( "%s", message.GetChars( ));
 		return;
 	}
 
-	time_t tExpiration = SERVERBAN_ParseBanLength( argv[2] );
-	if ( tExpiration == -1 )
-	{
-		Printf("Error: couldn't read that length. Try something like " TEXTCOLOR_RED "6day" TEXTCOLOR_NORMAL " or " TEXTCOLOR_RED "\"5 hours\"" TEXTCOLOR_NORMAL ".\n");
-		return;
-	}
-
-	std::string message;
-	g_ServerBans.addEntry( argv[1], NULL, (argv.argc( ) >= 4) ? argv[3] : NULL, message, tExpiration );
-	Printf( "addban: %s", message.c_str() );
-
-	// Kick any players using the newly-banned address.
-	serverban_KickBannedPlayers( );
+	SERVERBAN_BanAddress( argv[1], argv[2], ( argv.argc( ) >= 4 ) ? argv[3] : nullptr, ( argv.argc( ) >= 5 ) ? atoi( argv[4] ) : 0 );
 }
 
 //*****************************************************************************
 //
 CCMD( delban )
 {
-	// [AK] This function may not be used by ConsoleCommand.
-	if ( ACS_IsCalledFromConsoleCommand( ))
-		return;
-
-	if ( argv.argc( ) < 2 )
-	{
-		Printf( "Usage: delban <IP address>\n" );
-		return;
-	}
-
-	std::string message;
-	g_ServerBans.removeEntry( argv[1], message );
-	Printf( "delban: %s", message.c_str() );
+	serverban_ExecuteAddOrDelBanCmd( g_ServerBans, argv, true );
 }
 
 //*****************************************************************************
 //
 CCMD( addbanexemption )
 {
-	// [AK] This function may not be used by ConsoleCommand.
-	if ( ACS_IsCalledFromConsoleCommand( ))
-		return;
-
-	if ( argv.argc( ) < 2 )
-	{
-		Printf( "Usage: addbanexemption <IP address> [comment]\n" );
-		return;
-	}
-
-	std::string message;
-	g_ServerBanExemptions.addEntry( argv[1], NULL, (argv.argc( ) >= 3) ? argv[2] : NULL, message, 0 );
-	Printf( "addbanexemption: %s", message.c_str() );
+	serverban_ExecuteAddOrDelBanCmd( g_ServerBanExemptions, argv, false );
 }
 
 //*****************************************************************************
 //
 CCMD( delbanexemption )
 {
-	// [AK] This function may not be used by ConsoleCommand.
-	if ( ACS_IsCalledFromConsoleCommand( ))
-		return;
-
-	if ( argv.argc( ) < 2 )
-	{
-		Printf( "Usage: delbanexemption <IP address>\n" );
-		return;
-	}
-
-	std::string message;
-	g_ServerBanExemptions.removeEntry( argv[1], message );
-	Printf( "delbanexemption: %s", message.c_str() );
+	serverban_ExecuteAddOrDelBanCmd( g_ServerBanExemptions, argv, true );
 }
 
 //*****************************************************************************
 //
 CCMD( viewbanlist )
 {
-	for ( ULONG ulIdx = 0; ulIdx < g_ServerBans.size(); ulIdx++ )
-		Printf( "%s", g_ServerBans.getEntryAsString(ulIdx).c_str( ));
+	serverban_ListFilesAndAddresses( g_ServerBans );
 }
 
 //*****************************************************************************
 //
 CCMD( viewbanexemptionlist )
 {
-	for ( ULONG ulIdx = 0; ulIdx < g_ServerBanExemptions.size(); ulIdx++ )
-		Printf( "%s", g_ServerBanExemptions.getEntryAsString(ulIdx).c_str( ));
+	serverban_ListFilesAndAddresses( g_ServerBanExemptions );
 }
 
 //*****************************************************************************
 //
 CCMD( viewmasterbanlist )
 {
-	for ( ULONG ulIdx = 0; ulIdx < g_MasterServerBans.size(); ulIdx++ )
-		Printf( "%s", g_MasterServerBans.getEntryAsString(ulIdx).c_str( ));
+	serverban_ListAddresses( g_MasterServerBans );
 }
 
 //*****************************************************************************
 //
 CCMD( viewmasterexemptionbanlist )
 {
-	for ( ULONG ulIdx = 0; ulIdx < g_MasterServerBanExemptions.size(); ulIdx++ )
-		Printf( "%s", g_MasterServerBanExemptions.getEntryAsString(ulIdx).c_str( ));
+	serverban_ListAddresses( g_MasterServerBanExemptions );
 }
 
 //*****************************************************************************
@@ -746,7 +939,7 @@ CCMD( clearbans )
 	if ( ACS_IsCalledFromConsoleCommand( ))
 		return;
 
-	SERVERBAN_ClearBans( );
+	SERVERBAN_ClearBans(( argv.argc( ) >= 2 ) ? atoi( argv[1] ) : 0 );
 }
 
 //*****************************************************************************

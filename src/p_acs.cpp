@@ -91,11 +91,24 @@
 #include "cl_main.h"
 #include "chat.h"
 #include "maprotation.h"
+#include "scoreboard.h"
+#include "menu/menu.h"
+#include "sv_ban.h"
+#include "joinqueue.h"
+#include "domination.h" // [TRSR]
 
 #include "g_shared/a_pickups.h"
 
 // [BB] A std::pair inside TArray inside TArray didn't seem to work.
 std::vector<TArray<std::pair<FString, FString> > > g_dbQueries;
+
+// [Binary/AK] The maximum number of minutes a mod can ban a player for with BanFromGame.
+// A value of zero means that the server forbids use of the function.
+CUSTOM_CVAR( Int, sv_maxacsbanduration, 0, CVAR_SERVERINFO | CVAR_NOSETBYACS )
+{
+	if ( self < 0 )
+		self = 0;
+}
 
 //
 // [TP] Overridable system time property
@@ -167,9 +180,6 @@ CCMD ( acstime )
 }
 
 extern FILE *Logfile;
-
-// [AK] We need this for SetPlayerClass.
-extern FRandom pr_classchoice;
 
 FRandom pr_acs ("ACS");
 
@@ -249,6 +259,14 @@ enum
 	SCORE_SECRETS,
 	SCORE_SPREAD,
 	SCORE_RANK,
+};
+
+// [TRSR] GetControlPointInfo and SetControlPointInfo
+enum
+{
+	POINTINFO_NAME,
+	POINTINFO_OWNER,
+	POINTINFO_DISABLED,
 };
 
 struct CallReturn
@@ -1026,6 +1044,10 @@ void P_ClearACSVars(bool alsoglobal)
 		// [BB] When the global vars are cleared, our query handles surely shouldn't
 		// be needed anymore. So clear them in case mods forgot to do so.
 		g_dbQueries.clear();
+
+		// [AK] Also clear any open lump handles that mods forgot to close when
+		// clearing global variables, as these aren't needed anymore either.
+		ACS_ClearLumpHandles();
 	}
 	else
 	{
@@ -1566,7 +1588,7 @@ static LONG GetTeamScore (ULONG team) {
 		return TEAM_GetFragCount( team );
 	else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
 		return TEAM_GetWinCount( team );
-	return TEAM_GetScore( team );
+	return TEAM_GetPointCount( team );
 }
 
 //============================================================================
@@ -1611,7 +1633,7 @@ static int GetTeamProperty (unsigned int team, int prop) {
 		case TPROP_WinCount:
 			return TEAM_GetWinCount (team);
 		case TPROP_PointCount:
-			return TEAM_GetScore (team);
+			return TEAM_GetPointCount (team);
 		case TPROP_ReturnTics:
 			return TEAM_GetReturnTicks (team);
 		case TPROP_NumPlayers:
@@ -1858,6 +1880,44 @@ static int SendNetworkString ( FBehavior* module, AActor* activator, int script,
 	}
 
 	return 0;
+}
+
+// ================================================================================================
+//
+// [TRSR] GetPlayerValue
+//
+// Parses a PlayerValue variable into an ACS usable value.
+//
+// ================================================================================================
+
+static int GetPlayerValue ( const PlayerValue &Val )
+{
+	switch ( Val.GetDataType( ))
+	{
+		case DATATYPE_INT:
+			return Val.GetValue<int>( );
+
+		case DATATYPE_BOOL:
+			return Val.GetValue<bool>( );
+
+		case DATATYPE_FLOAT:
+			return FLOAT2FIXED( Val.GetValue<float>( ));
+
+		case DATATYPE_STRING:
+			return GlobalACSStrings.AddString( Val.GetValue<const char *>( ));
+
+		case DATATYPE_COLOR:
+			return Val.GetValue<PalEntry>( );
+
+		case DATATYPE_TEXTURE:
+		{
+			FTexture *pTexture = Val.GetValue<FTexture *>( );
+			return GlobalACSStrings.AddString( pTexture != NULL ? pTexture->Name : "" );
+		}
+
+		default:
+			return 0;
+	}
 }
 
 //---- Plane watchers ----//
@@ -2941,7 +3001,7 @@ void FBehavior::LoadScriptsDirectory ()
 		int size = LittleLong(scripts.dw[1]);
 		if (size >= 6)
 		{
-			int script_num = LittleShort(scripts.w[4]);
+			int script_num = LittleShort(scripts.sw[4]);
 			ScriptPtr *ptr = const_cast<ScriptPtr *>(FindScript(script_num));
 			if (ptr != NULL)
 			{
@@ -3208,6 +3268,15 @@ void FBehavior::SetArrayVal (int arraynum, int index, int value)
 	array->Elements[index] = value;
 }
 
+// [TDRR]
+int FBehavior::GetArraySize (unsigned int arraynum) const
+{
+	if (arraynum >= static_cast<unsigned>(NumTotalArrays))
+		return 0;
+
+	return Arrays[arraynum]->ArraySize;
+}
+
 inline bool FBehavior::CopyStringToArray(int arraynum, int index, int maxLength, const char *string)
 {
 	 // false if the operation was incomplete or unsuccessful
@@ -3346,7 +3415,9 @@ void FBehavior::StartTypedScripts (WORD type, AActor *activator, bool always, in
 			if (( NETWORK_GetState( ) == NETSTATE_SERVER ) &&
 				ACS_IsScriptClientSide( ptr ))
 			{
-				SERVERCOMMANDS_ACSScriptExecute( ptr->Number, activator, 0, 0, 0, arg, 3, always );
+				// [RK] If it's an unloading script, don't waste traffic since the clients will run it on their own in G_ChangeLevel
+				if( ptr->Type != SCRIPT_Unloading )
+					SERVERCOMMANDS_ACSScriptExecute( ptr->Number, activator, 0, 0, 0, arg, 3, always );
 				continue;
 			}
 			DLevelScript *runningScript = P_GetScriptGoing (activator, NULL, ptr->Number,
@@ -3560,16 +3631,49 @@ void DACSThinker::Tick ()
 	}
 }
 
-void DACSThinker::StopScriptsFor (AActor *actor)
+//=====================================================================
+// [RK]
+// Changes the activator of running scripts to new actor.
+// 
+//=====================================================================
+
+void DACSThinker::ReplaceActivator (AActor *actor, AActor *newactor)
 {
 	DLevelScript *script = Scripts;
 
 	while (script != NULL)
 	{
-		DLevelScript *next = script->next;
+		DLevelScript* next = script->next;
 		if (script->activator == actor)
 		{
+			script->activator = newactor;
+		}
+		script = next;
+	}
+}
+
+//======================================================================
+//
+// [RK] Added bRemoveNow if we're planning for GC soon and 'activation'
+// to only change scripts that match the specified type such as 'OPEN'.
+
+void DACSThinker::StopScriptsFor (AActor *actor, bool bRemoveNow, int activation)
+{
+	DLevelScript *script = Scripts;
+	FBehavior *pModule = NULL; // [RK] Added for StaticFindScript
+
+	while (script != NULL)
+	{
+		DLevelScript *next = script->next;
+		const ScriptPtr* pScriptData = FBehavior::StaticFindScript(script->script, pModule); // [RK] Grab the activation type.
+
+		// [RK] If activation is passed, then check for the type of activation.
+		if ( script->activator == actor && ( !activation || pScriptData->Type == activation ))
+		{
 			script->SetState (DLevelScript::SCRIPT_PleaseRemove);
+
+			if (bRemoveNow)
+				script->RunScript();
 		}
 		script = next;
 	}
@@ -3828,6 +3932,10 @@ do_count:
 				// [AK] Don't count actors hidden by HideOrDestroyIfSafe().
 				((actor->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED) == false))
 			{
+				// [RK] Don't count players who left the game by spectating or dead spectators.
+				if ( actor->player && (actor->player->bSpectating || actor->player->bDeadSpectator) )
+					continue;
+
 				if (actor->Sector->tag == tag || tag == -1)
 				{
 					// Don't count items in somebody's inventory
@@ -3850,6 +3958,10 @@ do_count:
 				// [AK] Don't count actors hidden by HideOrDestroyIfSafe().
 				((actor->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED) == false))
 			{
+				// [RK] Don't count players who left the game by spectating or dead spectators.
+				if ( actor->player && (actor->player->bSpectating || actor->player->bDeadSpectator) )
+					continue;
+
 				if (actor->Sector->tag == tag || tag == -1)
 				{
 					// Don't count items in somebody's inventory
@@ -4090,6 +4202,14 @@ int DLevelScript::DoSpawn (int type, fixed_t x, fixed_t y, fixed_t z, int tid, i
 					// [TP] If we're the server, sync the tid to clients (if this actor has one)
 					if ( actor->tid != 0 )
 						SERVERCOMMANDS_SetThingTID( actor );
+
+					// [AK] Destroy the actor if it's supposed to be clientsided only.
+					SERVER_DestroyActorIfClientsidedOnly( actor );
+				}
+				// [AK] If we're a client and did the spawning, then the actor is clientsided only.
+				else if ( NETWORK_InClientMode( ))
+				{
+					actor->NetworkFlags |= NETFL_CLIENTSIDEONLY;
 				}
 			}
 			else
@@ -4116,10 +4236,12 @@ int DLevelScript::DoSpawnSpot (int type, int spot, int tid, int angle, bool forc
 
 		while ( (aspot = iterator.Next ()) )
 		{
-			spawned += DoSpawn (type, aspot->x, aspot->y, aspot->z, tid, angle, force);
+			// [RK] Don't spawn things that are currently hidden.
+			if(!( aspot->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED ))
+				spawned += DoSpawn (type, aspot->x, aspot->y, aspot->z, tid, angle, force);
 		}
 	}
-	else if (activator != NULL)
+	else if (activator != NULL && !( activator->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED )) // [RK] Don't activate at hidden things.
 	{
 			spawned += DoSpawn (type, activator->x, activator->y, activator->z, tid, angle, force);
 	}
@@ -4137,10 +4259,12 @@ int DLevelScript::DoSpawnSpotFacing (int type, int spot, int tid, bool force)
 
 		while ( (aspot = iterator.Next ()) )
 		{
-			spawned += DoSpawn (type, aspot->x, aspot->y, aspot->z, tid, aspot->angle >> 24, force);
+			// [RK] Don't spawn things that are currently hidden.
+			if (!( aspot->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED ))
+				spawned += DoSpawn (type, aspot->x, aspot->y, aspot->z, tid, aspot->angle >> 24, force);
 		}
 	}
-	else if (activator != NULL)
+	else if (activator != NULL && !(activator->STFlags & STFL_HIDDEN_INSTEAD_OF_DESTROYED )) // [RK] Don't activate at hidden things.
 	{
 			spawned += DoSpawn (type, activator->x, activator->y, activator->z, tid, activator->angle >> 24, force);
 	}
@@ -5224,6 +5348,16 @@ static FSoundID GetActorSound(const AActor *actor, int soundtype)
 	}
 }
 
+// [TDRR] Speeds up lump reading significantly (avoids having to reopen
+// for every single read).
+struct ACSRefCountedLumpHandle
+{
+	size_t refCount;
+	FWadLump lump;
+};
+
+TMap<int, struct ACSRefCountedLumpHandle> ACSLumpHandles;
+
 enum EACSFunctions
 {
 	ACSF_GetLineUDMFInt=1,
@@ -5380,6 +5514,41 @@ enum EACSFunctions
 	ACSF_GetChatMessage,
 	ACSF_GetMapRotationSize,
 	ACSF_GetMapRotationInfo,
+	ACSF_GetMapPosition,
+	ACSF_GetEventResult,
+	ACSF_GetActorSectorLocation,
+	ACSF_ChangeTeamScore,
+	ACSF_SetGameplaySetting,
+	ACSF_SetCustomPlayerValue,
+	ACSF_GetCustomPlayerValue,
+	ACSF_ResetCustomDataToDefault,
+	ACSF_LumpOpen, // [TDRR] Added the LumpOpen to LumpClose set of functions.
+	ACSF_LumpRead,
+	ACSF_LumpReadString,
+	ACSF_LumpReadLocal,
+	ACSF_LumpReadModule,
+	ACSF_LumpReadHub,
+	ACSF_LumpReadGlobal,
+	ACSF_LumpGetInfo,
+	ACSF_LumpClose,
+	ACSF_AddBot,
+	ACSF_RemoveBot,
+	ACSF_OpenMenu,
+	ACSF_CloseMenu,
+	ACSF_BanFromGame, // [Binary] Added BanFromGame to function set.
+	ACSF_GetPlayerStatus,
+	ACSF_SetPlayerWeaponZoomFactor,
+	ACSF_SetPlayerSkin,
+	ACSF_GetPlayerSkin,
+	ACSF_GetPlayerCountry,
+	ACSF_SetNextMapPosition,
+	ACSF_GivePlayerMedal,
+	ACSF_GetPlayerJoinQueuePosition,
+	ACSF_SkipJoinQueue,
+	ASCF_GetControlPointInfo, // [TRSR] Added Domination functions.
+	ASCF_SetControlPointInfo,
+	ASCF_GetSkinProperty, // [TRSR]
+	ACSF_IsPlayerContestingControlPoint,
 
 	// ZDaemon
 	ACSF_GetTeamScore = 19620,	// (int team)
@@ -5719,9 +5888,8 @@ static void SetActorPitch(AActor *activator, int tid, int angle, bool interpolat
 	}
 }
 
-
-
-int DLevelScript::CallFunction(int argCount, int funcIndex, SDWORD *args)
+// [TDRR] Added "locals" parameter to allow accessing local arrays.
+int DLevelScript::CallFunction(int argCount, int funcIndex, SDWORD *args, struct ACSLocals *locals)
 {
 	AActor *actor;
 	switch(funcIndex)
@@ -6787,8 +6955,8 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				reference = SingleActorFromTID(tid_dest, activator);
 			}
 
-			// If there is no actor to warp to, fail.
-			if (!reference)
+			// If there is no activator or actor to warp to, fail.
+			if (activator == NULL || !reference)
 				return false;
 
 			AActor *caller = activator;
@@ -7224,6 +7392,11 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 			{
 				char buffer[1024];
 				time_t timer = args[0];
+
+				// [RK] Clamp timer if it's less than zero.
+				if ( timer < 0 )
+					timer = 0;
+
 				FString format = FBehavior::StaticLookupString( args[1] );
 				bool utc = argCount >= 3 ? !!args[2] : false;
 				struct tm* timeinfo = ( utc ? gmtime : localtime )( &timer );
@@ -7288,6 +7461,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 					// [BB] Revive the player.
 					players[ulPlayer].bSpectating = false;
 					players[ulPlayer].bDeadSpectator = false;
+					players[ulPlayer].bDeadSpectatorKeySync = true; // [RK] Allow to sync the keys.
 					if ( GAMEMODE_GetCurrentFlags() & GMF_USEMAXLIVES )
 						PLAYER_SetLivesLeft ( &players[ulPlayer], GAMEMODE_GetMaxLives() - 1 );
 					players[ulPlayer].playerstate = ( zadmflags & ZADF_DEAD_PLAYERS_CAN_KEEP_INVENTORY ) ? PST_REBORN : PST_REBORNNOINVENTORY;
@@ -7377,11 +7551,9 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 				// [AK] If everything's okay now, change the gamemode.
 				GAMEMODE_SetCurrentMode( newmode );
 
-				// [AK] We should also start a new game, so just execute the "map" CCMD to do this.
-				FString command;
-				command.Format( "map %s", level.mapname );
-				C_DoCommand( command );
-				
+				// [AK] We should also reset the current level to apply the new game mode safely.
+				// Do this without showing the intermission screen, and reset everyone's health and items.
+				G_ChangeLevel( level.mapname, 0, CHANGELEVEL_NOINTERMISSION | CHANGELEVEL_RESETHEALTH | CHANGELEVEL_RESETINVENTORY | CHANGELEVEL_HIDENAME );
 				return 1;
 			}
 
@@ -7393,16 +7565,7 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 		case ACSF_SetGamemodeLimit:
 			{
-				GAMELIMIT_e limit = static_cast<GAMELIMIT_e> ( args[0] );
-
-				if ( limit == GAMELIMIT_TIME )
-				{
-					UCVarValue Val;
-					Val.Float = FIXED2FLOAT( args[1] );
-					timelimit.ForceSet( Val, CVAR_Float );
-				}
-				else
-					GAMEMODE_SetLimit( limit, args[1] );
+				GAMEMODE_SetLimit( static_cast<GAMELIMIT_e>( args[0] ), args[1] );
 				break;
 			}
 
@@ -7422,10 +7585,6 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 				player_t *player = &players[ulPlayer];
 
-				// [AK] Don't bother changing the player's class if they're actually spectating.
-				if ( PLAYER_IsTrueSpectator( player ) )
-					return 0;
-
 				if ( stricmp( classname, "random" ) == 0 )
 				{
 					// [AK] Stop if choosing random player classes is forbidden.
@@ -7433,10 +7592,6 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 						return 0;
 
 					player->userinfo.PlayerClassNumChanged( -1 );
-
-					// [AK] In a singleplayer game, we must also change the class the player would start as.
-					if ( NETWORK_GetState() != NETSTATE_SERVER )
-						SinglePlayerClass[ulPlayer] = ( pr_classchoice() ) % PlayerClasses.Size();
 				}
 				else
 				{
@@ -7452,11 +7607,11 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 						return 0;
 
 					player->userinfo.PlayerClassChanged( playerclass->Meta.GetMetaString( APMETA_DisplayName ));
-
-					// [AK] In a singleplayer game, we must also change the class the player would start as.
-					if ( NETWORK_GetState() != NETSTATE_SERVER )
-						SinglePlayerClass[ulPlayer] = player->userinfo.GetPlayerClassNum();
 				}
+
+				// [AK] In a singleplayer game, we must also change the class the player would start as.
+				if ( NETWORK_GetState() != NETSTATE_SERVER )
+					G_UpdateSinglePlayerClass( ulPlayer );
 
 				// [AK] If we're the server, tell the clients about the player's new class.
 				if ( NETWORK_GetState() == NETSTATE_SERVER )
@@ -7475,8 +7630,12 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 						player->playerstate = PST_REBORNNOINVENTORY;
 
 						// [AK] Unmorph the player before respawning them with a new class.
+						// Using MORPH_UNDOBYTIMEOUT ensures this succeeds when they're invulnerable.
 						if ( player->morphTics )
-							P_UndoPlayerMorph( player, player );
+							P_UndoPlayerMorphWithoutFlash( player, player, MORPH_UNDOBYTIMEOUT, true );
+
+						// [AK] Drop any important items this player might be carrying like flags, skulls, etc.
+						pmo->DropImportantItems( false );
 
 						// [AK] If we're the server, tell the clients to destroy the body.
 						if ( NETWORK_GetState() == NETSTATE_SERVER )
@@ -7668,15 +7827,21 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 		case ACSF_GetChatMessage:
 			{
 				const int offset = ( MAX_SAVED_MESSAGES - 1 ) - clamp<int>( args[1], 0, MAX_SAVED_MESSAGES - 1 );
+				const bool bKeepColorCodes = argCount > 2 ? !!args[2] : false;
+				FString chatMessage;
 
 				// [AK] Get the chat message from the server via RCON.
 				if ( args[0] < 0 )
-					return GlobalACSStrings.AddString( CHAT_GetChatMessage( MAXPLAYERS, offset ) );
+					chatMessage = CHAT_GetChatMessage( MAXPLAYERS, offset );
 				// [AK] Only get chat messages from valid players.
 				else if ( PLAYER_IsValidPlayer( args[0] ) )
-					return GlobalACSStrings.AddString( CHAT_GetChatMessage( args[0], offset ) );
+					chatMessage = CHAT_GetChatMessage( args[0], offset );
 
-				return GlobalACSStrings.AddString( "" );
+				// [AK] Remove any color codes if we don't want to keep them.
+				if (( bKeepColorCodes == false ) && ( chatMessage.IsNotEmpty( )))
+					V_RemoveColorCodes( chatMessage );
+
+				return GlobalACSStrings.AddString( chatMessage.GetChars( ));
 			}
 
 		case ACSF_GetMapRotationSize:
@@ -7686,30 +7851,1025 @@ doplaysound:			if (funcIndex == ACSF_PlayActorSound)
 
 		case ACSF_GetMapRotationInfo:
 			{
+				enum
+				{
+					MAPROTATION_NAME,
+					MAPROTATION_LUMPNAME,
+					MAPROTATION_USED,
+					MAPROTATION_MINPLAYERS,
+					MAPROTATION_MAXPLAYERS,
+				};
+
 				ULONG ulPosition = ( args[0] <= 0 ) ? MAPROTATION_GetCurrentPosition() : ( args[0] - 1 );
+				level_info_t *rotationMap = MAPROTATION_GetMap( ulPosition );
+
+				// [AK] If the map position's level info is invalid, this could mean that there's no maplist
+				// or that the position is invalid, so return zero (or an empty string if we wanted the name).
+				// If we're checking the current map position, make sure it's the current level too.
+				if (( rotationMap == NULL ) || (( args[0] <= 0 ) && ( stricmp( level.mapname, rotationMap->mapname ) != 0 )))
+				{
+					if (( args[1] == MAPROTATION_NAME ) || ( args[1] == MAPROTATION_LUMPNAME ))
+						return GlobalACSStrings.AddString( "" );
+
+					return 0;
+				}
 
 				switch ( args[1] )
 				{
-					case MAPROTATION_Used:
+					case MAPROTATION_USED:
 						return MAPROTATION_IsUsed( ulPosition );
 
-					case MAPROTATION_MinPlayers:
-					case MAPROTATION_MaxPlayers:
-						return MAPROTATION_GetPlayerLimits( ulPosition, args[1] == MAPROTATION_MaxPlayers );
+					case MAPROTATION_MINPLAYERS:
+					case MAPROTATION_MAXPLAYERS:
+						return MAPROTATION_GetPlayerLimits( ulPosition, args[1] == MAPROTATION_MAXPLAYERS );
 
-					case MAPROTATION_Name:
-					case MAPROTATION_LumpName:
+					case MAPROTATION_NAME:
+					case MAPROTATION_LUMPNAME:
+						return GlobalACSStrings.AddString( args[1] == MAPROTATION_NAME ? rotationMap->LookupLevelName().GetChars() : rotationMap->mapname );
+				}
+
+				return 0;
+			}
+
+		case ACSF_GetMapPosition:
+			{
+				enum
+				{
+					MAPPOSITION_CURRENT,
+					MAPPOSITION_NEXT,
+				};
+
+				// [AK] If there's no maplist, return zero.
+				if ( MAPROTATION_GetNumEntries() == 0 )
+					return 0;
+
+				const int positionType = args[0];
+				unsigned int position = 0;
+
+				if ( positionType == MAPPOSITION_CURRENT )
+					position = MAPROTATION_GetCurrentPosition( );
+				else if ( positionType == MAPPOSITION_NEXT )
+					position = MAPROTATION_GetNextPosition( );
+				else
+					return 0;
+
+				// [AK] Make sure that the current map position is the current level being played.
+				if ( positionType == MAPPOSITION_CURRENT )
+				{
+					level_info_t *rotationMap = MAPROTATION_GetMap( position );
+
+					if (( rotationMap == nullptr ) || ( stricmp( level.mapname, rotationMap->mapname ) != 0 ))
+						return 0;
+				}
+
+				return position + 1;
+			}
+
+		case ACSF_GetEventResult:
+			{
+				return GAMEMODE_GetEventResult();
+			}
+
+		case ACSF_GetActorSectorLocation:
+			{
+				const bool bCheckPointSectors = !!args[1];
+				const AActor *pActor = SingleActorFromTID( args[0], activator );
+
+				// [AK] Make sure that the actor is valid.
+				if ( pActor != NULL )
+				{
+					ULONG ulSectorNum = pActor->Sector->sectornum;
+
+					// [AK] Point sector numbers are stored in a multidimensional array. If we want to return
+					// the name of the point sector that the actor is in, then we must check each array until
+					// we find a match.
+					// [TRSR] We'd actually rather return the index of the control point for GetControlPointInfo now.
+					if ( bCheckPointSectors )
 					{
-						level_info_t *level = MAPROTATION_GetMap( ulPosition );
-						if ( level == NULL )
-							return GlobalACSStrings.AddString( "" );
+						const TArray<DPOINT_s> pointSectors = level.info->SectorInfo.Points;
 
-						return GlobalACSStrings.AddString( args[1] == MAPROTATION_Name ? level->LookupLevelName().GetChars() : level->mapname );
+						for ( unsigned int i = 0; i < pointSectors.Size( ); i++ )
+						{
+							const TArray<unsigned int> pointNumberArray = pointSectors[i].sectors;
+
+							for ( unsigned int j = 0; j < pointNumberArray.Size( ); j++ )
+							{
+								if ( pointNumberArray[j] == ulSectorNum )
+									return i;
+							}
+						}
+
+						return -1;
+					}
+
+					// [AK] Check if the sector that the actor is in has a designated name.
+					const TArray<std::shared_ptr<FString>> *sectorInfoNames = &level.info->SectorInfo.Names;
+					if (( sectorInfoNames->Size( ) > ulSectorNum ) && (( *sectorInfoNames )[ulSectorNum] != NULL ))
+						return GlobalACSStrings.AddString( *( *sectorInfoNames )[ulSectorNum] );
+				}
+
+				return bCheckPointSectors ? -1 : GlobalACSStrings.AddString( "" );
+			}
+
+		case ASCF_GetControlPointInfo:
+			{
+				const unsigned int point = args[0];
+				const int type = args[1];
+				if ( point >= level.info->SectorInfo.Points.Size() )
+				{
+					switch ( type )
+					{
+						case POINTINFO_NAME:
+							return GlobalACSStrings.AddString( "" );
+						case POINTINFO_OWNER:
+							return TEAM_None;
+						case POINTINFO_DISABLED:
+							return false;
+						default:
+							return 0;
+					}
+				}
+
+				switch ( type )
+				{
+					case POINTINFO_NAME:
+						return GlobalACSStrings.AddString( level.info->SectorInfo.Points[point].name );
+					case POINTINFO_OWNER:
+						return level.info->SectorInfo.Points[point].owner;
+					case POINTINFO_DISABLED:
+						return level.info->SectorInfo.Points[point].disabled;
+					default:
+						return 0;
+				}
+			}
+
+		case ASCF_SetControlPointInfo:
+			{
+				// [TRSR] Clients should not be allowed to do this.
+				if ( NETWORK_InClientMode() )
+					return false;
+
+				const unsigned int point = args[0];
+				if ( point >= level.info->SectorInfo.Points.Size() )
+					return false;
+
+				const int type = args[1];
+				unsigned int value = args[2];
+
+				switch ( type )
+				{
+					case POINTINFO_OWNER:
+						if ( value >= TEAM_GetNumAvailableTeams() )
+							value = TEAM_None;
+
+						DOMINATION_SetOwnership( point, value );
+						break;
+					case POINTINFO_DISABLED:
+						DOMINATION_SetDisabled( point, !!value );
+						break;
+					default:
+						return false;
+				}
+
+				return true;
+			}
+
+		case ACSF_IsPlayerContestingControlPoint:
+			{
+				const int pln = args[0];
+				if ( !PLAYER_IsValidPlayerWithMo( pln ) )
+					return false;
+
+				const unsigned int point = args[1];
+				if ( point >= level.info->SectorInfo.Points.Size() )
+					return false;
+
+				return level.info->SectorInfo.Points[point].contesting.count( pln ) != 0;
+			}
+
+		case ACSF_ChangeTeamScore:
+			{
+				const ULONG ulTeam = static_cast<ULONG>( args[0] );
+				const bool bAnnounce = argCount > 3 ? !!args[3] : true;
+
+				// [AK] With the exception of frags, the new score must not be a negative value.
+				const LONG lScore = ( args[1] == SCORE_FRAGS || args[2] >= 0 ) ? args[2] : 0;
+
+				if ( TEAM_CheckIfValid( ulTeam ) )
+				{
+					switch ( args[1] )
+					{
+						case SCORE_FRAGS:
+						{
+							// [AK] Don't do anything if the frag count won't change.
+							if ( teams[ulTeam].lFragCount == lScore )
+								return 0;
+
+							TEAM_SetFragCount( ulTeam, lScore, bAnnounce );
+							return 1;
+						}
+
+						case SCORE_POINTS:
+						{
+							// [AK] Don't do anything if the point count won't change.
+							if ( teams[ulTeam].lPointCount == lScore )
+								return 0;
+
+							TEAM_SetPointCount( ulTeam, lScore, bAnnounce );
+							return 1;
+						}
+
+						case SCORE_WINS:
+						{
+							// [AK] Don't do anything if the win count won't change.
+							if ( teams[ulTeam].lWinCount == lScore )
+								return 0;
+
+							TEAM_SetWinCount( ulTeam, lScore, bAnnounce );
+							return 1;
+						}
+
+						case SCORE_DEATHS:
+						{
+							// [AK] Don't do anything if the death count won't change.
+							if ( teams[ulTeam].lDeathCount == lScore )
+								return 0;
+
+							TEAM_SetDeathCount( ulTeam, lScore );
+							return 1;
+						}
 					}
 				}
 
 				return 0;
 			}
+
+		case ACSF_SetGameplaySetting:
+			{
+				const char *pszName = FBehavior::StaticLookupString( args[0] );
+				FBaseCVar *pCVar = FindCVar( pszName, NULL );
+
+				// [AK] Ignore invalid CVars, especially those which are latched (e.g. sv_maxlives and sv_maxteams).
+				if (( pCVar == NULL ) || ( pCVar->GetFlags() & ( CVAR_IGNORE | CVAR_NOSET | CVAR_LATCH )))
+					return 0;
+
+				// [AK] Make sure that the CVar can be used in a game settings block.
+				if (( pCVar->GetFlags() & CVAR_GAMEPLAYSETTING ) || (( pCVar->IsFlagCVar() ) && ( static_cast<FFlagCVar *>( pCVar )->GetValueVar()->GetFlags() & CVAR_GAMEPLAYFLAGSET )))
+				{
+					UCVarValue Val;
+					ECVarType Type;
+
+					switch ( pCVar->GetRealType() )
+					{
+						case CVAR_Bool:
+						case CVAR_Dummy:
+						{
+							Val.Bool = !!args[1];
+							Type = CVAR_Bool;
+							break;
+						}
+					
+						case CVAR_Float:
+						{
+							Val.Float = FIXED2FLOAT( args[1] );
+							Type = CVAR_Float;
+							break;
+						}
+					
+						default:
+						{
+							Val.Int = args[1];
+							Type = CVAR_Int;
+							break;
+						}
+					}
+
+					GAMEMODE_SetGameplaySetting( pCVar, Val, Type );
+					return 1;
+				}
+
+				return 0;
+			}
+
+		case ACSF_SetCustomPlayerValue:
+			{
+				PlayerData *pData = gameinfo.CustomPlayerData.CheckKey( FBehavior::StaticLookupString( args[0] ));
+
+				// [AK] Make sure that the column and player are both valid.
+				if (( pData != NULL ) && ( PLAYER_IsValidPlayer( args[1] )))
+				{
+					PlayerValue Val;
+
+					switch ( pData->GetDataType( ))
+					{
+						case DATATYPE_INT:
+							Val.SetValue<int>( args[2] );
+							break;
+
+						case DATATYPE_BOOL:
+							Val.SetValue<bool>( !!args[2] );
+							break;
+
+						case DATATYPE_FLOAT:
+							Val.SetValue<float>( FIXED2FLOAT( args[2] ));
+							break;
+
+						case DATATYPE_COLOR:
+							Val.SetValue<PalEntry>( args[2] );
+							break;
+
+						case DATATYPE_STRING:
+						case DATATYPE_TEXTURE:
+						{
+							const char *pszValue = FBehavior::StaticLookupString( args[2] );
+
+							if ( pData->GetDataType( ) == DATATYPE_STRING )
+								Val.SetValue<const char *>( pszValue );
+							else
+								Val.SetValue<FTexture *>( TexMan.FindTexture( pszValue ));
+
+							break;
+						}
+
+						default:
+							return 0;
+					}
+
+					pData->SetValue( args[1], Val );
+					return 1;
+				}
+
+				return 0;
+			}
+
+		case ACSF_GetCustomPlayerValue:
+			{
+				PlayerData *pData = gameinfo.CustomPlayerData.CheckKey( FBehavior::StaticLookupString( args[0] ));
+
+				// [AK] Make sure that the column and player are both valid.
+				if (( pData != NULL ) && ( PLAYER_IsValidPlayer( args[1] )))
+				{
+					const PlayerValue Val = pData->GetValue( args[1] );
+
+					return GetPlayerValue( Val );
+				}
+
+				return 0;
+			}
+
+		case ACSF_ResetCustomDataToDefault:
+			{
+				PlayerData *pData = gameinfo.CustomPlayerData.CheckKey( FBehavior::StaticLookupString( args[0] ));
+				const ULONG ulPlayer = args[1] < 0 ? MAXPLAYERS : args[1];
+
+				// [AK] Make sure that the column and player are both valid (unless we're resetting for all players).
+				if (( pData != NULL ) && (( ulPlayer == MAXPLAYERS ) || ( PLAYER_IsValidPlayer( ulPlayer ))))
+				{
+					pData->ResetToDefault( ulPlayer, true );
+					return 1;
+				}
+
+				return 0;
+			}
+
+		case ACSF_LumpOpen:
+			{
+				enum
+				{
+					LUMP_OPEN_FULLPATH = 1
+				};
+
+				const char *name = FBehavior::StaticLookupString( args[0] );
+				SDWORD lumpNum;
+
+				if ( (argCount > 2) && ( args[2] & LUMP_OPEN_FULLPATH ) )
+				{
+					lumpNum = Wads.CheckNumForFullName(name);
+				}
+				else if ( ( argCount > 1 ) && ( args[1] >= 0 ) )
+				{
+					int startLump = args[1] + 1;
+					lumpNum = Wads.FindLump( name, &startLump );
+				}
+				else
+				{
+					lumpNum = Wads.CheckNumForName( name );
+				}
+
+				if(lumpNum < 0)
+					return -1;
+
+				if(ACSLumpHandles.CheckKey( args[0] ) != NULL)
+					return lumpNum;
+
+				ACSLumpHandles[lumpNum].lump = Wads.OpenLumpNum(lumpNum);
+				ACSLumpHandles[lumpNum].refCount++;
+				return lumpNum;
+			}
+
+		case ACSF_LumpRead:
+			{
+				enum
+				{
+					LUMP_READ_BYTE,
+					LUMP_READ_UBYTE,
+					LUMP_READ_SHORT,
+					LUMP_READ_USHORT,
+					LUMP_READ_INT,
+					LUMP_READ_FLOAT
+				};
+
+				if(ACSLumpHandles.CheckKey( args[0] ) == NULL)
+				{
+					Printf("LumpRead: Attempted read on non-existent lump handle!\n");
+					return 0;
+				}
+
+				SDWORD size;
+				bool isUnsigned = false;
+				int32_t buf = 0;
+				FWadLump &lump = ACSLumpHandles[args[0]].lump;
+				lump.Seek( args[1], SEEK_SET );
+				SDWORD readType;
+
+				if( argCount > 2 )
+					readType = args[2];
+				else
+					readType = LUMP_READ_UBYTE;
+
+				switch ( readType )
+				{
+					case LUMP_READ_UBYTE:
+						isUnsigned = true;
+					// fall through
+					case LUMP_READ_BYTE:
+						size = sizeof( int8_t );
+						break;
+
+					case LUMP_READ_USHORT:
+						isUnsigned = true;
+					// fall through
+					case LUMP_READ_SHORT:
+						size = sizeof( int16_t );
+						break;
+
+					case LUMP_READ_INT:
+						size = sizeof( int32_t );
+						break;
+
+					case LUMP_READ_FLOAT:
+						size = sizeof( float );
+						break;
+
+					default:
+						Printf( "Invalid lump read type in LumpRead.\n" );
+						return 0;
+				}
+
+				lump.Read( &buf, size );
+
+				if ( !isUnsigned )
+				{
+					if ( size == sizeof( int8_t ) )
+						return static_cast<int8_t>( buf );
+
+					if ( size == sizeof( int16_t ) )
+						return static_cast<int16_t>( buf );
+				}
+
+				if(readType == LUMP_READ_FLOAT)
+					return FLOAT2FIXED((float)buf);
+
+				return buf;
+			}
+
+		case ACSF_LumpReadString:
+			{
+				if(ACSLumpHandles.CheckKey( args[0] ) == NULL)
+				{
+					Printf("LumpReadString: Attempted read on non-existent lump handle!\n");
+					return GlobalACSStrings.AddString( "" );
+				}
+
+				auto len = Wads.LumpLength( args[0] ) - args[1];
+				if ( len <= 0 )
+					return GlobalACSStrings.AddString( "" );
+
+				if( argCount > 2 )
+				{
+					if( (args[2] > 0) && (args[2] < len) )
+						len = args[2];
+				}
+
+				// [TDRR] Null terminate just in case.
+				char *buf = new char[len + 1];
+				FWadLump &lump = ACSLumpHandles[args[0]].lump;
+				lump.Seek( args[1], SEEK_SET );
+
+				lump.Read( buf, len );
+				buf[len] = '\0';
+
+				// [TDRR] Don't trim the string to the first null terminator here,
+				// since that happens after it's converted to an FString in AddString.
+				int strIndex = GlobalACSStrings.AddString( buf );
+				delete[] buf;
+
+				return strIndex;
+			}
+
+		case ACSF_LumpReadLocal: //LumpReadArray(int lump, int pos, int array, int arrayIdx, int arrayMax);
+		case ACSF_LumpReadModule:
+		case ACSF_LumpReadHub:
+		case ACSF_LumpReadGlobal:
+			{
+				if(ACSLumpHandles.CheckKey( args[0] ) == NULL)
+				{
+					Printf("LumpReadArray: Attempted read on non-existent lump handle!\n");
+					return 0;
+				}
+
+				auto pos = args[1];
+				auto len = Wads.LumpLength( args[0] ) - pos;
+				if ( len <= 0 )
+					return 0;
+
+				if( argCount > 4 )
+				{
+					if( (args[4] > 0) && (args[4] < len) )
+						len = args[4];
+				}
+
+				char *buf = new char[len];
+				FWadLump &lump = ACSLumpHandles[args[0]].lump;
+				lump.Seek( args[1], SEEK_SET );
+
+				lump.Read( buf, len );
+
+				auto array = args[2];
+
+				// [TDRR] This is unsigned for hub/global arrays, which
+				// actually have the entire range of an integer available
+				// to them. The length checks already take care of
+				// local/module arrays.
+				DWORD arrIdx = 0;
+
+				if( argCount > 3 )
+					arrIdx = args[3];
+
+				switch(funcIndex)
+				{
+					case ACSF_LumpReadLocal:
+					{
+						if( len > (SDWORD)(locals->Arrays->Info[array].Size - arrIdx) )
+							len = locals->Arrays->Info[array].Size - arrIdx;
+
+						for(int i = 0; i < len; i++)
+							locals->Arrays->Set(*locals->Vars, array, i + arrIdx, buf[i]);
+					}
+					break;
+
+					case ACSF_LumpReadModule:
+					{
+						if( len > (SDWORD)(activeBehavior->GetArraySize(array) - arrIdx) )
+							len = activeBehavior->GetArraySize(array) - arrIdx;
+
+						for(int i = 0; i < len; i++)
+							activeBehavior->SetArrayVal(array, i + arrIdx, buf[i]);
+					}
+					break;
+
+					case ACSF_LumpReadHub:
+					{
+						for(int i = 0; i < len; i++)
+							ACS_WorldArrays[array][i + arrIdx] = buf[i];
+					}
+					break;
+
+					case ACSF_LumpReadGlobal:
+					{
+						for(int i = 0; i < len; i++)
+							ACS_GlobalArrays[array][i + arrIdx] = buf[i];
+					}
+					break;
+
+					default:
+					{
+						I_Error( "Invalid lump read function in LumpReadArray." );
+						len = 0;
+					}
+					break;
+				}
+
+				delete[] buf;
+				return len;
+			}
+
+		case ACSF_LumpGetInfo:
+			{
+				enum
+				{
+					LUMP_INFO_SIZE,
+					LUMP_INFO_NAME
+				};
+
+				switch(args[1])
+				{
+					case LUMP_INFO_SIZE:
+						return Wads.LumpLength(args[0]);
+
+					case LUMP_INFO_NAME:
+						return GlobalACSStrings.AddString(Wads.GetLumpFullName(args[0]));
+
+					default:
+						Printf("LumpGetInfo: unknown info type %i\n", args[1]);
+					return 0;
+				}
+			}
+
+		case ACSF_LumpClose:
+			{
+				if(ACSLumpHandles.CheckKey( args[0] ) == NULL)
+					return 0;
+
+				ACSLumpHandles[args[0]].refCount--;
+
+				if(ACSLumpHandles[args[0]].refCount == 0)
+					ACSLumpHandles.Remove( args[0] );
+
+				return 0;
+			}
+
+		case ACSF_AddBot:
+			{
+				// [AK] Don't add bots on the clients end, or on levels without bot nodes.
+				if (( NETWORK_InClientMode( )) || ( level.flagsZA & LEVEL_ZA_NOBOTNODES ))
+					return 0;
+
+				const unsigned int freePlayerSlot = BOTS_FindFreePlayerSlot( );
+				const char *botName = nullptr;
+				const char *teamName = nullptr;
+
+				// [AK] If there's no more free player slots, then no more bots can be added.
+				if ( freePlayerSlot == MAXPLAYERS )
+					return 0;
+
+				if ( argCount > 0 )
+				{
+					botName = FBehavior::StaticLookupString( args[0] );
+
+					// [AK] An empty string means add a random bot to the game.
+					if ( strlen( botName ) == 0 )
+						botName = nullptr;
+					// [AK] Otherwise, make sure it's a valid bot name.
+					else if ( BOTS_IsValidName( botName ) == false )
+						return 0;
+
+					if ( argCount > 1 )
+					{
+						// [AK] Make sure the current game mode supports teams.
+						if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) == false )
+							return 0;
+
+						// [AK] Also make sure the team is valid.
+						if ( TEAM_CheckIfValid( args[1] ) == false )
+							return 0;
+
+						teamName = TEAM_GetName( args[1] );
+					}
+				}
+
+				CSkullBot *bot = new CSkullBot( botName, teamName, freePlayerSlot );
+				return 1;
+			}
+
+		case ACSF_RemoveBot:
+			{
+				// [AK] Don't remove bots on the clients end, or on levels without bot nodes.
+				if (( NETWORK_InClientMode( )) || ( level.flagsZA & LEVEL_ZA_NOBOTNODES ))
+					return 0;
+
+				// [AK] If a name is provided, remove the bot with that name.
+				if ( argCount > 0 )
+				{
+					const char *botName = FBehavior::StaticLookupString( args[0] );
+
+					for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
+					{
+						if (( playeringame[i] == false ) || ( players[i].bIsBot == false ))
+							continue;
+
+						FString playerName = players[i].userinfo.GetName( );
+						V_UnColorizeString( playerName );
+
+						if ( playerName.CompareNoCase( botName ) == 0 )
+						{
+							BOTS_RemoveBot( i, true );
+							return 1;
+						}
+					}
+
+					return 0;
+				}
+				// [AK] Otherwise, try removing a random bot from the game.
+				else
+				{
+					return BOTS_RemoveRandomBot( );
+				}
+			}
+
+		case ACSF_OpenMenu:
+			{
+				const char *menuName = FBehavior::StaticLookupString( args[0] );
+
+				// [AK] Don't try to open a menu that doesn't exist.
+				if ( M_IsValidMenu( menuName ) == false )
+					return 0;
+
+				// [AK] The server will tell the activator (if they're a player) to open the menu.
+				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				{
+					if (( activator == nullptr ) || ( activator->player == nullptr ))
+						return 0;
+
+					SERVERCOMMANDS_OpenMenu( activator->player - players, menuName );
+				}
+				else
+				{
+					M_StartControlPanel( true );
+					M_SetMenu( menuName, -1 );
+				}
+
+				return 1;
+			}
+
+		case ACSF_CloseMenu:
+			{
+				// [AK] The server will tell the activator (if they're a player) to close the menu.
+				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+				{
+					if (( activator == nullptr ) || ( activator->player == nullptr ))
+						return 0;
+
+					SERVERCOMMANDS_CloseMenu( activator->player - players );
+				}
+				else
+				{
+					M_ClearMenus( );
+				}
+
+				return 1;
+			}
+
+		// [Binary] Function to temporarily ban players, up to whatever sv_maxacsbanduration allows.
+		case ACSF_BanFromGame:
+		{
+			// Only call the function on the server's end if ACS bans are allowed.
+			if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( sv_maxacsbanduration > 0 ))
+			{
+				int playerIndex = args[0];
+				if(PLAYER_IsValidPlayer( playerIndex ))
+				{
+					int duration = clamp<int>( args[1], 1, sv_maxacsbanduration );
+					FString Output;
+					Output.Format("%dmin", duration);
+					SERVERBAN_BanPlayer( playerIndex, Output.GetChars( ), (argCount >= 3) ? FBehavior::StaticLookupString( args[2] ) : NULL, 0 );
+					return 1;
+				}
+			}
+			return 0;
+		}
+
+		case ACSF_GetPlayerStatus:
+		{
+			return PLAYER_IsValidPlayer( args[0] ) ? players[args[0]].statuses : 0;
+		}
+
+		case ACSF_SetPlayerWeaponZoomFactor:
+		{
+			const unsigned int playerIndex = args[0];
+
+			// [geNia] No adjustment while dead.
+			if (( PLAYER_IsValidPlayer( playerIndex )) && ( players[playerIndex].playerstate != PST_DEAD ))
+			{
+				float zoom = FIXED2FLOAT( args[1] );
+				const int flags = argCount > 2 ? args[2] : 0;
+
+				if ( P_SetPlayerWeaponZoomFactor( &players[playerIndex], zoom, flags ))
+				{
+					if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+						SERVERCOMMANDS_SetWeaponZoomFactor( playerIndex, zoom, flags );
+
+					return 1;
+				}
+			}
+
+			return 0;
+		}
+
+		case ACSF_SetPlayerSkin:
+		{
+			const unsigned int playerIndex = args[0];
+
+			if ( PLAYER_IsValidPlayer( playerIndex ))
+			{
+				const char *skinName = FBehavior::StaticLookupString( args[1] );
+				const bool overrideWeaponPreferredSkin = argCount > 2 ? !!args[2] : false;
+
+				// [AK] If an empty string is used, then it should remove the skin.
+				if ( strlen( skinName ) > 0 )
+					players[playerIndex].ACSSkin = skinName;
+				else
+					players[playerIndex].ACSSkin = NAME_None;
+
+				players[playerIndex].ACSSkinOverridesWeaponSkin = overrideWeaponPreferredSkin;
+
+				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+					SERVERCOMMANDS_SetPlayerACSSkin( playerIndex );
+
+				return 1;
+			}
+
+			return 0;
+		}
+
+		case ACSF_GetPlayerSkin:
+		{
+			enum
+			{
+				PLAYERSKIN_USERINFO,
+				PLAYERSKIN_WEAPON,
+				PLAYERSKIN_ACS,
+				PLAYERSKIN_VISIBLE,
+			};
+
+			if ( PLAYER_IsValidPlayer( args[0] ))
+			{
+				player_t *const player = &players[args[0]];
+				const int type = args[1];
+
+				// [AK] By default, the skin's index is set to their class index (i.e. "Base").
+				int skinIndex = player->CurrentPlayerClass;
+
+				// [AK] Get the player's personal skin.
+				if ( type == PLAYERSKIN_USERINFO )
+				{
+					if ( PLAYER_ShouldForceBaseSkin( player ) == false )
+						skinIndex = player->userinfo.GetSkin( );
+				}
+				// [AK] ...or their weapon's preferred skin or the skin overridden from ACS.
+				else if (( type == PLAYERSKIN_WEAPON ) || ( type == PLAYERSKIN_ACS ))
+				{
+					const char *skinName = nullptr;
+
+					if ( type == PLAYERSKIN_WEAPON )
+					{
+						if ( player->ReadyWeapon )
+							skinName = player->ReadyWeapon->PreferredSkin.GetChars( );
+					}
+					else
+					{
+						skinName = player->ACSSkin.GetChars( );
+					}
+
+					if (( skinName != nullptr ) && ( strlen( skinName ) > 0 ))
+						skinIndex = R_FindSkin( skinName, player->CurrentPlayerClass );
+
+					// [AK/TRSR] If the skin doesn't exist, return -1.
+					if (( skinIndex == player->CurrentPlayerClass ) && (( skinName == nullptr ) || ( stricmp( skinName, "Base" ) != 0 )))
+						return -1;
+				}
+				// [AK] ...or if we want to know the skin that's visible using without any
+				// guess and check, then use their overridden skin (i.e. weapon preferred skin
+				// or from ACS) first if available, and their personal skin last.
+				else if ( type == PLAYERSKIN_VISIBLE )
+				{
+					const int overrideSkin = PLAYER_GetOverrideSkin( player );
+
+					if ( overrideSkin != -1 )
+						skinIndex = overrideSkin;
+					else if ( PLAYER_ShouldForceBaseSkin( player ) == false )
+						skinIndex = player->userinfo.GetSkin( );
+				}
+
+				// [TRSR] Return the index of their skin.
+				return skinIndex;
+			}
+
+			// [AK/TRSR] Return -1 for invalid players instead.
+			return -1;
+		}
+
+		case ASCF_GetSkinProperty:
+		{
+			const unsigned int skinIndex = args[0];
+			const FName property = FBehavior::StaticLookupString( args[1] );
+			const bool checkType = argCount >= 3 ? !!args[2] : false;
+			const unsigned int propertyIndex = argCount >= 4 ? args[3] : 0;
+
+			if (( skinIndex >= skins.Size() ) || ( !skins[skinIndex].propertyList.CheckKey(property) ) || ( propertyIndex >= skins[skinIndex].propertyList[property].Size() ))
+			{
+				if ( checkType )
+					return DATATYPE_e::DATATYPE_UNKNOWN;
+				else
+					return 0;
+			}
+
+			const PlayerValue value = skins[skinIndex].propertyList[property][propertyIndex];
+
+			return checkType ? value.GetDataType() : GetPlayerValue( value );
+		}
+
+		case ACSF_GetPlayerCountry:
+		{
+			enum
+			{
+				PLAYERCOUNTRY_ALPHA2,
+				PLAYERCOUNTRY_ALPHA3,
+				PLAYERCOUNTRY_NAME,
+			};
+
+			if ( PLAYER_IsValidPlayer( args[0] ))
+			{
+				player_t *const player = &players[args[0]];
+
+				if (( player->ulCountryIndex > 0 ) && (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( SERVER_GetClient( args[0] )->bWantHideCountry == false )))
+				{
+					const int type = args[1];
+
+					// [AK] Return the alpha-2 or alpha-3 code of the player's country.
+					if (( type == PLAYERCOUNTRY_ALPHA2 ) || ( type == PLAYERCOUNTRY_ALPHA3 ))
+						return GlobalACSStrings.AddString( NETWORK_GetCountryCodeFromIndex( player->ulCountryIndex, type == PLAYERCOUNTRY_ALPHA3 ));
+					// [AK] ...or the full name of their country.
+					else if ( type == PLAYERCOUNTRY_NAME )
+						return GlobalACSStrings.AddString( NETWORK_GetCountryNameFromIndex( player->ulCountryIndex ));
+				}
+			}
+
+			// [AK] Return "N/A" if the arguments are invalid or they're hiding their country.
+			return GlobalACSStrings.AddString( "N/A" );
+		}
+
+		case ACSF_SetNextMapPosition:
+		{
+			const unsigned int position = args[0] - 1;
+
+			if (( position < MAPROTATION_GetNumEntries( )) && ( position != MAPROTATION_GetNextPosition( )))
+			{
+				MAPROTATION_SetNextPosition( position, !!args[1] );
+
+				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+					SERVERCOMMANDS_SetNextMapPosition( );
+
+				return 1;
+			}
+
+			return 0;
+		}
+
+		case ACSF_GivePlayerMedal:
+		{
+			// [AK] Don't let the clients give medals to players.
+			if ( NETWORK_InClientMode( ))
+				return 0;
+
+			return MEDAL_GiveMedal( args[0], FBehavior::StaticLookupString( args[1] ), !!args[2] );
+		}
+
+		case ACSF_GetPlayerJoinQueuePosition:
+		{
+			return JOINQUEUE_GetPositionInLine( args[0] );
+		}
+
+		case ACSF_SkipJoinQueue:
+		{
+			// [AK] Don't let the clients change the join queue.
+			if ( NETWORK_InClientMode( ) == false )
+			{
+				const unsigned int playerIndex = args[0];
+
+				// [AK] Make sure the intended player is a true spectator.
+				if (( PLAYER_IsValidPlayer( playerIndex )) && ( PLAYER_IsTrueSpectator( &players[playerIndex] )))
+				{
+					// [AK] Don't let any more players join than what's permitted on the server.
+					if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+					{
+						if ( SERVER_CalcNumNonSpectatingPlayers( MAXPLAYERS ) >= static_cast<unsigned>( sv_maxplayers ))
+							return 0;
+					}
+
+					const int joinQueuePosition = JOINQUEUE_GetPositionInLine( playerIndex );
+
+					// [AK] Make sure they're also in the join queue.
+					if ( joinQueuePosition != -1 )
+					{
+						JOINQUEUE_PlayerJoinsAtPosition( joinQueuePosition );
+						return 1;
+					}
+				}
+			}
+
+			return 0;
+		}
 
 		case ACSF_GetActorFloorTexture:
 		{
@@ -7795,6 +8955,7 @@ int DLevelScript::RunScript ()
 	ScriptFunction *activeFunction = NULL;
 	FRemapTable *translation = 0;
 	int resultValue = 1;
+	bool bIsFirstTic = false; // [AK]
 
 	if (InModuleScriptNumber >= 0)
 	{
@@ -7820,6 +8981,8 @@ int DLevelScript::RunScript ()
 	case SCRIPT_Running:
 		if ( ACS_IsEventScript( script ))
 			resultValue = GAMEMODE_GetEventResult( );
+
+		bIsFirstTic = true;
 		break;
 
 	case SCRIPT_Delayed:
@@ -7877,6 +9040,7 @@ int DLevelScript::RunScript ()
 
 	int *pc = this->pc;
 	ACSFormat fmt = activeBehavior->GetFormat();
+	FBehavior* const savedActiveBehavior = activeBehavior;
 	unsigned int runaway = 0;	// used to prevent infinite loops
 	int pcd;
 	FString work;
@@ -7913,6 +9077,7 @@ int DLevelScript::RunScript ()
 		{
 		default:
 			Printf ("Unknown P-Code %d in %s\n", pcd, ScriptPresentation(script).GetChars());
+			activeBehavior = savedActiveBehavior;
 			// fall through
 		case PCD_TERMINATE:
 			DPrintf ("%s finished\n", ScriptPresentation(script).GetChars());
@@ -8126,7 +9291,10 @@ int DLevelScript::RunScript ()
 				int argCount = NEXTBYTE;
 				int funcIndex = NEXTSHORT;
 
-				int retval = CallFunction(argCount, funcIndex, &STACK(argCount));
+				// [TDRR] Context to allow local array access in ACSF functions.
+				struct ACSLocals callFuncLocals = { &locals, localarrays };
+
+				int retval = CallFunction(argCount, funcIndex, &STACK(argCount), &callFuncLocals);
 				sp -= argCount-1;
 				STACK(1) = retval;
 			}
@@ -9120,6 +10288,13 @@ int DLevelScript::RunScript ()
 
 		case PCD_SETRESULTVALUE:
 			resultValue = STACK(1);
+
+			// [AK] If this is an event script and the result value differs from the event's result value, update it.
+			// This can only happen during the first tic that the event script is running. Updating an event's result
+			// value is irrelevant after the first tic because it will be too late.
+			if (( bIsFirstTic ) && ( ACS_IsEventScript( script )) && ( resultValue != GAMEMODE_GetEventResult( )))
+				GAMEMODE_SetEventResult( resultValue );
+
 		case PCD_DROP: //fall through.
 			sp--;
 			break;
@@ -9905,7 +11080,7 @@ scriptwait:
 			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
 				PushToStack( TEAM_GetWinCount( 0 ));
 			else
-				PushToStack( TEAM_GetScore( 0 ));
+				PushToStack( TEAM_GetPointCount( 0 ));
 			break;
 		case PCD_REDTEAMSCORE:
 			
@@ -9914,7 +11089,7 @@ scriptwait:
 			else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
 				PushToStack( TEAM_GetWinCount( 1 ));
 			else
-				PushToStack( TEAM_GetScore( 1 ));
+				PushToStack( TEAM_GetPointCount( 1 ));
 			break;
 		case PCD_ISONEFLAGCTF:
 
@@ -11324,7 +12499,8 @@ scriptwait:
 				switch (STACK(1))
 				{
 				// [CW] PLAYERINFO_TEAM needs to use the one in player_t rather than the one in userinfo_t.
-				case PLAYERINFO_TEAM:			STACK(2) = players[STACK( 2 )].Team; break;
+				// [AK] Return TEAM_None if the player isn't on a team.
+				case PLAYERINFO_TEAM:			STACK(2) = pl->bOnTeam ? pl->Team : TEAM_None; break;
 				case PLAYERINFO_AIMDIST:		STACK(2) = userinfo->GetAimDist(); break;
 				case PLAYERINFO_COLOR:			STACK(2) = userinfo->GetColor(); break;
 				case PLAYERINFO_GENDER:			STACK(2) = userinfo->GetGender(); break;
@@ -11342,7 +12518,9 @@ scriptwait:
 
 		case PCD_CHANGELEVEL:
 			{
-				G_ChangeLevel(FBehavior::StaticLookupString(STACK(4)), STACK(3), STACK(2), STACK(1));
+				// [AK] Always disable the CHANGELEVEL_HIDENAME bit here, in case it's enabled.
+				// This is only used for the SetCurrentGameMode ACS function.
+				G_ChangeLevel(FBehavior::StaticLookupString(STACK(4)), STACK(3), STACK(2) & ~CHANGELEVEL_HIDENAME, STACK(1));
 				sp -= 4;
 			}
 			break;
@@ -11503,7 +12681,8 @@ scriptwait:
 					{
 						if (actor->player)
 						{
-							if (P_UndoPlayerMorph(activator->player, actor->player, 0, force))
+							// [AK] Added a check to make sure the activator exists.
+							if (P_UndoPlayerMorph(activator ? activator->player : nullptr, actor->player, 0, force))
 							{
 								changes++;
 							}
@@ -11642,9 +12821,23 @@ scriptwait:
  		}
  	}
 
+	// There are several or more p-codes that can trigger a division or modulus of zero.
+	// Reset the active behavior back to the original if this happens.
+	if (state == SCRIPT_DivideBy0 || state == SCRIPT_ModulusBy0)
+		activeBehavior = savedActiveBehavior;
+
 	if (runaway != 0 && InModuleScriptNumber >= 0)
 	{
-		activeBehavior->GetScriptPtr(InModuleScriptNumber)->ProfileData.AddRun(runaway);
+		auto scriptptr = activeBehavior->GetScriptPtr(InModuleScriptNumber);
+		if (scriptptr != nullptr)
+		{
+			scriptptr->ProfileData.AddRun(runaway);
+		}
+		else
+		{
+			// It is pointless to continue execution. The script is broken and needs to be aborted.
+			I_Error("Bad script definition encountered. Script %d is reported running but not present.\nThe most likely cause for this message is using 'delay' inside a function which is not supported.\nPlease check the ACS compiler used for compiling the script!", InModuleScriptNumber);
+		}
 	}
 
 	if (state == SCRIPT_DivideBy0)
@@ -11675,10 +12868,6 @@ scriptwait:
 
 	// [AK] We're done running this script so any action or line specials activated now aren't done in ACS.
 	g_pCurrentScript = NULL;
-
-	// [AK] If this is an event script and the result value differs from the event's result value, update it.
-	if (( ACS_IsEventScript( script )) && ( resultValue != GAMEMODE_GetEventResult( )))
-		GAMEMODE_SetEventResult( resultValue );
 
 	// [BB] Stop the net traffic measurement and add the result to this script's traffic.
 	NETTRAFFIC_AddACSScriptTraffic ( script, NETWORK_StopTrafficMeasurement ( ) );
@@ -11736,10 +12925,10 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, const ScriptPtr
 	activefontname = "SmallFont";
 
 	// [AK] Check if this is an event script triggered by GAMEEVENT_ACTOR_DAMAGED or
-	// GAMEEVENT_ACTOR_ARMORDAMAGED. This is where we initialize the script's target,
+	// GAMEEVENT_ACTOR_DAMAGED_PREMOD. This is where we initialize the script's target,
 	// source, and inflictor pointers by using the temporary activator's own pointers.
 	if (( NETWORK_InClientMode( ) == false ) && ( who != NULL ) &&
-		( code->Type == SCRIPT_Event ) && ( args[0] == GAMEEVENT_ACTOR_DAMAGED || args[0] == GAMEEVENT_ACTOR_ARMORDAMAGED ))
+		( code->Type == SCRIPT_Event ) && ( args[0] == GAMEEVENT_ACTOR_DAMAGED || args[0] == GAMEEVENT_ACTOR_DAMAGED_PREMOD ))
 	{
 		pDamageTarget = who->target;
 		pDamageSource = who->master;
@@ -12272,6 +13461,12 @@ CCMD(acsprofile)
 	ShowProfileData(FuncProfiles, limit, sorter, true);
 }
 
+//*****************************************************************************
+//
+void ACS_ClearLumpHandles( void )
+{
+	ACSLumpHandles.Clear( );
+}
 
 //*****************************************************************************
 //

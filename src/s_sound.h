@@ -230,7 +230,7 @@ void S_Sound (AActor *ent, int channel, FSoundID sfxid, float volume, float atte
 void S_SoundMinMaxDist (AActor *ent, int channel, FSoundID sfxid, float volume, float mindist, float maxdist);
 void S_Sound (const FPolyObj *poly, int channel, FSoundID sfxid, float volume, float attenuation);
 void S_Sound (const sector_t *sec, int channel, FSoundID sfxid, float volume, float attenuation);
-void S_Sound (fixed_t x, fixed_t y, fixed_t z, int channel, FSoundID sfxid, float volume, float attenuation);
+void S_Sound (fixed_t x, fixed_t y, fixed_t z, int channel, FSoundID sfxid, float volume, float attenuation, bool bSoundOnClient = false); // [RK] Added bSoundOnClient.
 
 // sound channels
 // channel 0 never willingly overrides

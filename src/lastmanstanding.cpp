@@ -74,7 +74,6 @@
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
 
-void	SERVERCONSOLE_UpdateScoreboard( );
 void	SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags );
 
 //*****************************************************************************
@@ -104,36 +103,31 @@ void LASTMANSTANDING_Tick( void )
 	switch ( g_LMSState )
 	{
 	case LMSS_WAITINGFORPLAYERS:
+	case LMSS_PRENEXTROUNDCOUNTDOWN:
 
 		if ( NETWORK_InClientMode() )
 		{
 			break;
 		}
 
-		if ( lastmanstanding )
+		// [AK] Set the state back to waiting for players if there's not enough
+		// players and we're in the pre-next round countdown state.
+		if ((( lastmanstanding ) && ( GAME_CountActivePlayers( ) >= 2 )) ||
+			(( teamlms ) && ( TEAM_TeamsWithPlayersOn( ) > 1 )))
 		{
-			// Two players are here now, being the countdown!
-			if ( GAME_CountActivePlayers( ) >= 2 )
-			{
-				if ( sv_lmscountdowntime > 0 )
-					LASTMANSTANDING_StartCountdown(( sv_lmscountdowntime * TICRATE ) - 1 );
-				else
-					LASTMANSTANDING_StartCountdown(( 10 * TICRATE ) - 1 );
-			}
+			if ( sv_lmscountdowntime > 0 )
+				LASTMANSTANDING_StartCountdown(( sv_lmscountdowntime * TICRATE ) - 1 );
+			else
+				LASTMANSTANDING_StartCountdown(( 10 * TICRATE ) - 1 );
+		}
+		else if ( LASTMANSTANDING_GetState( ) == LMSS_PRENEXTROUNDCOUNTDOWN )
+		{
+			LASTMANSTANDING_SetState( LMSS_WAITINGFORPLAYERS );
 		}
 
-		if ( teamlms )
-		{
-			if ( TEAM_TeamsWithPlayersOn( ) > 1 )
-			{
-				if ( sv_lmscountdowntime > 0 )
-					LASTMANSTANDING_StartCountdown(( sv_lmscountdowntime * TICRATE ) - 1 );
-				else
-					LASTMANSTANDING_StartCountdown(( 10 * TICRATE ) - 1 );
-			}
-		}
 		break;
 	case LMSS_COUNTDOWN:
+	case LMSS_NEXTROUNDCOUNTDOWN:
 
 		if ( g_ulLMSCountdownTicks )
 		{
@@ -349,14 +343,14 @@ void LASTMANSTANDING_StartCountdown( ULONG ulTicks )
 	// Put the game in a countdown state.
 	if ( NETWORK_InClientMode() == false )
 	{
-		LASTMANSTANDING_SetState( LMSS_COUNTDOWN );
+		LASTMANSTANDING_SetState( LASTMANSTANDING_GetState( ) == LMSS_PRENEXTROUNDCOUNTDOWN ? LMSS_NEXTROUNDCOUNTDOWN : LMSS_COUNTDOWN );
 	}
 
 	// Set the LMS countdown ticks.
 	LASTMANSTANDING_SetCountdownTicks( ulTicks );
 
 	// Announce that the fight will soon start.
-	ANNOUNCER_PlayEntry( cl_announcer, "PrepareToFight" );
+	ANNOUNCER_PlayEntry( cl_announcer, LASTMANSTANDING_GetState( ) == LMSS_COUNTDOWN ? "PrepareToFight" : "NextRoundIn" );
 
 	// Tell clients to start the countdown.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -367,8 +361,6 @@ void LASTMANSTANDING_StartCountdown( ULONG ulTicks )
 //
 void LASTMANSTANDING_DoFight( void )
 {
-	DHUDMessageFadeOut	*pMsg;
-
 	// The match is now in progress.
 	if ( NETWORK_InClientMode() == false )
 	{
@@ -391,20 +383,8 @@ void LASTMANSTANDING_DoFight( void )
 		// Play fight sound.
 		ANNOUNCER_PlayEntry( cl_announcer, "Fight" );
 
-		// [EP] Clear all the HUD messages.
-		StatusBar->DetachAllMessages();
-
 		// Display "FIGHT!" HUD message.
-		pMsg = new DHUDMessageFadeOut( BigFont, "FIGHT!",
-			160.4f,
-			75.0f,
-			320,
-			200,
-			CR_RED,
-			2.0f,
-			1.0f );
-
-		StatusBar->AttachMessage( pMsg, MAKE_ID('C','N','T','R') );
+		HUD_DrawStandardMessage( "FIGHT!", CR_RED, true, 2.0f, 1.0f );
 	}
 	// Display a little thing in the server window so servers can know when matches begin.
 	else
@@ -414,7 +394,7 @@ void LASTMANSTANDING_DoFight( void )
 	GAME_ResetMap( );
 	GAMEMODE_RespawnAllPlayers( BOTEVENT_LMS_FIGHT );
 
-	HUD_Refresh( );
+	HUD_ShouldRefreshBeforeRendering( );
 }
 
 //*****************************************************************************
@@ -435,75 +415,42 @@ void LASTMANSTANDING_DoWinSequence( ULONG ulWinner )
 
 	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
 	{
-		char				szString[64];
-		DHUDMessageFadeOut	*pMsg;
+		FString message;
+		EColorRange color = CR_GREEN;
 
 		if ( teamlms )
 		{
-			if ( ulWinner == teams.Size( ) )
-				sprintf( szString, "\\cdDraw Game!" );
+			if ( ulWinner == teams.Size( ))
+			{
+				message = "Draw Game!";
+			}
 			else
-				sprintf( szString, "\\c%s%s Wins!", TEAM_GetTextColorName( ulWinner ), TEAM_GetName( ulWinner ));
+			{
+				message.Format( "%s Wins!", TEAM_GetName( ulWinner ));
+				color = static_cast<EColorRange>( TEAM_GetTextColor( ulWinner ));
+			}
 		}
 		else if ( ulWinner == MAXPLAYERS )
-			sprintf( szString, "\\cdDRAW GAME!" );
+		{
+			message = "DRAW GAME!";
+		}
 		else
-			sprintf( szString, "%s \\c-WINS!", players[ulWinner].userinfo.GetName() );
-		V_ColorizeString( szString );
+		{
+			message.Format( "%s WINS!", players[ulWinner].userinfo.GetName( ));
+			color = CR_RED;
+		}
 
 		// Display "%s WINS!" HUD message.
-		pMsg = new DHUDMessageFadeOut( BigFont, szString,
-			160.4f,
-			75.0f,
-			320,
-			200,
-			CR_RED,
-			3.0f,
-			2.0f );
+		HUD_DrawStandardMessage( message, color );
 
-		StatusBar->AttachMessage( pMsg, MAKE_ID('C','N','T','R') );
-
-		szString[0] = 0;
-		pMsg = new DHUDMessageFadeOut( SmallFont, szString,
-			0.0f,
-			0.0f,
-			0,
-			0,
-			CR_RED,
-			3.0f,
-			2.0f );
-
-		StatusBar->AttachMessage( pMsg, MAKE_ID('F','R','A','G') );
-
-		pMsg = new DHUDMessageFadeOut( SmallFont, szString,
-			0.0f,
-			0.0f,
-			0,
-			0,
-			CR_RED,
-			3.0f,
-			2.0f );
-
-		StatusBar->AttachMessage( pMsg, MAKE_ID('P','L','A','C') );
+		// [AK] Clear the frag and place HUD messages from the screen.
+		HUD_ClearFragAndPlaceMessages( false );
 	}
 
 	// Award a victory or perfect medal to the winner.
-	if (( lastmanstanding ) &&
-		( NETWORK_InClientMode() == false ))
-	{
-		LONG	lMedal;
-
-		// If the winner has full health, give him a "Perfect!".
-		if ( players[ulWinner].health == deh.MegasphereHealth )
-			lMedal = MEDAL_PERFECT;
-		else
-			lMedal = MEDAL_VICTORY;
-
-		// Give the player the medal.
-		MEDAL_GiveMedal( ulWinner, lMedal );
-		if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-			SERVERCOMMANDS_GivePlayerMedal( ulWinner, lMedal );
-	}
+	// If the winner has full health, give him a "Perfect!".
+	if (( lastmanstanding ) && ( NETWORK_InClientMode( ) == false ))
+		MEDAL_GiveMedal( ulWinner, players[ulWinner].health == deh.MegasphereHealth ? "Perfect" : "Victory" );
 
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
@@ -520,8 +467,6 @@ void LASTMANSTANDING_TimeExpired( void )
 	bool				bTie = false;
 	bool				bFoundPlayer = false;
 	LONG				lWinner = -1;
-	DHUDMessageFadeOut	*pMsg;
-	char				szString[64];
 
 	// Don't end the level if we're not in a game.
 	if ( LASTMANSTANDING_GetState( ) != LMSS_INPROGRESS )
@@ -578,30 +523,8 @@ void LASTMANSTANDING_TimeExpired( void )
 	if ( bTie )
 	{
 		// Only print the message the instant we reach sudden death.
-		if ( level.time == (int)( timelimit * TICRATE * 60 ))
-		{
-			sprintf( szString, "\\cdSUDDEN DEATH!" );
-			V_ColorizeString( szString );
-
-			if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-			{
-				// Display the HUD message.
-				pMsg = new DHUDMessageFadeOut( BigFont, szString,
-					160.4f,
-					75.0f,
-					320,
-					200,
-					CR_RED,
-					3.0f,
-					2.0f );
-
-				StatusBar->AttachMessage( pMsg, MAKE_ID('C','N','T','R') );
-			}
-			else
-			{
-				SERVERCOMMANDS_PrintHUDMessage( szString, 160.4f, 75.0f, 320, 200, HUDMESSAGETYPE_FADEOUT, CR_RED, 3.0f, 0.0f, 2.0f, "BigFont", MAKE_ID( 'C', 'N', 'T', 'R' ) );
-			}
-		}
+		if ( level.time == static_cast<int>( timelimit * TICRATE * 60 ))
+			HUD_DrawStandardMessage( "SUDDEN DEATH!", CR_GREEN, false, 3.0f, 2.0f, true );
 
 		return;
 	}
@@ -711,6 +634,10 @@ void LASTMANSTANDING_SetState( LMSSTATE_e State )
 {
 	ULONG	ulIdx;
 
+	// [AK] Try clearing the winner's name and score from the scoreboard, but
+	// only after the end of a round.
+	SCOREBOARD_TryClearingWinnerAndScore( true );
+
 	g_LMSState = State;
 
 	// Tell clients about the state change.
@@ -723,12 +650,13 @@ void LASTMANSTANDING_SetState( LMSSTATE_e State )
 
 		break;
 	case LMSS_WAITINGFORPLAYERS:
+	case LMSS_PRENEXTROUNDCOUNTDOWN:
 
 		// Zero out the countdown ticker.
 		LASTMANSTANDING_SetCountdownTicks( 0 );
 
 		if ( lastmanstanding || teamlms )
-			GAMEMODE_RespawnDeadSpectatorsAndPopQueue();
+			GAMEMODE_RespawnDeadPlayersAndPopQueue( );
 
 		break;
 	default:
@@ -763,26 +691,20 @@ void LASTMANSTANDING_SetStartNextMatchOnLevelLoad( bool bStart )
 //*****************************************************************************
 //	CONSOLE COMMANDS/VARIABLES
 
-CVAR( Int, sv_lmscountdowntime, 10, CVAR_ARCHIVE );
-CUSTOM_CVAR( Int, winlimit, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK )
+CVAR( Int, sv_lmscountdowntime, 10, CVAR_ARCHIVE | CVAR_GAMEPLAYSETTING );
+CUSTOM_CVAR( Int, winlimit, 0, CVAR_SERVERINFO | CVAR_CAMPAIGNLOCK | CVAR_GAMEPLAYSETTING )
 {
 	if ( self >= 256 )
 		self = 255;
 	if ( self < 0 )
 		self = 0;
 
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), (int)self );
-		SERVERCOMMANDS_SetGameModeLimits( );
-
-		// Update the scoreboard.
-		SERVERCONSOLE_UpdateScoreboard( );
-	}
+	// [AK] Update the clients and update the server console.
+	SERVER_SettingChanged( self, true );
 }
 
-// [AK] Added CVAR_GAMEMODELOCK.
-CUSTOM_CVAR( Int, lmsallowedweapons, LMS_AWF_ALLALLOWED, CVAR_SERVERINFO | CVAR_GAMEMODELOCK )
+// [AK] Added CVAR_GAMEPLAYFLAGSET.
+CUSTOM_CVAR( Int, lmsallowedweapons, LMS_AWF_ALLALLOWED, CVAR_SERVERINFO | CVAR_GAMEPLAYFLAGSET )
 {
 	SERVER_FlagsetChanged( self );
 }
@@ -797,10 +719,36 @@ CVAR( Flag, lms_allowplasma, lmsallowedweapons, LMS_AWF_PLASMA );
 CVAR( Flag, lms_allowrailgun, lmsallowedweapons, LMS_AWF_RAILGUN );
 CVAR( Flag, lms_allowchainsaw, lmsallowedweapons, LMS_AWF_CHAINSAW );
 
-// [AK] Added CVAR_GAMEMODELOCK.
-CUSTOM_CVAR( Int, lmsspectatorsettings, LMS_SPF_VIEW, CVAR_SERVERINFO | CVAR_GAMEMODELOCK )
+// [AK] Added CVAR_GAMEPLAYFLAGSET.
+CUSTOM_CVAR( Int, lmsspectatorsettings, LMS_SPF_VIEW, CVAR_SERVERINFO | CVAR_GAMEPLAYFLAGSET )
 {
+	// [AK] If LMS_SPF_VIEW is disabled and we're spying on an enemy player,
+	// revert our view back to our own eyes.
+	if (( self & LMS_SPF_VIEW ) == false )
+	{
+		for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+		{
+			if (( players[ulIdx].mo != NULL ) && ( players[ulIdx].mo->IsTeammate( players[ulIdx].camera ) == false ))
+			{
+				players[ulIdx].camera = players[ulIdx].mo;
+
+				S_UpdateSounds( players[ulIdx].camera );
+
+				// [AK] The server doesn't have a status bar.
+				if ( StatusBar != NULL )
+				{
+					StatusBar->AttachToPlayer( &players[ulIdx] );
+
+					if ( demoplayback || ( NETWORK_GetState( ) != NETSTATE_SINGLE ))
+						StatusBar->ShowPlayerName( );
+				}
+			}
+		}
+	}
+
 	SERVER_FlagsetChanged( self );
 }
+
 CVAR( Flag, lms_spectatorchat, lmsspectatorsettings, LMS_SPF_CHAT );
 CVAR( Flag, lms_spectatorview, lmsspectatorsettings, LMS_SPF_VIEW );
+CVAR( Flag, lms_spectatorvoicechat, lmsspectatorsettings, LMS_SPF_VOICECHAT );

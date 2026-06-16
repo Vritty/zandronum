@@ -294,6 +294,35 @@ void FMapInfoParser::ParseGameInfo()
 			}
 			else gameinfo.mCheatMapArrow = "";
 		}
+		// [AK] Adds or removes a set of custom data that will be used by a custom column.
+		else if (( nextKey.CompareNoCase( "addcustomdata" ) == 0 ) || ( nextKey.CompareNoCase( "removecustomdata" ) == 0 ))
+		{
+			const bool bAddingData = ( nextKey.CompareNoCase( "addcustomdata" ) == 0 );
+			sc.MustGetToken( TK_StringConst );
+
+			if ( sc.StringLen == 0 )
+				sc.ScriptError( "Got an empty string for a name." );
+
+			FName Name = sc.String;
+
+			if ( bAddingData )
+			{
+				// [AK] Don't allow the same data to be defined more than once.
+				if ( gameinfo.CustomPlayerData.CheckKey( Name ) != NULL )
+					sc.ScriptError( "Custom data '%s' is already defined.", Name.GetChars( ));
+
+				sc.MustGetToken( ',' );
+				gameinfo.CustomPlayerData.Insert( Name, PlayerData( sc, gameinfo.CustomPlayerData.CountUsed( )));
+			}
+			else
+			{
+				// [AK] Make sure that the data is already defined.
+				if ( gameinfo.CustomPlayerData.CheckKey( Name ) == NULL )
+					sc.ScriptError( "Custom data '%s' isn't defined.", Name.GetChars( ));
+
+				gameinfo.CustomPlayerData.Remove( Name );
+			}
+		}
 		// Insert valid keys here.
 		GAMEINFOKEY_CSTRING(titlePage, "titlePage", 8)
 		GAMEINFOKEY_STRINGARRAY(creditPages, "addcreditPage", 8, false)
@@ -363,6 +392,9 @@ void FMapInfoParser::ParseGameInfo()
 		// enabled the STFL_NOSPAWNEVENTSCRIPT or STFL_NODAMAGEEVENTSCRIPT flags respectively.
 		GAMEINFOKEY_BOOL(bForceSpawnEventScripts, "forcespawneventscripts")
 		GAMEINFOKEY_BOOL(bForceDamageEventScripts, "forcedamageeventscripts")
+
+		// [TRSR] Allows the triggering of GAMEEVENT_DOMINATION_CONTEST.
+		GAMEINFOKEY_BOOL(bAllowDominationContestScripts, "allowdominationcontestscripts")
 
 		else
 		{

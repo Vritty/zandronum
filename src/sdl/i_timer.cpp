@@ -66,7 +66,9 @@ int I_GetTimePolled (bool saveMS)
 
     if (saveMS)
     {
-        TicStart = tm;
+        // [Leo] Replaced the expressions for TicStart and TicNext below.
+        DWORD CurrentTic = ((tm - BaseTime) * TICRATE) / 1000;
+        TicStart = (CurrentTic * 1000 / TICRATE) + BaseTime;
     }
     return Scale(tm - BaseTime, TICRATE, 1000);
 }

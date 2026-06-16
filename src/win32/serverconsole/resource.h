@@ -6,7 +6,7 @@
 #define IDD_BANIP                               154
 #define IDD_BANLIST                             155
 #define IDD_CHANGEMAP                           157
-#define IDD_EDITBAN                             159
+#define IDD_ADDOREDITBAN                        159
 #define IDD_MAPROTATION                         163
 #define IDD_SERVERDIALOG                        166
 #define IDD_SERVERSTATISTICS                    168
@@ -33,7 +33,6 @@
 #define IDC_MAPMODE                             1001
 #define IDC_SETTINGSTAB                         1001
 #define IDC_SPIN1                               1010
-#define IDC_BANBOX                              1049
 #define IDC_BANFILE                             1049
 #define IDC_INPUTBOX                            1049
 #define IDC_IPADDRESS                           1049
@@ -41,6 +40,12 @@
 #define IDC_MAPNAME                             1049
 #define IDC_PASSWORD                            1049
 #define IDC_REASON                              1049
+#define IDC_EDITBAN_IPADDRESS1                  1049
+#define IDC_EDITBAN_IPADDRESS2                  1050
+#define IDC_EDITBAN_IPADDRESS3                  1051
+#define IDC_EDITBAN_IPADDRESS4                  1052
+#define IDC_EDITBAN_EXPIRATIONDATE              1053
+#define IDC_EDITBAN_REASON                      1054
 #define IDC_BANLIST                             1054
 #define IDC_MAPLISTBOX                          1054
 #define IDC_PLAYERLIST                          1054
@@ -50,6 +55,7 @@
 #define IDC_BANCOMMENT                          1077
 #define IDC_CLEAR                               1078
 #define IDC_ENFORCEBANS                         1079
+#define IDC_ADD                                 1080
 #define IDC_INTERMISSION                        1081
 #define IDC_TITLEBOX                            1142
 #define IDC_SCOREBOARD1                         1143
@@ -234,6 +240,7 @@
 #define IDC_VIEWLOGFILE                         4082
 #define IDC_ALLOWVOTE_NEXTMAP                   4083
 #define IDC_ALLOWVOTE_NEXTSECRET                4084
+#define IDC_ALLOWVOTE_RESETMAP                  4085
 #define ID_ADMIN_ADDREMOVEBOT                   40000
 #define IDC_LMSWEAPONS_VALUE                    40001
 #define IDR_JOIN_SERVER                         40001

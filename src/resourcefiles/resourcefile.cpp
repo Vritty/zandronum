@@ -291,7 +291,8 @@ FResourceFile *FResourceFile::OpenDirectory(const char *filename, bool quiet)
 //==========================================================================
 
 FResourceFile::FResourceFile(const char *filename, FileReader *r)
-	: IsOptional( true ) // [TP]
+	: IsOptional( true ), // [TP]
+	  ContainsAuthenticatedLumps( false ) // [SB]
 {
 	if (filename != NULL) Filename = copystring(filename);
 	else Filename = NULL;

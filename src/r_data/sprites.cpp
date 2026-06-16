@@ -505,6 +505,7 @@ static int STACK_ARGS skinsorter (const void *a, const void *b)
 */
 
 static void R_CreateSkin();
+static void R_InitSkinPropertyMap (FPlayerSkin &skin); // [TRSR]
 void R_InitSkins (void)
 {
 	FSoundID playersoundrefs[NUMSKINSOUNDS];
@@ -663,6 +664,7 @@ void R_InitSkins (void)
 
 					if (stricmp (sc.String, "heretic") == 0)
 					{
+						skins[i].game = GAME_Heretic; // [TRSR]
 						if (gameinfo.gametype & GAME_DoomChex)
 						{
 							transtype = PClass::FindClass (NAME_HereticPlayer);
@@ -675,6 +677,7 @@ void R_InitSkins (void)
 					}
 					else if (stricmp (sc.String, "strife") == 0)
 					{
+						skins[i].game = GAME_Strife; // [TRSR]
 						if (gameinfo.gametype != GAME_Strife)
 						{
 							remove = true;
@@ -758,6 +761,8 @@ void R_InitSkins (void)
 				}
 				else
 				{
+					bool isCustomProperty = true; // [TRSR/AK]
+
 					for (j = 0; j < NUMSKINSOUNDS; j++)
 					{
 						if (stricmp (key, skinsoundnames[j][0]) == 0)
@@ -771,10 +776,49 @@ void R_InitSkins (void)
 							{ // Replacement not found, try finding it in the global namespace
 								sndlumps[j] = Wads.CheckNumForFullName (sc.String, true, ns_sounds);
 							}
+
+							// [TRSR/AK] A sound was found, so this isn't a custom property.
+							if (isCustomProperty)
+							{
+								isCustomProperty = false;
+							}
 						}
 					}
 					//if (j == 8)
 					//	Printf ("Funny info for skin %i: %s = %s\n", i, key, sc.String);
+
+					// [TRSR] Handle custom properties by putting them into property map.
+					if (isCustomProperty)
+					{
+						do
+						{
+							PlayerValue val;
+							FString customProperty = sc.String;
+
+							if (customProperty.IsInt())
+							{
+								val.SetValue<int>(atoi(sc.String));
+							}
+							else if (customProperty.IsFloat())
+							{
+								val.SetValue<float>(static_cast<float>(atof(sc.String)));
+							}
+							else if (customProperty.CompareNoCase("true") == 0)
+							{
+								val.SetValue<bool>(true);
+							}
+							else if (customProperty.CompareNoCase("false") == 0)
+							{
+								val.SetValue<bool>(false);
+							}
+							else
+							{
+								val.SetValue<const char*>(sc.String);
+							}
+
+							skins[i].propertyList[key].Push(val);
+						} while (sc.CheckToken(',') && sc.GetToken());
+					}
 				}
 			}
 			while(sc.GetString());
@@ -802,7 +846,7 @@ void R_InitSkins (void)
 			{
 				skins[i].range0start = transtype->Meta.GetMetaInt (APMETA_ColorRange) & 0xff;
 				skins[i].range0end = transtype->Meta.GetMetaInt (APMETA_ColorRange) >> 8;
-			
+
 				remove = true;
 				for (j = 0; j < (int)PlayerClasses.Size (); j++)
 				{
@@ -814,6 +858,9 @@ void R_InitSkins (void)
 					{
 						PlayerClasses[j].Skins.Push ((int)i);
 						remove = false;
+
+						// [TRSR] Store class associated to skin.
+						skins[i].classType = type;
 					}
 				}
 			}
@@ -911,7 +958,20 @@ void R_InitSkins (void)
 			{
 				skins.Delete(i);
 				i--;
-				continue;
+				// [TRSR] If a skin is deleted, we need to finish parsing it until its end to prevent the
+				// last skin in Zandronum's SKININFO lump from double-removing in niche circumstances.
+				if (s_skin == 0)
+				{ 
+
+					while (sc.String[0] != '}') // Finish Parsing That Skin
+					{
+						if (!sc.GetString())
+							break;
+					}
+					continue;
+				}
+				else
+					break; //S_SKIN Generally contains one skin in a lump, unless converted to SKININFO
 			}
 
 			// Register any sounds this skin provides
@@ -1015,12 +1075,81 @@ static void R_CreateSkin()
 	// [BL] Hidden skins
 	skin.bRevealed = true;
 	skin.bRevealedByDefault = true;
+	skin.game = GAME_Doom; // [TRSR]
+	skin.classType = nullptr; // [AK]
 
 	skins.Push(skin);
 }
 
+// [TRSR] Helper code to fill internal properties into skin property maps.
+static void R_InitSkinPropertyMap (FPlayerSkin &skin)
+{
+	PlayerValue val;
+
+	val.SetValue<const char*>( skin.name );
+	skin.propertyList["name"].Push( val );
+
+	val.SetValue<const char*>( sprites[skin.sprite].name );
+	skin.propertyList["sprite"].Push( val );
+
+	if ( skin.crouchsprite > 0 )
+	{
+		val.SetValue<const char*>( sprites[skin.crouchsprite].name );
+		skin.propertyList["crouchsprite"].Push( val );
+	}
+
+	if ( skin.face[0] > 0 )
+	{
+		val.SetValue<const char*>( skin.face );
+		skin.propertyList["face"].Push( val );
+	}
+
+	val.SetValue<int>( skin.gender );
+	skin.propertyList["gender"].Push( val );
+
+	val.SetValue<float>( FIXED2FLOAT( skin.ScaleX ) );
+	skin.propertyList["xscale"].Push( val );
+
+	val.SetValue<float>( FIXED2FLOAT( skin.ScaleY ) );
+	skin.propertyList["yscale"].Push( val );
+
+	switch ( skin.game )
+	{
+		case GAME_Heretic:
+			val.SetValue<const char*>( "heretic" );
+			break;
+		case GAME_Strife:
+			val.SetValue<const char*>( "strife" );
+			break;
+		default:
+			val.SetValue<const char*>( "doom" );
+	}
+	skin.propertyList["game"].Push( val );
+
+	if ( skin.classType != nullptr )
+	{
+		val.SetValue<const char*>( skin.classType->Meta.GetMetaString( APMETA_DisplayName ) );
+		skin.propertyList["class"].Push( val );
+
+		val.SetValue<const char*>( skin.classType->TypeName );
+		skin.propertyList["classactor"].Push( val );
+	}
+
+	val.SetValue<bool>( skin.bRevealed );
+	skin.propertyList["revealed"].Push( val );
+
+	val.SetValue<bool>( skin.bCheat );
+	skin.propertyList["cheat"].Push( val );
+
+	if ( skin.szColor[0] > 0 )
+	{
+		val.SetValue<const char*>( skin.szColor );
+		skin.propertyList["color"].Push( val );
+	}
+}
+
 // [BB] Helper code for the effective skin sprite width/height check.
-static bool R_IsCharUsuableAsSpriteRotation ( const char rot )
+bool R_IsCharUsuableAsSpriteRotation (const char rot)
 {
 	unsigned rotation = 17;
 
@@ -1121,6 +1250,9 @@ void R_InitSprites ()
 				}
 			}
 		}
+
+		// [TRSR] Make sure Base skins have a class.
+		skins[i].classType = basetype;
 	}
 
 	// [BB] Check if any of the skin sprites are ridiculously big to prevent
@@ -1270,6 +1402,12 @@ void R_InitSprites ()
 		}
 	}
 
+	// [TRSR] Fill internal properties into the property map of every skin.
+	for ( unsigned int i = 0; i < skins.Size(); i++ )
+	{
+		R_InitSkinPropertyMap( skins[i] );
+	}
+
 	// [RH] Sort the skins, but leave base as skin 0
 	//qsort (&skins[PlayerClasses.Size ()], skins.Size()-PlayerClasses.Size (), sizeof(FPlayerSkin), skinsorter);
 
@@ -1330,14 +1468,14 @@ CUSTOM_CVAR( Int, cl_skins, 1, CVAR_ARCHIVE )
 				players[ulIdx].mo->flags4 &= ~MF4_NOSKIN;
 		}
 
-		// If the skin is valid, set the player's sprite to the skin's sprite, and adjust
-		// the player's scale accordingly.
+		// If the skin is valid, set the player's sprite to the skin's sprite.
 		if (( lSkin >= 0 ) && ( static_cast<unsigned> (lSkin) < skins.Size() ))
 		{
 			players[ulIdx].mo->sprite = skins[lSkin].sprite;
+/*
 			players[ulIdx].mo->scaleX = skins[lSkin].ScaleX;
 			players[ulIdx].mo->scaleY = skins[lSkin].ScaleY;
-/*
+
 			// Make sure the player doesn't change sprites when his state changes.
 			if ( lSkin == R_FindSkin( "base", players[ulIdx].CurrentPlayerClass ))
 				players[ulIdx].mo->flags4 |= MF4_NOSKIN;

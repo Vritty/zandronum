@@ -1294,7 +1294,7 @@ bool P_IsVisible(AActor *lookee, AActor *other, INTBOOL allaround, FLookExParams
 	{
 		maxdist = params->maxdist;
 		mindist = params->mindist;
-		fov = params->fov;
+		fov = allaround ? 0 : params->fov; // [RK] Account for LOOKALLAROUND flag.
 	}
 	else
 	{
@@ -2224,7 +2224,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_LookEx)
 
 	if (!(flags & LOF_NOSIGHTCHECK))
 	{
-		if (!P_LookForPlayers(self, true, &params))
+		if (!P_LookForPlayers(self, (self->flags4 & MF4_LOOKALLAROUND), &params)) // [RK] Passing true for allround should only occur if the flag is actually set.
 			return;
 	}
 	else
@@ -3345,10 +3345,20 @@ DEFINE_ACTION_FUNCTION(AActor, A_Scream)
 
 DEFINE_ACTION_FUNCTION(AActor, A_XScream)
 {
+	// [AK] If the actor used have a valid player pointer, but doesn't anymore
+	// because the player respawned, then temporarily set the pointer to the
+	// old player. This way, we can still play their skin's gibbed sound.
+	const bool usedOldPlayer = G_TransferPlayerFromCorpse(self);
+
 	if (self->player)
 		S_Sound (self, CHAN_VOICE, "*gibbed", 1, ATTN_NORM);
 	else
 		S_Sound (self, CHAN_VOICE, "misc/gibbed", 1, ATTN_NORM);
+
+	// [AK] After playing the gibbed sound, if self->player was a null pointer
+	// before and had to be changed temporarily, reset it back.
+	if (usedOldPlayer)
+		self->player = nullptr;
 }
 
 //===========================================================================
@@ -3557,7 +3567,8 @@ void P_TossItem (AActor *item)
 DEFINE_ACTION_FUNCTION(AActor, A_Pain)
 {
 	// [RH] Vary player pain sounds depending on health (ala Quake2)
-	if (self->player && self->player->morphTics == 0)
+	// [RK] Play the pain sound if player has NOMORPHLIMITATIONS set.
+	if ( self->player && ( self->player->morphTics == 0 || ( self->player->mo->PlayerFlags & PPF_NOMORPHLIMITATIONS )))
 	{
 		const char *pain_amount;
 		FSoundID sfx_id;

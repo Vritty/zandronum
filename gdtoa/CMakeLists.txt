@@ -1,4 +1,5 @@
-cmake_minimum_required( VERSION 3.1.0 )
+# [SB] Removed for CMake 4.0 compatibility.
+#cmake_minimum_required( VERSION 2.4 )
 
 set( CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG" )
 
@@ -18,7 +19,7 @@ add_definitions( -DINFNAN_CHECK -DMULTIPLE_THREADS )
 if( NOT MSVC AND NOT APPLE )
 	if( NOT CMAKE_CROSSCOMPILING )
 		add_executable( arithchk arithchk.c )
-	endif()
+	endif( NOT CMAKE_CROSSCOMPILING )
 	add_custom_command( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/arith.h 
 		COMMAND arithchk >${CMAKE_CURRENT_BINARY_DIR}/arith.h
 		DEPENDS arithchk )
@@ -26,7 +27,7 @@ if( NOT MSVC AND NOT APPLE )
 	if( NOT CMAKE_CROSSCOMPILING )
 		add_executable( qnan qnan.c arith.h )
 		set( CROSS_EXPORTS ${CROSS_EXPORTS} arithchk qnan PARENT_SCOPE )
-	endif()
+	endif( NOT CMAKE_CROSSCOMPILING )
 	add_custom_command( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gd_qnan.h
 		COMMAND qnan >${CMAKE_CURRENT_BINARY_DIR}/gd_qnan.h
 		DEPENDS qnan )
@@ -42,4 +43,3 @@ add_library( gdtoa STATIC
 	misc.c
 	)
 target_link_libraries( gdtoa )
-

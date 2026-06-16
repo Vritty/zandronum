@@ -80,7 +80,6 @@ bool P_CheckTickerPaused ()
 //
 // P_Ticker
 //
-void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags );
 void P_Ticker (void)
 {
 	int i;
@@ -110,12 +109,20 @@ void P_Ticker (void)
 		}
 
 		// [BB] Allow the free spectate player to move even if the demo is paused.
-		if ( CLIENTDEMO_IsPaused() && CLIENTDEMO_IsInFreeSpectateMode() )
+		// [AK] Also do this if we're using the free chasecam.
+		if ( CLIENTDEMO_IsPaused() && CLIENTDEMO_ShouldLetFreeSpectatorThink() )
 			CLIENTDEMO_FreeSpectatorPlayerThink( true );
 
 		// run the tic
 		if (paused || P_CheckTickerPaused())
+		{
+			// [AK] We don't want to disable interpolation in offline games if the
+			// console is being lowered and is supposed to be interpolated.
+			if (C_ShouldForceInterpolation())
+				r_NoInterpolate = false;
+
 			return;
+		}
 	}
 
 	P_NewPspriteTick();
@@ -150,12 +157,9 @@ void P_Ticker (void)
 		// while the demo is paused.
 		if ( ( ( i == MAXPLAYERS ) || ( S_IsMusicPaused () == false ) ) && ( CLIENTDEMO_IsSkipping() == false ) )
 			S_ResumeSound (false);
+
 		P_ResetSightCounters (false);
-
-		// Since things will be moving, it's okay to interpolate them in the renderer.
-		r_NoInterpolate = false;
-
-		P_ResetSpawnCounters( );
+		P_ResetSpawnCounters (); // [BC]
 
 		// Since things will be moving, it's okay to interpolate them in the renderer.
 		r_NoInterpolate = false;
@@ -356,34 +360,16 @@ void P_Ticker (void)
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
 		// Increment individual player time.
-		if ( NETWORK_InClientMode() == false )
-		{
-			if ( playeringame[ulIdx] )
-			{
-				players[ulIdx].ulTime++;
-
-				// Potentially update the scoreboard or send out an update.
-				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-				{
-					if (( players[ulIdx].ulTime % ( TICRATE * 60 )) == 0 )
-					{
-						// Send out the updated time field to all clients.
-						SERVERCOMMANDS_UpdatePlayerTime( ulIdx );
-
-						// Update the console as well.
-						SERVERCONSOLE_UpdatePlayerInfo( ulIdx, UDF_TIME );
-					}
-				}
-			}
-		}
+		if (( NETWORK_InClientMode( ) == false ) && ( playeringame[ulIdx] ))
+			PLAYER_SetTime( &players[ulIdx], players[ulIdx].ulTime + 1 );
 
 		// Clients "think" every time we process a movement command.
 		// [BB] The server has to think for lagging clients, otherwise they aren't affected by things like sector damage.
-		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( players[ulIdx].bIsBot == false ) && ( players[ulIdx].bLagging == false ) )
+		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( players[ulIdx].bIsBot == false ) && !( players[ulIdx].statuses & PLAYERSTATUS_LAGGING ))
 			continue;
 
 		// [BB] Assume lagging players are not pressing any buttons.
-		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( players[ulIdx].bIsBot == false ) && ( players[ulIdx].bLagging ) )
+		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( players[ulIdx].bIsBot == false ) && ( players[ulIdx].statuses & PLAYERSTATUS_LAGGING ))
 			memset( &(players[ulIdx].cmd), 0, sizeof( ticcmd_t ));
 
 		// Console player thinking is handled by player prediction.
@@ -399,7 +385,8 @@ void P_Ticker (void)
 
 	// [BB] If we are playing a demo in free spectate mode, we also need to let the special free
 	// spectator player think. That's necessary to move this player and thus to move the camera.
-	if ( CLIENTDEMO_IsInFreeSpectateMode() )
+	// [AK] Also do this if we're using the free chasecam.
+	if ( CLIENTDEMO_IsPlaying() && CLIENTDEMO_ShouldLetFreeSpectatorThink() )
 		CLIENTDEMO_FreeSpectatorPlayerThink();
 
 	// [BB] The server has no status bar.

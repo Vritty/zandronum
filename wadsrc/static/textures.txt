@@ -197,7 +197,7 @@ graphic "BFLASMAL", 28, 46
 	}
 }
 
-graphic "STFLA1", 6, 7
+graphic "STFLA1", 9, 9
 {
 	patch "STFLA0", 0, 0
 	{
@@ -324,7 +324,7 @@ graphic "RFLASMAL", 28, 46
 	}
 }
 
-graphic "STFLA2", 6, 7
+graphic "STFLA2", 9, 9
 {
 	patch "STFLA0", 0, 0
 	{
@@ -451,7 +451,7 @@ graphic "WFLASMAL", 28, 46
 	}
 }
 
-graphic "STFLA3", 6, 7
+graphic "STFLA3", 9, 9
 {
 	patch "STFLA0", 0, 0
 	{
@@ -578,7 +578,7 @@ graphic "GFLASMAL", 28, 46
 	}
 }
 
-graphic "STFLA4", 6, 7
+graphic "STFLA4", 9, 9
 {
 	patch "STFLA0", 0, 0
 	{
@@ -705,7 +705,7 @@ graphic "YFLASMAL", 28, 46
 	}
 }
 
-graphic "STFLA5", 6, 7
+graphic "STFLA5", 9, 9
 {
 	patch "STFLA0", 0, 0
 	{

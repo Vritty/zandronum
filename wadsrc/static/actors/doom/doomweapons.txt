@@ -381,6 +381,7 @@ ACTOR Grenade native
 	SeeSound "weapons/grenlf"
 	DeathSound "weapons/grenlx"
 	Obituary "$OB_GRENADE"
+	SelfObituary "$OB_GRENADE_SELF" // [SB]
 	DamageType Grenade
 
 	States

@@ -11,6 +11,7 @@ EndCommand
 Command MapExit
 	Byte position
 	String nextMap
+	Long changeFlags
 EndCommand
 
 Command MapAuthenticate

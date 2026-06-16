@@ -88,7 +88,11 @@ void WI_Drawer ();
 // Setup for an intermission screen.
 void WI_Start (wbstartstruct_t *wbstartstruct);
 
-// [AK] Get the amount of tics left to still display the intermission in online games.
+// [AK] Gets, or resets, the amount of tics left to still display the intermission in online games.
 LONG WI_GetStopWatch( void );
+void WI_ResetStopWatch( void );
+
+// [AK] Checks if the campaign stats screen should be shown.
+bool WI_ShouldShowCampaignStats( void );
 
 #endif

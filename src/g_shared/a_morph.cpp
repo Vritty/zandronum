@@ -97,6 +97,16 @@ bool P_MorphPlayer (player_t *activator, player_t *p, const PClass *spawntype, i
 	p->PremorphWeapon = p->ReadyWeapon;
 	morphed->special2 = actor->flags & ~MF_JUSTHIT;
 	morphed->player = p;
+	// [Binary] Keep movement if +NOMORPHLIMITATIONS is used.
+	if (morphed->PlayerFlags & PPF_NOMORPHLIMITATIONS)
+	{
+		morphed->velx = actor->velx;
+		morphed->vely = actor->vely;
+		morphed->velz = actor->velz;
+		morphed->pitch = actor->pitch;
+		// [AK] Set the morphed player's reaction time to zero too.
+		morphed->reactiontime = 0;
+	}
 	if (actor->renderflags & RF_INVISIBLE)
 	{
 		morphed->special2 |= MF_JUSTHIT;
@@ -127,7 +137,11 @@ bool P_MorphPlayer (player_t *activator, player_t *p, const PClass *spawntype, i
 	p->MorphExitFlash = (exit_flash) ? exit_flash : RUNTIME_CLASS(ATeleportFog);
 	p->health = morphed->health;
 	p->mo = morphed;
-	p->velx = p->vely = 0;
+	// [Binary] Keep movement if +NOMORPHLIMITATIONS is used.
+	if (!(morphed->PlayerFlags & PPF_NOMORPHLIMITATIONS))
+	{
+		p->velx = p->vely = 0;
+	}
 	morphed->ObtainInventory (actor);
 	// Remove all armor
 	for (item = morphed->Inventory; item != NULL; )
@@ -163,7 +177,10 @@ bool P_MorphPlayer (player_t *activator, player_t *p, const PClass *spawntype, i
 	{
 		p->camera = morphed;
 	}
-	morphed->ScoreIcon = actor->ScoreIcon;	// [GRB]
+
+	// [AK] Don't replace the morphed class's icon if NOMORPHLIMITATIONS is enabled.
+	if ((morphed->PlayerFlags & PPF_NOMORPHLIMITATIONS) == false)
+		morphed->ScoreIcon = actor->ScoreIcon;	// [GRB]
 
 	// [BB] Tell the clients to morph the player.
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -178,6 +195,13 @@ bool P_MorphPlayer (player_t *activator, player_t *p, const PClass *spawntype, i
 		SERVERCOMMANDS_SetThingFlags( morphed, FLAGSET_FLAGS3 );
 		if ( morphed->tid != 0 )
 			SERVERCOMMANDS_SetThingTID( morphed );
+		// [Binary] Keep movement if +NOMORPHLIMITATIONS is used.
+		if ( morphed->PlayerFlags & PPF_NOMORPHLIMITATIONS )
+		{
+			SERVERCOMMANDS_MoveLocalPlayer( ulPlayer );
+			SERVERCOMMANDS_MovePlayer( ulPlayer, ulPlayer, SVCF_SKIPTHISCLIENT );
+			SERVERCOMMANDS_MoveThing( morphed, CM_PITCH );
+		}
 	}
 
 	return true;
@@ -209,6 +233,7 @@ bool P_UndoPlayerMorph (player_t *activator, player_t *player, int unmorphflag, 
 	}
 
 	bool DeliberateUnmorphIsOkay = !!(MORPH_STANDARDUNDOING & unmorphflag);
+	bool noMorphLimitations = !!(pmo->PlayerFlags & PPF_NOMORPHLIMITATIONS); // [AK]
 
     if ((pmo->flags2 & MF2_INVULNERABLE) // If the player is invulnerable
         && ((player != activator)       // and either did not decide to unmorph,
@@ -251,12 +276,25 @@ bool P_UndoPlayerMorph (player_t *activator, player_t *player, int unmorphflag, 
 	}
 	mo->angle = pmo->angle;
 	mo->player = player;
-	mo->reactiontime = 18;
+	// [AK] Don't adjust the reaction time if NOMORPHLIMITATIONS is enabled.
+	if (noMorphLimitations == false)
+		mo->reactiontime = 18;
 	mo->flags = pmo->special2 & ~MF_JUSTHIT;
-	mo->velx = 0;
-	mo->vely = 0;
-	player->velx = 0;
-	player->vely = 0;
+	// [Binary] Keep movement if +NOMORPHLIMITATIONS is used.
+	if (noMorphLimitations)
+	{
+		mo->velx = pmo->velx;
+		mo->vely = pmo->vely;
+		mo->velz = pmo->velz;
+		mo->pitch = pmo->pitch;
+	}
+	else
+	{
+		mo->velx = 0;
+		mo->vely = 0;
+		player->velx = 0;
+		player->vely = 0;
+	}
 	mo->velz = pmo->velz;
 	if (!(pmo->special2 & MF_JUSTHIT))
 	{
@@ -403,6 +441,9 @@ bool P_UndoPlayerMorph (player_t *activator, player_t *player, int unmorphflag, 
 		SERVERCOMMANDS_SetThingFrame( player->mo, player->mo->state, MAXPLAYERS, 0, false );
 		if ( player->mo->tid != 0 )
 			SERVERCOMMANDS_SetThingTID( player->mo );
+		// [AK] Keep the player's pitch if +NOMORPHLIMITATIONS is used.
+		if ( noMorphLimitations )
+			SERVERCOMMANDS_MoveThing( player->mo, CM_PITCH );
 	}
 	return true;
 }
@@ -607,6 +648,25 @@ bool P_MorphedDeath(AActor *actor, AActor **morphed, int *morphedstyle, int *mor
 
 	// Not a morphed player or monster
 	return false;
+}
+
+//----------------------------------------------------------------------------
+//
+// [AK] FUNC P_UndoPlayerMorphWithoutFlash
+//
+// Calls P_UndoPlayerMorph, but without an exit flash. This is useful when a
+// player must be unmorphed before they disconnect, join spectators, or respawn
+// and the exit flash isn't necessary.
+//
+//----------------------------------------------------------------------------
+
+bool P_UndoPlayerMorphWithoutFlash (player_t *activator, player_t *player, int unmorphflag, bool force)
+{
+	if (player == nullptr)
+		return false;
+
+	player->MorphExitFlash = nullptr;
+	return P_UndoPlayerMorph (activator, player, unmorphflag, force);
 }
 
 //===========================================================================

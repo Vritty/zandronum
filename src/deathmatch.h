@@ -53,24 +53,6 @@
 #include "c_cvars.h"
 
 //*****************************************************************************
-//	DEFINES
-
-enum
-{
-	RAILCOLOR_BLUE,
-	RAILCOLOR_RED,
-	RAILCOLOR_YELLOW,
-	RAILCOLOR_BLACK,
-	RAILCOLOR_SILVER,
-	RAILCOLOR_GOLD,
-	RAILCOLOR_GREEN,
-	RAILCOLOR_WHITE,
-	RAILCOLOR_PURPLE,
-	RAILCOLOR_ORANGE,
-	RAILCOLOR_RAINBOW
-};
-
-//*****************************************************************************
 //  EXTERNAL CONSOLE VARIABLES
 
 EXTERN_CVAR( Bool, deathmatch )
@@ -84,13 +66,9 @@ EXTERN_CVAR( Bool, teampossession )
 
 EXTERN_CVAR( Int, fraglimit )
 EXTERN_CVAR( Float, timelimit )
-EXTERN_CVAR( String, lobby )
-EXTERN_CVAR( Bool, instagib )
-EXTERN_CVAR( Bool, buckshot )
 
 EXTERN_CVAR( Bool, cl_noammoswitch )
 EXTERN_CVAR( Bool, cl_useoriginalweaponorder )
-EXTERN_CVAR( Bool, cl_showlargefragmessages )
 
 EXTERN_CVAR( Bool, sv_cheats )
 EXTERN_CVAR( Int, sv_fastweapons )

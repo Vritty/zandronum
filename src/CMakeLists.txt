@@ -1,4 +1,5 @@
-cmake_minimum_required( VERSION 2.4 )
+# [SB] Removed for CMake 4.0 compatibility.
+#cmake_minimum_required( VERSION 2.4 )
 
 if( COMMAND cmake_policy )
 	cmake_policy( SET CMP0003 NEW )
@@ -659,10 +660,8 @@ endif( BACKPATCH )
 
 # Update gitinfo.h
 
-get_target_property( UPDATEREVISION_EXE updaterevision LOCATION )
-
 add_custom_target( revision_check ALL
-	COMMAND ${UPDATEREVISION_EXE} src/gitinfo.h
+	COMMAND updaterevision src/gitinfo.h
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	DEPENDS updaterevision )
 
@@ -697,6 +696,13 @@ if( MPG123_FOUND )
     set( ZDOOM_LIBS ${ZDOOM_LIBS} "${MPG123_LIBRARIES}" )
     include_directories( "${MPG123_INCLUDE_DIR}" )
 endif( MPG123_FOUND )
+# [AK] We need Opus for encoding/decoding VoIP audio packets, and RNNoise for noise suppression.
+if ( NOT NO_SOUND AND NOT NO_FMOD )
+	find_package( Opus REQUIRED )
+	include_directories( ${OPUS_INCLUDE_DIR} )
+	set( ZDOOM_LIBS ${ZDOOM_LIBS} ${OPUS_LIBRARIES} rnnoise )
+endif ( NOT NO_SOUND AND NOT NO_FMOD )
+
 if( NOT DYN_FLUIDSYNTH)
 	if( FLUIDSYNTH_FOUND )
 		set( ZDOOM_LIBS ${ZDOOM_LIBS} "${FLUIDSYNTH_LIBRARIES}" )
@@ -814,17 +820,14 @@ else( NO_ASM )
 	endif( X64 )
 endif( NO_ASM )
 
-get_target_property( LEMON_EXE lemon LOCATION )
-get_target_property( RE2C_EXE re2c LOCATION )
-
 add_custom_command( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xlat_parser.c ${CMAKE_CURRENT_BINARY_DIR}/xlat_parser.h
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/xlat/xlat_parser.y .
-	COMMAND ${LEMON_EXE} xlat_parser.y
+	COMMAND lemon xlat_parser.y
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 	DEPENDS lemon ${CMAKE_CURRENT_SOURCE_DIR}/xlat/xlat_parser.y )
 
 add_custom_command( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/sc_man_scanner.h
-	COMMAND ${RE2C_EXE} --no-generation-date -s -o ${CMAKE_CURRENT_BINARY_DIR}/sc_man_scanner.h ${CMAKE_CURRENT_SOURCE_DIR}/sc_man_scanner.re
+	COMMAND re2c --no-generation-date -s -o ${CMAKE_CURRENT_BINARY_DIR}/sc_man_scanner.h ${CMAKE_CURRENT_SOURCE_DIR}/sc_man_scanner.re
 	DEPENDS re2c ${CMAKE_CURRENT_SOURCE_DIR}/sc_man_scanner.re )
 
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
@@ -1247,6 +1250,7 @@ add_executable( zdoom WIN32 MACOSX_BUNDLE
 	s_sound.cpp
 	sc_man.cpp
 	scoreboard.cpp #ST
+	scoreboard_margin.cpp #ZA
 	sectinfo.cpp #ST
 	st_stuff.cpp
 	statistics.cpp
@@ -1273,6 +1277,7 @@ add_executable( zdoom WIN32 MACOSX_BUNDLE
 	v_pfx.cpp
 	v_text.cpp
 	v_video.cpp
+	voicechat.cpp #ZA
 	w_wad.cpp
 	wi_stuff.cpp
 	za_database.cpp #ZA
@@ -1301,7 +1306,6 @@ add_executable( zdoom WIN32 MACOSX_BUNDLE
 	g_shared/a_debris.cpp
 	g_shared/a_decals.cpp
 	g_shared/a_fastprojectile.cpp
-	g_shared/a_flags.cpp #ST
 	g_shared/a_flashfader.cpp
 	g_shared/a_fountain.cpp
 	g_shared/a_hatetarget.cpp
@@ -1325,6 +1329,7 @@ add_executable( zdoom WIN32 MACOSX_BUNDLE
 	g_shared/a_spark.cpp
 	g_shared/a_specialspot.cpp
 	g_shared/a_springpad.cpp #ST
+	g_shared/a_teamitems.cpp #ZA
 	g_shared/a_waterzone.cpp
 	g_shared/a_weaponpiece.cpp
 	g_shared/a_weapons.cpp
@@ -1495,6 +1500,7 @@ include_directories( .
 	xlat
 	../gdtoa
 	../dumb/include
+	../rnnoise/ #ZA
         ../sqlite/ #ZA
 	../upnpnat/ #ST
 	${CMAKE_BINARY_DIR}/gdtoa
@@ -1542,8 +1548,6 @@ if( MSVC )
 			COMMENT "Adding manifest..."
 		)
 	endif( NO_GENERATOR_EXPRESSIONS )
-
-	create_default_target_launcher( zdoom WORKING_DIRECTORY ${ZDOOM_OUTPUT_DIR} )
 endif( MSVC )
 
 if( NOT WIN32 )

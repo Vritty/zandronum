@@ -85,7 +85,6 @@ NETBUFFER_s::NETBUFFER_s ( )
 NETBUFFER_s::NETBUFFER_s ( const NETBUFFER_s &Buffer )
 {
 	Init ( Buffer.ulMaxSize, Buffer.BufferType );
-	Clear();
 
 	memcpy( this->pbData, Buffer.pbData, Buffer.ulMaxSize );
 	this->ByteStream.pbStream = this->pbData + ( Buffer.ByteStream.pbStream - Buffer.pbData );
@@ -101,10 +100,10 @@ NETBUFFER_s::NETBUFFER_s ( const NETBUFFER_s &Buffer )
 //
 void NETBUFFER_s::Init( ULONG ulLength, BUFFERTYPE_e BufferType )
 {
-	memset( this, 0, sizeof( *this ));
 	this->ulMaxSize = ulLength;
 	this->pbData = new BYTE[ulLength];
 	this->BufferType = BufferType;
+	Clear();
 }
 
 //*****************************************************************************
@@ -820,6 +819,23 @@ bool IPStringArray::SetFromString ( const char *pszAddressString )
     return ( true );
 }
 
+//*****************************************************************************
+//
+std::string IPADDRESSBAN_s::GetExpirationAsString( void ) const
+{
+	if (( tExpirationDate != 0 ) && ( tExpirationDate != -1 ))
+	{
+		struct tm *timeInfo = localtime( &tExpirationDate );
+		char tempBuffer[32];
+
+		strftime( tempBuffer, sizeof( tempBuffer ), "%m/%d/%Y %H:%M", timeInfo );
+		return tempBuffer;
+	}
+
+	// [AK] Return an empty string for permanent bans.
+	return "";
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- CLASSES ---------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1240,14 +1256,7 @@ std::string IPList::getEntryAsString( const ULONG ulIdx, bool bIncludeComment, b
 
 		// Expiration date.
 		if ( bIncludeExpiration && _ipVector[ulIdx].tExpirationDate != 0 && _ipVector[ulIdx].tExpirationDate != -1 )
-		{			
-			struct tm	*pTimeInfo;
-			char		szDate[32];
-
-			pTimeInfo = localtime( &(_ipVector[ulIdx].tExpirationDate) );
-			strftime( szDate, 32, "%m/%d/%Y %H:%M", pTimeInfo );
-			entryStream << "<" << szDate << ">";
-		}
+			entryStream << "<" << _ipVector[ulIdx].GetExpirationAsString( ) << ">";
 
 		// Comment.
 		if ( bIncludeComment && _ipVector[ulIdx].szComment[0] )
@@ -1301,7 +1310,7 @@ void IPList::addEntry( const IPStringArray &szAddress, const char *pszPlayerName
 	ulIdx = doesEntryExist( szAddress );
 	if ( ulIdx != _ipVector.size() )
 	{
-		messageStream << szAddress << " already exists in list";
+		messageStream << szAddress << " already exists in \"" << _filename << "\"";
 		if ( ( getEntry ( ulIdx ).tExpirationDate != tExpiration ) || ( strnicmp ( getEntry ( ulIdx ).szComment, PlayerNameAndComment.c_str(), 127 ) ) )
 		{
 			messageStream << ". Just updating the expiration date and reason.\n";
@@ -1348,7 +1357,7 @@ void IPList::addEntry( const IPStringArray &szAddress, const char *pszPlayerName
 		fputs( OutString.c_str(), pFile );
 		fclose( pFile );
 
-		messageStream << szAddress << " added to list.";
+		messageStream << szAddress << " added to \"" << _filename << "\".";
 		if ( tExpiration )
 			messageStream << " It expires on " << szDate << ".";
 		
@@ -1410,12 +1419,12 @@ void IPList::removeEntry( const IPStringArray &szAddress, std::string &Message )
 	{
 		removeEntry( entryIdx );
 
-		messageStream << " removed from list.\n";
+		messageStream << " removed from \"" << _filename << "\".\n";
 		Message = messageStream.str();
 	}
 	else
 	{
-		messageStream << " not found in list.\n";
+		messageStream << " not found in \"" << _filename << "\".\n";
 		Message = messageStream.str();
 	}
 }
@@ -1493,10 +1502,10 @@ void IPList::sort()
 //
 //=============================================================================
 
-void QueryIPQueue::adjustHead( const LONG CurrentTime )
+void QueryIPQueue::adjustHead( const unsigned long currentTime )
 {
-	while (( _iQueueHead != _iQueueTail ) && ( CurrentTime >= _IPQueue[_iQueueHead].lNextAllowedTime ))
-		_iQueueHead = ( _iQueueHead + 1 ) % MAX_QUERY_IPS;
+	while (( _queueHead != _queueTail ) && ( currentTime >= _IPQueue[_queueHead].nextAllowedTime ))
+		_queueHead = ( _queueHead + 1 ) % MAX_QUERY_IPS;
 }
 
 //=============================================================================
@@ -1510,7 +1519,7 @@ void QueryIPQueue::adjustHead( const LONG CurrentTime )
 bool QueryIPQueue::addressInQueue( const NETADDRESS_s AddressFrom ) const
 {
 	// Search through the queue.
-	for ( unsigned int i = _iQueueHead; i != _iQueueTail; i = ( i + 1 ) % MAX_QUERY_IPS )
+	for ( unsigned int i = _queueHead; i != _queueTail; i = ( i + 1 ) % MAX_QUERY_IPS )
 	{
 		if ( AddressFrom.CompareNoPort( _IPQueue[i].Address ))
 			return true;
@@ -1531,7 +1540,7 @@ bool QueryIPQueue::addressInQueue( const NETADDRESS_s AddressFrom ) const
 
 bool QueryIPQueue::isFull( ) const
 {
-	return ((( _iQueueTail + 1 ) % MAX_QUERY_IPS ) == _iQueueHead );
+	return ((( _queueTail + 1 ) % MAX_QUERY_IPS ) == _queueHead );
 }
 
 //=============================================================================
@@ -1542,19 +1551,19 @@ bool QueryIPQueue::isFull( ) const
 //
 //=============================================================================
 
-void QueryIPQueue::addAddress( const NETADDRESS_s AddressFrom, const LONG lCurrentTime, std::ostream *errorOut )
+void QueryIPQueue::addAddress( const NETADDRESS_s AddressFrom, const unsigned long currentTime, std::ostream *errorOut )
 {
 	// Add and advance the tail.
-	_IPQueue[_iQueueTail].Address = AddressFrom;
-	_IPQueue[_iQueueTail].lNextAllowedTime = lCurrentTime + _iEntryLength;
-	_iQueueTail = ( _iQueueTail + 1 ) % MAX_QUERY_IPS;
+	_IPQueue[_queueTail].Address = AddressFrom;
+	_IPQueue[_queueTail].nextAllowedTime = currentTime + _entryLength;
+	_queueTail = ( _queueTail + 1 ) % MAX_QUERY_IPS;
 
 	// Is the queue full?
-	if (_iQueueTail == _iQueueHead )
+	if ( _queueTail == _queueHead )
 	{
 		if ( errorOut )
 			*errorOut << "WARNING! The IP flood queue is full.\n";
 
-		_iQueueHead = ( _iQueueHead + 1 ) % MAX_QUERY_IPS; // [RC] Start removing older entries.
+		_queueHead = ( _queueHead + 1 ) % MAX_QUERY_IPS; // [RC] Start removing older entries.
 	}
 }

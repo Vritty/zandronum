@@ -1,8 +1,3 @@
-// [AK] This is just to initialize the flagsets of all game modes to zero.
-DefaultGameSettings
-{
-}
-
 // Regular co-op
 Cooperative
 {
@@ -48,6 +43,7 @@ Deathmatch
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNFRAGS
+	AddFlag PLAYERSEARNMEDALS
 
 	Name "Deathmatch"
 	ShortName "DM"
@@ -59,6 +55,7 @@ Teamplay
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNFRAGS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag PLAYERSONTEAMS
 
 	Name "Team Deathmatch"
@@ -71,6 +68,7 @@ Duel
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNFRAGS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag MAPRESETS
 	AddFlag MAPRESET_RESETS_MAPTIME
 
@@ -84,6 +82,7 @@ Terminator
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNFRAGS
+	AddFlag PLAYERSEARNMEDALS
 
 	Name "Terminator"
 	ShortName "TERM"
@@ -95,6 +94,7 @@ LastManStanding
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNWINS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag DONTSPAWNMAPTHINGS
 	AddFlag MAPRESETS
 	AddFlag DEADSPECTATORS
@@ -111,6 +111,7 @@ TeamLMS
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNWINS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag DONTSPAWNMAPTHINGS
 	AddFlag MAPRESETS
 	AddFlag DEADSPECTATORS
@@ -128,6 +129,7 @@ Possession
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNPOINTS
+	AddFlag PLAYERSEARNMEDALS
 	// [BB] Even though possession doesn't do a full map reset, it still resets the map time during its partial reset.
 	AddFlag MAPRESET_RESETS_MAPTIME
 
@@ -141,6 +143,7 @@ TeamPossession
 {
 	AddFlag DEATHMATCH
 	AddFlag PLAYERSEARNPOINTS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag PLAYERSONTEAMS
 	AddFlag MAPRESET_RESETS_MAPTIME
 
@@ -154,6 +157,7 @@ TeamGame
 {
 	AddFlag TEAMGAME
 	AddFlag PLAYERSEARNPOINTS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag PLAYERSONTEAMS
 
 	Name "Team Game"
@@ -167,12 +171,14 @@ CTF
 	AddFlag TEAMGAME
 	AddFlag USEFLAGASTEAMITEM
 	AddFlag PLAYERSEARNPOINTS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag PLAYERSONTEAMS
 	AddFlag USETEAMITEM
 
 	Name "Capture the Flag"
 	ShortName "CTF"
 	F1Texture "F1_CTF"
+	WelcomeSound "WelcomeToCTF"
 }
 
 // One flag CTF
@@ -181,12 +187,14 @@ OneFlagCTF
 	AddFlag TEAMGAME
 	AddFlag USEFLAGASTEAMITEM
 	AddFlag PLAYERSEARNPOINTS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag PLAYERSONTEAMS
 	AddFlag USETEAMITEM
 
 	Name "1-Flag CTF"
 	ShortName "1F-CTF"
 	F1Texture "F1_1FCTF"
+	WelcomeSound "WelcomeToOneFlagCTF"
 }
 
 // Skulltag
@@ -194,12 +202,14 @@ Skulltag
 {
 	AddFlag TEAMGAME
 	AddFlag PLAYERSEARNPOINTS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag PLAYERSONTEAMS
 	AddFlag USETEAMITEM
 
 	Name "Skulltag"
 	ShortName "ST"
 	F1Texture "F1_ST"
+	WelcomeSound "WelcomeToST"
 }
 
 // Domination
@@ -207,9 +217,11 @@ Domination
 {
 	AddFlag TEAMGAME
 	AddFlag PLAYERSEARNPOINTS
+	AddFlag PLAYERSEARNMEDALS
 	AddFlag PLAYERSONTEAMS
 
 	Name "Domination"
 	ShortName "DOM"
 	F1Texture "F1_DOM"
+	WelcomeSound "WelcomeToDomination"
 }

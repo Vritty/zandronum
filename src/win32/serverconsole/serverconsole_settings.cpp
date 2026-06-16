@@ -143,6 +143,23 @@ EXTERN_CVAR( Bool, sv_logfilenametimestamp );
 //-- VARIABLES -------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
+// [AK] A map of all native vote forbidding CVars and their respective checkboxes.
+static const FLAGMAPPING_t g_ForbidVoteFlags[] =
+{
+	{ FORBIDVOTE_KICK,			IDC_ALLOWVOTE_KICKLIMIT,	nullptr },
+	{ FORBIDVOTE_MAP,			IDC_ALLOWVOTE_MAP,			nullptr },
+	{ FORBIDVOTE_CHANGEMAP,		IDC_ALLOWVOTE_CHANGEMAP,	nullptr },
+	{ FORBIDVOTE_FRAGLIMIT,		IDC_ALLOWVOTE_FRAGLIMIT,	nullptr },
+	{ FORBIDVOTE_TIMELIMIT,		IDC_ALLOWVOTE_TIMELIMIT,	nullptr },
+	{ FORBIDVOTE_WINLIMIT,		IDC_ALLOWVOTE_WINLIMIT,		nullptr },
+	{ FORBIDVOTE_DUELLIMIT,		IDC_ALLOWVOTE_DUELLIMIT,	nullptr },
+	{ FORBIDVOTE_POINTLIMIT,	IDC_ALLOWVOTE_POINTLIMIT,	nullptr },
+	{ FORBIDVOTE_FLAG,			IDC_ALLOWVOTE_FLAG,			nullptr },
+	{ FORBIDVOTE_NEXTMAP,		IDC_ALLOWVOTE_NEXTMAP,		nullptr },
+	{ FORBIDVOTE_NEXTSECRET,	IDC_ALLOWVOTE_NEXTSECRET,	nullptr },
+	{ FORBIDVOTE_RESETMAP,		IDC_ALLOWVOTE_RESETMAP,		nullptr },
+};
+
 // References to the various dialogs.
 static	HWND			g_hDlg_Dialog = NULL;
 static	HWND			g_hDlg_ServerTab = NULL;
@@ -246,8 +263,9 @@ void settings_Dialog_DoLimit( int iResource, FIntCVar &cvar, char *szBuffer )
 
 void settings_Dialog_SaveSettings( )
 {
-	char	szBuffer[1024];
+	char szBuffer[1024];
 	FString fsRestartMessage = "";
+	int newForbidFlags = 0;
 
 	//==================================
 	// Save the "server" tab's settings.
@@ -356,17 +374,13 @@ void settings_Dialog_SaveSettings( )
 	else
 		sv_nocallvote = 1;
 
-	sv_noduellimitvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_DUELLIMIT, BM_GETCHECK, 0, 0 );
-	sv_nofraglimitvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_FRAGLIMIT, BM_GETCHECK, 0, 0 );
-	sv_nokickvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_KICKLIMIT, BM_GETCHECK, 0, 0 );
-	sv_nopointlimitvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_POINTLIMIT, BM_GETCHECK, 0, 0 );
-	sv_notimelimitvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_TIMELIMIT, BM_GETCHECK, 0, 0 );
-	sv_nowinlimitvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_WINLIMIT, BM_GETCHECK, 0, 0 );
-	sv_nomapvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_MAP, BM_GETCHECK, 0, 0 );
-	sv_nochangemapvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_CHANGEMAP, BM_GETCHECK, 0, 0 );
-	sv_noflagvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_FLAG, BM_GETCHECK, 0, 0 );
-	sv_nonextmapvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_NEXTMAP, BM_GETCHECK, 0, 0 );
-	sv_nonextsecretvote = !SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_NEXTSECRET, BM_GETCHECK, 0, 0 );
+	for ( unsigned int i = 0; i < countof( g_ForbidVoteFlags ); i++ )
+	{
+		if ( SendDlgItemMessage( hDlg, g_ForbidVoteFlags[i].iControlID, BM_GETCHECK, 0, 0 ) != BST_CHECKED )
+			newForbidFlags |= g_ForbidVoteFlags[i].ulThisFlag;
+	}
+
+	sv_forbidvoteflags = newForbidFlags;
 
 	GetDlgItemText( hDlg, IDC_PASSWORD, szBuffer, 1024 );
 	sv_password = szBuffer;
@@ -660,19 +674,18 @@ BOOL CALLBACK settings_ServerTab_Callback( HWND hDlg, UINT Message, WPARAM wPara
 
 void settings_GameplayTab_ShowOrHideItems( HWND hDlg )
 {
-	GAMEMODE_e	GameMode;
-	LONG		lInput;
-
 	// Get the selected game mode.
-	lInput = SendDlgItemMessage( hDlg, IDC_GAMEPLAYMODE, CB_GETCURSEL, 0, 0 );
+	LONG lInput = SendDlgItemMessage( hDlg, IDC_GAMEPLAYMODE, CB_GETCURSEL, 0, 0 );
+
 	if ( lInput >= 0 && lInput < NUM_GAMEMODES )
 	{
-		GameMode = (GAMEMODE_e) lInput;
+		const GAMEMODE_e GameMode = static_cast<GAMEMODE_e>( lInput );
+		const ULONG ulGameModeFlags = GAMEMODE_GetFlags( GameMode );
 
 		// Show lives if this mode uses them.
-		ShowWindow( GetDlgItem( hDlg, IDC_MAXLIVES ), ( GAMEMODE_GetFlags( GameMode ) & GMF_USEMAXLIVES ) ? SW_SHOW : SW_HIDE );
-		ShowWindow( GetDlgItem( hDlg, IDC_MAXLIVESSPIN ), ( GAMEMODE_GetFlags( GameMode ) & GMF_USEMAXLIVES ) ? SW_SHOW : SW_HIDE );
-		ShowWindow( GetDlgItem( hDlg, IDC_MAXLIVES_LABEL ), ( GAMEMODE_GetFlags( GameMode ) & GMF_USEMAXLIVES ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_MAXLIVES ), ( ulGameModeFlags & GMF_USEMAXLIVES ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_MAXLIVESSPIN ), ( ulGameModeFlags & GMF_USEMAXLIVES ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_MAXLIVES_LABEL ), ( ulGameModeFlags & GMF_USEMAXLIVES ) ? SW_SHOW : SW_HIDE );
 	
 		// Show the duellimit if Duel is selected.
 		ShowWindow( GetDlgItem( hDlg, IDC_DUELLIMIT ), ( GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
@@ -680,14 +693,14 @@ void settings_GameplayTab_ShowOrHideItems( HWND hDlg )
 		ShowWindow( GetDlgItem( hDlg, IDC_DUELLIMIT_LABEL ), (GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
 
 		// Show pointlimit if players earn points.
-		ShowWindow( GetDlgItem( hDlg, IDC_POINTLIMIT ), ( GAMEMODE_GetFlags( GameMode ) & GMF_PLAYERSEARNPOINTS ) ? SW_SHOW : SW_HIDE );
-		ShowWindow( GetDlgItem( hDlg, IDC_POINTLIMITSPIN ), ( GAMEMODE_GetFlags( GameMode ) & GMF_PLAYERSEARNPOINTS ) ? SW_SHOW : SW_HIDE );
-		ShowWindow( GetDlgItem( hDlg, IDC_POINTLIMIT_LABEL ), ( GAMEMODE_GetFlags( GameMode ) & GMF_PLAYERSEARNPOINTS ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_POINTLIMIT ), ( ulGameModeFlags & GMF_PLAYERSEARNPOINTS ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_POINTLIMITSPIN ), ( ulGameModeFlags & GMF_PLAYERSEARNPOINTS ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_POINTLIMIT_LABEL ), ( ulGameModeFlags & GMF_PLAYERSEARNPOINTS ) ? SW_SHOW : SW_HIDE );
 
 		// Show winlimit if players earn wins.
-		ShowWindow( GetDlgItem( hDlg, IDC_WINLIMIT ), ( GAMEMODE_GetFlags( GameMode ) & GMF_PLAYERSEARNWINS || GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
-		ShowWindow( GetDlgItem( hDlg, IDC_WINLIMITSPIN ), ( GAMEMODE_GetFlags( GameMode ) & GMF_PLAYERSEARNWINS || GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
-		ShowWindow( GetDlgItem( hDlg, IDC_WINLIMIT_LABEL ), ( GAMEMODE_GetFlags( GameMode ) & GMF_PLAYERSEARNWINS || GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_WINLIMIT ), ( ulGameModeFlags & GMF_PLAYERSEARNWINS || GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_WINLIMITSPIN ), ( ulGameModeFlags & GMF_PLAYERSEARNWINS || GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
+		ShowWindow( GetDlgItem( hDlg, IDC_WINLIMIT_LABEL ), ( ulGameModeFlags & GMF_PLAYERSEARNWINS || GameMode == GAMEMODE_DUEL ) ? SW_SHOW : SW_HIDE );
 	}
 }
 
@@ -864,18 +877,10 @@ void settings_AccessTab_ShowOrHideItems( HWND hDlg )
 	
 	// Enable / disable all the vote options.
 	bool bVotesEnabled = ( SendDlgItemMessage( hDlg, IDC_ALLOW_CALLVOTE, BM_GETCHECK, 0, 0 ) == BST_CHECKED );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_FRAGLIMIT ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_KICKLIMIT ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_MAP ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_CHANGEMAP ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_POINTLIMIT ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_DUELLIMIT ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_TIMELIMIT ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_WINLIMIT ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_FLAG ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_NEXTMAP ), bVotesEnabled );
-	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_NEXTSECRET ), bVotesEnabled );
 	EnableWindow( GetDlgItem( hDlg, IDC_ALLOWVOTE_SPECTATOR ), bVotesEnabled );
+
+	for ( unsigned int i = 0; i < countof( g_ForbidVoteFlags ); i++ )
+		EnableWindow( GetDlgItem( hDlg, g_ForbidVoteFlags[i].iControlID ), bVotesEnabled );
 }
 
 //==========================================================================
@@ -920,18 +925,10 @@ BOOL CALLBACK settings_AccessTab_Callback( HWND hDlg, UINT Message, WPARAM wPara
 
 		// Update voting checkboxes.
 		SendDlgItemMessage( hDlg, IDC_ALLOW_CALLVOTE, BM_SETCHECK, ( sv_nocallvote != 1 ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_DUELLIMIT, BM_SETCHECK, ( !sv_noduellimitvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_FRAGLIMIT, BM_SETCHECK, ( !sv_nofraglimitvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_KICKLIMIT, BM_SETCHECK, ( !sv_nokickvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_POINTLIMIT, BM_SETCHECK, ( !sv_nopointlimitvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_TIMELIMIT, BM_SETCHECK, ( !sv_notimelimitvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_WINLIMIT, BM_SETCHECK, ( !sv_nowinlimitvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_MAP, BM_SETCHECK, ( !sv_nomapvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_CHANGEMAP, BM_SETCHECK, ( !sv_nochangemapvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_FLAG, BM_SETCHECK, ( !sv_noflagvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_NEXTMAP, BM_SETCHECK, ( !sv_nonextmapvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
-		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_NEXTSECRET, BM_SETCHECK, ( !sv_nonextsecretvote ? BST_CHECKED : BST_UNCHECKED ), 0 );
 		SendDlgItemMessage( hDlg, IDC_ALLOWVOTE_SPECTATOR, BM_SETCHECK, ( sv_nocallvote != 2 ? BST_CHECKED : BST_UNCHECKED ), 0 );
+
+		for ( unsigned int i = 0; i < countof( g_ForbidVoteFlags ); i++ )
+			SendDlgItemMessage( hDlg, g_ForbidVoteFlags[i].iControlID, BM_SETCHECK, !( sv_forbidvoteflags & g_ForbidVoteFlags[i].ulThisFlag ) ? BST_CHECKED : BST_UNCHECKED, 0 );
 
 		settings_AccessTab_ShowOrHideItems( hDlg );
 		break;

@@ -988,7 +988,7 @@ bool PIT_CheckThing(AActor *thing, FCheckPosition &tm)
 		}
 	}
 
-	if (tm.thing->player == NULL) // || !(tm.thing->player->cheats & CF_PREDICTING)) // [BB]
+	if ((tm.thing->player == NULL) || (thing->flags6 & MF6_TOUCHY) || (tm.thing->flags6 & MF6_TOUCHY)) // || !(tm.thing->player->cheats & CF_PREDICTING)) // [BB] // [RK] Added checks.
 	{
 		// touchy object is alive, toucher is solid
 		if (thing->flags6 & MF6_TOUCHY && tm.thing->flags & MF_SOLID && thing->health > 0 &&
@@ -1297,7 +1297,11 @@ bool PIT_CheckThing(AActor *thing, FCheckPosition &tm)
 						!(tm.thing->flags3 & MF3_BLOODLESSIMPACT) &&
 						(pr_checkthing() < 192))
 					{
-						P_BloodSplatter(tm.thing->x, tm.thing->y, tm.thing->z, thing);
+						// [RK] Clients will use the morph projectile as originator since they destroyed their copy of the thing in P_DamageMobj.
+						if ( NETWORK_GetState() == NETSTATE_SERVER && tm.thing->IsKindOf( RUNTIME_CLASS( AMorphProjectile )))
+							P_BloodSplatter(tm.thing->x, tm.thing->y, tm.thing->z, tm.thing);
+						else
+							P_BloodSplatter(tm.thing->x, tm.thing->y, tm.thing->z, thing);
 					}
 					if (!(tm.thing->flags3 & MF3_BLOODLESSIMPACT))
 					{
@@ -1490,7 +1494,8 @@ bool P_CheckPosition(AActor *thing, fixed_t x, fixed_t y, FCheckPosition &tm, bo
 	validcount++;
 	spechit.Clear();
 
-	if ((thing->flags & MF_NOCLIP) && !(thing->flags & MF_SKULLFLY))
+	// [AK] Ignore spectators without physical restrictions; they have noclip.
+	if ((thing->flags & MF_NOCLIP) && !(thing->flags & MF_SKULLFLY) && P_IsSpectatorUnrestricted(thing) == false)
 		return true;
 
 	// Check things first, possibly picking things up.
@@ -1568,7 +1573,8 @@ bool P_CheckPosition(AActor *thing, fixed_t x, fixed_t y, FCheckPosition &tm, bo
 
 	thing->BlockingMobj = NULL;
 	thing->height = realheight;
-	if (actorsonly || (thing->flags & MF_NOCLIP))
+	// [AK] Ignore spectators without physical restrictions; they have noclip.
+	if (actorsonly || ((thing->flags & MF_NOCLIP) && P_IsSpectatorUnrestricted(thing) == false))
 		return (thing->BlockingMobj = thingblocker) == NULL;
 
 	FBlockLinesIterator it(box);
@@ -1582,6 +1588,16 @@ bool P_CheckPosition(AActor *thing, fixed_t x, fixed_t y, FCheckPosition &tm, bo
 
 	while ((ld = it.Next()))
 	{
+		// [AK] Spectators without physical restrictions should only be executing
+		// line specials if they reached this point.
+		if (P_IsSpectatorUnrestricted(thing))
+		{
+			if (ld->special)
+				spechit.Push(ld);
+
+			continue;
+		}
+
 		good &= PIT_CheckLine(ld, box, tm);
 	}
 	if (!good)
@@ -2157,7 +2173,8 @@ bool P_TryMove(AActor *thing, fixed_t x, fixed_t y,
 	}
 */
 	// if any special lines were hit, do the effect
-	if (!(thing->flags & (MF_TELEPORT | MF_NOCLIP)))
+	// [AK] Allow spectators without physical restrictions to execute line specials.
+	if (!(thing->flags & (MF_TELEPORT | MF_NOCLIP)) || P_IsSpectatorUnrestricted(thing))
 	{
 		while (spechit.Pop(ld))
 		{
@@ -2372,7 +2389,8 @@ bool P_OldTryMove (AActor *thing, fixed_t x, fixed_t y,
 	thing->LinkToWorld( );
 
 	// if any special lines were hit, do the effect
-	if (!(thing->flags & (MF_TELEPORT|MF_NOCLIP)))
+	// [AK] Allow spectators without physical restrictions to execute line specials.
+	if (!(thing->flags & (MF_TELEPORT|MF_NOCLIP)) || P_IsSpectatorUnrestricted(thing))
 	{
 		while (spechit.Pop (ld))
 		{
@@ -4526,7 +4544,7 @@ AActor *P_LineAttack(AActor *t1, angle_t angle, fixed_t distance,
 	if (killPuff && puff != NULL)
 	{
 		// [BB] Remove the temporary puff from the clients.
-		if ( ( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( puff->NetID != -1 ) )
+		if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( puff->NetID != 0 ))
 			SERVERCOMMANDS_DestroyThing( puff );
 
 		puff->Destroy();
@@ -4588,7 +4606,10 @@ AActor *P_LinePickActor(AActor *t1, angle_t angle, fixed_t distance, int pitch,
 	TData.Caller = t1;
 	TData.hitGhosts = true;
 	
-	// [AK] This doesn't spawn a puff actor, but indicate that this is a line pick hitscan.
+	// [AK] Explicity set hitSameSpecies to false. We are allowed to pick actors that are the
+	// same species, but this isn't always the case if called by the server.
+	// This doesn't spawn a puff actor, but indicate that this is a line pick hitscan.
+	TData.hitSameSpecies = false;
 	TData.pPuff = NULL;
 	TData.bIsLinePick = true;
 
@@ -4769,6 +4790,10 @@ struct RailData
 	TArray<SRailHit> RailHits;
 	bool StopAtOne;
 	bool StopAtInvul;
+
+	// [AK] Added caller and hitscan puff actor pointers.
+	AActor *pCaller;
+	AActor *pPuff;
 };
 
 static ETraceStatus ProcessRailHit(FTraceResults &res, void *userdata)
@@ -4777,6 +4802,12 @@ static ETraceStatus ProcessRailHit(FTraceResults &res, void *userdata)
 	if (res.HitType != TRACE_HitActor)
 	{
 		return TRACE_Stop;
+	}
+
+	// [AK] Check if this player can shoot through their teammates if ZADF_SHOOT_THROUGH_ALLIES is enabled.
+	if ( PLAYER_CannotAffectAllyWith( data->pCaller, res.Actor, data->pPuff, ZADF_SHOOT_THROUGH_ALLIES ))
+	{
+		return TRACE_Skip;
 	}
 
 	// Invulnerable things completely block the shot
@@ -4856,6 +4887,10 @@ void P_RailAttack(AActor *source, int damage, int offset_xy, fixed_t offset_z, i
 	flags = (puffDefaults->flags6 & MF6_NOTRIGGER) ? 0 : TRACE_PCross | TRACE_Impact;
 	rail_data.StopAtInvul = (puffDefaults->flags3 & MF3_FOILINVUL) ? false : true;
 
+	// [AK] Remember the actor who fired the rail and the puff actor that is supposed to spawn.
+	rail_data.pCaller = source;
+	rail_data.pPuff = puffDefaults;
+
 	Trace(x1, y1, shootz, source->Sector, vx, vy, vz,
 		distance, MF_SHOOTABLE, ML_BLOCKEVERYTHING, source, trace,
 		flags, ProcessRailHit, &rail_data);
@@ -4930,37 +4965,14 @@ void P_RailAttack(AActor *source, int damage, int offset_xy, fixed_t offset_z, i
 				}
 			}
 
-			if (( hitactor->player ) && ( source->IsTeammate( hitactor ) == false ))
+			if (( hitactor->player ) && ( source->IsTeammate( hitactor ) == false ) && ( source->player ))
 			{
-				if ( source->player )
-				{
-					source->player->ulConsecutiveRailgunHits++;
+				source->player->ulConsecutiveRailgunHits++;
 
-					// If the player has made 2 straight consecutive hits with the railgun, award a medal.
-					if (( source->player->ulConsecutiveRailgunHits % 2 ) == 0 )
-					{
-						// If the player gets 4+ straight hits with the railgun, award a "Most Impressive" medal.
-						if ( source->player->ulConsecutiveRailgunHits >= 4 )
-						{
-							if ( NETWORK_InClientMode() == false )
-								MEDAL_GiveMedal( ULONG( source->player - players ), MEDAL_MOSTIMPRESSIVE );
-
-							// Tell clients about the medal that been given.
-							if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-								SERVERCOMMANDS_GivePlayerMedal( ULONG( source->player - players ), MEDAL_MOSTIMPRESSIVE );
-						}
-						// Otherwise, award an "Impressive" medal.
-						else
-						{
-							if ( NETWORK_InClientMode() == false )
-								MEDAL_GiveMedal( ULONG( source->player - players ), MEDAL_IMPRESSIVE );
-
-							// Tell clients about the medal that been given.
-							if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-								SERVERCOMMANDS_GivePlayerMedal( ULONG( source->player - players ), MEDAL_IMPRESSIVE );
-						}
-					}
-				}
+				// If the player has made 2 straight consecutive hits with the railgun, award a medal.
+				// Award a "Most Impressive" medal if they get 4+ straight hits. Otherwise, award an "Impressive" medal.
+				if (( NETWORK_InClientMode( ) == false ) && (( source->player->ulConsecutiveRailgunHits % 2 ) == 0 ))
+					MEDAL_GiveMedal( static_cast<ULONG>( source->player - players ), source->player->ulConsecutiveRailgunHits >= 4 ? "MostImpressive" : "Impressive" );
 			}
 		}
 	}
@@ -5067,6 +5079,90 @@ void P_RailAttackWithPossibleSpread (AActor *source, int damage, int offset_xy, 
 			source->player->ulConsecutiveRailgunHits = 0;
 	}
 }
+
+//==========================================================================
+//
+// [AK] FreeChasecam
+//
+// A namespace containing everything used to control the free chasecam.
+//
+//==========================================================================
+
+namespace FreeChasecam
+{
+
+angle_t cameraAngle = 0;
+fixed_t cameraPitch = 0;
+bool enabled = false;
+
+// [AK] Controls if whether to use the free chasecam or not.
+CUSTOM_CVAR( Bool, cl_freechase, false, CVAR_ARCHIVE | CVAR_GLOBALCONFIG )
+{
+	if ( self )
+		FreeChasecam::Reset( );
+}
+
+//==========================================================================
+//
+// [AK] FreeChasecam::IsBeingUsed
+//
+// Checks if the free chasecam is being used by the local player.
+//
+//==========================================================================
+
+bool IsBeingUsed( void )
+{
+	// [AK] We can't use the free chasecam if it's disabled or if we're not using the chasecam at all.
+	if (( cl_freechase == false ) || (( players[consoleplayer].cheats & CF_CHASECAM ) == false ))
+		return false;
+
+	// [AK] We can't use the free chasecam while spying on ourselves (unless we're playing a demo) or
+	// if we're in free spectator mode.
+	if ((( players[consoleplayer].camera == players[consoleplayer].mo ) && ( CLIENTDEMO_IsPlaying( ) == false )) || ( CLIENTDEMO_IsInFreeSpectateMode( )))
+		return false;
+
+	return true;
+}
+
+bool IsBeingUsed( player_t *player )
+{
+	if ( player != nullptr )
+	{
+		// [AK] While playing a demo, only the free spectator player controls the free chasecam.
+		if ( CLIENTDEMO_IsPlaying( ))
+		{
+			if ( player == CLIENTDEMO_GetFreeSpectatorPlayer( ))
+				return IsBeingUsed( );
+		}
+		// [AK] Otherwise, only the local player controls it.
+		else if ( player == &players[consoleplayer] )
+		{
+			return IsBeingUsed( );
+		}
+	}
+
+	return false;
+}
+
+//==========================================================================
+//
+// [AK] FreeChasecam::Reset
+//
+// Resets the free chasecam's orientation if being used right now.
+//
+//==========================================================================
+
+void Reset( void )
+{
+	if ( IsBeingUsed( ))
+	{
+		cameraAngle = players[consoleplayer].camera->angle;
+		cameraPitch = players[consoleplayer].camera->pitch;
+	}
+}
+
+}
+
 //==========================================================================
 //
 // [RH] P_AimCamera
@@ -5085,8 +5181,11 @@ CUSTOM_CVAR(Float, chase_dist, 90.f, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
 void P_AimCamera(AActor *t1, fixed_t &CameraX, fixed_t &CameraY, fixed_t &CameraZ, sector_t *&CameraSector)
 {
 	fixed_t distance = (fixed_t)(chase_dist * FRACUNIT);
-	angle_t angle = (t1->angle - ANG180) >> ANGLETOFINESHIFT;
-	angle_t pitch = (angle_t)(t1->pitch) >> ANGLETOFINESHIFT;
+	// [AK] If we're using free chasecam, use the angle and pitch of the camera.
+	// If not, use the passed actor's angle and pitch.
+	const bool usingFreeChasecam = FreeChasecam::IsBeingUsed();
+	angle_t angle = ((usingFreeChasecam ? FreeChasecam::cameraAngle : t1->angle) - ANG180) >> ANGLETOFINESHIFT;
+	angle_t pitch = (angle_t)(usingFreeChasecam ? FreeChasecam::cameraPitch : t1->pitch) >> ANGLETOFINESHIFT;
 	FTraceResults trace;
 	fixed_t vx, vy, vz, sz;
 
@@ -5152,7 +5251,8 @@ bool P_TalkFacing(AActor *player)
 	{
 		return false;
 	}
-	if (linetarget->Conversation != NULL)
+	// [SB] In multiplayer, the server initiates conversations.
+	if (linetarget->Conversation != NULL && !NETWORK_InClientMode())
 	{
 		// Give the NPC a chance to play a brief animation
 		linetarget->ConversationAnimation(0);
@@ -5430,66 +5530,6 @@ void P_UseItems( player_t *pPlayer )
 	}
 }
 */
-/*
-================
-=
-= P_PlayerScan
-=
-= Looks for other players directly in front of the player.
-================
-*/
-
-player_t *P_PlayerScan( AActor *pSource )
-{
-	fixed_t vx, vy, vz, eyez;
-	FTraceResults	trace;
-	int				pitch;
-	angle_t			angle;
-
-	angle = pSource->angle >> ANGLETOFINESHIFT;
-	pitch = (angle_t)( pSource->pitch ) >> ANGLETOFINESHIFT;
-
-	vx = FixedMul (finecosine[pitch], finecosine[angle]);
-	vy = FixedMul (finecosine[pitch], finesine[angle]);
-	vz = -finesine[pitch];
-
-	if ( pSource->player )
-		eyez = pSource->player->viewz;
-	else
-		eyez = pSource->z + pSource->height / 2;
-
-	if ( Trace( pSource->x,	// Actor x
-		pSource->y, // Actor y
-		eyez,	// Actor z
-		pSource->Sector,
-		vx,
-		vy,
-		vz,
-		( 32 * 64 * FRACUNIT ) /* MISSILERANGE */,	// Maximum distance
-		MF_SHOOTABLE,	// Actor mask
-		ML_BLOCKEVERYTHING,	// Wall mask
-		pSource,		// Actor to ignore
-		trace,	// Result
-		TRACE_NoSky,	// Trace flags
-		NULL ) == false )	// Callback
-	// Did not spot anything anything.
-	{
-		return ( NULL );
-	}
-	else
-	{
-		// Return NULL if we did not hit an actor.
-		if ( trace.HitType != TRACE_HitActor )
-			return ( NULL );
-
-		// Return NULL if the actor we hit is not a player.
-		if ( trace.Actor->player == NULL )
-			return ( NULL );
-
-		// Return the player we found.
-		return ( trace.Actor->player );
-	}
-}
 
 //==========================================================================
 //
@@ -5644,7 +5684,8 @@ void P_RadiusAttack(AActor *bombspot, AActor *bombsource, int bombdamage, int bo
 
 		// [AK] Don't push this player if ZADF_DONT_PUSH_ALLIES is enabled and the
 		// other player who caused the explosion is their teammate.
-		if ( PLAYER_CannotAffectAllyWith( bombsource, thing, bombspot, ZADF_DONT_PUSH_ALLIES ))
+		// [RK] We still need to push voodoo dolls though.
+		if ( PLAYER_CannotAffectAllyWith( bombsource, thing, bombspot, ZADF_DONT_PUSH_ALLIES ) && !( thing->player == COOP_GetVoodooDollDummyPlayer() ))
 			continue;
 
 		// Barrels always use the original code, since this makes

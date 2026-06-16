@@ -48,7 +48,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <time.h>
+#include <iomanip>
+#include <sstream>
 #include <windows.h>
 #include <commctrl.h>
 #define USE_WINDOWS_DWORD
@@ -105,7 +106,9 @@ static	bool				g_bScrollConsoleOnNewline = false;
 static	LONG				g_lPlayerIndicies[MAXPLAYERS];
 
 static	bool				g_bServerLoaded = false;
-static	char				g_szBanEditString[256];
+static	IPStringArray		g_EditBanAddress;
+static	SYSTEMTIME			g_EditBanDate;
+static	char				g_EditBanReason[128];
 static	NOTIFYICONDATA		g_NotifyIconData;
 static	HICON				g_hSmallIcon = NULL;
 static	bool				g_bSmallIconClicked = false;
@@ -113,6 +116,10 @@ static	NETADDRESS_s		g_LocalAddress;
 
 // [RC] Commands that the server admin sent recently.
 static	std::vector<FString>	g_RecentConsoleMessages;
+
+// [AK] All ban lists being shown in the "manage bans" window.
+static	TArray<IPList>		g_BanLists;
+static	unsigned int		g_CurrentBanList;
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 //-- GLOBAL VARIABLES ------------------------------------------------------------------------------------------------------------------------------
@@ -191,8 +198,8 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 
 			// Set up the server dialog's status bar.
 			g_hDlgStatusBar = CreateStatusWindow(WS_CHILD | WS_VISIBLE, (LPCTSTR)NULL, hDlg, IDC_SERVER_STATUSBAR);
-			const int aDivideWidths[] = {47, 85, 195, 305, 450 };
-			SendMessage(g_hDlgStatusBar, SB_SETPARTS, (WPARAM) 5, (LPARAM) aDivideWidths);			
+			const int divideWidths[] = { 43, 75, 198, 298, 450 };
+			SendMessage( g_hDlgStatusBar, SB_SETPARTS, (WPARAM) 5, (LPARAM)divideWidths );
 
 			// Create and set our fonts for the titlescreen and console.
 			HFONT hTitleFont = CreateFont(14, 0, 0, 0, 600, 0, 0, 0, 0, 0, 0, 0, 0, "Tahoma"); 
@@ -208,30 +215,22 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 			Printf( "\nRunning version: %s\n", GetVersionStringRev() );
 
 			// Append the time.
-			struct	tm		*pTimeInfo;
-			time_t			clock;
-			time (&clock);
-			pTimeInfo = localtime (&clock);
-			Printf("Started on %d/%d/%d at %d:%d:%d.\n", pTimeInfo->tm_mon, pTimeInfo->tm_mday,
-				(1900+pTimeInfo->tm_year), pTimeInfo->tm_hour, pTimeInfo->tm_min, pTimeInfo->tm_sec);
-				// [RC] TODO: AM/PM, localization, central time class
+			const time_t currentTime = time( nullptr );
+			char formattedTime[32];
 
-			Printf("\n");
+			strftime( formattedTime, sizeof( formattedTime ), "%x at %X", localtime( &currentTime ));
+			Printf( "Started on %s.\n\n", formattedTime );
 
 			// Initialize the title string.
-			std::string versionString = GetVersionString();
-			if ( BUILD_ID != BUILD_RELEASE )
-			{
-				versionString += " (r";
-				versionString += GetGitTime();
-				versionString += ")";
-			}
-			SendMessage( g_hDlgStatusBar, SB_SETTEXT, (WPARAM)4, (LPARAM) versionString.c_str() );
+			SendMessage( g_hDlgStatusBar, SB_SETTEXT, (WPARAM)4, (LPARAM)GetVersionStringRev( ));
 			SetDlgItemText( hDlg, IDC_MAPMODE, "Please wait..." );
 
 			// Set the text limits for the console and input boxes.
 			SendDlgItemMessage( hDlg, IDC_CONSOLEBOX, EM_SETLIMITTEXT, 4096, 0 );
 			SendDlgItemMessage( hDlg, IDC_INPUTBOX, EM_SETLIMITTEXT, 256, 0 );
+
+			// [AK] Allow the entire player row on the scoreboard to be selectable.
+			SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT );
 
 			// Insert the name column.
 			sprintf( szColumnTitle, "Name" );
@@ -241,7 +240,7 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 			ColumnData.pszText = szColumnTitle;
 			ColumnData.cchTextMax = 64;
 			ColumnData.iSubItem = 0;
-			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, COLUMN_NAME, (LPARAM)&ColumnData );
+			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, SERVERCONSOLE_COLUMN_NAME, (LPARAM)&ColumnData );
 
 			// Insert the frags column.
 			sprintf( szColumnTitle, "Frags" );
@@ -251,7 +250,7 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 			ColumnData.pszText = szColumnTitle;
 			ColumnData.cchTextMax = 64;
 			ColumnData.iSubItem = 0;
-			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, COLUMN_FRAGS, (LPARAM)&ColumnData );
+			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, SERVERCONSOLE_COLUMN_FRAGS, (LPARAM)&ColumnData );
 
 			// Insert the ping column.
 			sprintf( szColumnTitle, "Ping" );
@@ -261,7 +260,7 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 			ColumnData.pszText = szColumnTitle;
 			ColumnData.cchTextMax = 64;
 			ColumnData.iSubItem = 0;
-			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, COLUMN_PING, (LPARAM)&ColumnData );
+			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, SERVERCONSOLE_COLUMN_PING, (LPARAM)&ColumnData );
 
 			// Insert the time column.
 			sprintf( szColumnTitle, "Time" );
@@ -271,7 +270,7 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 			ColumnData.pszText = szColumnTitle;
 			ColumnData.cchTextMax = 64;
 			ColumnData.iSubItem = 0;
-			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, COLUMN_TIME, (LPARAM)&ColumnData );
+			lIndex = SendDlgItemMessage( hDlg, IDC_PLAYERLIST, LVM_INSERTCOLUMN, SERVERCONSOLE_COLUMN_TIME, (LPARAM)&ColumnData );
 
 			// Initialize the player indicies array.
 			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
@@ -497,6 +496,14 @@ BOOL CALLBACK SERVERCONSOLE_ServerDialogBoxCallback( HWND hDlg, UINT Message, WP
 					arguments.AppendFormat( "-iwad %s ", NETWORK_GetIWAD( ) );
 					arguments.AppendFormat( "-connect %s ", g_LocalAddress.ToString() );
 
+					// [AK] If we're forcing a connect password, include it as a parameter.
+					if (( sv_forcepassword ) && ( strlen( sv_password ) > 0 ))
+						arguments.AppendFormat( "+cl_password %s ", sv_password.GetGenericRep( CVAR_String ).String );
+
+					// [AK] If we're forcing a join password, include it as a parameter.
+					if (( sv_forcejoinpassword ) && ( strlen( sv_joinpassword ) > 0 ))
+						arguments.AppendFormat( "+cl_joinpassword %s ", sv_joinpassword.GetGenericRep( CVAR_String ).String );
+
 					// Run it!
 					ShellExecute( hDlg, "open", Args->GetArg( 0 ), arguments.GetChars( ), NULL, SW_SHOW );
 				}
@@ -646,7 +653,7 @@ void serverconsole_ScoreboardRightClicked( void )
 	pItem.pszText = szString;
 	pItem.mask = LVIF_TEXT;
 	pItem.iItem = ListView_GetHotItem( hList );
-	pItem.iSubItem = COLUMN_PING;
+	pItem.iSubItem = SERVERCONSOLE_COLUMN_PING;
 	pItem.cchTextMax = 16;
 
 	// If it fails, nothing is selected.
@@ -661,7 +668,7 @@ void serverconsole_ScoreboardRightClicked( void )
 		pItem.pszText = g_szScoreboard_SelectedUser;
 		pItem.mask = LVIF_TEXT;
 		pItem.iItem = ListView_GetHotItem(hList);
-		pItem.iSubItem = COLUMN_NAME;
+		pItem.iSubItem = SERVERCONSOLE_COLUMN_NAME;
 		pItem.cchTextMax = 64;
 
 		if ( !ListView_GetItem( hList, &pItem ) )
@@ -962,7 +969,24 @@ BOOL CALLBACK SERVERCONSOLE_MapRotationCallback( HWND hDlg, UINT Message, WPARAM
 			case IDC_MAPNAME:
 
 				if ( HIWORD( wParam ) == CBN_EDITCHANGE || HIWORD( wParam ) == CBN_SELCHANGE )
+				{
+					// [AK] Update the combo box when the selected item changes.
+					if ( HIWORD( wParam ) == CBN_SELCHANGE )
+					{
+						const int selectedItem = SendDlgItemMessage( hDlg, IDC_MAPNAME, CB_GETCURSEL, 0, 0 );
+
+						if ( selectedItem != CB_ERR )
+						{
+							const int length = SendDlgItemMessage( hDlg, IDC_MAPNAME, CB_GETLBTEXTLEN, selectedItem, 0 );
+							auto buffer = std::make_unique<char[]>( length );
+
+							SendDlgItemMessage( hDlg, IDC_MAPNAME, CB_GETLBTEXT, selectedItem, (LPARAM)(LPCTSTR)buffer.get( ));
+							SetDlgItemText( hDlg, IDC_MAPNAME, buffer.get( ));
+						}
+					}
+
 					serverconsole_MapRotation_Update( hDlg );
+				}
 
 				if ( HIWORD( wParam ) != CBN_DBLCLK ) // Double-clicking a map acts as if "Add >>" was pushed
 					break;			
@@ -1314,36 +1338,167 @@ BOOL CALLBACK SERVERCONSOLE_BanIPCallback( HWND hDlg, UINT Message, WPARAM wPara
 
 //*****************************************************************************
 //
+static IPADDRESSBAN_s serverconsole_BanList_GetEntry( HWND dlg, int index )
+{
+	IPADDRESSBAN_s result;
+	char buffer[256];
+	LVITEM listItem;
+
+	listItem.mask = LVIF_TEXT;
+	listItem.iItem = index;
+	listItem.pszText = buffer;
+	listItem.cchTextMax = sizeof( buffer );
+
+	// [AK] Retrieve the IP address.
+	listItem.iSubItem = SERVERCONSOLE_COLUMN_IPADDRESS;
+	SendDlgItemMessage( dlg, IDC_BANLIST, LVM_GETITEM, 0, (LPARAM)&listItem );
+	result.szIP.SetFromString( listItem.pszText );
+
+	// [AK] Retrieve the expiration date.
+	listItem.iSubItem = SERVERCONSOLE_COLUMN_EXPIRATION;
+	SendDlgItemMessage( dlg, IDC_BANLIST, LVM_GETITEM, 0, (LPARAM)&listItem );
+
+	tm timeInfo = { };
+	result.tExpirationDate = 0;
+
+	// [AK] An empty string means that the ban is permanent and doesn't expire.
+	if ( strlen( listItem.pszText ) > 0 )
+	{
+		std::istringstream ss( listItem.pszText );
+		ss >> std::get_time( &timeInfo, "%m/%d/%Y %H:%M" );
+
+		if ( ss.fail( ))
+		{
+			Printf( "WARNING: failed to parse time from \"%s\".", listItem.pszText );
+		}
+		else
+		{
+			// [AK] std::get_time doesn't set the DST flag, so set it to -1 so
+			// that mktime can determine if the flag must be on or off.
+			timeInfo.tm_isdst = -1;
+			result.tExpirationDate = mktime( &timeInfo );
+		}
+	}
+
+	// [AK] Retrieve the reason for the ban.
+	listItem.iSubItem = SERVERCONSOLE_COLUMN_REASON;
+	SendDlgItemMessage( dlg, IDC_BANLIST, LVM_GETITEM, 0, (LPARAM)&listItem );
+	strcpy( result.szComment, listItem.pszText );
+
+	return result;
+}
+
+//*****************************************************************************
+//
+static void serverconsole_BanList_SaveCurrentList( HWND dlg )
+{
+	const int count = SendDlgItemMessage( dlg, IDC_BANLIST, LVM_GETITEMCOUNT, 0, 0 );
+
+	if ( count != LB_ERR )
+	{
+		g_BanLists[g_CurrentBanList].clear( );
+
+		for ( int i = 0; i < count; i++ )
+			g_BanLists[g_CurrentBanList].push_back( serverconsole_BanList_GetEntry( dlg, i ));
+	}
+}
+
+//*****************************************************************************
+//
+static void serverconsole_BanList_PopulateList( HWND dlg )
+{
+	char buffer[256];
+	LVITEM listItem;
+
+	listItem.mask = LVIF_TEXT;
+	listItem.pszText = buffer;
+	listItem.cchTextMax = sizeof( buffer );
+
+	for ( unsigned int i = 0; i < g_BanLists[g_CurrentBanList].size( ); i++ )
+	{
+		const IPADDRESSBAN_s &entry = g_BanLists[g_CurrentBanList].getVector( )[i];
+		listItem.iItem = i;
+
+		listItem.iSubItem = SERVERCONSOLE_COLUMN_IPADDRESS;
+		strcpy( listItem.pszText, std::string( entry.szIP ).c_str( ));
+		SendDlgItemMessage( dlg, IDC_BANLIST, LVM_INSERTITEM, 0, (LPARAM)&listItem );
+
+		listItem.iSubItem = SERVERCONSOLE_COLUMN_EXPIRATION;
+		strcpy( listItem.pszText, entry.GetExpirationAsString( ).c_str( ));
+		SendDlgItemMessage( dlg, IDC_BANLIST, LVM_SETITEM, 0, (LPARAM)&listItem );
+
+		listItem.iSubItem = SERVERCONSOLE_COLUMN_REASON;
+		strcpy( listItem.pszText, entry.szComment );
+		SendDlgItemMessage( dlg, IDC_BANLIST, LVM_SETITEM, 0, (LPARAM)&listItem );
+	}
+}
+
+//*****************************************************************************
+//
 BOOL CALLBACK SERVERCONSOLE_BanListCallback( HWND hDlg, UINT Message, WPARAM wParam, LPARAM lParam )
 {
-	ULONG		ulIdx;
-	UCVarValue	Val;
-
-	Val = sv_banfile.GetGenericRep( CVAR_String );
-
 	switch ( Message )
 	{
 	case WM_CLOSE:
 
+		g_BanLists.Clear( );
 		EndDialog( hDlg, -1 );
 		break;
 	case WM_INITDIALOG:
 
 		{
-			// Set the text limit for the IP box.
-			SendDlgItemMessage( hDlg, IDC_BANFILE, EM_SETLIMITTEXT, 256, 0 );
+			const TArray<IPList> &lists = SERVERBAN_GetBanList( );
+			LVCOLUMN columnData;
 
-			// Set the text limit for the IP box.
-			SetDlgItemText( hDlg, IDC_BANFILE, Val.String );
+			columnData.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH;
+			columnData.fmt = LVCFMT_LEFT;
+			columnData.cchTextMax = 64;
+			columnData.iSubItem = 0;
+
+			// [AK] Insert the IP address column.
+			columnData.pszText = "IP Address";
+			columnData.cx = 92;
+			SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_INSERTCOLUMN, SERVERCONSOLE_COLUMN_IPADDRESS, (LPARAM)&columnData );
+
+			// [AK] Insert the expiration date column.
+			columnData.pszText = "Expiration Date";
+			columnData.cx = 106;
+			SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_INSERTCOLUMN, SERVERCONSOLE_COLUMN_EXPIRATION, (LPARAM)&columnData );
+
+			// [AK] Insert the reason column.
+			columnData.pszText = "Reason";
+			columnData.cx = 215;
+			SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_INSERTCOLUMN, SERVERCONSOLE_COLUMN_REASON, (LPARAM)&columnData );
+
+			// [AK] Enable a couple of extended styles for the ban list.
+			SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES );
 
 			if ( sv_enforcebans )
 				SendDlgItemMessage( hDlg, IDC_ENFORCEBANS, BM_SETCHECK, BST_CHECKED, 0 );
 			else
 				SendDlgItemMessage( hDlg, IDC_ENFORCEBANS, BM_SETCHECK, BST_UNCHECKED, 0 );
 
-			// Populate the box with the current ban list.
-			for ( ulIdx = 0; ulIdx < SERVERBAN_GetBanList( )->size( ); ulIdx++ )
-				SendDlgItemMessage( hDlg, IDC_BANLIST, LB_INSERTSTRING, -1, (LPARAM)SERVERBAN_GetBanList( )->getEntryAsString( ulIdx, true, true, false ).c_str( ));
+			// [AK] Ensure there's at least one ban list exists (this should
+			// always be the case, though).
+			if ( lists.Size( ) > 0 )
+			{
+				g_BanLists = lists;
+				g_CurrentBanList = 0;
+
+				for ( unsigned int i = 0; i < g_BanLists.Size( ); i++ )
+					SendDlgItemMessage( hDlg, IDC_BANFILE, CB_INSERTSTRING, -1, (WPARAM)(LPSTR)g_BanLists[i].getFilename( ));
+
+				// [AK] Always select the primary ban list by default.
+				SendDlgItemMessage( hDlg, IDC_BANFILE, CB_SETCURSEL, 0, 0 );
+
+				// Populate the box with the current ban list.
+				serverconsole_BanList_PopulateList( hDlg );
+			}
+			else
+			{
+				MessageBox( hDlg, "There are no banlists loaded", SERVERCONSOLE_TITLESTRING, MB_OK );
+				EndDialog( hDlg, -1 );
+			}
 		}
 
 		break;
@@ -1352,166 +1507,153 @@ BOOL CALLBACK SERVERCONSOLE_BanListCallback( HWND hDlg, UINT Message, WPARAM wPa
 		{
 			switch ( LOWORD( wParam ))
 			{
+			case IDC_BANFILE:
+
+				{
+					// [AK] If the selected ban file is changed, save the old
+					// list, then repopulate the listbox with the new list.
+					if ( HIWORD( wParam ) == LBN_SELCHANGE )
+					{
+						serverconsole_BanList_SaveCurrentList( hDlg );
+						g_CurrentBanList = SendDlgItemMessage( hDlg, IDC_BANFILE, CB_GETCURSEL, 0, 0 );
+
+						SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_DELETEALLITEMS, 0, 0 );
+						serverconsole_BanList_PopulateList( hDlg );
+					}
+				}
+				break;
+			case IDC_ADD:
 			case IDC_EDIT:
 
 				{
-					LONG	lIdx;
+					int index = 0;
 
-					lIdx = SendDlgItemMessage( hDlg, IDC_BANLIST, LB_GETCURSEL, 0, 0 );
-					if ( lIdx != LB_ERR )
+					if ( LOWORD( wParam ) == IDC_ADD )
 					{
-						SendDlgItemMessage( hDlg, IDC_BANLIST, LB_GETTEXT, lIdx, (LPARAM)g_szBanEditString );
-						if ( DialogBox( g_hInst, MAKEINTRESOURCE( IDD_EDITBAN ), hDlg, (DLGPROC)SERVERCONSOLE_EditBanCallback ))
-						{
-							SendDlgItemMessage( hDlg, IDC_BANLIST, LB_DELETESTRING, lIdx, 0 );
-							SendDlgItemMessage( hDlg, IDC_BANLIST, LB_INSERTSTRING, lIdx, (LPARAM)g_szBanEditString );
-						}
+						// [AK] Add the new item to the end of the list.
+						index = SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_GETITEMCOUNT, 0, 0 );
+
+						g_EditBanAddress.SetToZeroes( );
+						g_EditBanDate.wMonth = g_EditBanDate.wDay = g_EditBanDate.wYear = 0;
+						g_EditBanReason[0] = 0;
 					}
 					else
-						MessageBox( hDlg, "Please select a ban to edit first.", SERVERCONSOLE_TITLESTRING, MB_OK );
+					{
+						index = SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_GETNEXTITEM, -1, LVNI_SELECTED );
+
+						if ( index != LB_ERR )
+						{
+							// [AK] Only one item should be selected for editing.
+							if ( SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_GETSELECTEDCOUNT, 0, 0 ) > 1 )
+							{
+								MessageBox( hDlg, "Please select only one ban to edit.", SERVERCONSOLE_TITLESTRING, MB_OK );
+								break;
+							}
+
+							const IPADDRESSBAN_s entry = serverconsole_BanList_GetEntry( hDlg, index );
+							g_EditBanAddress = entry.szIP;
+
+							if ( entry.tExpirationDate != 0 )
+							{
+								tm * timeInfo = localtime( &entry.tExpirationDate );
+
+								g_EditBanDate.wYear = timeInfo->tm_year + 1900;
+								g_EditBanDate.wMonth = timeInfo->tm_mon + 1;
+								g_EditBanDate.wDay = timeInfo->tm_mday;
+								g_EditBanDate.wHour = timeInfo->tm_hour;
+								g_EditBanDate.wMinute = timeInfo->tm_min;
+							}
+							else
+							{
+								g_EditBanDate.wMonth = g_EditBanDate.wDay = g_EditBanDate.wYear = 0;
+							}
+
+							strcpy( g_EditBanReason, entry.szComment );
+						}
+						else
+						{
+							MessageBox( hDlg, "Please select a ban to edit first.", SERVERCONSOLE_TITLESTRING, MB_OK );
+							break;
+						}
+					}
+
+					if ( DialogBox( g_hInst, MAKEINTRESOURCE( IDD_ADDOREDITBAN ), hDlg, (DLGPROC)SERVERCONSOLE_EditBanCallback ))
+					{
+						char buffer[256];
+
+						LVITEM listItem;
+						listItem.mask = LVIF_TEXT;
+						listItem.iItem = index;
+						listItem.pszText = buffer;
+						listItem.cchTextMax = sizeof( buffer );
+
+						listItem.iSubItem = SERVERCONSOLE_COLUMN_IPADDRESS;
+						sprintf( listItem.pszText, "%s", std::string( g_EditBanAddress ).c_str( ));
+
+						if ( LOWORD( wParam ) == IDC_ADD )
+							SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_INSERTITEM, 0, (LPARAM)&listItem );
+						else
+							SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_SETITEM, 0, (LPARAM)&listItem );
+
+						listItem.iSubItem = SERVERCONSOLE_COLUMN_EXPIRATION;
+
+						// [AK] If the ban isn't permanent, output the expiration
+						// date and time into a string. Otherwise, leave it blank.
+						if (( g_EditBanDate.wYear != 0 ) && ( g_EditBanDate.wMonth != 0 ) && ( g_EditBanDate.wDay != 0 ))
+							sprintf( listItem.pszText, "%02d/%02d/%04d %02d:%02d", g_EditBanDate.wMonth, g_EditBanDate.wDay, g_EditBanDate.wYear, g_EditBanDate.wHour, g_EditBanDate.wMinute );
+						else
+							listItem.pszText = "";
+
+						SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_SETITEM, 0, (LPARAM)&listItem );
+
+						listItem.iSubItem = SERVERCONSOLE_COLUMN_REASON;
+						listItem.pszText = g_EditBanReason;
+						SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_SETITEM, 0, (LPARAM)&listItem );
+					}
 				}
 				break;
 			case IDC_REMOVE:
 
 				{
-					LONG	lIdx;
+					int index = SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_GETNEXTITEM, -1, LVNI_SELECTED );
 
-					lIdx = SendDlgItemMessage( hDlg, IDC_BANLIST, LB_GETCURSEL, 0, 0 );
-					if ( lIdx != LB_ERR )
-						SendDlgItemMessage( hDlg, IDC_BANLIST, LB_DELETESTRING, lIdx, 0 );
+					// [AK] Remove all selected items.
+					if ( index != LB_ERR )
+					{
+						do
+						{
+							SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_DELETEITEM, index, 0 );
+							index = SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_GETNEXTITEM, -1, LVNI_SELECTED );
+
+						} while ( index != LB_ERR );
+					}
 					else
+					{
 						MessageBox( hDlg, "Please select a ban to remove first.", SERVERCONSOLE_TITLESTRING, MB_OK );
+					}
 				}
 				break;
 			case IDC_CLEAR:
 
 				// Clear out the ban list box.
 				if ( MessageBox( hDlg, "Are you sure you want to clear the ban list?", SERVERCONSOLE_TITLESTRING, MB_YESNO|MB_ICONQUESTION ) == IDYES )
-					SendDlgItemMessage( hDlg, IDC_BANLIST, LB_RESETCONTENT, 0, 0 );
+					SendDlgItemMessage( hDlg, IDC_BANLIST, LVM_DELETEALLITEMS, 0, 0 );
 				break;
 			case IDOK:
 
 				{
-					LONG	lIdx;
-					LONG	lCount;
-					char	szBuffer[256];
-					char	szString[256+32];
-
-					// Get the text from the input box.
-					GetDlgItemText( hDlg, IDC_BANFILE, szBuffer, 256 );
-
-					sprintf( szString, "sv_banfile \"%s\"", szBuffer );
-					SERVER_AddCommand( szString );
+					serverconsole_BanList_SaveCurrentList( hDlg );
+					SERVERBAN_UpdateBansFromServerConsole( g_BanLists );
 
 					if ( SendDlgItemMessage( hDlg, IDC_ENFORCEBANS, BM_GETCHECK, BST_CHECKED, 0 ))
 						sv_enforcebans = true;
 					else
 						sv_enforcebans = false;
-
-					// Clear out the ban list, and then add all the bans in the ban list.
-					SERVERBAN_ClearBans( );
-
-					// Now, add the maps in the listbox to the map rotation list.
-					lCount = SendDlgItemMessage( hDlg, IDC_BANLIST, LB_GETCOUNT, 0, 0 );
-					if ( lCount != LB_ERR )
-					{
-						char	*pszIP;
-						char	szIP[32];
-						char	*pszComment;
-						char	szComment[224];
-						char	szDate[128];
-						char	*pszBuffer;
-
-						for ( lIdx = 0; lIdx < lCount; lIdx++ )
-						{
-							SendDlgItemMessage( hDlg, IDC_BANLIST, LB_GETTEXT, lIdx, (LPARAM) (LPCTSTR)szBuffer );
-
-							pszIP = szIP;
-							*pszIP = 0;
-							szDate[0] = 0;
-							pszComment = szComment;
-							*pszComment = 0;
-							pszBuffer = szBuffer;
-							while ( *pszBuffer != 0 && *pszBuffer != ':' && *pszBuffer != '/' && *pszBuffer != '<' )
-							{
-								*pszIP = *pszBuffer;
-								pszBuffer++;
-								pszIP++;
-								*pszIP = 0;
-							}
-
-							//======================================================================================================
-							// [RC] Read the expiration date.
-							// This is a very klunky temporary solution that I've already fixed it in my redo of the server dialogs.
-							//======================================================================================================
-
-							time_t tExpiration = NULL;
-							if ( *pszBuffer == '<' )
-							{							
-								int	iMonth = 0, iDay = 0, iYear = 0, iHour = 0, iMinute = 0;
-
-								pszBuffer++;
-								iMonth = strtol( pszBuffer, NULL, 10 );
-								pszBuffer += 3;
-								iDay = strtol( pszBuffer, NULL, 10 );
-								pszBuffer += 3;
-								iYear = strtol( pszBuffer, NULL, 10 );
-								pszBuffer += 5;
-								iHour = strtol( pszBuffer, NULL, 10 );
-								pszBuffer += 3;
-								iMinute = strtol( pszBuffer, NULL, 10 );
-								pszBuffer += 2;
-																
-								// If fewer than 5 elements (the %ds) were read, the user probably edited the file incorrectly.
-								if ( *pszBuffer != '>' )
-								{
-									Printf("parseNextLine: WARNING! Failure to read the ban expiration date!" );
-									return NULL;
-								}
-								pszBuffer++;
-								
-								// Create the time structure, based on the current time.
-								time_t		tNow;
-								time( &tNow );
-								struct tm	*pTimeInfo = localtime( &tNow );
-
-								// Edit the values, and stitch them into a new time.
-								pTimeInfo->tm_mon = iMonth - 1;
-								pTimeInfo->tm_mday = iDay;
-
-								if ( iYear < 100 )
-									pTimeInfo->tm_year = iYear + 2000;
-								else
-									pTimeInfo->tm_year = iYear - 1900;
-
-								pTimeInfo->tm_hour = iHour;
-								pTimeInfo->tm_min = iMinute;
-								pTimeInfo->tm_sec = 0;
-								
-								tExpiration = mktime( pTimeInfo );							
-							}
-
-							// Don't include the comment denotion character in the comment string.
-							while ( *pszBuffer == ':' || *pszBuffer == '/' )
-								pszBuffer++;
-
-							while ( *pszBuffer != 0 )
-							{
-								*pszComment = *pszBuffer;
-								pszBuffer++;
-								pszComment++;
-								*pszComment = 0;
-							}
-
-							std::string Message;
-							SERVERBAN_GetBanList( )->addEntry( szIP, "", szComment, Message, tExpiration );
-						}
-					}
 				}
-				EndDialog( hDlg, -1 );
-				break;
+
 			case IDCANCEL:
 
+				g_BanLists.Clear( );
 				EndDialog( hDlg, -1 );
 				break;
 			}
@@ -1529,6 +1671,9 @@ BOOL CALLBACK SERVERCONSOLE_BanListCallback( HWND hDlg, UINT Message, WPARAM wPa
 //
 BOOL CALLBACK SERVERCONSOLE_EditBanCallback( HWND hDlg, UINT Message, WPARAM wParam, LPARAM lParam )
 {
+	const unsigned int ipBoxControlIndices[] = { IDC_EDITBAN_IPADDRESS1, IDC_EDITBAN_IPADDRESS2, IDC_EDITBAN_IPADDRESS3, IDC_EDITBAN_IPADDRESS4 };
+	char ipOctet[4];
+
 	switch ( Message )
 	{
 	case WM_CLOSE:
@@ -1537,11 +1682,26 @@ BOOL CALLBACK SERVERCONSOLE_EditBanCallback( HWND hDlg, UINT Message, WPARAM wPa
 		break;
 	case WM_INITDIALOG:
 
-		// Set the text limit for the IP box.
-		SendDlgItemMessage( hDlg, IDC_BANBOX, EM_SETLIMITTEXT, 256, 0 );
+		// [AK] Set the text, and the text limit, for each IP box.
+		for ( unsigned int i = 0; i < countof( ipBoxControlIndices ); i++ )
+		{
+			SendDlgItemMessage( hDlg, ipBoxControlIndices[i], EM_SETLIMITTEXT, 3, 0 );
+			SetDlgItemText( hDlg, ipBoxControlIndices[i], g_EditBanAddress[i] );
+		}
 
-		// Set the text limit for the ban box.
-		SetDlgItemText( hDlg, IDC_BANBOX, g_szBanEditString );
+		// [AK] Set the desired format for the expiration date control.
+		SendDlgItemMessage( hDlg, IDC_EDITBAN_EXPIRATIONDATE, DTM_SETFORMAT, GDT_VALID, (LPARAM)"MM/dd/yyyy HH:mm" );
+
+		// [AK] Check if the ban is permanent or not.
+		if (( g_EditBanDate.wYear != 0 ) && ( g_EditBanDate.wMonth != 0 ) && ( g_EditBanDate.wDay != 0 ))
+			SendDlgItemMessage( hDlg, IDC_EDITBAN_EXPIRATIONDATE, DTM_SETSYSTEMTIME, GDT_VALID, (LPARAM)&g_EditBanDate );
+		else
+			SendDlgItemMessage( hDlg, IDC_EDITBAN_EXPIRATIONDATE, DTM_SETSYSTEMTIME, GDT_NONE, 0 );
+
+		// Set the text (and limit) for the reason box.
+		SendDlgItemMessage( hDlg, IDC_EDITBAN_REASON, EM_SETLIMITTEXT, sizeof( g_EditBanReason ) - 1, 0 );
+		SetDlgItemText( hDlg, IDC_EDITBAN_REASON, g_EditBanReason );
+
 		break;
 	case WM_COMMAND:
 
@@ -1550,14 +1710,87 @@ BOOL CALLBACK SERVERCONSOLE_EditBanCallback( HWND hDlg, UINT Message, WPARAM wPa
 			{
 			case IDOK:
 
-				// Get the text from the input box.
-				GetDlgItemText( hDlg, IDC_BANFILE, g_szBanEditString, 256 );
+				{
+					FString finalIPAddress;
 
-				EndDialog( hDlg, true );
+					// [AK] Combine the text from each IP box into the final IP address.
+					for ( unsigned int i = 0; i < countof( ipBoxControlIndices ); i++ )
+					{
+						GetDlgItemText( hDlg, ipBoxControlIndices[i], ipOctet, sizeof( ipOctet ));
+
+						if ( finalIPAddress.Len( ) > 0 )
+							finalIPAddress += '.';
+
+						if ( strlen( ipOctet ) == 0 )
+							finalIPAddress += '0';
+						else
+							finalIPAddress += ipOctet;
+					}
+
+					g_EditBanAddress.SetFromString( finalIPAddress.GetChars( ));
+
+					// [AK] Determine if the ban should be permanent.
+					if ( SendDlgItemMessage( hDlg, IDC_EDITBAN_EXPIRATIONDATE, DTM_GETSYSTEMTIME, 0, (LPARAM)&g_EditBanDate ) == GDT_NONE )
+						g_EditBanDate.wMonth = g_EditBanDate.wDay = g_EditBanDate.wYear = 0;
+
+					// [AK] Get the comment from the input box.
+					GetDlgItemText( hDlg, IDC_EDITBAN_REASON, g_EditBanReason, sizeof( g_EditBanReason ));
+
+					EndDialog( hDlg, true );
+				}
 				break;
 			case IDCANCEL:
 
 				EndDialog( hDlg, false );
+				break;
+
+			case IDC_EDITBAN_IPADDRESS1:
+			case IDC_EDITBAN_IPADDRESS2:
+			case IDC_EDITBAN_IPADDRESS3:
+			case IDC_EDITBAN_IPADDRESS4:
+
+				// [AK] The user changed the text in one of the IP boxes. Grab the octet.
+				if ( HIWORD( wParam ) == EN_CHANGE )
+				{
+					GetDlgItemText( hDlg, LOWORD( wParam ), ipOctet, sizeof( ipOctet ));
+
+					if ( strlen( ipOctet ) > 0 )
+					{
+						FString correctedOctet = ipOctet;
+
+						// [AK] Make sure the octer is within bounds (0-255).
+						if ( correctedOctet.IsInt( ))
+						{
+							const int value = correctedOctet.ToLong( );
+							const int clampedValue = clamp<int>( value, 0, 0xFF );
+
+							if ( clampedValue != value )
+								correctedOctet.Format( "%d", clampedValue );
+						}
+						// [AK] If it's a wildcard, then there should only be one asterisk.
+						else if ( correctedOctet[0] == '*' )
+						{
+							if ( correctedOctet.Len( ) > 1 )
+								correctedOctet.Truncate( 1 );
+						}
+						else
+						{
+							// [AK] Remove any non-numerical characters from the string.
+							for ( unsigned int i = 0; i < correctedOctet.Len( ); i++ )
+							{
+								if ( isdigit( correctedOctet[i] ) == false )
+									correctedOctet.StripChars( correctedOctet[i] );
+							}
+						}
+
+						// [AK] If changes needed to be made to the octet, update the IP box.
+						if ( correctedOctet.Compare( ipOctet ) != 0 )
+						{
+							SetDlgItemText( hDlg, LOWORD( wParam ), correctedOctet.GetChars( ));
+							SendDlgItemMessage( hDlg, LOWORD( wParam ), EM_SETSEL, correctedOctet.Len( ), correctedOctet.Len( ));
+						}
+					}
+				}
 				break;
 			}
 		}
@@ -1649,35 +1882,55 @@ void SERVERCONSOLE_UpdateBroadcasting( void )
 
 //*****************************************************************************
 //
-void SCOREBOARD_BuildLimitStrings( std::list<FString> &lines, bool bAcceptColors );
 void SERVERCONSOLE_UpdateScoreboard( void )
 {
-	int labels[4] = { IDC_SCOREBOARD1, IDC_SCOREBOARD2, IDC_SCOREBOARD3, IDC_SCOREBOARD4, };	
+	int labels[4] = { IDC_SCOREBOARD1, IDC_SCOREBOARD2, IDC_SCOREBOARD3, IDC_SCOREBOARD4, };
 
 	// Clear the labels.
 	for ( int i = 0; i < 4; i++ )
 		SetDlgItemText( g_hDlg, labels[i], "" );
 
 	// Build the strings.
-	std::list<FString> ScoreboardNotices;
-	SCOREBOARD_BuildLimitStrings( ScoreboardNotices, false );
-
-	// Put the strings on the labels.
-	int index = 0;
-	for ( std::list<FString>::iterator i = ScoreboardNotices.begin(); i != ScoreboardNotices.end(); ++i )
+	if ( gamestate == GS_LEVEL )
 	{
-		if ( index < 4 )
-			SetDlgItemText( g_hDlg, labels[index++], *i );
-	}
+		std::list<FString> ScoreboardNotices;
+		SCOREBOARD_BuildLimitStrings( ScoreboardNotices );
 
-	// If we just have one label, center it.
-	if ( index == 1 )
-	{
-		ShowWindow( GetDlgItem( g_hDlg, IDC_SCOREBOARDW ), SW_SHOW );
-		SetDlgItemText( g_hDlg, IDC_SCOREBOARDW, ScoreboardNotices.front().GetChars( ));
+		// [AK] Show the champion string in duel when there's a duel limit.
+		if (( duel ) && ( duellimit ))
+		{
+			FString championString = SCOREBOARD_BuildChampionString( );
+			V_RemoveColorCodes( championString );
+			ScoreboardNotices.push_back( championString );
+		}
+		// [WS] Show the damage factor.
+		else if (( GAMEMODE_GetCurrentFlags( ) & GMF_COOPERATIVE ) && ( sv_coop_damagefactor != 1.0f ))
+		{
+			FString damageFactorString;
+			damageFactorString.Format( "Damage factor is %.2f", static_cast<float>( sv_coop_damagefactor ));
+			ScoreboardNotices.push_back( damageFactorString );
+		}
+
+		int index = 0;
+
+		// Put the strings on the labels.
+		for ( std::list<FString>::iterator i = ScoreboardNotices.begin( ); i != ScoreboardNotices.end( ); ++i )
+		{
+			if ( index < 4 )
+				SetDlgItemText( g_hDlg, labels[index++], *i );
+		}
+
+		// If we just have one label, center it.
+		if ( index == 1 )
+		{
+			ShowWindow( GetDlgItem( g_hDlg, IDC_SCOREBOARDW ), SW_SHOW );
+			SetDlgItemText( g_hDlg, IDC_SCOREBOARDW, ScoreboardNotices.front( ).GetChars( ));
+		}
+		else
+		{
+			ShowWindow( GetDlgItem( g_hDlg, IDC_SCOREBOARDW ), SW_HIDE );
+		}
 	}
-	else
-		ShowWindow( GetDlgItem( g_hDlg, IDC_SCOREBOARDW ), SW_HIDE );
 }
 
 //*****************************************************************************
@@ -1822,8 +2075,10 @@ void SERVERCONSOLE_SetCurrentMapname( const char *pszString )
 		SERVERCONSOLE_UpdateTitleString( sv_hostname.GetGenericRep( CVAR_String ).String );
 	}
 
-	FString fsMapMode = "";
-	fsMapMode.Format( "%s | %s", strupr( GAMEMODE_GetName( GAMEMODE_GetCurrentMode( ))), pszString );
+	FString fsMapMode = GAMEMODE_GetCurrentName( );
+	fsMapMode.ToUpper( );
+	fsMapMode.AppendFormat( " | %s", pszString );
+
 	SetDlgItemText( g_hDlg, IDC_MAPMODE, fsMapMode.GetChars( ));
 }
 
@@ -1833,20 +2088,20 @@ void SERVERCONSOLE_SetupColumns( void )
 {
 	LVCOLUMN	ColumnData;
 
-	if ( SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_GETCOLUMN, COLUMN_FRAGS, (LPARAM)&ColumnData ))
+	if ( SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_GETCOLUMN, SERVERCONSOLE_COLUMN_FRAGS, (LPARAM)&ColumnData ))
 	{
 		ColumnData.mask = LVCF_TEXT;
 
 		if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
 			ColumnData.pszText = "Wins";
-		else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS )
+		else if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNFRAGS ) || ( domination ))
 			ColumnData.pszText = "Frags";
 		else if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNPOINTS ) || (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNKILLS ) && ( zadmflags & ZADF_AWARD_DAMAGE_INSTEAD_KILLS )))
 			ColumnData.pszText = "Points";
 		else
 			ColumnData.pszText = "Kills";
 
-		SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_SETCOLUMN, COLUMN_FRAGS, (LPARAM)&ColumnData );
+		SendDlgItemMessage( g_hDlg, IDC_PLAYERLIST, LVM_SETCOLUMN, SERVERCONSOLE_COLUMN_FRAGS, (LPARAM)&ColumnData );
 	}
 	else
 		Printf( "SERVERCONSOLE_SetupColumns: Couldn't get column!\n" );
@@ -1871,7 +2126,7 @@ void SERVERCONSOLE_ReListPlayers( void )
 	}
 
 	Item.mask = LVIF_TEXT;
-	Item.iSubItem = COLUMN_NAME;
+	Item.iSubItem = SERVERCONSOLE_COLUMN_NAME;
 	Item.iItem = MAXPLAYERS;
 
 	// Add each player.
@@ -1921,7 +2176,7 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 
 	if ( ulUpdateFlags & UDF_NAME )
 	{
-		Item.iSubItem = COLUMN_NAME;
+		Item.iSubItem = SERVERCONSOLE_COLUMN_NAME;
 		message = players[lPlayer].userinfo.GetName();
 		V_RemoveColorCodes( message );
 		Item.pszText = const_cast<char *>( message.GetChars());
@@ -1931,7 +2186,7 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 
 	if ( ulUpdateFlags & UDF_FRAGS )
 	{
-		Item.iSubItem = COLUMN_FRAGS;
+		Item.iSubItem = SERVERCONSOLE_COLUMN_FRAGS;
 		if ( PLAYER_IsTrueSpectator( &players[lPlayer] ))
 			message = "Spectating";
 		else if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSONTEAMS ) && ( !players[lPlayer].bOnTeam ))
@@ -1945,10 +2200,10 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 			else
 				message.Format( "%d", players[lPlayer].fragcount );
 		}
+		else if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNFRAGS ) || ( domination ))
+			message.Format( "%d", players[lPlayer].fragcount );
 		else if (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNPOINTS ) || (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNKILLS ) && ( zadmflags & ZADF_AWARD_DAMAGE_INSTEAD_KILLS )))
 			message.Format( "%ld", players[lPlayer].lPointCount );
-		else if ( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNFRAGS )
-			message.Format( "%d", players[lPlayer].fragcount );
 		else
 			message.Format( "%d", players[lPlayer].killcount );
 		Item.pszText = const_cast<char *>( message.GetChars());
@@ -1957,7 +2212,7 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 
 	if ( ulUpdateFlags & UDF_PING )
 	{
-		Item.iSubItem = COLUMN_PING;
+		Item.iSubItem = SERVERCONSOLE_COLUMN_PING;
 		if ( players[lPlayer].bIsBot )
 			message = "Bot";
 		else
@@ -1969,7 +2224,7 @@ void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags )
 
 	if ( ulUpdateFlags & UDF_TIME )
 	{
-		Item.iSubItem = COLUMN_TIME;
+		Item.iSubItem = SERVERCONSOLE_COLUMN_TIME;
 		message.Format( "%ld", ( players[lPlayer].ulTime / ( TICRATE * 60 )));
 		Item.pszText = const_cast<char *>( message.GetChars());
 

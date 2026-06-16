@@ -258,6 +258,14 @@ struct ACSLocalArrays
 	}
 };
 
+// [TDRR] Required context to allow native functions to access local
+// variables (but most importantly arrays).
+struct ACSLocals
+{
+	ACSLocalVariables *Vars;
+	ACSLocalArrays *Arrays;
+};
+
 // The in-memory version
 struct ScriptPtr
 {
@@ -440,16 +448,6 @@ enum
 	TPROP_LoserTheme,
 };
 
-// [AK] Enumeration for GetMapRotationInfo
-enum
-{
-	MAPROTATION_Name = 0,
-	MAPROTATION_LumpName,
-	MAPROTATION_Used,
-	MAPROTATION_MinPlayers,
-	MAPROTATION_MaxPlayers,
-};
-
 class FBehavior
 {
 public:
@@ -469,6 +467,7 @@ public:
 	ScriptFunction *GetFunction (int funcnum, FBehavior *&module) const;
 	int GetArrayVal (int arraynum, int index) const;
 	void SetArrayVal (int arraynum, int index, int value);
+	int GetArraySize (unsigned int arraynum) const; // [TDRR]
 	inline bool CopyStringToArray(int arraynum, int index, int maxLength, const char * string);
 
 	int FindFunctionName (const char *funcname) const;
@@ -1075,7 +1074,7 @@ protected:
 	FString			activefontname; // [TP]
 
 	// [AK] Pointers to the source, inflictor, and target actors that triggered a GAMEEVENT_ACTOR_DAMAGED or
-	// GAMEEVENT_ACTOR_ARMORDAMAGED event. In all other cases, these pointers should be equal to NULL.
+	// GAMEEVENT_ACTOR_DAMAGED_PREMOD event. In all other cases, these pointers should be equal to NULL.
 	TObjPtr<AActor>	pDamageSource;
 	TObjPtr<AActor> pDamageInflictor;
 	TObjPtr<AActor> pDamageTarget;
@@ -1097,7 +1096,7 @@ protected:
 	int DoSpawnSpot (int type, int spot, int tid, int angle, bool forced);
 	int DoSpawnSpotFacing (int type, int spot, int tid, bool forced);
 	int DoClassifyActor (int tid);
-	int CallFunction(int argCount, int funcIndex, SDWORD *args);
+	int CallFunction(int argCount, int funcIndex, SDWORD *args, struct ACSLocals *locals); // [TDRR] Added "locals" parameter to allow accessing local arrays.
 
 	void DoFadeTo (int r, int g, int b, int a, fixed_t time);
 	void DoFadeRange (int r1, int g1, int b1, int a1,
@@ -1121,7 +1120,7 @@ private:
 	friend class ServerCommands::ReplaceTextures;
 	// [AK] We need to access protected variables from this class when we tell the clients to print a HUD message.
 	friend void SERVERCOMMANDS_PrintACSHUDMessage( DLevelScript *pScript, const char *pszString, float fX, float fY, LONG lType, LONG lColor, float fHoldTime, float fInTime, float fOutTime, fixed_t Alpha, LONG lID, ULONG ulPlayerExtra, ServerCommandFlags flags );
-	// [AK] If the current running script is a GAMEEVENT_ACTOR_DAMAGED or GAMEEVENT_ACTOR_ARMORDAMAGED event, this returns a pointer to the source, inflictor, or target actor.
+	// [AK] If the current running script is a GAMEEVENT_ACTOR_DAMAGED or GAMEEVENT_ACTOR_DAMAGED_PREMOD event, this returns a pointer to the source, inflictor, or target actor.
 	friend AActor *ACS_GetScriptDamagePointers( unsigned int pointer );
 };
 
@@ -1141,9 +1140,11 @@ public:
 	static TObjPtr<DACSThinker> ActiveThinker;
 
 	void DumpScriptStatus();
-	void StopScriptsFor (AActor *actor);
+	void StopScriptsFor (AActor *actor, bool bRemoveNow = false, int activation = 0); // [RK] Added bRemoveNow and activation
 	// [BB] Added StopAndDestroyAllScripts, which is needed in GAME_ResetMap.
 	void StopAndDestroyAllScripts ();
+	// [RK] Added ReplaceActivator which is needed in A_SkullPop since a new body is spawned.
+	void ReplaceActivator(AActor* actor, AActor *newactor);
 
 private:
 	DLevelScript *LastScript;
@@ -1175,6 +1176,7 @@ FArchive &operator<< (FArchive &arc, acsdefered_t *&defer);
 //*****************************************************************************
 //	PROTOTYPES
 
+void	ACS_ClearLumpHandles( void ); // [AK]
 bool	ACS_IsCalledFromConsoleCommand( void );
 bool	ACS_IsEventScript( int script ); // [AK]
 bool	ACS_IsCalledFromScript( void ); // [AK]

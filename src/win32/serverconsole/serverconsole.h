@@ -60,12 +60,22 @@
 #define	GUI_SERVER_CONSOLE
 #define	SERVERCONSOLE_TEXTLENGTH	4096
 
-#define	COLUMN_NAME			0
-#define	COLUMN_FRAGS		1
-#define	COLUMN_PING			2
-#define	COLUMN_TIME			3
-
 #define	MAX_SKULLTAG_SERVER_INSTANCES	128
+
+//*****************************************************************************
+enum SERVERCONSOLE_COLUMNS
+{
+	// [AK] Enums for the columns in the player list.
+	SERVERCONSOLE_COLUMN_NAME = 0,
+	SERVERCONSOLE_COLUMN_FRAGS,
+	SERVERCONSOLE_COLUMN_PING,
+	SERVERCONSOLE_COLUMN_TIME,
+
+	// [AK] Enums for the columns in the ban list.
+	SERVERCONSOLE_COLUMN_IPADDRESS = 0,
+	SERVERCONSOLE_COLUMN_EXPIRATION,
+	SERVERCONSOLE_COLUMN_REASON,
+};
 
 //*****************************************************************************
 //	PROTOTYPES

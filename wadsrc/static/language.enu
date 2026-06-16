@@ -1124,7 +1124,8 @@ MEDALSTRING_PRECISION = "Precision!";
 MEDALSTRING_LLAMA = "Llama!";
 MEDALSTRING_YOUFAILIT = "You Fail It!";
 
-// [JS] Game Mode strings.
+// [JS/AK] Game Mode strings.
+GM_NEXTROUNDIN = "Next round in...";
 GM_YOUFRAGGED = "You fragged %s!";
 GM_YOUWEREFRAGGED = "You were fragged by %s.";
 

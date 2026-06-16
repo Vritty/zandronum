@@ -207,6 +207,16 @@ class ARandomSpawner : public AActor
 			if (rep && ((rep->flags4 & MF4_BOSSDEATH) || (rep->flags2 & MF2_BOSS)))
 				boss = true;
 
+			// [AK] Indicate that the spawned actor was spawned randomly.
+			newmobj->STFlags |= STFL_RANDOMSPAWNED;
+
+			// [AK] If the spawner was spawned by the level, then if the spawned actor triggers
+			// GAMEEVENT_ACTOR_SPAWNED, arg1 should be "true" (i.e. treat the spawned actor as
+			// being spawned by the level too). This flag will be enabled temporarily, then
+			// disabled in AActor::PostBeginPlay.
+			if ( this->STFlags & STFL_LEVELSPAWNED )
+				newmobj->STFlags |= STFL_LEVELSPAWNED;
+
 			// [BB] If we're the server, tell clients to spawn the actor.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 			{

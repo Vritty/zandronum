@@ -100,6 +100,8 @@ public:
 	char GetCursor() const { return Cursor; }
 	void SetCursor(char c) { Cursor = c; }
 
+	int StringHeight( const char *str, int *yOffset ) const; // [AK]
+
 protected:
 	FFont (int lump);
 

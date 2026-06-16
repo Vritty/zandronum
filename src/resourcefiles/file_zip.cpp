@@ -299,12 +299,6 @@ bool FZipFile::Open(bool quiet)
 		{
 			if (oldNames[i].CompareNoCase(name) == 0)
 			{
-				// [AK] We only want to keep track of duplicate lumps that may cause authentication
-				// failures if the file is loaded. Therefore, ignore any lumps that aren't part of
-				// the global or ACS namespaces.
-				if ((lump_p->Namespace != -1 ) && (lump_p->Namespace != ns_global) && (lump_p->Namespace != ns_acslibrary))
-					break;
-
 				const char *shortenedFilename = strrchr(Filename, '/');
 				if (shortenedFilename != NULL) shortenedFilename++;
 

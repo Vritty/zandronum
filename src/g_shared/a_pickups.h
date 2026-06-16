@@ -89,6 +89,7 @@ void P_PlaybackKeyConfWeapons(FWeaponSlots *slots);
 void Net_WriteWeapon(const PClass *type);
 const PClass *Net_ReadWeapon(BYTE **stream);
 
+bool P_SetPlayerWeaponZoomFactor(player_t *player, float zoom, const int flags); // [AK]
 void P_SetupWeapons_ntohton();
 void P_WriteDemoWeaponsChunk(BYTE **demo);
 void P_ReadDemoWeaponsChunk(BYTE **demo);
@@ -135,7 +136,8 @@ enum
 	IF_NEVERRESPAWN		= 1<<20,	// Never, ever respawns
 	IF_NOSCREENFLASH	= 1<<21,	// No pickup flash on the player's screen
 	IF_TOSSED			= 1<<22,	// Was spawned by P_DropItem (i.e. as a monster drop)
-	IF_FORCERESPAWNINSURVIVAL = 1<<23,	// [BB] Will be respawned in survival even without DF_ITEMS_RESPAWN.
+	IF_ALWAYSRESPAWN	= 1<<23,	// Always respawn, regardless of dmflag
+	IF_FORCERESPAWNINSURVIVAL = 1<<24,	// [BB] Will be respawned in survival even without DF_ITEMS_RESPAWN.
 
 };
 
@@ -280,6 +282,15 @@ public:
 	fixed_t BobSpeed;						// [XA] Bobbing speed. Defines how quickly a weapon bobs.
 	fixed_t BobRangeX, BobRangeY;			// [XA] Bobbing range. Defines how far a weapon bobs in either direction.
 
+	fixed_t StillBobSpeed;					// [AK] How quickly the weapon bobs up and down while standing still.
+	fixed_t StillBobRange;					// [AK] How far the weapon bobs up and down while standing still.
+	fixed_t ViewSwaySpeed;					// [JM] Sway speed when the player looks around.
+	fixed_t MotionSwaySpeed;				// [AK] Sway speed when the player moves or crouches up or down.
+	fixed_t JumpSwaySpeed;					// [AK] Sway speed when the player jumps up or down.
+	int SwayStyle;							// [JM] Sway Style
+	fixed_t ViewPitchOffset;				// [JM] View Pitch Offset
+	int ViewPitchStyle;						// [JM] View Pitch Style
+
 	// [BB] When a player uses this weapon and a skin with name equal to the PreferredSkin value exists for
 	// his/her player class, the player is forced to use this skin, overriding any personal skin settings.
 	FNameNoInit PreferredSkin;
@@ -365,8 +376,8 @@ enum
 	WIF_DEHAMMO	=			0x00010000,	// Uses Doom's original amount of ammo for the respective attack functions so that old DEHACKED patches work as intended.
 										// AmmoUse1 will be set to the first attack's ammo use so that checking for empty weapons still works
 	// [BC] New weapon info definitions.
-	WIF_ALLOW_WITH_RESPAWN_INVUL	= 0x00008000,	// The player can continue to wield this weapon even with respawn invulnerability active.
-	WIF_NOLMS						= 0x00010000,	// Don't give this weapon in LMS games.
+	WIF_ALLOW_WITH_RESPAWN_INVUL	= 0x00020000,	// The player can continue to wield this weapon even with respawn invulnerability active.
+	WIF_NOLMS						= 0x00040000,	// Don't give this weapon in LMS games.
 
 	WIF_CHEATNOTWEAPON	=	0x08000000,	// Give cheat considers this not a weapon (used by Sigil)
 

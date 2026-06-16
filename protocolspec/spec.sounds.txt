@@ -44,3 +44,8 @@ Command StopSound
 	Actor actor
 	Byte channel
 EndCommand
+
+Command StopOriginlessSound
+	ExtendedCommand
+	Byte channel
+EndCommand

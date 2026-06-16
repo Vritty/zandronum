@@ -172,6 +172,10 @@ void CLIENT_PREDICT_PlayerPredict( void )
 		( pPlayer->playerstate == PST_DEAD ))
 	{
 		P_PlayerThink( pPlayer );
+
+		// [RK] Since the spectator doesn't do any of the prediction below
+		// save the old buttons so they can do actions like turn 180.
+		pPlayer->oldbuttons = pPlayer->cmd.ucmd.buttons;
 		pPlayer->mo->Tick( );
 		return;
 	}

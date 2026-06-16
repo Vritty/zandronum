@@ -97,6 +97,10 @@ void AFastProjectile::Tick ()
 						}
 					}
 
+					// [AK] Potentially reward the player who shot this missile with an accuracy/precision medal.
+					if (( STFlags & STFL_EXPLODEONDEATH ) == false )
+						PLAYER_CheckStruckPlayer( target );
+
 					P_ExplodeMissile (this, BlockingLine, BlockingMobj);
 					return;
 				}
@@ -115,6 +119,10 @@ void AFastProjectile::Tick ()
 					return;
 				}
 
+				// [AK] Potentially reward the player who shot this missile with an accuracy/precision medal.
+				if (( STFlags & STFL_EXPLODEONDEATH ) == false )
+					PLAYER_CheckStruckPlayer( target );
+
 				z = floorz;
 				P_HitFloor (this);
 				P_ExplodeMissile (this, NULL, NULL);
@@ -128,6 +136,10 @@ void AFastProjectile::Tick ()
 					Destroy ();
 					return;
 				}
+
+				// [AK] Potentially reward the player who shot this missile with an accuracy/precision medal.
+				if (( STFlags & STFL_EXPLODEONDEATH ) == false )
+					PLAYER_CheckStruckPlayer( target );
 
 				z = ceilingz - height;
 				P_ExplodeMissile (this, NULL, NULL);

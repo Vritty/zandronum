@@ -125,6 +125,10 @@ protected:
 	void SaveMapSection();
 	void RestoreMapSection();
 
+	// [AK] GLSprite::Process needs access to MirrorFlag and PlaneMirrorFlag,
+	// specifically for (not) rendering a player's icon above their own head.
+	friend void GLSprite::Process(AActor *thing, sector_t *sector);
+
 public:
 
 	enum

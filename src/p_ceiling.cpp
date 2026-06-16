@@ -444,7 +444,7 @@ DCeiling *DCeiling::Create(sector_t *sec, DCeiling::ECeiling type, line_t *line,
 	vertex_t *spot = sec->lines[0]->v1;
 
 	// [BC] If we're not a client, assign a network ID to the ceiling.
-	if ( NETWORK_InClientMode() == false ) 
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
 		ceiling->m_CeilingID = P_GetFirstFreeCeilingID( );
 
 	switch (type)

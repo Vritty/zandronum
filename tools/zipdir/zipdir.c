@@ -94,6 +94,11 @@ static unsigned int LittleLong(unsigned int x)
 #define PATH_MAX 4096
 #endif
 
+// [SB] To make the output of this tool more deterministic,
+// the dates and times of entries in the resulting zip are set to these values.
+#define FIXED_DATE_VALUE (10 | (12 << 5) | (13 << 9))
+#define FIXED_TIME_VALUE (0)
+
 // TYPES -------------------------------------------------------------------
 
 typedef struct file_entry_s
@@ -1011,8 +1016,9 @@ int append_to_zip(FILE *zip_file, file_sorted_t *filep, FILE *ozip, BYTE *odir)
 	local.VersionToExtract[1] = 0;
 	local.Flags = file->method == METHOD_DEFLATE ? LittleShort(2) : 0;
 	local.Method = LittleShort(file->method);
-	local.ModTime = file->time;
-	local.ModDate = file->date;
+	// [SB] Set the date and time values to a constant value to make the output of this tool more deterministic.
+	local.ModTime = FIXED_TIME_VALUE;
+	local.ModDate = FIXED_DATE_VALUE;
 	local.CRC32 = file->crc32;
 	local.UncompressedSize = LittleLong(file->uncompressed_size);
 	local.CompressedSize = LittleLong(file->compressed_size);
@@ -1083,8 +1089,9 @@ int write_central_dir(FILE *zip, file_sorted_t *filep)
 	dir.VersionToExtract[1] = 0;
 	dir.Flags = file->method == METHOD_DEFLATE ? LittleShort(2) : 0;
 	dir.Method = LittleShort(file->method);
-	dir.ModTime = file->time;
-	dir.ModDate = file->date;
+	// [SB] Set the date and time values to a constant value to make the output of this tool more deterministic.
+	dir.ModTime = FIXED_TIME_VALUE;
+	dir.ModDate = FIXED_DATE_VALUE;
 	dir.CRC32 = file->crc32;
 	dir.CompressedSize = LittleLong(file->compressed_size);
 	dir.UncompressedSize = LittleLong(file->uncompressed_size);
@@ -1509,7 +1516,9 @@ int copy_zip_file(FILE *zip, file_entry_t *file, FILE *ozip, CentralDirectoryEnt
 	if (lfh.Flags != ent->Flags || lfh.Method != ent->Method ||
 		lfh.CRC32 != ent->CRC32 || lfh.CompressedSize != ent->CompressedSize ||
 		lfh.UncompressedSize != ent->UncompressedSize ||
-		lfh.NameLength != ent->NameLength || lfh.ExtraLength != ent->ExtraLength)
+		lfh.NameLength != ent->NameLength || lfh.ExtraLength != ent->ExtraLength ||
+		// [SB] Also check that the datetime in the local file header uses the fixed values.
+		lfh.ModDate != FIXED_DATE_VALUE || lfh.ModTime != FIXED_TIME_VALUE)
 	{
 		return 0;
 	}

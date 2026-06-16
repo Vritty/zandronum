@@ -1,13 +1,12 @@
 Command SpawnPlayer
 	Player player with IndexTestOnly
-	Byte priorState
-	# Do we really need to send this? Shouldn't it always be PST_LIVE?
-	Byte playerState
+	# [AK] Send the prior state as a short byte so that the four bools can fit together into a single byte.
+	ShortByte<4> priorState
 	Bool isBot
 	Bool isSpectating
 	Bool isDeadSpectator
 	Bool isMorphed
-	Short netid
+	NetID netid
 	Angle angle
 	Fixed x
 	Fixed y
@@ -34,10 +33,22 @@ Command MovePlayer
 		Fixed y
 		AproxFixed z
 		Angle angle
+	EndIf
+
+	# [AK] The server should only send the player's velocity when it's not zero.
+	If ((flags & PLAYER_VISIBLE) && (flags & PLAYER_SENDVELX))
+		CheckFunction IsMovingX
 		AproxFixed velx
+	EndIf
+
+	If ((flags & PLAYER_VISIBLE) && (flags & PLAYER_SENDVELY))
+		CheckFunction IsMovingY
 		AproxFixed vely
+	EndIf
+
+	If ((flags & PLAYER_VISIBLE) && (flags & PLAYER_SENDVELZ))
+		CheckFunction IsMovingZ
 		AproxFixed velz
-		Bool isCrouching
 	EndIf
 EndCommand
 
@@ -45,6 +56,15 @@ Command DamagePlayer
 	Player player with MoTest
 	Variable health
 	Variable armor
+	Actor attacker with NullAllowed
+EndCommand
+
+Command DamagePlayerWithType
+	ExtendedCommand
+	Player player with MoTest
+	Variable health
+	Variable armor
+	String damageType
 	Actor attacker with NullAllowed
 EndCommand
 
@@ -85,6 +105,12 @@ Command SetPlayerUserInfo
 	Struct<CVar>[] cvars
 EndCommand
 
+Command SetPlayerCountry
+	ExtendedCommand
+	Player player with IndexTestOnly
+	Byte country
+EndCommand
+
 Command SetPlayerAccountName
 	ExtendedCommand
 	Player player with IndexTestOnly
@@ -119,9 +145,7 @@ EndCommand
 
 Command SetPlayerStatus
 	Player player
-	# [AK] Ideally, we want to fit the status we're updating and its value into a single byte.
-	ShortByte<7> type
-	Bool value
+	Byte statuses
 EndCommand
 
 Command SetPlayerTeam
@@ -180,10 +204,18 @@ Command SetPlayerLivesLeft
 	Byte livesLeft
 EndCommand
 
+Command SetPlayerACSSkin
+	ExtendedCommand
+	Player player
+	Name skinName
+	bool overrideWeaponSkin
+EndCommand
+
 Command UpdatePlayerPing
 	UnreliableCommand
 	Player player
 	UShort ping
+	Byte connectionStrength
 EndCommand
 
 Command UpdatePlayerExtraData
@@ -222,6 +254,12 @@ Command SetLocalPlayerJumpTics
 	SByte jumpTics
 EndCommand
 
+Command SetLocalPlayerRespawnDelayTime
+	ExtendedCommand
+	ULong respawnDelayTics
+	Bool spawnTelefragged
+EndCommand
+
 Command DisconnectPlayer
 	Player player
 EndCommand
@@ -236,6 +274,7 @@ EndCommand
 Command GivePlayerMedal
 	Player player
 	Byte medal
+	Bool silent
 EndCommand
 
 Command ResetAllPlayersFragcount
@@ -252,11 +291,14 @@ Command PlayerSay
 	String message
 EndCommand
 
-Command PlayerTaunt
-	Player player with MoTest
+Command PlayerVoIPAudioPacket
+	UnreliableCommand
+	Byte playerNumber
+	Long frame
+	Buffer audio
 EndCommand
 
-Command PlayerRespawnInvulnerability
+Command PlayerTaunt
 	Player player with MoTest
 EndCommand
 
@@ -285,4 +327,36 @@ Command SetHexenArmorSlots
 	Long slot2
 	Long slot3
 	Long slot4
+EndCommand
+
+Command SendPlayerCommRule
+	ExtendedCommand
+	Player player with IndexTestOnly
+	Bool ignoreChat
+	Bool ignoreVoice
+	Bool sendVoIPChannelVolume
+
+	If (ignoreChat)
+		Long ignoreChatTicks
+	EndIf
+
+	If (ignoreVoice)
+		Long ignoreVoiceTicks
+	EndIf
+
+	If (sendVoIPChannelVolume)
+		Float VoIPChannelVolume
+	EndIf
+EndCommand
+
+Command IgnoreLocalPlayer
+	ExtendedCommand
+	Player player with IndexTestOnly
+	Bool ignore
+	Bool doVoice
+
+	If (ignore)
+		Long ticks
+		String reason
+	EndIf
 EndCommand

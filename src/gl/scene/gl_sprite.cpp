@@ -62,6 +62,7 @@
 #include "gl/utility/gl_clock.h"
 // [BB] New #includes.
 #include "gamemode.h"
+#include "c_console.h"
 
 CVAR(Bool, gl_usecolorblending, true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG)
 CVAR(Bool, gl_spritebrightfog, false, CVAR_ARCHIVE|CVAR_GLOBALCONFIG);
@@ -527,14 +528,25 @@ void GLSprite::Process(AActor* thing,sector_t * sector)
 	// If this thing is in a map section that's not in view it can't possibly be visible
 	if (!(currentmapsection[thing->subsector->mapsection>>3] & (1 << (thing->subsector->mapsection & 7)))) return;
 
-	// [BB] If the actor is supposed to be invisible to the player, skip it here.
-	if ( !thing->IsVisibleToPlayer() )
-		return;
+	// [AK] Unless the sprite's in a horizontal mirror or the local player's using
+	// the chasecam, don't render icons above the heads of players being spied on.
+	// TODO: Use the ONLYVISIBLEINMIRRORS actor flag from GZDoom when we support it.
+	if ((GLRenderer->mCurrentPortal == nullptr) || ((GLRenderer->mCurrentPortal->MirrorFlag == 0) && (GLRenderer->mCurrentPortal->PlaneMirrorFlag == 0)))
+	{
+		if (((players[consoleplayer].cheats & CF_CHASECAM) == false) && (players[consoleplayer].camera != nullptr))
+		{
+			if ((players[consoleplayer].camera->player != nullptr) && (thing == players[consoleplayer].camera->player->pIcon))
+				return;
+		}
+	}
 
 	// [RH] Interpolate the sprite's position to make it look smooth
-	fixed_t thingx = thing->PrevX + FixedMul (r_TicFrac, thing->x - thing->PrevX);
-	fixed_t thingy = thing->PrevY + FixedMul (r_TicFrac, thing->y - thing->PrevY);
-	fixed_t thingz = thing->PrevZ + FixedMul (r_TicFrac, thing->z - thing->PrevZ);
+	// [AK] Don't do this if the game is supposed to be paused but the console
+	// is still interpolated. Otherwise, any moving sprites will appear jittery.
+	const fixed_t ticFracToUse = C_ShouldForceInterpolation() ? FRACUNIT : r_TicFrac;
+	fixed_t thingx = thing->PrevX + FixedMul (ticFracToUse, thing->x - thing->PrevX);
+	fixed_t thingy = thing->PrevY + FixedMul (ticFracToUse, thing->y - thing->PrevY);
+	fixed_t thingz = thing->PrevZ + FixedMul (ticFracToUse, thing->z - thing->PrevZ);
 
 	// Too close to the camera. This doesn't look good if it is a sprite.
 	if (P_AproxDistance(thingx-viewx, thingy-viewy)<2*FRACUNIT)
@@ -642,7 +654,8 @@ void GLSprite::Process(AActor* thing,sector_t * sector)
 		float spriteheight = FIXED2FLOAT(spritescaleY) * gltexture->GetScaledHeightFloat(GLUSE_SPRITE);
 		
 		// Tests show that this doesn't look good for many decorations and corpses
-		if (spriteheight>0 && gl_spriteclip>0)
+		// [RK] tests also show this looks terrible for floatbob items
+		if (spriteheight>0 && gl_spriteclip>0 && !(thing->flags2 & MF2_FLOATBOB))
 		{
 			bool smarterclip = false; // Set to true if one condition triggers the test below
 			if (((thing->player || thing->flags3&MF3_ISMONSTER ||

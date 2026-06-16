@@ -858,7 +858,8 @@ static bool botpath_CheckLine( line_t *pLine )
 	// A line has been hit.
 
 	// This is a one-sided line. It must be a blocking line.
-	if (( pLine->backsector == NULL ) || ( pLine->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING|ML_BLOCK_PLAYERS) ))
+	// [TRSR] If the bot player has -NOBLOCKMONST, they should respect ML_BLOCKMONSTER lines.
+	if ((pLine->backsector == NULL) || (pLine->flags & (ML_BLOCKING | ML_BLOCKEVERYTHING | ML_BLOCK_PLAYERS)) || ((pLine->flags & ML_BLOCKMONSTERS) && !(g_pPathActor->flags3 & MF3_NOBLOCKMONST)))
 	{
 		g_pBlockingLine = pLine;
 		return ( false );

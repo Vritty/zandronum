@@ -1,8 +1,13 @@
-cmake_minimum_required( VERSION 2.4 )
+# [SB] Set the minimum version to 3.5, since it's the lowest CMake 4.0 will accept.
+cmake_minimum_required( VERSION 3.5 )
 project(Zandronum)
 
+if( COMMAND cmake_policy )
+	cmake_policy( SET CMP0011 NEW )
+	cmake_policy( SET CMP0054 NEW )
+endif( COMMAND cmake_policy )
+
 list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} )
-include( CreateLaunchers )
 include( FindPackageHandleStandardArgs )
 
 # Generator expression are available some time in CMake 2.8. Due to
@@ -63,8 +68,6 @@ endif()
 
 # Simplify pk3 building, add_pk3(filename srcdirectory)
 function( add_pk3 PK3_NAME PK3_DIR )
-	get_target_property(ZIPDIR_EXE zipdir LOCATION)
-
 	# Generate target name. Just use "pk3" for main pk3 target.
 	string( REPLACE "." "_" PK3_TARGET ${PK3_NAME} )
 	# [BB] Replaced 'zdoom' with 'zandronum'
@@ -74,20 +77,22 @@ function( add_pk3 PK3_NAME PK3_DIR )
 
 	if( NOT NO_GENERATOR_EXPRESSIONS AND NOT ZDOOM_OUTPUT_OLDSTYLE )
 		add_custom_command( OUTPUT ${ZDOOM_OUTPUT_DIR}/${PK3_NAME}
-			COMMAND ${ZIPDIR_EXE} -udf ${ZDOOM_OUTPUT_DIR}/${PK3_NAME} ${PK3_DIR}
+			COMMAND zipdir -udf ${ZDOOM_OUTPUT_DIR}/${PK3_NAME} ${PK3_DIR}
 			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZDOOM_OUTPUT_DIR}/${PK3_NAME} $<TARGET_FILE_DIR:zdoom>/${PK3_NAME}
 			DEPENDS zipdir )
 	else( NOT NO_GENERATOR_EXPRESSIONS AND NOT ZDOOM_OUTPUT_OLDSTYLE )
 		add_custom_command( OUTPUT ${ZDOOM_OUTPUT_DIR}/${PK3_NAME}
-			COMMAND ${ZIPDIR_EXE} -udf ${ZDOOM_OUTPUT_DIR}/${PK3_NAME} ${PK3_DIR}
+			COMMAND zipdir -udf ${ZDOOM_OUTPUT_DIR}/${PK3_NAME} ${PK3_DIR}
 			DEPENDS zipdir )
 	endif( NOT NO_GENERATOR_EXPRESSIONS AND NOT ZDOOM_OUTPUT_OLDSTYLE )
 
-	# Touch the zipdir executable here so that the pk3s are forced to rebuild
-	# each time since their dependecy has "changed."
-	add_custom_target( ${PK3_TARGET} ALL
-		COMMAND ${CMAKE_COMMAND} -E touch ${ZIPDIR_EXE}
-		DEPENDS ${ZDOOM_OUTPUT_DIR}/${PK3_NAME} )
+	if( NOT NO_GENERATOR_EXPRESSIONS )
+		# Touch the zipdir executable here so that the pk3s are forced to
+		# rebuild each time since their dependecy has "changed."
+		add_custom_target( ${PK3_TARGET} ALL
+			COMMAND ${CMAKE_COMMAND} -E touch $<TARGET_FILE:zipdir>
+			DEPENDS ${ZDOOM_OUTPUT_DIR}/${PK3_NAME} )
+	endif( NOT NO_GENERATOR_EXPRESSIONS )
 endfunction( add_pk3 )
 
 # Macro for building libraries without debugging information
@@ -297,6 +302,11 @@ add_subdirectory( wadsrc_bm )
 # [BB] Compatibility wad to support Skulltag mods.
 add_subdirectory( wadsrc_st )
 add_subdirectory( src )
+
+# [AK] Library for noise suppression for VoIP.
+if ( NOT NO_SOUND AND NOT NO_FMOD )
+	add_subdirectory( rnnoise )
+endif ( NOT NO_SOUND AND NOT NO_FMOD )
 
 if( NOT WIN32 AND NOT APPLE )
 	# [BB] We don't need output_sdl (only used for sound), if we are just building the server.

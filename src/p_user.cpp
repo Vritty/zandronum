@@ -103,6 +103,39 @@ CUSTOM_CVAR (Float, cl_spectatormove, 1.0, CVAR_ARCHIVE|CVAR_GLOBALCONFIG) {
 		self = -100.0;
 }
 
+// [AK] Determines which mode to use while spectating.
+CUSTOM_CVAR (Int, cl_spectatormode, SPECMODE_NO_RESTRICTIONS, CVAR_ARCHIVE|CVAR_GLOBALCONFIG)
+{
+	player_t *const player = CLIENTDEMO_IsPlaying() ? CLIENTDEMO_GetFreeSpectatorPlayer() : &players[consoleplayer];
+	const int clampedValue = clamp<int>(self, SPECMODE_WITH_RESTRICTIONS, SPECMODE_NO_RESTRICTIONS);
+
+	if (self != clampedValue)
+	{
+		self = clampedValue;
+		return;
+	}
+
+	if ((player->bSpectating) && (player->mo != nullptr))
+	{
+		if (self == SPECMODE_NO_RESTRICTIONS)
+		{
+			player->mo->flags |= (MF_NOGRAVITY | MF_NOCLIP);
+			player->mo->flags2 |= MF2_FLY;
+
+			// [AK] Always enable the fly and noclip cheats.
+			player->cheats |= (CF_FLY | CF_NOCLIP | CF_NOCLIP2);
+		}
+		else
+		{
+			player->mo->flags &= ~MF_NOCLIP;
+			player->cheats &= ~(CF_NOCLIP | CF_NOCLIP2);
+		}
+	}
+
+	if ((NETWORK_GetState() == NETSTATE_CLIENT) && (CLIENTDEMO_IsRecording()) && (self != self.GetPastValue()))
+		CLIENTDEMO_WriteConsolePlayerUnrestricted(self == SPECMODE_NO_RESTRICTIONS);
+}
+
 // [GRB] Custom player classes
 TArray<FPlayerClass> PlayerClasses;
 
@@ -323,6 +356,7 @@ player_t::player_t()
   Team( 0 ),
   lPointCount( 0 ),
   ulDeathCount( 0 ),
+  lastRespawnTick( 0 ),
   ulLastFragTick( 0 ),
   ulLastExcellentTick( 0 ),
   ulLastBFGFragTick( 0 ),
@@ -331,9 +365,7 @@ player_t::player_t()
   ulFragsWithoutDeath( 0 ),
   ulDeathsWithoutFrag( 0 ),
   ulUnrewardedDamageDealt( 0 ),
-  bChatting( 0 ),
-  bInConsole( 0 ),
-  bInMenu( 0 ),
+  statuses( 0 ),
   bSpectating( 0 ),
   bDeadSpectator( 0 ),
   ulLivesLeft( 0 ),
@@ -344,25 +376,21 @@ player_t::player_t()
   ulWins( 0 ),
   pSkullBot( 0 ),
   bIsBot( 0 ),
-  bIgnoreChat( 0 ),
-  lIgnoreChatTicks( -1 ),
   ulPing( 0 ),
   ulPingAverages( 0 ),
-  bReadyToGoOn( 0 ),
+  connectionStrength( 0 ),
+  ulCountryIndex( 0 ),
   pCorpse( 0 ),
   OldPendingWeapon( 0 ),
-  bLagging( 0 ),
   bSpawnTelefragged( 0 ),
   ulTime( 0 ),
-  bUnarmed( false )
+  bUnarmed( false ),
+  ACSSkinOverridesWeaponSkin( false )
 {
 	memset (&cmd, 0, sizeof(cmd));
 	// [BB] Check if this is still necessary.
 	userinfo.Reset();
 	memset (psprites, 0, sizeof(psprites));
-
-	// [BC] Initialize additonal ST properties.
-	memset( &ulMedalCount, 0, sizeof( ULONG ) * NUM_MEDALS );
 }
 
 player_t &player_t::operator=(const player_t &p)
@@ -487,6 +515,7 @@ player_t &player_t::operator=(const player_t &p)
 	Team = p.Team;
 	lPointCount = p.lPointCount;
 	ulDeathCount = p.ulDeathCount;
+	lastRespawnTick = p.lastRespawnTick;
 	ulLastFragTick = p.ulLastFragTick;
 	ulLastExcellentTick = p.ulLastExcellentTick;
 	ulLastBFGFragTick = p.ulLastBFGFragTick;
@@ -495,39 +524,38 @@ player_t &player_t::operator=(const player_t &p)
 	ulFragsWithoutDeath = p.ulFragsWithoutDeath;
 	ulDeathsWithoutFrag = p.ulDeathsWithoutFrag;
 	ulUnrewardedDamageDealt = p.ulUnrewardedDamageDealt;
-	bChatting = p.bChatting;
-	bInConsole = p.bInConsole;
-	bInMenu = p.bInMenu;
+	statuses = p.statuses;
 	bSpectating = p.bSpectating;
 	bDeadSpectator = p.bDeadSpectator;
 	ulLivesLeft = p.ulLivesLeft;
 	bStruckPlayer = p.bStruckPlayer;
 	RailgunShots = p.RailgunShots;
-	memcpy(ulMedalCount, &p.ulMedalCount, sizeof( ULONG ) * NUM_MEDALS);
 	pIcon = p.pIcon;
 	MaxHealthBonus = p.MaxHealthBonus;
 	ulWins = p.ulWins;
 	pSkullBot = p.pSkullBot;
 	bIsBot = p.bIsBot;
-	bIgnoreChat = p.bIgnoreChat;
-	lIgnoreChatTicks = p.lIgnoreChatTicks;
+	ignoreChat = p.ignoreChat;
+	ignoreVoice = p.ignoreVoice;
 	ulPing = p.ulPing;
 	ulPingAverages = p.ulPingAverages;
-	bReadyToGoOn = p.bReadyToGoOn;
+	connectionStrength = p.connectionStrength;
+	ulCountryIndex = p.ulCountryIndex;
 	pCorpse = p.pCorpse;
 	OldPendingWeapon = p.OldPendingWeapon;
 	StartingWeaponName = p.StartingWeaponName;
 	bClientSelectedWeapon = p.bClientSelectedWeapon;
-	bLagging = p.bLagging;
 	bSpawnTelefragged = p.bSpawnTelefragged;
 	ulTime = p.ulTime;
 	bUnarmed = p.bUnarmed;
-	memcpy(unlaggedX, &p.unlaggedX, sizeof( unlaggedX ));
-	memcpy(unlaggedY, &p.unlaggedY, sizeof( unlaggedY ));
-	memcpy(unlaggedZ, &p.unlaggedZ, sizeof( unlaggedZ ));
-	restoreX = p.restoreX;
-	restoreY = p.restoreY;
-	restoreZ = p.restoreZ;
+	ACSSkin = p.ACSSkin;
+	ACSSkinOverridesWeaponSkin = p.ACSSkinOverridesWeaponSkin;
+
+	// [AK] Copy the old positions for the unlagged.
+	for ( unsigned int i = 0; i < UNLAGGEDTICS; i++ )
+		unlaggedPos[i] = p.unlaggedPos[i];
+
+	restorePos = p.restorePos;
 	restoreFloorZ = p.restoreFloorZ;
 	restoreCeilingZ = p.restoreCeilingZ;
 
@@ -1372,9 +1400,21 @@ void APlayerPawn::FilterCoopRespawnInventory (APlayerPawn *oldplayer)
 
 const char *APlayerPawn::GetSoundClass() const
 {
+	// [AK] If this is a corpse, check which player it originally belonged to.
+	player_t *corpsePlayer = nullptr;
+	for ( unsigned int i = 0; i < BODYQUESIZE; i++ )
+	{
+		if ( this == bodyque[i] )
+		{
+			corpsePlayer = bodyquePlayer[i];
+			break;
+		}
+	}
+
 	// [BC] If this player's skin is disabled, just use the base sound class.
 	// [BB] Voodoo dolls don't have valid userinfo.
-	if (( player != NULL ) && ( player->mo == this ) &&
+	// [AK] Also use the player's skin if this is a corpse that belonged to them.
+	if (( player != NULL ) && (( player->mo == this ) || ( player == corpsePlayer )) &&
 		(( cl_skins == 1 ) || (( cl_skins >= 2 ) &&
 		( player->userinfo.GetSkin() < static_cast<signed> (skins.Size()) ) &&
 		( skins[player->userinfo.GetSkin()].bCheat == false ))))
@@ -1594,7 +1634,7 @@ void APlayerPawn::GiveDefaultInventory ()
 				I_Error("Tried to give an improperly defined railgun.\n");
 
 			// Give the player the weapon.
-			pInventory = player->mo->GiveInventoryType( pRailgun );
+			pInventory = player->mo->GiveInventoryType( pRailgun, true );
 
 			if ( pInventory )
 			{
@@ -1618,7 +1658,7 @@ void APlayerPawn::GiveDefaultInventory ()
 		else if (( buckshot && bBuckshotPossible ) && ( deathmatch || teamgame ))
 		{
 			// Give the player the weapon.
-			pInventory = player->mo->GiveInventoryTypeRespectingReplacements( PClass::FindClass( "SuperShotgun" ) );
+			pInventory = player->mo->GiveInventoryTypeRespectingReplacements( PClass::FindClass( "SuperShotgun" ), true );
 
 			if ( pInventory )
 			{
@@ -1731,7 +1771,7 @@ void APlayerPawn::GiveDefaultInventory ()
 
 				if ( pType->ParentClass->IsDescendantOf( RUNTIME_CLASS( AWeapon )))
 				{
-					pInventory = player->mo->GiveInventoryTypeRespectingReplacements( pType );
+					pInventory = player->mo->GiveInventoryTypeRespectingReplacements( pType, true );
 
 					// Make this weapon the player's pending weapon if it ranks higher.
 					// [BB] We obviously only can do the cast when the possible replacement is still a weapon.
@@ -1742,12 +1782,6 @@ void APlayerPawn::GiveDefaultInventory ()
 
 					if ( pWeapon != NULL )
 					{
-						if ( pWeapon->WeaponFlags & WIF_NOLMS )
-						{
-							player->mo->RemoveInventory( pWeapon );
-							continue;
-						}
-
 						if (( pPendingWeapon == NULL ) || 
 							( pWeapon->SelectionOrder < pPendingWeapon->SelectionOrder ))
 						{
@@ -1800,10 +1834,10 @@ void APlayerPawn::GiveDefaultInventory ()
 			PLAYER_SetWeapon( player, pPendingWeapon, true );
 		}
 		// [BC] If the user has the shotgun start flag set, do that!
-		else if ( dmflags2 & DF2_COOP_SHOTGUNSTART )
+		else if ( dmflags2 & DF2_SHOTGUNSTART )
 		{
 			pInventory = player->mo->GiveInventoryTypeRespectingReplacements( PClass::FindClass( "Shotgun" ) );
-			if ( pInventory )
+			if ( pInventory && pInventory->IsKindOf( PClass::FindClass( "Weapon") )) // [RK] Make sure it's a type of weapon before handing it out.
 			{
 				// [BB] PLAYER_SetWeapon takes care of the special client / server and demo handling.
 				PLAYER_SetWeapon( player, static_cast<AWeapon *>( pInventory ), true );
@@ -1813,7 +1847,14 @@ void APlayerPawn::GiveDefaultInventory ()
 				// Thus, we can't use those pointers, but need to rely on pInventory.
 				AInventory *pAmmo = player->mo->FindInventory( PClass::FindClass( "Shell" )->ActorInfo->GetReplacement( )->Class );
 				if ( pAmmo != NULL )
+				{
 					pAmmo->Amount = static_cast<AWeapon *>( pInventory )->AmmoGive1 * 2;
+
+					// [RK] Sync the give amount for clients since they actually haven't been
+					// given any shells yet from the command sent in AWeapon::AttachToOwner.
+					if ( NETWORK_GetState() == NETSTATE_SERVER )
+						SERVERCOMMANDS_GiveInventory(player->mo->id, pAmmo);
+				}
 			}
 		}
 		else if (!Inventory)
@@ -1860,7 +1901,7 @@ void APlayerPawn::GiveDefaultInventory ()
 
 				if ( pType->ParentClass->IsDescendantOf( RUNTIME_CLASS( AWeapon )))
 				{
-					pInventory = player->mo->GiveInventoryTypeRespectingReplacements( pType );
+					pInventory = player->mo->GiveInventoryTypeRespectingReplacements( pType, true );
 
 					// Make this weapon the player's pending weapon if it ranks higher.
 					pWeapon = static_cast<AWeapon *>( pInventory );
@@ -2010,7 +2051,7 @@ void APlayerPawn::Die (AActor *source, AActor *inflictor, int dmgflags)
 				weap->SpawnState != ::GetDefault<AActor>()->SpawnState)
 			{
 				item = P_DropItem (this, weap->GetClass(), -1, 256);
-				if (item != NULL)
+				if (item != NULL && item->IsKindOf(RUNTIME_CLASS(AWeapon)))
 				{
 					if (weap->AmmoGive1 && weap->Ammo1)
 					{
@@ -2082,7 +2123,8 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 	AActor		*pTeamItem;
 	AInventory	*pInventory;
 
-	if ( player == NULL )
+	// [AK] Don't let clients execute this themselves.
+	if (( NETWORK_InClientMode( )) || ( player == nullptr ))
 		return;
 
 	// If we're in a teamgame, don't allow him to "take" flags or skulls with him. If
@@ -2096,13 +2138,14 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 
 			if ( pInventory )
 			{
-				this->RemoveInventory( pInventory );
-
 				// Tell the clients that this player no longer possesses a flag.
 				if (( bLeavingGame == false ) && ( NETWORK_GetState( ) == NETSTATE_SERVER ))
 					SERVERCOMMANDS_TakeInventory( player - players, TEAM_GetItem( i ), 0 );
 				if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-					HUD_Refresh( );
+					HUD_ShouldRefreshBeforeRendering( );
+
+				pInventory->Destroy( );
+				pInventory = nullptr;
 
 				// Spawn a new flag.
 				pTeamItem = Spawn( TEAM_GetItem( i ), x, y, z, NO_REPLACE );
@@ -2122,7 +2165,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 							TEAM_SetReturnTicks( i, sv_flagreturntime * TICRATE );
 
 							// Print flag dropped message and do announcer stuff.
-							TEAM_FlagDropped( player, i );
+							ATeamItem::Drop( player, i );
 
 							// If we're the server, spawn the item to clients.
 							if ( NETWORK_GetState( ) == NETSTATE_SERVER )
@@ -2137,11 +2180,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 				// Award a "Defense!" medal to the player who fragged this flag carrier.
 				// [BB] but only if the flag belongs to the team of the fragger.
 				if (( pSource ) && ( pSource->player ) && ( pSource->IsTeammate( this ) == false ) && ( pSource->player->Team == i ))
-				{
-					MEDAL_GiveMedal( pSource->player - players, MEDAL_DEFENSE );
-					if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-						SERVERCOMMANDS_GivePlayerMedal( pSource->player - players, MEDAL_DEFENSE );
-				}
+					MEDAL_GiveMedal( pSource->player - players, "Defense" );
 			}
 		}
 
@@ -2149,13 +2188,14 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 		pInventory = this->FindInventory( PClass::FindClass( "WhiteFlag" ), true );
 		if (( oneflagctf ) && ( pInventory ))
 		{
-			this->RemoveInventory( pInventory );
-
 			// Tell the clients that this player no longer possesses a flag.
 			if (( bLeavingGame == false ) && ( NETWORK_GetState( ) == NETSTATE_SERVER ))
 				SERVERCOMMANDS_TakeInventory( player - players, pInventory->GetClass( ), 0 );
 			if ( NETWORK_GetState( ) != NETSTATE_SERVER )
-				HUD_Refresh( );
+				HUD_ShouldRefreshBeforeRendering( );
+
+			pInventory->Destroy( );
+			pInventory = nullptr;
 
 			// Spawn a new flag.
 			pTeamItem = Spawn( PClass::FindClass( "WhiteFlag" ), x, y, z, ALLOW_REPLACE );
@@ -2176,6 +2216,9 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 					{
 						TEAM_SetReturnTicks( teams.Size( ), sv_flagreturntime * TICRATE );
 
+						// [AK] Print the dropped message and do announcer stuff.
+						ATeamItem::Drop( player, teams.Size( ));
+
 						// If we're the server, spawn the item to clients.
 						if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 							SERVERCOMMANDS_SpawnThing( pTeamItem );
@@ -2185,11 +2228,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 
 			// Award a "Defense!" medal to the player who fragged this flag carrier.
 			if ( pSource && pSource->player && ( pSource->IsTeammate( this ) == false ))
-			{
-				MEDAL_GiveMedal( pSource->player - players, MEDAL_DEFENSE );
-				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-					SERVERCOMMANDS_GivePlayerMedal( pSource->player - players, MEDAL_DEFENSE );
-			}
+				MEDAL_GiveMedal( pSource->player - players, "Defense" );
 		}
 	}
 
@@ -2205,7 +2244,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				SERVERCOMMANDS_TakeInventory( player - players, PClass::FindClass( "PowerTerminatorArtifact" ), 0 );
 			else
-				HUD_Refresh( );
+				HUD_ShouldRefreshBeforeRendering( );
 		}
 	}
 
@@ -2221,7 +2260,7 @@ void APlayerPawn::DropImportantItems( bool bLeavingGame, AActor *pSource )
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				SERVERCOMMANDS_TakeInventory( player - players, PClass::FindClass( "PowerPossessionArtifact" ), 0 );
 			else
-				HUD_Refresh( );
+				HUD_ShouldRefreshBeforeRendering( );
 
 			// Tell the possession module that the artifact has been dropped.
 			if ( possession || teampossession )
@@ -2272,7 +2311,8 @@ void APlayerPawn::TweakSpeeds (int &forward, int &side)
 	}
 
 	// [BC] This comes out to 50%, so we can use this for the turbosphere.
-	if (!player->morphTics && Inventory != NULL)
+	// [Binary] Allow morphs to use turbosphere / speed powerups with +NOMORPHLIMITATIONS.
+	if (( !player->morphTics || ( PlayerFlags & PPF_NOMORPHLIMITATIONS ) ) && Inventory != NULL)
 	{
 		fixed_t factor = Inventory->GetSpeedFactor ();
 		forward = FixedMul(forward, factor);
@@ -2381,6 +2421,12 @@ DEFINE_ACTION_FUNCTION(AActor, A_PlayerScream)
 	int sound = 0;
 	int chan = CHAN_VOICE;
 
+	// [AK] If the actor used have a valid player pointer, but doesn't anymore
+	// because the player respawned, then temporarily set the pointer to the
+	// old player. This way, we can still play their skin's death sound(s) and
+	// not have to alter the code below.
+	const bool usedOldPlayer = G_TransferPlayerFromCorpse(self);
+
 	if (self->player == NULL || self->DeathSound != 0)
 	{
 		if (self->DeathSound != 0)
@@ -2391,6 +2437,12 @@ DEFINE_ACTION_FUNCTION(AActor, A_PlayerScream)
 		{
 			S_Sound (self, CHAN_VOICE, "*death", 1, ATTN_NORM);
 		}
+
+		// [AK] If self->player was a null pointer before and had to be changed
+		// temporarily, reset it back before exiting the function.
+		if (usedOldPlayer)
+			self->player = nullptr;
+
 		return;
 	}
 
@@ -2440,6 +2492,11 @@ DEFINE_ACTION_FUNCTION(AActor, A_PlayerScream)
 		}
 	}
 	S_Sound (self, chan, sound, 1, ATTN_NORM);
+
+	// [AK] After playing the death sound, if self->player was a null pointer
+	// before and had to be changed temporarily, reset it back.
+	if (usedOldPlayer)
+		self->player = nullptr;
 }
 
 
@@ -2472,6 +2529,25 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_SkullPop)
 	mo->velz = 2*FRACUNIT + (pr_skullpop() << 6);
 	// Attach player mobj to bloody skull
 	player = self->player;
+
+	// [RK] Before we set the old player to NULL we have to transfer over the
+	// new actor to any running scripts that have the old body as the activator.
+	if (player != NULL)
+	{
+		TThinkerIterator<DACSThinker> it;
+		DACSThinker* next = it.Next();
+
+		while (next != NULL)
+		{
+			next->ReplaceActivator(self, mo);
+			next = it.Next();
+		}
+	}
+	// [RK] If for some reason the player is NULL the scripts have
+	// to be stopped to prevent them from lingering around.
+	else
+		FBehavior::StaticStopMyScripts(self);
+
 	self->player = NULL;
 	mo->ObtainInventory (self);
 	mo->player = player;
@@ -2517,50 +2593,48 @@ DEFINE_ACTION_FUNCTION(AActor, A_CheckPlayerDone)
 
 void P_CheckPlayerSprite(AActor *actor, int &spritenum, fixed_t &scalex, fixed_t &scaley)
 {
-	LONG	lSkin;
-
 	player_t *player = actor->player;
-
 	int crouchspriteno;
 
 	// [AK] Don't set the player's sprite if their current body doesn't match their class due to A_SkullPop.
 	if ( actor->IsKindOf( RUNTIME_CLASS( APlayerChunk )))
 		return;
 
-	// [BC] Because of cl_skins, we might not necessarily use the player's
-	// desired skin.
-	lSkin = player->userinfo.GetSkin();
+	// [SB] In multiplayer emulation, voodoo dolls exist on the client and will therefore be rendered,
+	// but if sv_coopunassignedvoodoodolls is enabled they belong to the dummy player which never has an individual associated mobj.
+	if ( player->mo == nullptr )
+		return;
 
-	// [BB] MF4_NOSKIN should force the player to have the base skin too, the same is true for morphed players.
-	if (( cl_skins <= 0 ) || ((( cl_skins >= 2 ) && ( skins[player->userinfo.GetSkin()].bCheat ))) || (actor->flags4 & MF4_NOSKIN) || player->morphTics )
-		lSkin = R_FindSkin( "base", player->CurrentPlayerClass );
+	// [BC] Because of cl_skins, we might not necessarily use the player's desired skin.
+	const int overrideSkin = PLAYER_GetOverrideSkin( player ); // [AK]
+	int skin = player->userinfo.GetSkin();
 
-	// [BB] If the weapon has a PreferredSkin defined, make the player use it here.
-	if ( player->ReadyWeapon && ( player->ReadyWeapon->PreferredSkin != NAME_None ) )
+	// [AK] Check if the player's base skin should be used instead of their personal skin.
+	if ( PLAYER_ShouldForceBaseSkin( player ))
+		skin = R_FindSkin( "base", player->CurrentPlayerClass );
+
+	// [BB/AK] If the skin was overridden from ACS, or the weapon has a PreferredSkin defined, make the player use it here.
+	if (( overrideSkin != -1 ) && ( overrideSkin != skin ))
 	{
-		LONG lDesiredSkin = R_FindSkin( player->ReadyWeapon->PreferredSkin.GetChars(), player->CurrentPlayerClass );
-		if ( lDesiredSkin != lSkin )
-		{
-			lSkin = lDesiredSkin;
-			spritenum = skins[lSkin].sprite;
-		}
+		skin = overrideSkin;
+		spritenum = skins[skin].sprite;
 	}
-	// [BB] No longer using a weapon with a preferred skin, reset the sprite.
-	else if ( ( spritenum != skins[lSkin].sprite ) && ( spritenum != skins[lSkin].crouchsprite )
+	// [BB/AK] No longer using an overridden skin, reset the sprite.
+	else if ( ( spritenum != skins[skin].sprite ) && ( spritenum != skins[skin].crouchsprite )
 			&& ( spritenum != actor->state->sprite ) && (actor->state->sprite != SPR_NOCHANGE) && 
 			(actor->state->sprite != SPR_FIXED))
 	{
-		spritenum = skins[lSkin].sprite;
+		spritenum = skins[skin].sprite;
 	}
 
-	// [BB] PreferredSkin overrides NOSKIN.
-	if (lSkin != 0 && ( !(player->mo->flags4 & MF4_NOSKIN) || ( player->ReadyWeapon && ( player->ReadyWeapon->PreferredSkin != NAME_None ) ) ) )
+	// [BB/AK] An overridden skin also overrides NOSKIN.
+	if (skin != 0 && ( !(player->mo->flags4 & MF4_NOSKIN) || ( overrideSkin != -1 ) ) )
 	{
 		// Convert from default scale to skin scale.
 		fixed_t defscaleY = actor->GetDefault()->scaleY;
 		fixed_t defscaleX = actor->GetDefault()->scaleX;
-		scaley = Scale(scaley, skins[lSkin].ScaleY, defscaleY);
-		scalex = Scale(scalex, skins[lSkin].ScaleX, defscaleX);
+		scaley = Scale(scaley, skins[skin].ScaleY, defscaleY);
+		scalex = Scale(scalex, skins[skin].ScaleX, defscaleX);
 	}
 
 	// Set the crouch sprite?
@@ -2570,12 +2644,12 @@ void P_CheckPlayerSprite(AActor *actor, int &spritenum, fixed_t &scalex, fixed_t
 		{
 			crouchspriteno = player->mo->crouchsprite;
 		}
-		// [BB] PreferredSkin overrides NOSKIN.
-		else if ( ( !(actor->flags4 & MF4_NOSKIN) || ( player->ReadyWeapon && ( player->ReadyWeapon->PreferredSkin != NAME_None ) ) ) &&
-				(spritenum == skins[lSkin].sprite ||
-				 spritenum == skins[lSkin].crouchsprite))
+		// [BB/AK] An overridden skin also overrides NOSKIN.
+		else if ( ( !(actor->flags4 & MF4_NOSKIN) || ( overrideSkin != -1 ) ) &&
+				(spritenum == skins[skin].sprite ||
+				 spritenum == skins[skin].crouchsprite))
 		{
-			crouchspriteno = skins[lSkin].crouchsprite;
+			crouchspriteno = skins[skin].crouchsprite;
 		}
 		else
 		{ // no sprite -> squash the existing one
@@ -2685,6 +2759,9 @@ void P_CalcHeight (player_t *player)
 	if ( CLIENT_PREDICT_IsPredicting( ))
 		return;
 
+	// [AK] Check if the spectator has no physical restrictions.
+	const bool noPhysicalRestrictions = P_IsSpectatorUnrestricted(player->mo);
+
 	// Regular movement bobbing
 	// (needs to be calculated for gun swing even if not on ground)
 
@@ -2694,7 +2771,8 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
-	if (player->cheats & CF_NOCLIP2)
+	// [AK] Don't calculate bobbing without physical restrictions.
+	if ((player->cheats & CF_NOCLIP2) || (noPhysicalRestrictions))
 	{
 		player->bob = 0;
 	}
@@ -2784,12 +2862,19 @@ void P_CalcHeight (player_t *player)
 		}
 	}
 
-	if (player->morphTics)
+	// [AK] Bob the screen for morphed players if NOMORPHLIMITATIONS is enabled.
+	if (player->morphTics && ((player->mo->PlayerFlags & PPF_NOMORPHLIMITATIONS) == false))
 	{
 		bob = 0;
 	}
+
 	// [AK] Don't bob the screen if cl_viewbob is disabled.
 	player->viewz = player->mo->z + player->viewheight + (cl_viewbob ? bob : 0);
+
+	// [AK] Don't clip the view to the floor/ceiling without physical restrictions.
+	if (noPhysicalRestrictions)
+		return;
+
 	if (player->mo->floorclip && player->playerstate != PST_DEAD
 		&& player->mo->z <= player->mo->floorz)
 	{
@@ -2812,17 +2897,15 @@ void P_CalcHeight (player_t *player)
 =
 =================
 */
-CUSTOM_CVAR (Float, sv_aircontrol, 0.00390625f, CVAR_SERVERINFO|CVAR_NOSAVE)
+
+// [AK] Added CVAR_GAMEPLAYSETTING.
+CUSTOM_CVAR (Float, sv_aircontrol, 0.00390625f, CVAR_SERVERINFO|CVAR_NOSAVE|CVAR_GAMEPLAYSETTING)
 {
 	level.aircontrol = (fixed_t)(self * 65536.f);
 	G_AirControlChanged ();
 
 	// [BB] Let the clients know about the change.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %f\n", self.GetName( ), (float)self );
-		SERVERCOMMANDS_SetGameModeLimits( );
-	}
+	SERVER_SettingChanged( self, false );
 }
 
 void P_MovePlayer (player_t *player)
@@ -2840,22 +2923,54 @@ void P_MovePlayer (player_t *player)
 	// [Leo] cl_spectatormove is now applied here to avoid code duplication.
 	fixed_t spectatormove = FLOAT2FIXED(cl_spectatormove);
 
-	// [AK] Save the player's angle before we update it.
-	fixed_t oldAngle = mo->angle;
+	// [AK] The player doesn't look around while using the free chasecam,
+	// so while playing a demo, make sure to not update the local player's
+	// angle during the moments they were using it.
+	if ((player != &players[consoleplayer]) || (CLIENTDEMO_IsPlaying() == false) || (FreeChasecam::enabled == false))
+	{
+		// [AK] Save the player's angle before we update it.
+		const bool usingFreeChasecam = FreeChasecam::IsBeingUsed(player);
+		fixed_t oldAngle = mo->angle;
 
-	// [RH] 180-degree turn overrides all other yaws
-	if (player->turnticks)
+		// [AK] If using the free chasecam, temporarily set the player's angle
+		// to that of the free chasecam.
+		if (usingFreeChasecam)
+			mo->angle = FreeChasecam::cameraAngle;
+
+		// [RH] 180-degree turn overrides all other yaws
+		if (player->turnticks)
+		{
+			player->turnticks--;
+			mo->angle += (ANGLE_180 / TURN180_TICKS);
+		}
+		else
+		{
+			mo->angle += cmd->ucmd.yaw << 16;
+		}
+
+		// [AK] If being used, update the free chasecam's angle to the new one,
+		// then reset the player's angle back to what it was before. This way,
+		// the player isn't also looking around while using the free chasecam.
+		if (usingFreeChasecam)
+		{
+			FreeChasecam::cameraAngle = mo->angle;
+			mo->angle = oldAngle;
+		}
+
+		// [AK] Calculate how much the player's angle changed.
+		mo->AngleDelta = mo->angle - oldAngle;
+	}
+	// [AK] Their turn ticks still need to be decremented.
+	else if (player->turnticks)
 	{
 		player->turnticks--;
-		mo->angle += (ANGLE_180 / TURN180_TICKS);
-	}
-	else
-	{
-		mo->angle += cmd->ucmd.yaw << 16;
 	}
 
-	// [AK] Calculate how much the player's angle changed.
-	mo->AngleDelta = mo->angle - oldAngle;
+	// [AK] Stop here if the player is dead. They only reason this should happen
+	// is because they're the local player and they're using the free chasecam,
+	// so their angle had to be updated.
+	if (player->playerstate == PST_DEAD)
+		return;
 
 	// [TP] Allow spectators to move freely even if the game is suspended.
 	if ( GAME_GetEndLevelDelay( ) && ( player->bSpectating == false ))
@@ -2947,6 +3062,10 @@ void P_MovePlayer (player_t *player)
 		{
 			player->cheats &= ~CF_REVERTPLEASE;
 			player->camera = player->mo;
+
+			// [AK] Revert the HUD back to the local player too.
+			if (( NETWORK_GetState( ) != NETSTATE_SERVER ) && ( player == &players[consoleplayer] ))
+				G_FinishChangeSpy( consoleplayer, true );
 		}
 	}
 
@@ -3229,8 +3348,8 @@ void P_DeathThink (player_t *player)
 		}
 	}
 
-	// [BB] If lives are limited and the game is in progess, possibly put the player in dead spectator mode.
-	if ( GAMEMODE_AreLivesLimited ( ) && GAMEMODE_IsGameInProgress ( ) )
+	// [BB/AK] If lives are limited and the player must lose a life, possibly put the player in dead spectator mode.
+	if ( GAMEMODE_ShouldPlayerLoseLife( ))
 	{
 		if ( level.time >= player->respawn_time )
 		{
@@ -3268,7 +3387,8 @@ void P_DeathThink (player_t *player)
 			return;
 	}
 
-	if ( level.time >= player->respawn_time )
+	// [AK] Don't allow players to respawn during the result sequence, in case sv_forcerespawn is on.
+	if ( level.time >= player->respawn_time && GAMEMODE_IsGameInResultSequence( ) == false )
 	{
 		if (((( player->cmd.ucmd.buttons & BT_USE ) || ( ( player->userinfo.GetClientFlags() & CLIENTFLAGS_RESPAWNONFIRE ) && ( player->cmd.ucmd.buttons & BT_ATTACK ) && (( player->oldbuttons & BT_ATTACK ) == false ))) || 
 			(( deathmatch || teamgame || alwaysapplydmflags ) &&
@@ -3280,11 +3400,22 @@ void P_DeathThink (player_t *player)
 			{
 				player->mo->special1 = 0;
 			}
-			// [BB] The player will be reborn, so take away one life, but only if the game is already in progress.
-			if ( ( player->ulLivesLeft > 0 ) && GAMEMODE_IsGameInProgress ( ) )
+			// [BB/AK] The player will be reborn, so take away one life, but only if they must lose one.
+			if (( player->ulLivesLeft > 0 ) && ( GAMEMODE_ShouldPlayerLoseLife( )))
 			{
 				PLAYER_SetLivesLeft ( player, player->ulLivesLeft - 1 );
 			}
+
+			// [AK] Destroy the player's icon at this time too.
+			if ( player->pIcon != nullptr )
+			{
+				player->pIcon->Destroy( );
+				player->pIcon = nullptr;
+			}
+
+			// [AK] If the player was marked as being spawn telefragged, disable it now.
+			if ( player->bSpawnTelefragged )
+				player->bSpawnTelefragged = false;
 		}
 //		else if ( player->pSkullBot )
 //		{
@@ -3350,14 +3481,7 @@ void PLAYER_JoinGameFromSpectators( int iChar )
 	}
 
 	// [BB] In single player, allow the player to switch its class when changing from spectator to player.
-	if ( ( NETWORK_GetState( ) == NETSTATE_SINGLE ) || ( NETWORK_GetState( ) == NETSTATE_SINGLE_MULTIPLAYER ) )
-	{
-		SinglePlayerClass[consoleplayer] = players[consoleplayer].userinfo.GetPlayerClassNum();
-
-		// [AK] Assign a random class for the player if necessary.
-		if ( SinglePlayerClass[consoleplayer] < 0 )
-			SinglePlayerClass[consoleplayer] = ( pr_classchoice() ) % PlayerClasses.Size();
-	}
+	G_UpdateSinglePlayerClass( consoleplayer );
 
 	PLAYER_SpectatorJoinsGame( &players[consoleplayer] );
 	players[consoleplayer].camera = players[consoleplayer].mo;
@@ -3451,7 +3575,7 @@ void P_PlayerThink (player_t *player)
 //				// Don't really bitch here, because this tends to happen if people use the "map"
 //				// rcon command.
 				Printf( "No player %td start\n", player - players + 1 );
-				SERVER_DisconnectClient( player - players, true, true );
+				SERVER_DisconnectClient( player - players, true, true, LEAVEREASON_ERROR );
 				return;
 			}
 			else
@@ -3565,6 +3689,13 @@ void P_PlayerThink (player_t *player)
 
 	bool totallyfrozen = P_IsPlayerTotallyFrozen(player);
 
+	// [AK] Check if the local player is using the free chasecam. If they are,
+	// then we must also preserve their yaw and pitch inputs even when they're
+	// normally zeroed (i.e. totally frozen or while the game is suspended).
+	// This way, they can still move the camera around.
+	const bool localPlayerUsingFreeChasecam = ((player == &players[consoleplayer]) && (FreeChasecam::IsBeingUsed(player)));
+	bool mustZeroYawAndPitch = false;
+
 	// [BB] Why should a predicting client ignore CF_TOTALLYFROZEN and CF_FROZEN?
 	//if ( CLIENT_PREDICT_IsPredicting( ) == false )
 	{
@@ -3579,8 +3710,18 @@ void P_PlayerThink (player_t *player)
 			{
 				cmd->ucmd.buttons &= BT_USE;
 			}
-			cmd->ucmd.pitch = 0;
-			cmd->ucmd.yaw = 0;
+
+			// [AK] Don't zero the yaw/pitch if the local player's using the free chasecam.
+			if (localPlayerUsingFreeChasecam == false)
+			{
+				cmd->ucmd.pitch = 0;
+				cmd->ucmd.yaw = 0;
+			}
+			else
+			{
+				mustZeroYawAndPitch = true;
+			}
+
 			cmd->ucmd.roll = 0;
 			cmd->ucmd.forwardmove = 0;
 			cmd->ucmd.sidemove = 0;
@@ -3603,7 +3744,20 @@ void P_PlayerThink (player_t *player)
 	// Note: This needs to be done after ticking the bot, otherwise the bot could still act.
 	// [TP] Allow spectators to move freely even if the game is suspended.
 	if ( GAME_GetEndLevelDelay( ) && ( player->bSpectating == false ))
+	{
+		const int savedYaw = cmd->ucmd.yaw;
+		const int savedPitch = cmd->ucmd.pitch;
+
 		memset( cmd, 0, sizeof( ticcmd_t ));
+
+		// [AK] If the local player's using the free chasecam, restore the yaw/pitch.
+		if ( localPlayerUsingFreeChasecam )
+		{
+			cmd->ucmd.yaw = savedYaw;
+			cmd->ucmd.pitch = savedPitch;
+			mustZeroYawAndPitch = true;
+		}
+	}
 
 	// Handle crouching
 	if (player->cmd.ucmd.buttons & BT_JUMP)
@@ -3653,101 +3807,167 @@ void P_PlayerThink (player_t *player)
 		player->Uncrouch();
 		P_DeathThink (player);
 
+		// [AK] Check if the player pressed the turn-180 degrees button.
+		const bool pressedTurn180 = ((cmd->ucmd.buttons & BT_TURN180) && !(player->oldbuttons & BT_TURN180));
+
 		// [BC] Update oldbuttons.
 		player->oldbuttons = player->cmd.ucmd.buttons;
-		return;
-	}
-	if (player->jumpTics != 0)
-	{
-		player->jumpTics--;
-		if (player->onground && player->jumpTics < -18)
-		{
-			player->jumpTics = 0;
-		}
-	}
-	if (player->morphTics)// && !(player->cheats & CF_PREDICTING))
-	{
-		player->mo->MorphPlayerThink ();
-	}
 
-	// [AK] Save the player's pitch before we update it.
-	fixed_t oldPlayerPitch = player->mo->pitch;
+		// [AK] Don't exit the function yet if the local player is using the free chasecam.
+		// Their angle and pitch must still be updated to move the camera.
+		if (localPlayerUsingFreeChasecam == false)
+			return;
 
-	// [Leo] Spectators shouldn't be limited by the server settings.
-	// [RH] Look up/down stuff
-	if (!level.IsFreelookAllowed() && player->bSpectating == false)
-	{
-		player->mo->pitch = 0;
+		// [AK] Set the dead player's turn ticks so that they can still turn 180-degrees.
+		if (pressedTurn180)
+			player->turnticks = TURN180_TICKS;
 	}
+	// [AK] The local player doesn't execute these if using the free chasecam while dead.
 	else
 	{
-		// Servers read in the pitch value. It is not calculated.
-		if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( player->pSkullBot != NULL ))
+		if (player->jumpTics != 0)
 		{
-			int look = cmd->ucmd.pitch << 16;
-
-			// The player's view pitch is clamped between -32 and +56 degrees,
-			// which translates to about half a screen height up and (more than)
-			// one full screen height down from straight ahead when view panning
-			// is used.
-			if (look)
+			player->jumpTics--;
+			if (player->onground && player->jumpTics < -18)
 			{
-				if (look == -32768 << 16)
-				{ // center view
-					player->mo->pitch = 0;
-				}
-				else
-				{
-					fixed_t oldpitch = player->mo->pitch;
-					player->mo->pitch -= look;
-					if (look > 0)
-					{ // look up
-						// [BB] Zandronum handles pitch differently.
-						const fixed_t pitchLimit = - ( ( NETWORK_GetState( ) != NETSTATE_SERVER ) ? Renderer->GetMaxViewPitch(false) : 32 ) * ANGLE_1;
-						player->mo->pitch = MAX(player->mo->pitch, pitchLimit );
-						if (player->mo->pitch > oldpitch)
-						{
-							player->mo->pitch = pitchLimit;
-						}
-					}
-					else
-					{ // look down
-						// [BB] Zandronum handles pitch differently.
-						const fixed_t pitchLimit = ( ( NETWORK_GetState( ) != NETSTATE_SERVER ) ? Renderer->GetMaxViewPitch(true) : 56 ) * ANGLE_1;
-						player->mo->pitch = MIN(player->mo->pitch, pitchLimit );
-						if (player->mo->pitch < oldpitch)
-						{
-							player->mo->pitch = pitchLimit;
-						}
-					}
-				}
+				player->jumpTics = 0;
 			}
 		}
-	}
-	if (player->centering)
-	{
-		if (abs(player->mo->pitch) > 2*ANGLE_1)
+		if (player->morphTics)// && !(player->cheats & CF_PREDICTING))
 		{
-			player->mo->pitch = FixedMul(player->mo->pitch, FRACUNIT*2/3);
+			player->mo->MorphPlayerThink ();
+		}
+	}
+
+	// [AK] While recording a demo, check if the local player's using the free
+	// chasecam and update its status accordingly. Also send their current angle
+	// so it gets synced properly during demo playback (i.e. the player presses
+	// the turn-180 degrees button then quickly changes between using the free
+	// chasecam or not).
+	if ((CLIENTDEMO_IsRecording()) && (player == &players[consoleplayer]))
+	{
+		if (FreeChasecam::IsBeingUsed())
+		{
+			if (FreeChasecam::enabled == false)
+			{
+				CLIENTDEMO_WriteFreeChasecam(true, players[consoleplayer].mo->angle);
+				FreeChasecam::enabled = true;
+			}
+		}
+		else if (FreeChasecam::enabled)
+		{
+			CLIENTDEMO_WriteFreeChasecam(false, players[consoleplayer].mo->angle);
+			FreeChasecam::enabled = false;
+		}
+	}
+
+	// [AK] As with their angle, don't update the local player's pitch during
+	// the moments they're using the free chasecam while playing a demo.
+	if ((player != &players[consoleplayer]) || (CLIENTDEMO_IsPlaying() == false) || (FreeChasecam::enabled == false))
+	{
+		// [AK] Save the player's pitch before we update it.
+		const bool usingFreeChasecam = FreeChasecam::IsBeingUsed(player);
+		fixed_t oldPlayerPitch = player->mo->pitch;
+
+		// [AK] If using the free chasecam, temporarily set the player's pitch
+		// to that of the free chasecam.
+		if (usingFreeChasecam)
+			player->mo->pitch = FreeChasecam::cameraPitch;
+
+		// [Leo] Spectators shouldn't be limited by the server settings.
+		// [RH] Look up/down stuff
+		if (!level.IsFreelookAllowed() && player->bSpectating == false)
+		{
+			player->mo->pitch = 0;
 		}
 		else
 		{
-			player->mo->pitch = 0;
-			player->centering = false;
-			if (player - players == consoleplayer)
+			// Servers read in the pitch value. It is not calculated.
+			if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( player->pSkullBot != NULL ))
 			{
-				LocalViewPitch = 0;
+				int look = cmd->ucmd.pitch << 16;
+
+				// The player's view pitch is clamped between -32 and +56 degrees,
+				// which translates to about half a screen height up and (more than)
+				// one full screen height down from straight ahead when view panning
+				// is used.
+				if (look)
+				{
+					if (look == -32768 << 16)
+					{ // center view
+						player->mo->pitch = 0;
+					}
+					else
+					{
+						fixed_t oldpitch = player->mo->pitch;
+						player->mo->pitch -= look;
+						if (look > 0)
+						{ // look up
+							// [BB] Zandronum handles pitch differently.
+							const fixed_t pitchLimit = - ( ( NETWORK_GetState( ) != NETSTATE_SERVER ) ? Renderer->GetMaxViewPitch(false) : 32 ) * ANGLE_1;
+							player->mo->pitch = MAX(player->mo->pitch, pitchLimit );
+							if (player->mo->pitch > oldpitch)
+							{
+								player->mo->pitch = pitchLimit;
+							}
+						}
+						else
+						{ // look down
+							// [BB] Zandronum handles pitch differently.
+							const fixed_t pitchLimit = ( ( NETWORK_GetState( ) != NETSTATE_SERVER ) ? Renderer->GetMaxViewPitch(true) : 56 ) * ANGLE_1;
+							player->mo->pitch = MIN(player->mo->pitch, pitchLimit );
+							if (player->mo->pitch < oldpitch)
+							{
+								player->mo->pitch = pitchLimit;
+							}
+						}
+					}
+				}
 			}
 		}
-	}
+		if (player->centering)
+		{
+			if (abs(player->mo->pitch) > 2*ANGLE_1)
+			{
+				player->mo->pitch = FixedMul(player->mo->pitch, FRACUNIT*2/3);
+			}
+			else
+			{
+				player->mo->pitch = 0;
+				player->centering = false;
+				if (player - players == consoleplayer)
+				{
+					LocalViewPitch = 0;
+				}
+			}
+		}
 
-	// [AK] Calculate how much the player's pitch changed.
-	player->mo->PitchDelta = player->mo->pitch - oldPlayerPitch;
+		// [AK] If being used, update the free chasecam's pitch to the new one,
+		// then reset the player's pitch back to what it was before. This way,
+		// the player isn't also looking around while using the free chasecam.
+		if (usingFreeChasecam)
+		{
+			FreeChasecam::cameraPitch = player->mo->pitch;
+			player->mo->pitch = oldPlayerPitch;
+		}
+
+		// [AK] Calculate how much the player's pitch changed.
+		player->mo->PitchDelta = player->mo->pitch - oldPlayerPitch;
+	}
 
 	// [RH] Check for fast turn around
 	if (cmd->ucmd.buttons & BT_TURN180 && !(player->oldbuttons & BT_TURN180))
 	{
 		player->turnticks = TURN180_TICKS;
+	}
+
+	// [AK] The only reason that a dead player reached here is because they're
+	// the local player and they're using the free chasecam, so their pitch had
+	// to be updated. Update their angle now, then stop here.
+	if (player->playerstate == PST_DEAD)
+	{
+		P_MovePlayer(player);
+		return;
 	}
 
 	// Handle movement
@@ -3806,12 +4026,18 @@ void P_PlayerThink (player_t *player)
 		}
 	}
 
+	// [AK] If the local player's yaw and pitch inputs are supposed to be zero
+	// but aren't because they're using the free chasecam, zero them now.
+	if (mustZeroYawAndPitch)
+		cmd->ucmd.yaw = cmd->ucmd.pitch = 0;
+
 	P_CalcHeight (player);
 
 	// [Leo] Done with spectator specific logic.
 	if (player->bSpectating)
 	{
 		P_SetPsprite( player, ps_weapon, NULL );
+		P_SetPsprite( player, ps_flash, NULL );
 		return;
 	}
 
@@ -4218,12 +4444,14 @@ void player_t::Serialize (FArchive &arc)
 		// [BB] Skulltag additions - start
 		<< bOnTeam
 		<< Team
-		<< bChatting
-		<< bInConsole
-		<< bInMenu
+		<< statuses
+		<< bSpectating
+		<< bDeadSpectator
 		<< RailgunShots
 		<< MaxHealthBonus
 		<< cheats2
+		<< ACSSkin
+		<< ACSSkinOverridesWeaponSkin
 		// [BB] Skulltag additions - end
 		;
 	if (SaveVersion < 3427)
@@ -4378,6 +4606,32 @@ bool P_IsPlayerTotallyFrozen(const player_t *player)
 		gamestate == GS_TITLELEVEL ||
 		player->cheats & CF_TOTALLYFROZEN ||
 		((level.flags2 & LEVEL2_FROZEN) && player->timefreezer == 0 && (player->bSpectating == false));
+}
+
+// [AK] Checks if the local player is physically unrestricted while spectating.
+bool P_IsSpectatorUnrestricted(const AActor *viewActor)
+{
+	player_t *player = &players[consoleplayer];
+
+	// [AK] The server doesn't handle spectator movement.
+	if ((NETWORK_GetState() == NETSTATE_SERVER) || (viewActor == nullptr))
+		return false;
+
+	// [AK] While playing a demo, check if the local player was using the
+	// unrestricted spectator mode during recording instead. If free spectate
+	// mode is being used, use the free spectator's body instead.
+	if (CLIENTDEMO_IsPlaying())
+	{
+		if (viewActor == players[consoleplayer].mo)
+			return (players[consoleplayer].bSpectating && CLIENTDEMO_IsConsolePlayerUnrestricted());
+
+		player = CLIENTDEMO_GetFreeSpectatorPlayer();
+	}
+
+	if (cl_spectatormode != SPECMODE_NO_RESTRICTIONS)
+		return false;
+
+	return ((player->bSpectating) && (viewActor == player->mo));
 }
 
 // [AK] Resets the player's pitch limits anytime they need to be changed.

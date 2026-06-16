@@ -60,6 +60,7 @@
 #include "network_enums.h"
 #include "gameconfigfile.h"
 #include "version.h"
+#include "cl_demo.h"
 
 //*****************************************************************************
 //	VARIABLES
@@ -70,11 +71,18 @@ static FString g_password;
 CUSTOM_CVAR( Bool, cl_hideaccount, false, CVAR_ARCHIVE )
 {
 	if ( NETWORK_GetState() == NETSTATE_CLIENT )
-		CLIENTCOMMANDS_SetWantHideAccount( self );
+		CLIENTCOMMANDS_SetWantHideInfo( HIDEINFO_ACCOUNTNAME, self );
 }
 
 #ifdef _WIN32
-CVAR( String, login_default_user, "", CVAR_ARCHIVE )
+EXTERN_CVAR( Bool, cl_autologin )
+
+CUSTOM_CVAR( String, login_default_user, "", CVAR_ARCHIVE | CVAR_NOINITCALL )
+{
+	// [AK] Log in automatically when setting a default username, if applicable.
+	if (( NETWORK_GetState( ) == NETSTATE_CLIENT ) && ( CLIENT_IsLoggedIn( ) == false ) && ( cl_autologin ))
+		CLIENT_RetrieveUserAndLogIn( self.GetGenericRep( CVAR_String ).String );
+}
 #endif
 
 //*****************************************************************************
@@ -149,8 +157,8 @@ void client_SRPStartAuthentication ( const char *Username )
     int lenA = 0;
     const char * authUsername = NULL; 
 
-	if ( g_usr != NULL )
-		srp_user_delete( g_usr );
+	CLIENT_LogOut( );
+
 	g_usr = srp_user_new( SRP_SHA256, SRP_NG_2048, Username, reinterpret_cast<const unsigned char*> ( g_password.GetChars() ), g_password.Len(), NULL, NULL, 1 );
 	srp_user_start_authentication( g_usr, &authUsername, &bytesA, &lenA );
 	if ( strcmp( authUsername, Username ) != 0 )
@@ -223,12 +231,17 @@ void CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			for ( int i = 0; i < lenHAMK; ++i )
 				bytesHAMK[i] = pByteStream->ReadByte();
 
-			srp_user_verify_session( g_usr, &(bytesHAMK[0]) );
+			// [AK] Don't try to verify the session while playing a demo. The
+			// authentication will always fail in this state.
+			if ( CLIENTDEMO_IsPlaying() == false )
+			{
+				srp_user_verify_session( g_usr, &(bytesHAMK[0]) );
 
-			if ( !srp_user_is_authenticated ( g_usr ) )
-				Printf( "Server authentication failed!\n" );
-			else
-				Printf ( "Login successful\n" );
+				if ( !srp_user_is_authenticated ( g_usr ) )
+					Printf( "Server authentication failed!\n" );
+				else
+					Printf( "Login successful.\n" );
+			}
 		}
 		break;
 
@@ -239,12 +252,58 @@ void CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 }
 
 //*****************************************************************************
+//
+void CLIENT_LogOut( void )
+{
+	if ( g_usr != nullptr )
+	{
+		srp_user_delete( g_usr );
+		g_usr = nullptr;
+	}
+}
+
+//*****************************************************************************
+//
+bool CLIENT_IsLoggedIn( void )
+{
+	return (( g_usr != nullptr ) && ( srp_user_is_authenticated( g_usr )));
+}
+
+//*****************************************************************************
+//
+#ifdef _WIN32
+void CLIENT_RetrieveUserAndLogIn( const FString username )
+{
+	FString password;
+
+	// [AK] Don't try to log in if the username is empty.
+	if ( username.IsEmpty( ))
+		return;
+
+	if ( client_RetrieveCredentials( username, password ))
+		client_RequestLogin( username.GetChars( ), password.GetChars( ));
+	else
+		Printf( "No password saved for user %s. Use login_add to save a password.\n", username.GetChars( ));
+}
+#endif
+
+//*****************************************************************************
 //	CONSOLE COMMANDS
 
 CCMD( login )
 {
 	if ( NETWORK_GetState( ) != NETSTATE_CLIENT )
+	{
+		Printf( "You can't use login if you're not in an online game.\n" );
 		return;
+	}
+
+	// [AK] There's no need to request another login if we're already logged in.
+	if ( CLIENT_IsLoggedIn( ))
+	{
+		Printf( "You are already logged in.\n" );
+		return;
+	}
 
 #ifdef _WIN32
 	if (argv.argc () <= 2)
@@ -263,11 +322,7 @@ CCMD( login )
 		else
 			username = argv[1];
 
-		FString password;
-		if ( client_RetrieveCredentials ( username, password ) )
-			client_RequestLogin ( username.GetChars(), password.GetChars() );
-		else
-			Printf ( "No password saved for user %s. Use login_add to save a password.\n", username.GetChars() );
+		CLIENT_RetrieveUserAndLogIn( username );
 		return;
 	}
 #endif

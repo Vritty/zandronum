@@ -59,6 +59,7 @@ public:
 	FileReader *Reader;
 	const char *Filename;
 	bool IsOptional; // [TP]
+	bool ContainsAuthenticatedLumps; // [SB]
 protected:
 	DWORD NumLumps;
 

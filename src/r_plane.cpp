@@ -1231,10 +1231,13 @@ void R_DrawSkyBoxes ()
 			extralight = 0;
 			R_SetVisibility (sky->args[0] * 0.25f);
 
-			viewx = sky->PrevX + FixedMul(r_TicFrac, sky->x - sky->PrevX);
-			viewy = sky->PrevY + FixedMul(r_TicFrac, sky->y - sky->PrevY);
-			viewz = sky->PrevZ + FixedMul(r_TicFrac, sky->z - sky->PrevZ);
-			viewangle = savedangle + sky->PrevAngle + FixedMul(r_TicFrac, sky->angle - sky->PrevAngle);
+			// [AK] Don't interpolate the skybox if the game is supposed to be paused
+			// but the console is still interpolated. Otherwise, it will appear jittery.
+			const fixed_t ticFracToUse = C_ShouldForceInterpolation() ? FRACUNIT : r_TicFrac;
+			viewx = sky->PrevX + FixedMul(ticFracToUse, sky->x - sky->PrevX);
+			viewy = sky->PrevY + FixedMul(ticFracToUse, sky->y - sky->PrevY);
+			viewz = sky->PrevZ + FixedMul(ticFracToUse, sky->z - sky->PrevZ);
+			viewangle = savedangle + sky->PrevAngle + FixedMul(ticFracToUse, sky->angle - sky->PrevAngle);
 
 			R_CopyStackedViewParameters();
 		}

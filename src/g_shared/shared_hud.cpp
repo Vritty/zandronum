@@ -849,7 +849,7 @@ static int GetScoreForTeam( int t )
 	else if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
 		return TEAM_GetWinCount( t );
 
-	return TEAM_GetScore( t );
+	return TEAM_GetPointCount( t );
 }
 
 static bool TeamScoreSorter( const int& t1, const int& t2 )

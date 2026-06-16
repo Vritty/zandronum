@@ -3197,3 +3197,8 @@ void ADehackedPickup::Serialize(FArchive &arc)
 	Super::Serialize(arc);
 	arc << droppedbymonster;
 }
+
+AInventory* ADehackedPickup::GetRealPickup() // [RK] Returns the real pickup of the DEHACKED item.
+{
+		return RealPickup;
+}

@@ -525,7 +525,7 @@ DDoor::DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay, int lightTa
 	// [BB] We need to initialize the ID, because P_GetFirstFreeDoorID relies on this.
 	m_DoorID = -1;
 	// [BC] Assign the door's network ID.
-	if ( NETWORK_InClientMode() == false )
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
 		m_DoorID = P_GetFirstFreeDoorID( );
 }
 
@@ -754,29 +754,7 @@ DDoor *P_GetDoorByID( LONG lID )
 //
 LONG P_GetFirstFreeDoorID( void )
 {
-	LONG		lIdx;
-	DDoor		*pDoor;
-	bool		bIDIsAvailable;
-
-	for ( lIdx = 0; lIdx < 8192; lIdx++ )
-	{
-		TThinkerIterator<DDoor>		Iterator;
-
-		bIDIsAvailable = true;
-		while (( pDoor = Iterator.Next( )))
-		{
-			if ( pDoor->GetID( ) == lIdx )
-			{
-				bIDIsAvailable = false;
-				break;
-			}
-		}
-
-		if ( bIDIsAvailable )
-			return ( lIdx );
-	}
-
-	return ( -1 );
+	return NETWORK_GetFirstFreeID<DDoor>();
 }
 
 //*****************************************************************************

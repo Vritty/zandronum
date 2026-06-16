@@ -199,7 +199,7 @@ void ASkyPicker::PostBeginPlay ()
 	// [BB] The server may not destroy the SkyPicker, otherwise he can't
 	// inform the client about it during a full update.
 	if( NETWORK_GetState() != NETSTATE_SERVER )
-		Destroy ();
+		HideOrDestroyIfSafe (); // [BOF] Switch to HideOrDestroyIfSafe to prevent erasure in Map Reseting gamemodes.
 }
 
 //---------------------------------------------------------------------------

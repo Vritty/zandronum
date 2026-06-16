@@ -61,6 +61,7 @@
 #include "sv_main.h"
 #include "network.h"
 #include "m_misc.h"
+#include "d_event.h"
 
 // States for the intermission
 typedef enum
@@ -396,7 +397,7 @@ ULONG WI_CalcRank( void )
 			if ( players[consoleplayer].bOnTeam == false )
 				return ( 2 );
 
-			if ( TEAM_GetScore( players[consoleplayer].Team ) == TEAM_GetHighestScoreCount( ))
+			if ( TEAM_GetPointCount( players[consoleplayer].Team ) == TEAM_GetHighestPointCount( ))
 				return ( 1 );
 			else
 				return ( 2 );
@@ -1287,7 +1288,8 @@ static bool snl_pointeron = false;
 
 void WI_initShowNextLoc ()
 {
-	if (wbs->next_ep == -1) 
+	// [AK] The server should always end the intermission after 15 seconds.
+	if (NETWORK_GetState() == NETSTATE_SERVER || wbs->next_ep == -1) 
 	{
 		// Last map in episode - there is no next location!
 		WI_End();
@@ -1438,7 +1440,7 @@ void WI_UpdateCampaignStats( void )
 		}
 		else if (( teamgame || teampossession ) && ( players[consoleplayer].bOnTeam ))
 		{
-			cnt_Frags = TEAM_GetScore( players[consoleplayer].Team );
+			cnt_Frags = TEAM_GetPointCount( players[consoleplayer].Team );
 			cnt_Deaths = TEAM_GetFragCount( players[consoleplayer].Team );
 			cnt_Rank = WI_CalcRank( );
 			cnt_NumPlayers = SERVER_CountPlayers( true );
@@ -1489,9 +1491,9 @@ void WI_UpdateCampaignStats( void )
 		}
 		else if (( teamgame || teampossession ) && ( players[consoleplayer].bOnTeam ))
 		{
-			if ( cnt_Frags >= TEAM_GetScore( players[consoleplayer].Team ))
+			if ( cnt_Frags >= TEAM_GetPointCount( players[consoleplayer].Team ))
 			{
-				cnt_Frags = TEAM_GetScore( players[consoleplayer].Team );
+				cnt_Frags = TEAM_GetPointCount( players[consoleplayer].Team );
 				S_Sound( CHAN_VOICE, "intermission/nextstage", 1, ATTN_NONE );
 				cp_state++;
 			}
@@ -1659,7 +1661,8 @@ void WI_DrawCampaignStats (void)
 	lh = (3*IntermissionFont->GetHeight())/2;
 
 	WI_drawBackground(); 
-	WI_drawLF();
+	// [AK] Save the y-position for the scoreboard.
+	const int y = WI_drawLF();
 
 	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSEARNWINS )
 	{
@@ -1722,8 +1725,6 @@ void WI_DrawCampaignStats (void)
 				160 - ( BigFont->StringWidth( szString ) / 2 ),
 				50 + 3 * lh,
 				szString, DTA_Clean, true, TAG_DONE );
-
-			MEDAL_RenderAllMedals( -20 );
 		}
 	}
 	if (cp_state >= 8)
@@ -1732,6 +1733,10 @@ void WI_DrawCampaignStats (void)
 			DTA_Clean, true, DTA_Shadow, true, TAG_DONE);
 		WI_drawTime (160 - SP_TIMEX, 175, cnt_time);
 	}
+
+	// [AK] Allow people to see the full scoreboard in campaign mode.
+	if ( SCOREBOARD_ShouldDrawBoard())
+		SCOREBOARD_Render( me, y + WI_TITLEY * CleanYfac );
 }
 
 static int dm_state;
@@ -1870,12 +1875,13 @@ void WI_drawDeathmatchStats ()
 
 	// draw animated background
 	WI_drawBackground(); 
-	WI_drawLF();
+	// [AK] Save the y-position for the scoreboard.
+	const int y = WI_drawLF();
 
 	// [RH] Draw heads-up scores display
 //	HU_DrawScores (&players[me]);
 	// [BC] Use this display instead.
-	SCOREBOARD_Render( me );
+	SCOREBOARD_Render( me, y + WI_TITLEY * CleanYfac );
 
 /*
 	int 		i;
@@ -2169,10 +2175,12 @@ void WI_drawNetgameStats ()
 	// draw animated background
 	WI_drawBackground(); 
 
-	/*y =*/ WI_drawLF();
+	// [AK] We need y for the scoreboard, but it's been commented out above.
+	// It's cleaner if the variable is declared on this line instead.
+	const int y = WI_drawLF();
 
 	// [BC] In cooperative mode, just draw the scoreboard.
-	SCOREBOARD_Render( me );
+	SCOREBOARD_Render( me, y + WI_TITLEY * CleanYfac );
 /*
 	HU_GetPlayerWidths(maxnamewidth, maxscorewidth, maxiconheight);
 	height = SmallFont->GetHeight() * CleanYfac;
@@ -2514,12 +2522,13 @@ void WI_checkForAccelerate(void)
 	{
 		if ( --g_lStopWatch <= 0 )
 		{
-			g_lStopWatch = SERVERSTOPWATCHDELAY * TICRATE;
+			WI_ResetStopWatch( );
 			acceleratestage = 1;
 		}
 
 		// Also check to see if everyone is ready to go on. If so, then change the map.
-		if ( SERVER_IsEveryoneReadyToGoOn( ))
+		// [AK] Don't do this in case the "map" CCMD is used during the intermission.
+		if (( gameaction != ga_newgame ) && ( gameaction != ga_newgame2 ) && ( SERVER_IsEveryoneReadyToGoOn( )))
 			acceleratestage = 1;
 
 		// Nothing more to do in server mode.
@@ -2535,7 +2544,11 @@ void WI_checkForAccelerate(void)
 				((players[i].cmd.ucmd.buttons & players[i].oldbuttons)
 					== players[i].oldbuttons) && !player->bIsBot)
 			{
-				acceleratestage = 1;
+				// [AK] Don't skip delays if the player is only trying to
+				// see the scoreboard while the campaign stats screen is
+				// shown and didn't press any other buttons.
+				if ((WI_ShouldShowCampaignStats() == false) || ((player->cmd.ucmd.buttons ^ player->oldbuttons) != BT_SHOWSCORES))
+					acceleratestage = 1;
 			}
 			player->oldbuttons = player->cmd.ucmd.buttons;
 		}
@@ -2599,8 +2612,8 @@ void WI_Ticker(void)
 	{
     case StatCount:
 		// [BC] In campaign mode, update campaign stats.
-		if (( CAMPAIGN_InCampaign( )) && ( invasion == false ))
-			WI_UpdateCampaignStats( );
+		if (WI_ShouldShowCampaignStats())
+			WI_UpdateCampaignStats();
 		// [BC] Use "deathmatch" stats in teamgame, too.
 		else if (deathmatch || teamgame) WI_updateDeathmatchStats();
 		else if ( NETWORK_GetState( ) != NETSTATE_SINGLE ) WI_updateNetgameStats();
@@ -2692,8 +2705,8 @@ void WI_Drawer (void)
 	{
 	case StatCount:
 		// [BC] In campaign mode, draw campaign stats.
-		if (( CAMPAIGN_InCampaign( )) && ( invasion == false ))
-			WI_DrawCampaignStats( );
+		if (WI_ShouldShowCampaignStats())
+			WI_DrawCampaignStats();
 		// [BC] Use "deathmatch" stats in teamgame, too.
 		else if (deathmatch || teamgame)
 			WI_drawDeathmatchStats();
@@ -2736,17 +2749,11 @@ void WI_initVariables (wbstartstruct_t *wbstartstruct)
 	plrs = wbs->plyr;
 
 	// [BC] Initialize the stopwatch.
-	g_lStopWatch = SERVERSTOPWATCHDELAY * TICRATE;
-
-	// [AK] Add a few extra seconds to the stopwatch for clients.
-	if ( NETWORK_InClientMode( ))
-		g_lStopWatch += ( SHOWNEXTLOCDELAY + 1 ) * TICRATE;
+	WI_ResetStopWatch( );
 }
 
 void WI_Start (wbstartstruct_t *wbstartstruct)
 {
-	ULONG	ulIdx;
-
 	// [CK] If the player wants to screenshot intermissions, do so.
 	// 1 = always, 2 = only online.
 	bTakeIntermissionScreenshot = ( wi_autoscreenshot == 1 && CLIENTDEMO_IsPlaying( ) == false ) || ( NETWORK_GetState( ) == NETSTATE_CLIENT && wi_autoscreenshot == 2 );
@@ -2756,8 +2763,8 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	WI_initVariables (wbstartstruct);
 	WI_loadData ();
 	// [BC] In campaign mode, draw campaign stats.
-	if (( CAMPAIGN_InCampaign( )) && ( invasion == false ))
-		WI_InitCampaignStats( );
+	if (WI_ShouldShowCampaignStats())
+		WI_InitCampaignStats();
 	// [BC] Use "deathmatch" stats in teamgame, too.
 	else if (deathmatch || teamgame)
 		WI_initDeathmatchStats();
@@ -2772,10 +2779,13 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	BOTSPAWN_ClearTable( );
 
 	// [BC] Tell the bots that we're now at intermission.
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	// [AK] Also mark all bots as "ready to go".
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
-		if ( playeringame[ulIdx] == false )
+		if (( playeringame[ulIdx] == false ) || ( players[ulIdx].bIsBot == false ))
 			continue;
+
+		PLAYER_SetStatus( &players[ulIdx], PLAYERSTATUS_READYTOGOON, true, SETPLAYERSTATUS_SERVERCANTSENDUPDATE );
 
 		if ( players[ulIdx].pSkullBot )
 			players[ulIdx].pSkullBot->PostEvent( BOTEVENT_INTERMISSION );
@@ -2786,4 +2796,19 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 LONG WI_GetStopWatch( void )
 {
 	return ( g_lStopWatch );
+}
+
+// [AK]
+void WI_ResetStopWatch( void )
+{
+	g_lStopWatch = SERVERSTOPWATCHDELAY * TICRATE;
+}
+
+// [AK]
+bool WI_ShouldShowCampaignStats( void )
+{
+	// [AK] The campaign stats screen is designed for game modes where
+	// players earn frags, points, or wins. Thus, it shouldn't appear
+	// in game modes where players earn kills (e.g. invasion).
+	return (( CAMPAIGN_InCampaign( )) && (( GAMEMODE_GetCurrentFlags( ) & GMF_PLAYERSEARNKILLS ) == false ));
 }

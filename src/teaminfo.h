@@ -78,7 +78,7 @@ struct TEAMINFO
 	LONG		lRailColor;
 
 	// Current amount of points this team has.
-	LONG		lScore;
+	LONG		lPointCount;
 
 	// Icon that appears over a player that posseses this team's "flag".
 //	statenum_t	Icon;
@@ -117,6 +117,9 @@ struct TEAMINFO
 	FString		LoserPic;
 	FString		WinnerTheme;
 	FString		LoserTheme;
+
+	// [AK] The name of the texture that this team uses as their logo.
+	FString		Logo;
 
 	bool		bAnnouncedLeadState;
 

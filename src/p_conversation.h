@@ -74,6 +74,10 @@ void P_ResumeConversation ();
 
 void P_ConversationCommand (int netcode, int player, BYTE **stream);
 
+// [SB] For Zandronum's networking.
+void P_ConversationReply( int pnum, int node, int reply );
+void P_ConversationClose( int pnum );
+
 class FileReader;
 bool P_ParseUSDF(int lumpnum, FileReader *lump, int lumplen);
 

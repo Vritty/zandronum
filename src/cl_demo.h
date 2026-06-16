@@ -65,6 +65,9 @@ enum ClientDemoLocalCommand
 	CLD_LCMD_TAUNT,
 	CLD_LCMD_CHEAT,
 	CLD_LCMD_WARPCHEAT,
+	CLD_LCMD_SETSTATUS,
+	CLD_LCMD_FREECHASECAM,
+	CLD_LCMD_CONSOLEPLAYERUNRESTRICTED,
 };
 
 //*****************************************************************************
@@ -88,6 +91,9 @@ void		CLIENTDEMO_SetGameticOffset( LONG lOffset );
 void		CLIENTDEMO_WriteLocalCommand( ClientDemoLocalCommand command, const char *pszArg );
 void		CLIENTDEMO_WriteCheat( ECheatCommand cheat );
 void		CLIENTDEMO_WriteWarpCheat( fixed_t x, fixed_t y );
+void		CLIENTDEMO_WriteSetStatus( const int statuses, const bool enable );
+void		CLIENTDEMO_WriteFreeChasecam( const bool enable, const fixed_t angle );
+void		CLIENTDEMO_WriteConsolePlayerUnrestricted( const bool enable );
 void		CLIENTDEMO_ReadDemoWads( void );
 BYTESTREAM_s *CLIENTDEMO_GetDemoStream( void );
 
@@ -100,10 +106,13 @@ bool		CLIENTDEMO_IsSkipping( void );
 bool		CLIENTDEMO_IsSkippingToNextMap( void );
 void		CLIENTDEMO_SetSkippingToNextMap( bool bSkipToNextMap );
 bool		CLIENTDEMO_IsInFreeSpectateMode( void );
+bool		CLIENTDEMO_IsConsolePlayerUnrestricted( void );
+bool		CLIENTDEMO_ShouldLetFreeSpectatorThink( void );
 void		CLIENTDEMO_SetFreeSpectatorTiccmd( ticcmd_t *pCmd );
 void		CLIENTDEMO_FreeSpectatorPlayerThink( bool bTickBody = false );
 player_t	*CLIENTDEMO_GetFreeSpectatorPlayer( void );
 bool		CLIENTDEMO_IsFreeSpectatorPlayer( player_t *pPlayer );
+void		CLIENTDEMO_SpawnFreeSpectatorPlayer( void );
 void		CLIENTDEMO_ClearFreeSpectatorPlayer( void );
 
 #endif // __CL_DEMO__

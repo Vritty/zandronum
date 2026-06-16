@@ -41,8 +41,54 @@ Command SyncMapRotation
 	Short currentPosition
 EndCommand
 
+Struct Medal
+	Byte index
+	UShort count
+EndStruct
+
+Command SyncPlayerMedalCounts
+	ExtendedCommand
+	Byte player
+	Struct<Medal>[] medals
+EndCommand
+
 Command ReplaceTextures
 	String fromTexture
 	String toTexture
 	Byte textureFlags
+EndCommand
+
+Command SetCustomPlayerValue
+	ExtendedCommand
+	Byte index
+	Byte player
+	String value
+EndCommand
+
+Command ResetCustomPlayerValue
+	ExtendedCommand
+	Byte index
+	Byte player
+EndCommand
+
+Command OpenMenu
+	ExtendedCommand
+	String menu
+EndCommand
+
+Command CloseMenu
+	ExtendedCommand
+EndCommand
+
+Command SetDominationPointOwner
+	Byte point
+	Byte team
+	Bool broadcast
+EndCommand
+
+Command SetDominationPointState
+	ExtendedCommand
+	Byte point
+	Bool disabled
+	Byte[] contesters
 EndCommand

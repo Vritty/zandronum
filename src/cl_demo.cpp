@@ -115,6 +115,9 @@ static	bool				g_bDemoPaused = false;
 // [BB] Do we want to skip to the next map in the demo we are playing at the moment?
 static	bool				g_bSkipToNextMap = false;
 
+// [AK] Did the player who recorded the demo use the unrestricted spectator mode?
+static	bool				g_ConsolePlayerUnrestricted = false;
+
 // [BB] How many tics are we still supposed to skip in the demo we are playing at the moment?
 static	ULONG				g_ulTicsToSkip = 0;
 
@@ -226,6 +229,10 @@ void CLIENTDEMO_BeginRecording( const char *pszDemoName )
 	g_ByteStream.WriteByte( CLD_BODYSTART );
 
 	CLIENT_SetServerLagging( false );
+
+	// [AK] When recording begins, mark if whether the local player is using the
+	// unrestricted spectator mode or not.
+	CLIENTDEMO_WriteConsolePlayerUnrestricted( cl_spectatormode == SPECMODE_NO_RESTRICTIONS );
 }
 
 //*****************************************************************************
@@ -573,6 +580,46 @@ void CLIENTDEMO_ReadPacket( void )
 					P_TeleportMove( players[consoleplayer].mo, x, y, ONFLOORZ, true );
 				}
 				break;
+			case CLD_LCMD_SETSTATUS:
+
+				{
+					const int statuses = g_ByteStream.ReadByte( );
+					const bool enable = !!g_ByteStream.ReadByte( );
+					PLAYER_SetStatus( &players[consoleplayer], statuses, !!enable );
+				}
+				break;
+			case CLD_LCMD_FREECHASECAM:
+
+				{
+					const bool enable = !!g_ByteStream.ReadByte( );
+					const fixed_t angle = g_ByteStream.ReadLong( );
+
+					FreeChasecam::enabled = enable;
+
+					if ( players[consoleplayer].mo != nullptr )
+						players[consoleplayer].mo->angle = angle;
+				}
+				break;
+			case CLD_LCMD_CONSOLEPLAYERUNRESTRICTED:
+
+				{
+					g_ConsolePlayerUnrestricted = !!g_ByteStream.ReadByte( );
+
+					if (( players[consoleplayer].bSpectating ) && ( players[consoleplayer].mo != nullptr ))
+					{
+						if ( g_ConsolePlayerUnrestricted )
+						{
+							players[consoleplayer].mo->flags |= MF_NOCLIP;
+							players[consoleplayer].cheats |= (CF_FLY | CF_NOCLIP | CF_NOCLIP2);
+						}
+						else
+						{
+							players[consoleplayer].mo->flags &= ~MF_NOCLIP;
+							players[consoleplayer].cheats &= ~(CF_NOCLIP | CF_NOCLIP2);
+						}
+					}
+				}
+				break;
 			}
 			break;
 		case CLD_DEMOEND:
@@ -765,6 +812,42 @@ void CLIENTDEMO_WriteWarpCheat ( fixed_t x, fixed_t y )
 
 //*****************************************************************************
 //
+void CLIENTDEMO_WriteSetStatus ( const int statuses, const bool enable )
+{
+	// [AK] Don't write the command if no statuses are being updated.
+	if ( statuses == 0 )
+		return;
+
+	clientdemo_CheckDemoBuffer( 4 );
+	g_ByteStream.WriteByte( CLD_LOCALCOMMAND );
+	g_ByteStream.WriteByte( CLD_LCMD_SETSTATUS );
+	g_ByteStream.WriteByte( statuses );
+	g_ByteStream.WriteByte( enable );
+}
+
+//*****************************************************************************
+//
+void CLIENTDEMO_WriteFreeChasecam( const bool enable, const fixed_t angle )
+{
+	clientdemo_CheckDemoBuffer( 7 );
+	g_ByteStream.WriteByte( CLD_LOCALCOMMAND );
+	g_ByteStream.WriteByte( CLD_LCMD_FREECHASECAM );
+	g_ByteStream.WriteByte( enable );
+	g_ByteStream.WriteLong( angle );
+}
+
+//*****************************************************************************
+//
+void CLIENTDEMO_WriteConsolePlayerUnrestricted( const bool enable )
+{
+	clientdemo_CheckDemoBuffer( 3 );
+	g_ByteStream.WriteByte( CLD_LOCALCOMMAND );
+	g_ByteStream.WriteByte( CLD_LCMD_CONSOLEPLAYERUNRESTRICTED );
+	g_ByteStream.WriteByte( enable );
+}
+
+//*****************************************************************************
+//
 bool CLIENTDEMO_IsRecording( void )
 {
 	return ( g_bDemoRecording );
@@ -834,6 +917,22 @@ bool CLIENTDEMO_IsInFreeSpectateMode( void )
 	const AActor *pCamera = players[consoleplayer].camera;
 	return ( pCamera && ( pCamera == g_demoCameraPlayer.mo ) );
 }
+
+//*****************************************************************************
+//
+bool CLIENTDEMO_IsConsolePlayerUnrestricted( void )
+{
+	return g_ConsolePlayerUnrestricted;
+}
+
+//*****************************************************************************
+//
+bool CLIENTDEMO_ShouldLetFreeSpectatorThink( void )
+{
+	// [AK] Let the free spectator "think" while using the free chasecam to control the camera's movement.
+	return (( CLIENTDEMO_IsInFreeSpectateMode( )) || ( FreeChasecam::IsBeingUsed( )));
+}
+
 //*****************************************************************************
 //
 void CLIENTDEMO_SetFreeSpectatorTiccmd( ticcmd_t *pCmd )
@@ -862,6 +961,35 @@ player_t *CLIENTDEMO_GetFreeSpectatorPlayer( void )
 bool CLIENTDEMO_IsFreeSpectatorPlayer( player_t *pPlayer )
 {
 	return ( &g_demoCameraPlayer == pPlayer );
+}
+
+//*****************************************************************************
+//
+void CLIENTDEMO_SpawnFreeSpectatorPlayer( void )
+{
+	const AActor *pCamera = players[consoleplayer].camera;
+	player_t *p = &g_demoCameraPlayer;
+
+	p->bSpectating = true;
+	p->cls = PlayerClasses[p->CurrentPlayerClass].Type;
+	
+	// [AK] If the local player's camera is invalid, just spawn the free spectator player at the center of the map.
+	if ( pCamera != NULL )
+	{
+		p->mo = static_cast<APlayerPawn *>( Spawn( p->cls, pCamera->x, pCamera->y, pCamera->z + pCamera->height, NO_REPLACE ));
+		p->mo->angle = pCamera->angle;
+	}
+	else
+	{
+		p->mo = static_cast<APlayerPawn *>( Spawn( p->cls, 0, 0, 0, NO_REPLACE ));
+	}
+
+	p->mo->flags |= (MF_NOGRAVITY);
+	p->mo->player = p;
+	p->DesiredFOV = p->FOV = 90.f;
+	p->crouchfactor = FRACUNIT;
+	PLAYER_SetDefaultSpectatorValues( p );
+	p->camera = p->mo;
 }
 
 //*****************************************************************************
@@ -1059,23 +1187,13 @@ CCMD( demo_spectatefreely )
 	if ( CLIENTDEMO_IsPlaying( ) == false )
 		return;
 
-	const AActor *pCamera = players[consoleplayer].camera;
-	if ( pCamera != g_demoCameraPlayer.mo )
+	if ( players[consoleplayer].camera != g_demoCameraPlayer.mo )
 	{
 		CLIENTDEMO_ClearFreeSpectatorPlayer();
-		player_t *p = &g_demoCameraPlayer;
-		p->bSpectating = true;
-		p->cls = PlayerClasses[p->CurrentPlayerClass].Type;
-		p->mo = static_cast<APlayerPawn *> (Spawn (p->cls, pCamera->x, pCamera->y, pCamera->z + pCamera->height , NO_REPLACE));
-		p->mo->angle = pCamera->angle;
-		p->mo->flags |= (MF_NOGRAVITY);
-		p->mo->player = p;
-		p->DesiredFOV = p->FOV = 90.f;
-		p->crouchfactor = FRACUNIT;
-		PLAYER_SetDefaultSpectatorValues ( p );
+		CLIENTDEMO_SpawnFreeSpectatorPlayer();
+
 		players[consoleplayer].camera = g_demoCameraPlayer.mo;
-		p->camera = p->mo;
 		if ( StatusBar )
-			StatusBar->AttachToPlayer ( p );
+			StatusBar->AttachToPlayer ( &g_demoCameraPlayer );
 	}
 }

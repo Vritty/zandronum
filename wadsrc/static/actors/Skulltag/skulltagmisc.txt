@@ -18,6 +18,9 @@ ACTOR FloatyIcon native
 	CHAT:
 		TALK A -1 bright
 		loop
+	VOICECHAT:
+		SPKR ABC 5 bright
+		loop
 	INCONSOLE:
 		CNSL AB 9 bright
 		loop
@@ -26,6 +29,9 @@ ACTOR FloatyIcon native
 		loop
 	ALLY:
 		ALLY A -1
+		loop
+	ENEMY:
+		ENEM A -1
 		loop
 	WHITEFLAG:
 		WFLS ABC 3

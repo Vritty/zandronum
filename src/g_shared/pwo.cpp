@@ -189,12 +189,18 @@ void PWO_ArchivePreferences ( FConfigFile* config )
 	for ( unsigned int i = 0; i < WeaponInfo.Size(); ++i )
 	{
 		PWOWeaponInfo* info = WeaponInfo[i];
+		const char *key = info->GetIniName();
 
+		// [AK] If the weapon's weight is zero, but was saved in the config before, remove it now.
 		if ( info->GetWeight() != 0 )
 		{
 			FString valueString;
 			valueString.Format( "%d", info->GetWeight() );
-			config->SetValueForKey( info->GetIniName(), valueString );
+			config->SetValueForKey( key, valueString );
+		}
+		else if ( config->GetValueForKey( key ) != nullptr )
+		{
+			config->ClearKey( key );
 		}
 	}
 }

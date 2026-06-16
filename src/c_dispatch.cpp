@@ -143,7 +143,8 @@ FButtonStatus Button_Mlook, Button_Klook, Button_Use, Button_AltAttack,
 	Button_User1, Button_User2, Button_User3, Button_User4,
 	Button_AM_PanLeft, Button_AM_PanRight, Button_AM_PanDown, Button_AM_PanUp,
 	Button_AM_ZoomIn, Button_AM_ZoomOut,
-	Button_ShowMedals;	// [BC] Added the "show medals" button.
+	Button_VoiceRecord,	// [AK] Added the "voicerecord" button.
+	Button_SB_ScrollUp, Button_SB_ScrollDn; // [AK] Added "sb_scrollup" and "sb_scrolldn" buttons.
 
 
 bool ParsingKeyConf, UnsafeExecutionContext;
@@ -173,8 +174,10 @@ public:
 
 FActionMap ActionMaps[] =
 {
-	{ &Button_ShowMedals,	0x03fe31c3, "showmedals" },	// [BC] New "show medals" button.
+	{ &Button_SB_ScrollDn,	0x01987bb5, "sb_scrolldn" }, // [AK] Scrolls scoreboard down.
+	{ &Button_VoiceRecord,	0x0719c77f, "voicerecord" },	// [AK] Added the "voicerecord" button.
 	{ &Button_AM_PanLeft,	0x0d52d67b, "am_panleft"},
+	{ &Button_SB_ScrollUp,	0x10e07b83, "sb_scrollup" }, // [AK] Scrolls scoreboard up.
 	{ &Button_User2,		0x125f5226, "user2" },
 	{ &Button_Jump,			0x1eefa611, "jump" },
 	{ &Button_Right,		0x201f1c55, "right" },
@@ -261,7 +264,7 @@ void DWaitingCommand::Tick ()
 {
 	if (--TicsLeft == 0)
 	{
-		UnsafeExecutionScope scope;
+		UnsafeExecutionScope scope(IsUnsafe);
 		AddCommandString (Command);
 		Destroy ();
 	}
@@ -799,7 +802,10 @@ void AddCommandString (char *cmd, int keynum)
 					{
 						tics = 1;
 					}
-					if (tics > 0)
+					// [AK] wait was always off by one tic, meaning that "wait" or "wait 1" actually
+					// delayed a command by 2 tics. To fix this and still remain compatible with older
+					// aliases, "wait 0" is now accepted and will properly wait one tic.
+					if (tics >= 0)
 					{
 						if (more)
 						{ // The remainder of the command will be executed later
@@ -1005,6 +1011,37 @@ bool FCommandLine::SafeGetNumber( int i, int &value, const char *errormessage )
 		value = index;
 		return true;
 	}
+}
+
+// [AK] Used to get a valid player's index from a console command's argument, either by name or number.
+bool FCommandLine::GetPlayerFromArg( int &playerIndex, const int i, const bool isIndexCmd, const bool ignoreBots )
+{
+	if ( i >= argc( ))
+		return false;
+
+	if ( isIndexCmd )
+	{
+		if (( SafeGetNumber( i, playerIndex ) == false ) || ( PLAYER_IsValidPlayer( playerIndex ) == false ))
+			return false;
+	}
+	else
+	{
+		playerIndex = SERVER_GetPlayerIndexFromName(( *this )[i], true, true );
+
+		if ( playerIndex == MAXPLAYERS )
+		{
+			Printf( "There isn't a player named %s.\n", ( *this )[i] );
+			return false;
+		}
+	}
+
+	if (( ignoreBots ) && ( players[playerIndex].bIsBot ))
+	{
+		Printf( "Player %s is a bot.\n", players[playerIndex].userinfo.GetName( ));
+		return false;
+	}
+
+	return true;
 }
 
 static FConsoleCommand *ScanChainForName (FConsoleCommand *start, const char *name, size_t namelen, FConsoleCommand **prev)

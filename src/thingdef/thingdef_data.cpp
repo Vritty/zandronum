@@ -353,6 +353,7 @@ static FFlagDef InventoryFlags[] =
 	DEFINE_FLAG(IF, NEVERRESPAWN, AInventory, ItemFlags),
 	DEFINE_FLAG(IF, NOSCREENFLASH, AInventory, ItemFlags),
 	DEFINE_FLAG(IF, TOSSED, AInventory, ItemFlags),
+	DEFINE_FLAG(IF, ALWAYSRESPAWN, AInventory, ItemFlags),
 	// [BB] New ST flags.
 	DEFINE_FLAG(IF, FORCERESPAWNINSURVIVAL, AInventory, ItemFlags),
 
@@ -391,6 +392,7 @@ static FFlagDef PlayerPawnFlags[] =
 	DEFINE_FLAG(PPF, NOTHRUSTWHENINVUL, APlayerPawn, PlayerFlags),
 	DEFINE_FLAG(PPF, CANSUPERMORPH, APlayerPawn, PlayerFlags),
 	DEFINE_FLAG(PPF, CROUCHABLEMORPH, APlayerPawn, PlayerFlags),
+	DEFINE_FLAG(PPF, NOMORPHLIMITATIONS, APlayerPawn, PlayerFlags), // [Binary] Define +NOMORPHLIMITATIONS flag.
 };
 
 static FFlagDef PowerSpeedFlags[] =

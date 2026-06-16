@@ -1028,7 +1028,7 @@ public:
 		return GetCVarString();
 	}
 
-	int Draw ( FOptionMenuDescriptor*, int y, int indent, bool selected )
+	int Draw ( FOptionMenuDescriptor*, int y, int indent, bool selected ) override
 	{
 		bool grayed = ( Selectable() == false );
 		drawLabel( indent, y, selected ? OptionSettings.mFontColorSelection : OptionSettings.mFontColor, grayed );
@@ -1039,7 +1039,7 @@ public:
 		return indent;
 	}
 
-	bool GetString ( int i, char* s, int len )
+	bool GetString ( int i, char* s, int len ) override
 	{
 		if ( i == 0 )
 		{
@@ -1051,7 +1051,7 @@ public:
 		return false;
 	}
 
-	bool SetString ( int i, const char* s )
+	bool SetString ( int i, const char* s ) override
 	{
 		if ( i == 0 )
 		{
@@ -1073,7 +1073,7 @@ public:
 		return mCVar && mCVar->IsServerCVar();
 	}
 
-	bool Selectable()
+	bool Selectable() override
 	{
 		return ( mGrayCheck == NULL || mGrayCheck->GetGenericRep( CVAR_Bool ).Bool )
 			&& FOptionMenuItem::Selectable();
@@ -1392,7 +1392,8 @@ public:
 	bool IsValid ( int classId )
 	{
 		// [BB] The random class is always a valid choice.
-		if ( classId == ( Maximum() - 1 ) )
+		// [SB] ..except when NoRandomPlayerClass is enabled in MAPINFO.
+		if ( !gameinfo.norandomplayerclass && classId == ( Maximum() - 1 ) )
 			return true;
 
 		// [EP] Temporary spots require no other limitation.
@@ -1404,12 +1405,12 @@ public:
 
 	int Maximum()
 	{
-		return PlayerClasses.Size() + 1;
+		return PlayerClasses.Size() + ( gameinfo.norandomplayerclass ? 0 : 1 );
 	}
 
 	FString RepresentOption ( int classId )
 	{
-		if ( classId == ( Maximum() - 1 ) )
+		if ( !gameinfo.norandomplayerclass && classId == ( Maximum() - 1 ) )
 			return "Random";
 		else
 			return GetPrintableDisplayName( PlayerClasses[classId].Type );
@@ -1437,6 +1438,31 @@ public:
 	int Draw(FOptionMenuDescriptor *desc, int y, int indent, bool selected);
 	bool Selectable();
 	bool MenuEvent (int mkey, bool fromcontroller);
+};
+
+//=============================================================================
+//
+// [AK] FOptionMenuMicTestBar
+//
+//=============================================================================
+
+class FOptionMenuMicTestBar : public FOptionMenuItem
+{
+	FTexture *mBarTexture;
+	bool grayed;
+
+	void DrawBar( const DWORD color, const int x, const int y, const float percentage = 1.0f );
+
+public:
+	FOptionMenuMicTestBar( const char *label ) :
+		FOptionMenuItem( label, "MicTestBar" ),
+		mBarTexture( TexMan.FindTexture( "MICBAR" )),
+		grayed( false ) { }
+
+	virtual bool Activate( void );
+	virtual void Ticker( void );
+	virtual int Draw( FOptionMenuDescriptor *desc, int y, int indent, bool selected );
+	virtual bool Selectable( void );
 };
 
 //

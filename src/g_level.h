@@ -520,6 +520,10 @@ enum
 	CHANGELEVEL_NOINTERMISSION = 16,
 	CHANGELEVEL_RESETHEALTH = 32,
 	CHANGELEVEL_PRERAISEWEAPON = 64,
+
+	// [AK] Prevents the next level's name from appearing in the console.
+	// This should only be used for the SetCurrentGameMode ACS function.
+	CHANGELEVEL_HIDENAME = 1 << 31,
 };
 
 void G_ChangeLevel(const char *levelname, int position, int flags, int nextSkill=-1);
@@ -555,6 +559,7 @@ struct PNGHandle;
 void G_ReadSnapshots (PNGHandle *png);
 void G_WriteSnapshots (FILE *file);
 void G_ClearHubInfo();
+void G_UpdateSinglePlayerClass (const unsigned int player); // [AK]
 
 enum ESkillProperty
 {

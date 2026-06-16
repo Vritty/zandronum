@@ -19,6 +19,12 @@ pic M_CURS6 tics 4
 pic M_CURS7 tics 4
 pic M_CURS8 tics 4
 
+// [AK] Mini speaker icon
+texture optional SPKMINI1
+pic SPKMINI1 tics 5
+pic SPKMINI2 tics 5
+pic SPKMINI3 tics 5
+
 // Tome of Power
 texture optional SPINBK0
 pic SPINBK0 tics 3

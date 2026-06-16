@@ -1,0 +1,239 @@
+Excellent
+{
+	Icon = "EXCLA0"
+	Class = "FloatyIcon"
+	State = "Excellent"
+	Text = "Excellent!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Excellent"
+}
+
+Incredible
+{
+	Icon = "INCRA0"
+	Class = "FloatyIcon"
+	State = "Incredible"
+	Text = "Incredible!"
+	TextColor = "Red"
+	QuantityColor = "Grey"
+	AnnouncerEntry = "Incredible"
+	LowerMedal = "Excellent"
+}
+
+Impressive
+{
+	Icon = "IMPRA0"
+	Class = "FloatyIcon"
+	State = "Impressive"
+	Text = "Impressive!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Impressive"
+}
+
+MostImpressive
+{
+	Icon = "MIMPA0"
+	Class = "FloatyIcon"
+	State = "Most_Impressive"
+	Text = "Most impressive!"
+	TextColor = "Red"
+	QuantityColor = "Grey"
+	AnnouncerEntry = "MostImpressive"
+	LowerMedal = "Impressive"
+}
+
+Domination
+{
+	Icon = "DOMNA0"
+	Class = "FloatyIcon"
+	State = "Domination"
+	Text = "Domination!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Domination"
+}
+
+TotalDomination
+{
+	Icon = "TDOMA0"
+	Class = "FloatyIcon"
+	State = "Total_Domination"
+	Text = "Total domination!"
+	TextColor = "Red"
+	QuantityColor = "Grey"
+	AnnouncerEntry = "TotalDomination"
+	LowerMedal = "Domination"
+}
+
+Accuracy
+{
+	Icon = "ACCUA0"
+	Class = "FloatyIcon"
+	State = "Accuracy"
+	Text = "Accuracy!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Accuracy"
+}
+
+Precision
+{
+	Icon = "PRECA0"
+	Class = "FloatyIcon"
+	State = "Precision"
+	Text = "Precision!"
+	TextColor = "Red"
+	QuantityColor = "Grey"
+	AnnouncerEntry = "Precision"
+	LowerMedal = "Accuracy"
+}
+
+YouFailIt
+{
+	Icon = "FAILA0"
+	Class = "FloatyIcon"
+	State = "YouFailIt"
+	Text = "You fail it!"
+	TextColor = "Green"
+	QuantityColor = "Red"
+	AnnouncerEntry = "YouFailIt"
+}
+
+YourSkillIsNotEnough
+{
+	Icon = "SKILA0"
+	Class = "FloatyIcon"
+	State = "YourSkillIsNotEnough"
+	Text = "Your skill is not enough!"
+	TextColor = "Orange"
+	QuantityColor = "Red"
+	AnnouncerEntry = "YourSkillIsNotEnough"
+	LowerMedal = "YouFailIt"
+}
+
+Llama
+{
+	Icon = "LLAMA0"
+	Class = "FloatyIcon"
+	State = "Llama"
+	Text = "Llama!"
+	TextColor = "Green"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Llama"
+	Sound = "misc/llama"
+}
+
+Spam
+{
+	Icon = "SPAMA0"
+	Class = "FloatyIcon"
+	State = "Spam"
+	Text = "Spam!"
+	TextColor = "Green"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Spam"
+	LowerMedal = "Llama"
+	Sound = "misc/spam"
+}
+
+Victory
+{
+	Icon = "VICTA0"
+	Class = "FloatyIcon"
+	State = "Victory"
+	Text = "Victory!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Victory"
+}
+
+Perfect
+{
+	Icon = "PFCTA0"
+	Class = "FloatyIcon"
+	State = "Perfect"
+	Text = "Perfect!"
+	TextColor = "Red"
+	QuantityColor = "Grey"
+	AnnouncerEntry = "Perfect"
+	LowerMedal = "Victory"
+}
+
+Termination
+{
+	Icon = "TRMAA0"
+	Class = "FloatyIcon"
+	State = "Termination"
+	Text = "Termination!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Termination"
+}
+
+FirstFrag
+{
+	Icon = "FFRGA0"
+	Class = "FloatyIcon"
+	State = "FirstFrag"
+	Text = "First frag!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "FirstFrag"
+}
+
+Capture
+{
+	Icon = "CAPTA0"
+	Class = "FloatyIcon"
+	State = "Capture"
+	Text = "Capture!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Capture"
+}
+
+Tag
+{
+	Icon = "STAGA0"
+	Class = "FloatyIcon"
+	State = "Tag"
+	Text = "Tag!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Tag"
+}
+
+Assist
+{
+	Icon = "ASSTA0"
+	Class = "FloatyIcon"
+	State = "Assist"
+	Text = "Assist!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Assist"
+}
+
+Defense
+{
+	Icon = "DFNSA0"
+	Class = "FloatyIcon"
+	State = "Defense"
+	Text = "Defense!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Defense"
+}
+
+Fisting
+{
+	Icon = "FISTA0"
+	Class = "FloatyIcon"
+	State = "Fisting"
+	Text = "Fisting!"
+	TextColor = "Grey"
+	QuantityColor = "Red"
+	AnnouncerEntry = "Fisting"
+}

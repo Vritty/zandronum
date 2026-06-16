@@ -1221,6 +1221,10 @@ DEFINE_ACTION_FUNCTION(AActor, A_SpawnRippers)
 	angle_t angle;
 	AActor *ripper;
 
+	// [RK] THe client doesn't handle the spawning.
+	if ( NETWORK_InClientMode() )
+		return;
+
 	for(i = 0; i < 8; i++)
 	{
 		ripper = Spawn<ARipper> (self->x, self->y, self->z, ALLOW_REPLACE);
@@ -1230,7 +1234,11 @@ DEFINE_ACTION_FUNCTION(AActor, A_SpawnRippers)
 		angle >>= ANGLETOFINESHIFT;
 		ripper->velx = FixedMul (ripper->Speed, finecosine[angle]);
 		ripper->vely = FixedMul (ripper->Speed, finesine[angle]);
-		P_CheckMissileSpawn (ripper, self->radius);
+		bool doSpawn = P_CheckMissileSpawn (ripper, self->radius, true, false); // [RK] Store the result and pass false since the client doesn't have the ripper spawned.
+
+		// [RK] Spawn the ripper on the clients' end now.
+		if ( doSpawn && NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_SpawnMissile(ripper);
 	}
 }
 
@@ -1541,12 +1549,26 @@ DEFINE_ACTION_FUNCTION(AActor, A_SkullRodStorm)
 	AActor *mo;
 	ARainTracker *tracker;
 
+	// [RK] Don't let the client spawn the rain.
+	if ( NETWORK_InClientMode() )
+		return;
+
 	if (self->health-- == 0)
 	{
 		S_StopSound (self, CHAN_BODY);
+
+		// [RK] Stop the sound on the clients.
+		if( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_StopSound(self, CHAN_BODY);
+
 		if (self->target == NULL)
 		{ // Player left the game
 			self->Destroy ();
+
+			// [RK] Destroy on the clients.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+				SERVERCOMMANDS_DestroyThing(self);
+
 			return;
 		}
 		tracker = self->target->FindInventory<ARainTracker> ();
@@ -1562,6 +1584,11 @@ DEFINE_ACTION_FUNCTION(AActor, A_SkullRodStorm)
 			}
 		}
 		self->Destroy ();
+
+		// [RK] Destroy on the clients.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_DestroyThing(self);
+
 		return;
 	}
 	if (pr_storm() < 25)
@@ -1590,10 +1617,18 @@ DEFINE_ACTION_FUNCTION(AActor, A_SkullRodStorm)
 	mo->velx = 1; // Force collision detection
 	mo->velz = -mo->Speed;
 	mo->special2 = self->special2; // Transfer player number
-	P_CheckMissileSpawn (mo, self->radius);
+	bool doSpawn = P_CheckMissileSpawn (mo, self->radius, true, false); // [RK] Save the result and pass false since the clients don't have the rain pillars.
+
+	// [RK] Spawn the rain pillars on the client and set the translation.
+	if ( doSpawn && NETWORK_GetState() == NETSTATE_SERVER )
+	{
+		SERVERCOMMANDS_SpawnMissile(mo);
+		SERVERCOMMANDS_SetThingTranslation(mo);
+	}
+
 	if (self->special1 != -1 && !S_IsActorPlayingSomething (self, CHAN_BODY, -1))
 	{
-		S_Sound (self, CHAN_BODY|CHAN_LOOP, self->special1, 1, ATTN_NORM);
+		S_Sound (self, CHAN_BODY|CHAN_LOOP, self->special1, 1, ATTN_NORM, true); // [RK] Inform the clients.
 	}
 }
 

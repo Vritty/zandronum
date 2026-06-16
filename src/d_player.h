@@ -192,6 +192,7 @@ enum
 	PPF_NOTHRUSTWHENINVUL = 1,	// Attacks do not thrust the player if they are invulnerable.
 	PPF_CANSUPERMORPH = 2,		// Being remorphed into this class can give you a Tome of Power
 	PPF_CROUCHABLEMORPH = 4,	// This morphed player can crouch
+	PPF_NOMORPHLIMITATIONS = 8,	// [geNia] Removes morph limitations, like not playing land sounds, switching weapons, or using speed powerups.
 };
 
 //
@@ -265,6 +266,19 @@ typedef enum
 	CF2_SPREAD			= 1 << 2,
 } cheat2_t;
 
+//
+// [AK] Player status flags, indicating what the player is doing.
+//
+enum
+{
+	PLAYERSTATUS_CHATTING		= 1 << 0,	// Player is chatting.
+	PLAYERSTATUS_TALKING		= 1 << 1,	// Player is talking on the microphone.
+	PLAYERSTATUS_INCONSOLE		= 1 << 2,	// Player is in the console.
+	PLAYERSTATUS_INMENU			= 1 << 3,	// Player is in the menu.
+	PLAYERSTATUS_LAGGING		= 1 << 4,	// Player is lagging to the server?
+	PLAYERSTATUS_READYTOGOON	= 1 << 5,	// Player is ready for the next map? (intermission).
+};
+
 enum
 {
 	WF_WEAPONREADY		= 1 << 0,		// [RH] Weapon is in the ready state and can fire its primary attack
@@ -318,6 +332,31 @@ enum
 	GENDER_MALE,
 	GENDER_FEMALE,
 	GENDER_NEUTER
+};
+
+// [AK] Enumerations used to indicate a player's rail color.
+enum
+{
+	RAILCOLOR_BLUE,
+	RAILCOLOR_RED,
+	RAILCOLOR_YELLOW,
+	RAILCOLOR_BLACK,
+	RAILCOLOR_SILVER,
+	RAILCOLOR_GOLD,
+	RAILCOLOR_GREEN,
+	RAILCOLOR_WHITE,
+	RAILCOLOR_PURPLE,
+	RAILCOLOR_ORANGE,
+	RAILCOLOR_RAINBOW
+};
+
+// [AK] Enumerations for the different options used by cl_spectatormode.
+enum
+{
+	// With physical restrictions (can't pass through walls, floors, or ceilings).
+	SPECMODE_WITH_RESTRICTIONS,
+	// No physical restrictions (can pass through everything freely).
+	SPECMODE_NO_RESTRICTIONS
 };
 
 struct userinfo_t : TMap<FName,FBaseCVar *>
@@ -413,6 +452,10 @@ struct userinfo_t : TMap<FName,FBaseCVar *>
 	int TicsPerUpdateChanged(int ticsperupdate);
 	int ConnectionTypeChanged(int connectiontype);
 	int ClientFlagsChanged(int flags);
+	int VoiceEnableChanged(int voiceenable);
+	int VoiceListenFilterChanged(int listenfilter);
+	int VoiceTransmitFilterChanged(int transmitfilter);
+
 	int GetRailColor() const 
 	{
 		if ( CheckKey(NAME_RailColor) != NULL )
@@ -458,10 +501,56 @@ struct userinfo_t : TMap<FName,FBaseCVar *>
 			return 0;
 		}
 	}
+	int GetVoiceEnable() const
+	{
+		if ( CheckKey(NAME_Voice_Enable) != nullptr )
+			return *static_cast<FIntCVar *>(*CheckKey(NAME_Voice_Enable));
+		else {
+			Printf( "Error: No Voice_Enable key found!\n" );
+			return 0;
+		}
+	}
+	int GetVoiceListenFilter() const
+	{
+		if ( CheckKey(NAME_Voice_ListenFilter) != nullptr )
+			return *static_cast<FIntCVar *>(*CheckKey(NAME_Voice_ListenFilter));
+		else {
+			Printf( "Error: No Voice_ListenFilter key found!\n" );
+			return 0;
+		}
+	}
+	int GetVoiceTransmitFilter() const
+	{
+		if ( CheckKey(NAME_Voice_TransmitFilter) != nullptr )
+			return *static_cast<FIntCVar *>(*CheckKey(NAME_Voice_TransmitFilter));
+		else {
+			Printf( "Error: No Voice_TransmitFilter key found!\n" );
+			return 0;
+		}
+	}
 };
 
 void ReadUserInfo(FArchive &arc, userinfo_t &info, FString &skin);
 void WriteUserInfo(FArchive &arc, userinfo_t &info);
+
+// [AK] A structure for muting a player's communications with us.
+struct IgnoreComm
+{
+	bool enabled;
+	int ticks;
+	FString reason;
+
+	IgnoreComm( void ) { Reset( ); }
+	void Reset( void ) { ( *this )( false, -1, "" ); }
+	void operator= ( const IgnoreComm &other ) { ( *this )( other.enabled, other.ticks, other.reason ); }
+
+	void operator() ( const bool ignore, const int newTicks, const char *newReason )
+	{
+		enabled = ignore;
+		ticks = newTicks;
+		reason = newReason;
+	}
+};
 
 //
 // Extended player object info: player_t
@@ -612,6 +701,11 @@ public:
 	// How many times has this player died?
 	ULONG		ulDeathCount;
 
+	// [AK] Last tick that the player respawned. This is used to prevent weapon desyncs
+	// if the client fires too early after respawning in online games, and to handle
+	// cl_noswitchonfire shortly after the player respawns.
+	unsigned int lastRespawnTick;
+
 	// The last tick this player got a frag.
 	ULONG		ulLastFragTick;
 
@@ -636,20 +730,17 @@ public:
 	// [BB] Amount of damage dealt, that has not been converted to points (kills) yet.
 	ULONG		ulUnrewardedDamageDealt;
 
-	// This player is chatting.
-	bool		bChatting;
-
-	// [RC] This player is in the console.
-	bool		bInConsole;
-
-	// [RC] This player is in the menu.
-	bool		bInMenu;
+	// [AK] A bitfield of all of this player's statuses.
+	int			statuses;
 
 	// This player is currently spectating.
 	bool		bSpectating;
 
 	// This player is currently spectating after dying in LMS or survival co-op.
 	bool		bDeadSpectator;
+
+	// [RK] This is set when a dead spectator is revived through SetDeadSpectator.
+	bool		bDeadSpectatorKeySync;
 
 	// [BB] Number of times the player may still respawn in LMS or survival co-op.
 	ULONG		ulLivesLeft;
@@ -660,11 +751,8 @@ public:
 	// Number of times the railgun has been fired. Every 4 times, a reload is in order.
 	unsigned int RailgunShots;
 
-	// Number of medals the player currently has of each type.
-	ULONG		ulMedalCount[NUM_MEDALS];
-
 	// Icon currently above this player's head.
-	AFloatyIcon	*pIcon;
+	TObjPtr<AFloatyIcon> pIcon;
 
 	// Bonus to the maximum amount of health the player can have.
 	int			MaxHealthBonus;
@@ -679,10 +767,10 @@ public:
 	bool		bIsBot;
 
 	// [RC] Are we, the client, ignoring this player's chat messages?
-	bool		bIgnoreChat;
+	IgnoreComm	ignoreChat;
 
-	// [RC] Number of ticks until this player can chat again.
-	LONG		lIgnoreChatTicks;
+	// [AK] Are we ignoring this player's voice?
+	IgnoreComm	ignoreVoice;
 
 	// *** THE FOLLOWING ARE NETWORK VARIABLES ***
 	// Ping of the player to the server he's playing on.
@@ -691,11 +779,14 @@ public:
 	// [BB] Over how many measurements has ulPing been averaged?
 	ULONG		ulPingAverages;
 
+	// [AK] The strength of the player's connection, based on how many packets they missed since the last ping update.
+	unsigned int connectionStrength;
+
+	// [AK] The index of which country the player is connecting from (refer to GeoIP.c).
+	ULONG		ulCountryIndex;
+
 	// Last tick this player received a packet.
 //	ULONG		ulLastTick;
-
-	// Is this player ready for the next map? (intermission)
-	bool		bReadyToGoOn;
 
 	// [AK] Pointer to our corpse in case we became a dead spectator. This is in case DF2_SAME_SPAWN_SPOT is enabled.
 	AActor		*pCorpse;
@@ -710,11 +801,7 @@ public:
 	// [BB] Did the client already select a weapon with CLIENTCOMMANDS_WeaponSelect? (only the server keeps track of this)
 	bool		bClientSelectedWeapon;
 
-	// Is this player lagging to the server?
-	bool		bLagging;
-
-	// If this player was telefragged at the beginning of a round, allow him to respawn normally
-	// in LMS games.
+	// If this player was telefragged at the beginning of a round, allow him to respawn normally.
 	bool		bSpawnTelefragged;
 
 	// Amount of time this player has been on the server.
@@ -723,14 +810,20 @@ public:
 	// [BL] Should the player be able to use weapons?
 	bool		bUnarmed;
 
-	// [Spleen] Store old information about the player for unlagged support
-	fixed_t		unlaggedX[UNLAGGEDTICS];
-	fixed_t		unlaggedY[UNLAGGEDTICS];
-	fixed_t		unlaggedZ[UNLAGGEDTICS];
+	// [geNia] Force override the player skin. This can only be set from ACS.
+	FNameNoInit	ACSSkin;
 
-	fixed_t		restoreX;
-	fixed_t		restoreY;
-	fixed_t		restoreZ;
+	// [geNia] Should the skin set from ACS also override a weapon's preferred skin?
+	bool		ACSSkinOverridesWeaponSkin;
+
+	// [Spleen] Store old information about the player for unlagged support
+	// [AK] Converted the position members into TVector3 objects.
+	TVector3<fixed_t>	unlaggedPos[UNLAGGEDTICS];
+	TVector3<fixed_t>	restorePos;
+
+	// [AK] We should also store the player's old height for unlagged.
+	fixed_t		unlaggedHeight[UNLAGGEDTICS];
+	fixed_t		restoreHeight;
 
 	fixed_t		restoreFloorZ;
 	fixed_t		restoreCeilingZ;
@@ -774,7 +867,6 @@ void	PLAYER_ResetAllPlayersFragcount( void );
 void	PLAYER_ResetAllPlayersSpecialCounters( void );
 void	PLAYER_ResetSpecialCounters ( player_t *pPlayer );
 void	PLAYER_ResetPlayerData( player_t *pPlayer );
-void	PLAYER_GivePossessionPoint( player_t *pPlayer );
 void	PLAYER_SetTeam( player_t *pPlayer, ULONG ulTeam, bool bNoBroadcast );
 void	PLAYER_SetSpectator( player_t *pPlayer, bool bBroadcast, bool bDeadSpectator );
 void	PLAYER_SetDefaultSpectatorValues( player_t *pPlayer );
@@ -783,6 +875,8 @@ void	PLAYER_SetPoints( player_t *pPlayer, ULONG ulPoints );
 void	PLAYER_SetWins( player_t *pPlayer, ULONG ulWins );
 void	PLAYER_SetKills( player_t *pPlayer, ULONG ulKills );
 void	PLAYER_SetDeaths( player_t *pPlayer, ULONG ulDeaths );
+void	PLAYER_SetTime( player_t *pPlayer, ULONG ulTime );
+void	PLAYER_SetStatus( player_t *player, const int statuses, const bool enable, const int networkFlags = 0 );
 // [BB] PLAYER_GetHealth and PLAYER_GetLivesLeft are helper functions for PLAYER_GetPlayerWithSingleHighestValue.
 LONG	PLAYER_GetHealth( ULONG ulPlayer );
 LONG	PLAYER_GetLivesLeft( ULONG ulPlayer );
@@ -790,15 +884,17 @@ void	PLAYER_SelectPlayersWithHighestValue ( LONG (*GetValue) ( ULONG ulPlayer ),
 bool	PLAYER_IsValidPlayer( const ULONG ulPlayer );
 bool	PLAYER_IsValidPlayerWithMo( const ULONG ulPlayer );
 bool	PLAYER_IsTrueSpectator( player_t *pPlayer );
-void	PLAYER_CheckStruckPlayer( AActor *pActor );
-void	PLAYER_StruckPlayer( player_t *pPlayer );
+void	PLAYER_CheckStruckPlayer( AActor *actor );
 bool	PLAYER_ShouldSpawnAsSpectator( player_t *pPlayer );
 bool	PLAYER_Taunt( player_t *pPlayer );
 LONG	PLAYER_GetRailgunColor( player_t *pPlayer );
 void	PLAYER_AwardDamagePointsForAllPlayers( void );
 void	PLAYER_SetWeapon( player_t *pPlayer, AWeapon *pWeapon, bool bClearWeaponForClientOnServer = false );
 void	PLAYER_ClearWeapon( player_t *pPlayer );
-void	PLAYER_SetLivesLeft( player_t *pPlayer, ULONG ulLivesLeft );
+int		PLAYER_GetOverrideSkin( player_t *player );
+bool	PLAYER_ShouldForceBaseSkin( player_t *player );
+void	PLAYER_ApplySkinScaleToBody( player_t *player, AActor *body, AWeapon *weapon );
+void	PLAYER_SetLivesLeft( player_t *player, const unsigned int livesLeft, const bool informClients = true );
 bool	PLAYER_IsAliveOrCanRespawn( player_t *pPlayer );
 void	PLAYER_RemoveFriends( const ULONG ulPlayer );
 void	PLAYER_LeavesGame( const ULONG ulPlayer );
@@ -810,6 +906,8 @@ bool	PLAYER_CanRespawnWhereDied( player_t *pPlayer );
 bool	PLAYER_CannotAffectAllyWith( AActor *pActor1, AActor *pActor2, AActor *pInflictor, int flag );
 LONG	PLAYER_CalcSpread( ULONG ulPlayer );
 ULONG	PLAYER_CalcRank( ULONG ulPlayer );
+void	PLAYER_ScaleDamageCountWithMaxHealth( player_t *pPlayer, int &damage );
+void	PLAYER_ResetCustomValues( const ULONG ulPlayer );
 
 void P_CheckPlayerSprite(AActor *mo, int &spritenum, fixed_t &scalex, fixed_t &scaley);
 
@@ -837,6 +935,9 @@ inline bool AActor::IsNoClip2() const
 #define CROUCHSPEED (FRACUNIT/12)
 
 bool P_IsPlayerTotallyFrozen(const player_t *player);
+bool P_IsSpectatorUnrestricted(const AActor *viewActor); // [AK]
 void P_ResetPlayerPitchLimits(void); // [AK]
+
+EXTERN_CVAR( Int, cl_spectatormode ) // [AK]
 
 #endif // __D_PLAYER_H__

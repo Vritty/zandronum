@@ -120,6 +120,15 @@ DEFINE_ACTION_FUNCTION(AActor, A_WraithFX2)
 		mo = Spawn ("WraithFX2", self->x, self->y, self->z, ALLOW_REPLACE);
 		if(mo)
 		{
+			// [RK] Clients spawn these on their own. In order to prevent the 
+			// server from printing warnings when the server calls P_ExplodeMissile,
+			// we also mark this as SERVERSIDEONLY.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+			{
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->FreeNetID();
+			}
+
 			if (pr_wraithfx2 ()<128)
 			{
 				 angle = self->angle+(pr_wraithfx2()<<22);
@@ -157,6 +166,15 @@ DEFINE_ACTION_FUNCTION(AActor, A_WraithFX3)
 		mo = Spawn ("WraithFX3", self->x, self->y, self->z, ALLOW_REPLACE);
 		if (mo)
 		{
+			// [RK] Clients spawn these on their own. In order to prevent the 
+			// server from printing warnings when the server calls P_ExplodeMissile,
+			// we also mark this as SERVERSIDEONLY.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+			{
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->FreeNetID();
+			}
+
 			mo->x += (pr_wraithfx3()-128)<<11;
 			mo->y += (pr_wraithfx3()-128)<<11;
 			mo->z += (pr_wraithfx3()<<10);
@@ -205,6 +223,15 @@ void A_WraithFX4 (AActor *self)
 		mo = Spawn ("WraithFX4", self->x, self->y, self->z, ALLOW_REPLACE);
 		if (mo)
 		{
+			// [RK] Clients spawn these on their own. In order to prevent the 
+			// server from printing warnings when the server calls P_ExplodeMissile,
+			// we also mark this as SERVERSIDEONLY.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+			{
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->FreeNetID();
+			}
+
 			mo->x += (pr_wraithfx4()-128)<<12;
 			mo->y += (pr_wraithfx4()-128)<<12;
 			mo->z += (pr_wraithfx4()<<10);
@@ -216,6 +243,15 @@ void A_WraithFX4 (AActor *self)
 		mo = Spawn ("WraithFX5", self->x, self->y, self->z, ALLOW_REPLACE);
 		if (mo)
 		{
+			// [RK] Clients spawn these on their own. In order to prevent the 
+			// server from printing warnings when the server calls P_ExplodeMissile,
+			// we also mark this as SERVERSIDEONLY.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+			{
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->FreeNetID();
+			}
+
 			mo->x += (pr_wraithfx4()-128)<<11;
 			mo->y += (pr_wraithfx4()-128)<<11;
 			mo->z += (pr_wraithfx4()<<10);

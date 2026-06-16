@@ -36,6 +36,11 @@ DEFINE_ACTION_FUNCTION(AActor, A_BatSpawn)
 	int delta;
 	angle_t angle;
 
+	// [RK] The server does this since it's spawned as a missile
+	// or client-side actors inheriting from BatSpawner.
+	if ( NETWORK_InClientModeAndActorNotClientHandled( self ))
+		return;
+
 	// Countdown until next spawn
 	if (self->special1-- > 0) return;
 	self->special1 = self->args[0];		// Reset frequency count
@@ -43,7 +48,7 @@ DEFINE_ACTION_FUNCTION(AActor, A_BatSpawn)
 	delta = self->args[1];
 	if (delta==0) delta=1;
 	angle = self->angle + (((pr_batspawn()%delta)-(delta>>1))<<24);
-	mo = P_SpawnMissileAngle (self, PClass::FindClass ("Bat"), angle, 0);
+	mo = P_SpawnMissileAngle (self, PClass::FindClass ("Bat"), angle, 0, true); // [RK] Inform the clients.
 	if (mo)
 	{
 		mo->args[0] = pr_batspawn()&63;			// floatbob index
@@ -57,6 +62,10 @@ DEFINE_ACTION_FUNCTION(AActor, A_BatSpawn)
 DEFINE_ACTION_FUNCTION(AActor, A_BatMove)
 {
 	angle_t newangle;
+
+	// [RK] The server does this as well as client-side Bats.
+	if ( NETWORK_InClientModeAndActorNotClientHandled( self ))
+		return;
 
 	if (self->special2 < 0)
 	{
@@ -80,10 +89,14 @@ DEFINE_ACTION_FUNCTION(AActor, A_BatMove)
 
 	if (pr_batmove()<15)
 	{
-		S_Sound (self, CHAN_VOICE, "BatScream", 1, ATTN_IDLE);
+		S_Sound (self, CHAN_VOICE, "BatScream", 1, ATTN_IDLE, true); // [RK] Inform the clients.
 	}
 
 	// Handle Z movement
 	self->z = self->target->z + 16*finesine[self->args[0] << BOBTOFINESHIFT];
 	self->args[0] = (self->args[0]+3)&63;	
+
+	// [RK] Update the position on the clients.
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
+		SERVERCOMMANDS_MoveThingExact( self, CM_VELX|CM_VELY|CM_Z );
 }

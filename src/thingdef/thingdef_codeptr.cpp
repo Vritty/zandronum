@@ -159,6 +159,13 @@ bool ACustomInventory::CallStateChain (AActor *actor, FState * State)
 			// Abort immediately if the state jumps to itself!
 			if (State == State->GetNextState()) 
 			{
+				// [AK] The server handles state chain results, so if the client
+				// reaches here, then it already succeeded on the server's end.
+				// Thus, let it succeed on the client's end, even in this case,
+				// because they likely didn't predict the result properly.
+				if (NETWORK_InClientMode())
+					return true;
+
 				return false;
 			}
 			
@@ -176,7 +183,7 @@ bool ACustomInventory::CallStateChain (AActor *actor, FState * State)
 	// immune to state chain failure in event it cannot predict the result properly. Since the client is here, it has
 	// already succeded on the server. Without this, clients would sometimes be unable to handle e.g. GiveInventory
 	// messages properly for CustomInventory items with Pickup states that call ACS.
-	if ( NETWORK_InClientMode() )
+	if (NETWORK_InClientMode())
 		return true;
 
 	return result;
@@ -385,7 +392,7 @@ static void DoAttack (AActor *self, bool domelee, bool domissile,
 			{
 				missile->tracer=self->target;
 			}
-			bool bSucces = P_CheckMissileSpawn(missile, self->radius);
+			bool bSucces = P_CheckMissileSpawn(missile, self->radius, true, false);
 
 			// [BC] If we're the server, tell clients to spawn the missile.
 			if ( bSucces && ( NETWORK_GetState( ) == NETSTATE_SERVER ) )
@@ -1448,7 +1455,7 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_CustomComboAttack)
 			{
 				missile->tracer=self->target;
 			}
-			bool bSucces = P_CheckMissileSpawn(missile, self->radius);
+			bool bSucces = P_CheckMissileSpawn(missile, self->radius, true, false);
 
 			// [BB] If we're the server, tell clients to spawn this missile.
 			if ( bSucces && ( NETWORK_GetState( ) == NETSTATE_SERVER ) )
@@ -1636,10 +1643,7 @@ void A_CustomFireBullets( AActor *self,
 	}
 
 	// [BB] If the player hit a player with his attack, potentially give him a medal.
-	if ( player->bStruckPlayer )
-		PLAYER_StruckPlayer( player );
-	else
-		player->ulConsecutiveHits = 0;
+	PLAYER_CheckStruckPlayer( self );
 
 	// [BB] Tell all the bots that a weapon was fired.
 	// This is more or less a hack, so that the bots are notified when the
@@ -2212,6 +2216,31 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_GiveToSiblings)
 
 //===========================================================================
 //
+// [AK] A_GivePlayerMedal
+//
+//===========================================================================
+
+DEFINE_ACTION_FUNCTION_PARAMS( AActor, A_GivePlayerMedal )
+{
+	ACTION_PARAM_START( 3 );
+	ACTION_PARAM_NAME( medal, 0 );
+	ACTION_PARAM_BOOL( silent, 1 );
+	ACTION_PARAM_INT( receiver, 2 );
+
+	bool result = false;
+
+	// [AK] Use one of the actor's pointers to determine who gets the medal.
+	COPY_AAPTR_NOT_NULL( self, self, receiver );
+
+	// [AK] Don't let the clients give medals to players.
+	if (( NETWORK_InClientMode( ) == false ) && ( self->player != nullptr ))
+		result = MEDAL_GiveMedal( self->player - players, medal, silent );
+
+	ACTION_SET_RESULT( result );
+}
+
+//===========================================================================
+//
 // A_TakeInventory
 //
 //===========================================================================
@@ -2655,8 +2684,9 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_SpawnItemEx)
 			if ( mo->Translation )
 				SERVERCOMMANDS_SetThingTranslation( mo );
 
+			// [TRSR] It is useful to always sync the AAPTR_TARGET field for missiles.
 			// [BB] To properly handle actor-actor bouncing, the client must know the target.
-			if ( mo->BounceFlags != BOUNCE_None )
+			if ( mo->flags & MF_MISSILE || mo->BounceFlags != BOUNCE_None )
 				SERVERCOMMANDS_SetThingTarget ( mo );
 
 			// [BB] Set scale if necessary.
@@ -4659,6 +4689,9 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_ChangeFlag)
 				level.total_monsters--;
 			}
 
+			// [AK] Update the invasion monster count accordingly.
+			INVASION_UpdateMonsterCount( self, !kill_after );
+
 			// [BB] If we're the server, tell clients the new number of total monsters.
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				SERVERCOMMANDS_SetMapNumTotalMonsters( );
@@ -5810,7 +5843,7 @@ enum RadiusGiveFlags
 	RGF_OBJECTS		=   1 << 3,
 	RGF_VOODOO		=	1 << 4,
 	RGF_CORPSES		=	1 << 5,
-	RGF_MASK		=	63,
+	RGF_MASK		=	2111,
 	RGF_NOTARGET	=	1 << 6,
 	RGF_NOTRACER	=	1 << 7,
 	RGF_NOMASTER	=	1 << 8,
@@ -5843,8 +5876,10 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_RadiusGive)
 	FBlockThingsIterator it(FBoundingBox(self->x, self->y, distance));
 	double distsquared = double(distance) * double(distance);
 
+	TThinkerIterator<AActor> it_missiles; // [JM] Iterator for missiles. (Temporary, until Zandronum catches up with later ZDoom revisions.)
+
 	AActor *thing;
-	while ((thing = it.Next()))
+	while ((thing = (flags & RGF_MISSILES) ? it_missiles.Next() : it.Next())) // [JM] Use TThinkerIterator for RGF_MISSILES, like later ZDoom revisions.
 	{
 		// Don't give to inventory items
 		if (thing->flags & MF_SPECIAL)
@@ -6014,4 +6049,28 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_DropItem)
 	ACTION_PARAM_INT(chance, 2);
 
 	P_DropItem(self, spawntype, amount, chance);
+}
+
+//==========================================================================
+//
+// [JM] A_ClientsideACSExecute
+//
+//==========================================================================
+
+DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_ClientsideACSExecute)
+{
+	ACTION_PARAM_START(5);
+
+	ACTION_PARAM_NAME(scriptname, 0);
+	ACTION_PARAM_INT(arg1, 1);
+	ACTION_PARAM_INT(arg2, 2);
+	ACTION_PARAM_INT(arg3, 3);
+	ACTION_PARAM_INT(arg4, 4);
+
+	if (NETWORK_GetState() > NETSTATE_CLIENT || !ACS_IsScriptClientSide(-scriptname))
+		return;
+
+	bool res = !!P_ExecuteSpecial(ACS_ExecuteWithResult, NULL, self, false, -scriptname, arg1, arg2, arg3, arg4);
+
+	ACTION_SET_RESULT(res);
 }

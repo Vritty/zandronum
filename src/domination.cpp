@@ -66,8 +66,17 @@
 #include "team.h"
 #include "sectinfo.h"
 #include "cl_demo.h"
+#include "p_acs.h"
+#include "gi.h"
 
-#define SCORERATE	(TICRATE*3)
+// [TRSR] Private helper function(s)
+static void domination_SetControlPointColor( unsigned int point );
+
+CUSTOM_CVAR(Int, sv_dominationscorerate, 3, CVAR_SERVERINFO | CVAR_GAMEPLAYSETTING)
+{
+	if ( self <= 0 )
+		self = 1;
+};
 
 // These default the default fade for points.  I hope no one has a grey team...
 #define POINT_DEFAULT_R	0x7F
@@ -78,165 +87,221 @@ EXTERN_CVAR(Bool, domination)
 
 //CREATE_GAMEMODE(domination, DOMINATION, "Domination", "DOM", "F1_DOM", GMF_TEAMGAME|GMF_PLAYERSEARNPOINTS|GMF_PLAYERSONTEAMS)
 
-unsigned int *PointOwners;
-unsigned int NumPoints;
-
-bool finished;
-
-unsigned int DOMINATION_NumPoints(void) { return NumPoints; }
-unsigned int* DOMINATION_PointOwners(void) { return PointOwners; }
-
-void DOMINATION_LoadInit(unsigned int numpoints, unsigned int* pointowners)
-{
-	if(!domination)
-		return;
-
-	finished = false;
-	NumPoints = numpoints;
-	if ( PointOwners )
-		delete[] PointOwners;
-	PointOwners = pointowners;
-}
-
-void DOMINATION_SendState(ULONG ulPlayerExtra)
-{
-	if(!domination)
-		return;
-
-	if(SERVER_IsValidClient(ulPlayerExtra) == false)
-		return;
-
-	SERVER_CheckClientBuffer(ulPlayerExtra, NumPoints + 4, true);
-	SERVER_GetClient(ulPlayerExtra)->PacketBuffer.ByteStream.WriteLong(NumPoints);
-	for(unsigned int i = 0;i < NumPoints;i++)
-	{
-		//one byte should be enough to hold the value of the team.
-		SERVER_GetClient( ulPlayerExtra )->PacketBuffer.ByteStream.WriteByte(PointOwners[i]);
-	}
-}
-
-void DOMINATION_Reset(void)
-{
-	if(!domination)
-		return;
-
-	for(unsigned int i = 0;i < level.info->SectorInfo.Points.Size();i++)
-	{
-		PointOwners[i] = 255;
-		for(unsigned int j = 0;j < level.info->SectorInfo.Points[i]->Size();j++)
-		{
-			if(j < static_cast<unsigned> (numsectors))
-				sectors[(*level.info->SectorInfo.Points[i])[0]].SetFade(POINT_DEFAULT_R, POINT_DEFAULT_G, POINT_DEFAULT_B);
-		}
-	}
-}
-
 void DOMINATION_Init(void)
 {
-	if(!domination)
+	if ( !domination )
 		return;
 
-	finished = false;
-	if(PointOwners != NULL)
-		delete[] PointOwners;
-	PointOwners = new unsigned int[level.info->SectorInfo.Points.Size()];
-	NumPoints = level.info->SectorInfo.Points.Size();
+	for ( unsigned int i = 0; i < level.info->SectorInfo.Points.Size(); i++ )
+	{
+		level.info->SectorInfo.Points[i].disabled = false;
+		level.info->SectorInfo.Points[i].contesting.clear();
+		level.info->SectorInfo.Points[i].owner = TEAM_None;
+		domination_SetControlPointColor( i );
+	}
+}
 
-	DOMINATION_Reset();
+void DOMINATION_Clear(void)
+{
+	for ( unsigned int i = 0; i < level.info->SectorInfo.Points.Size(); i++ )
+	{
+		level.info->SectorInfo.Points[i].contesting.clear();
+		DOMINATION_SetOwnership( i, TEAM_None );
+	}
 }
 
 void DOMINATION_Tick(void)
 {
-	if(!domination)
+	if ( !domination )
 		return;
 
-	if(finished)
+	if ( GAMEMODE_IsGameInResultSequence() )
 		return;
 
 	// [BB] Scoring is server-side.
+	// [TRSR] Control point management is also server-side.
 	if ( NETWORK_InClientMode() )
 		return;
 
-	if(!(level.maptime % SCORERATE))
+	for ( unsigned int i = 0; i < level.info->SectorInfo.Points.Size(); i++ )
 	{
-		for(unsigned int i = 0;i < NumPoints;i++)
+		std::set<int> newContesting;
+		unsigned int teamPlayers[MAX_TEAMS] = { 0 };
+
+		// [TRSR] Count number of players per team on the point.
+		for ( unsigned int p = 0; p < MAXPLAYERS; p++ ) {
+			if ( !level.info->SectorInfo.Points[i].PlayerInsidePoint( p ) )
+				continue;
+
+			if( !players[p].bOnTeam )
+				continue;
+
+			// [TRSR] Call event script to allow modders to say whether this player's contesting status counts.
+			// For example, if player is too high up or above 3D floor, a modder may not want them to be able to contest.
+			if (( !gameinfo.bAllowDominationContestScripts ) || ( GAMEMODE_HandleEvent( GAMEEVENT_DOMINATION_CONTEST, players[p].mo, i, 0, true ) != 0 )) {
+				teamPlayers[players[p].Team]++;
+				newContesting.insert( p );
+			}
+		}
+
+		DOMINATION_SetContesting( i, newContesting );
+
+		if ( level.info->SectorInfo.Points[i].disabled )
+			continue;
+
+		if ( level.info->SectorInfo.Points[i].contesting.empty() )
+			continue;
+
+		// [TRSR] If the point is owned and one of that team's players is contesting, don't let the point swap.
+		if ( level.info->SectorInfo.Points[i].owner != TEAM_None && teamPlayers[level.info->SectorInfo.Points[i].owner] > 0 )
+			continue;
+
+		// [TRSR] Figure out which team has the most contesters. Point will swap to them.
+		unsigned int winner = TEAM_None;
+		unsigned int max = 0;
+		for ( int team = 0; team < MAX_TEAMS; team++ )
 		{
-			if(PointOwners[i] != 255)
+			if ( teamPlayers[team] > max )
 			{
-				TEAM_SetScore(PointOwners[i], TEAM_GetScore(PointOwners[i]) + 1, false);
-				if( pointlimit && (TEAM_GetScore(PointOwners[i]) >= pointlimit) )
-				{
-					DOMINATION_WinSequence(0);
+				max = teamPlayers[team];
+				winner = team;
+			}
+			// [TRSR] If two teams are tied, neither gets the point.
+			// A bit awkward, but it gives a resolution to priority issues.
+			else if ( teamPlayers[team] == max )
+			{
+				winner = TEAM_None;
+			}
+		}
+
+		if ( winner == TEAM_None )
+			continue;
+
+		// [TRSR] Trigger an event to allow denying of the capture.
+		if ( GAMEMODE_HandleEvent( GAMEEVENT_DOMINATION_PRECONTROL, nullptr, winner, i, true ) == 0 )
+			continue;
+
+		DOMINATION_SetOwnership( i, winner );
+	}
+
+	if ( level.maptime % ( sv_dominationscorerate * TICRATE ) == 0 )
+	{
+		for ( unsigned int i = 0; i < level.info->SectorInfo.Points.Size(); i++ )
+		{
+			if ( level.info->SectorInfo.Points[i].disabled )
+				continue;
+
+			if ( level.info->SectorInfo.Points[i].owner != TEAM_None )
+			{
+				// [AK] Trigger an event script when this team gets a point from a point sector.
+				// The first argument is the team that owns the sector and the second argument is the name
+				// of the sector. Don't let event scripts change the result value to anything less than zero.
+				LONG lResult = MAX<LONG>( GAMEMODE_HandleEvent( GAMEEVENT_DOMINATION_POINT, NULL, level.info->SectorInfo.Points[i].owner, i, true ), 0 );
+
+				if ( lResult != 0 )
+					TEAM_SetPointCount( level.info->SectorInfo.Points[i].owner, TEAM_GetPointCount( level.info->SectorInfo.Points[i].owner ) + lResult, false );
+
+				if ( GAMEMODE_IsGameInResultSequence( ))
 					break;
-				}
 			}
 		}
 	}
 }
 
-void DOMINATION_WinSequence(unsigned int winner)
+void DOMINATION_SetContesting(unsigned int point, std::set<int> contesting)
 {
-	if(!domination)
+	if ( !domination )
 		return;
 
-	finished = true;
+	if ( point >= level.info->SectorInfo.Points.Size() )
+		return;
+
+	if ( contesting == level.info->SectorInfo.Points[point].contesting )
+		return;
+
+	level.info->SectorInfo.Points[point].contesting = contesting;
+
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
+		SERVERCOMMANDS_SetDominationPointState( point, level.info->SectorInfo.Points[point] );
 }
 
-void DOMINATION_SetOwnership(unsigned int point, player_t *toucher)
+void DOMINATION_SetDisabled(unsigned int point, bool disabled)
 {
-	if(!domination)
+	if ( !domination )
 		return;
 
-	if(point >= NumPoints)
+	if ( point >= level.info->SectorInfo.Points.Size() )
 		return;
 
-	if(!toucher->bOnTeam) //The toucher must be on a team
+	if ( level.info->SectorInfo.Points[point].disabled == disabled )
 		return;
 
-	unsigned int team = toucher->Team;
+	level.info->SectorInfo.Points[point].disabled = disabled;
+	domination_SetControlPointColor( point );
 
-	PointOwners[point] = team;
-	Printf ( "%s has taken control of %s\n", toucher->userinfo.GetName(), (*level.info->SectorInfo.PointNames[point]).GetChars() );
-	for(unsigned int i = 0;i < level.info->SectorInfo.Points[point]->Size();i++)
-	{
-		unsigned int secnum = (*level.info->SectorInfo.Points[point])[i];
-
-		int color = TEAM_GetColor ( team );
-		sectors[secnum].SetFade( RPART(color), GPART(color), BPART(color) );
-	}
+	if( NETWORK_GetState() == NETSTATE_SERVER )
+		SERVERCOMMANDS_SetDominationPointState( point, level.info->SectorInfo.Points[point] );
 }
 
-void DOMINATION_EnterSector(player_t *toucher)
+void DOMINATION_SetOwnership(unsigned int point, unsigned int team, bool broadcast)
 {
-	if(!domination)
+	if ( !domination )
 		return;
 
-	// [BB] This is server side.
-	if ( NETWORK_InClientMode() )
-	{
+	if ( point >= level.info->SectorInfo.Points.Size() )
 		return;
+
+	if ( !TEAM_CheckIfValid( team ) && team != TEAM_None )
+		return;
+
+	// [TRSR] Need to save previous team for event script below.
+	unsigned int prevTeam = level.info->SectorInfo.Points[point].owner;
+	if ( team == prevTeam )
+		return;
+
+	if (( broadcast ) && ( !level.info->SectorInfo.Points[point].disabled )) {
+		if ( team != TEAM_None ) {
+			Printf( "\034%s%s" TEXTCOLOR_NORMAL " has taken control of %s.\n", TEAM_GetTextColorName( team ), TEAM_GetName( team ), level.info->SectorInfo.Points[point].name.GetChars() );
+		} else {
+			Printf( "\034%s%s" TEXTCOLOR_NORMAL " has lost control of %s.\n", TEAM_GetTextColorName( prevTeam ), TEAM_GetName( prevTeam ), level.info->SectorInfo.Points[point].name.GetChars() );
+		}
 	}
 
-	if(!toucher->bOnTeam) //The toucher must be on a team
+	level.info->SectorInfo.Points[point].owner = team;
+	domination_SetControlPointColor( point );
+
+	// [TRSR] Trigger an event script when a team takes ownership of a point sector.
+	GAMEMODE_HandleEvent( GAMEEVENT_DOMINATION_CONTROL, nullptr, prevTeam, point );
+
+	// [TRSR] Let clients know about the change in management too.
+	if ( NETWORK_GetState() == NETSTATE_SERVER )
+		SERVERCOMMANDS_SetDominationPointOwner( point, team, broadcast );
+}
+
+static void domination_SetControlPointColor( unsigned int point )
+{
+	if (( !domination ) || ( point >= level.info->SectorInfo.Points.Size( )))
 		return;
 
-	assert(PointOwners != NULL);
-	for(unsigned int point = 0;point < level.info->SectorInfo.Points.Size();point++)
+	for ( unsigned int i = 0; i < level.info->SectorInfo.Points[point].sectors.Size(); i++ )
 	{
-		for(unsigned int i = 0;i < level.info->SectorInfo.Points[point]->Size();i++)
+		unsigned int secnum = level.info->SectorInfo.Points[point].sectors[i];
+
+		if ( secnum >= static_cast<unsigned>( numsectors ))
+			continue;
+
+		if ( level.info->SectorInfo.Points[point].disabled )
 		{
-			if(toucher->mo->Sector->sectornum != static_cast<signed> ((*level.info->SectorInfo.Points[point])[i]))
-				continue;
-
-			// [BB] The team already owns the point, nothing to do.
-			if ( toucher->Team == PointOwners[point] )
-				continue;
-
-			DOMINATION_SetOwnership(point, toucher);
-
-			// [BB] Let the clients know about the point ownership change.
-			if( NETWORK_GetState() == NETSTATE_SERVER )
-				SERVERCOMMANDS_SetDominationPointOwnership ( point, static_cast<ULONG> ( toucher - players ) );
+			sectors[secnum].SetFade( 0, 0, 0 );
+		}
+		else if ( level.info->SectorInfo.Points[point].owner != TEAM_None )
+		{
+			int color = TEAM_GetColor( level.info->SectorInfo.Points[point].owner );
+			sectors[secnum].SetFade( RPART( color ), GPART( color ), BPART( color ));
+		}
+		else
+		{
+			sectors[secnum].SetFade( POINT_DEFAULT_R, POINT_DEFAULT_G, POINT_DEFAULT_B );
 		}
 	}
 }

@@ -164,6 +164,21 @@ typedef enum
 	BOTCMD_SAYFROMCHATLUMP,					/* 90 */
 	BOTCMD_CHATSECTIONEXISTSINLUMP,
 	BOTCMD_CHATSECTIONEXISTSINCHATLUMP,
+	BOTCMD_ACS_EXECUTEWITHRESULT,
+	BOTCMD_BEGINALTFIRINGWEAPON,				 		// Functions to press various buttons.
+	BOTCMD_STOPALTFIRINGWEAPON,
+	BOTCMD_BEGINCROUCHING,
+	BOTCMD_STOPCROUCHING,
+	BOTCMD_BEGINRELOADING,
+	BOTCMD_STOPRELOADING,
+	BOTCMD_BEGINZOOMING, 					/* 100 */
+	BOTCMD_STOPZOOMING,
+	BOTCMD_BEGINUSER,
+	BOTCMD_STOPUSER,
+	BOTCMD_BEGINSPEED,
+	BOTCMD_STOPSPEED,
+	BOTCMD_PRESSUSE,
+	BOTCMD_ACS_NAMEDEXECUTEWITHRESULT,
 
 	NUM_BOTCMDS
 
@@ -263,7 +278,7 @@ void		BOTCMD_RunCommand( BOTCMD_e Command, CSkullBot *pBot );
 void		BOTCMD_SetLastChatString( const char *pszString );
 void		BOTCMD_SetLastChatPlayer( const char *pszString );
 void		BOTCMD_SetLastJoinedPlayer( const char *pszString );
-void		BOTCMD_DoChatStringSubstitutions( CSkullBot *pBot, const char *pszInString, char *pszOutString );
-bool		BOTCMD_IgnoreItem( CSkullBot *pBot, LONG lIdx, bool bVisibilityCheck );
+void		BOTCMD_DoChatStringSubstitutions( CSkullBot *pBot, FString &Input );
+bool		BOTCMD_IgnoreItem( CSkullBot *pBot, unsigned short netID, bool bVisibilityCheck );
 
 #endif	// __BOTCOMMANDS_H__

@@ -2099,8 +2099,6 @@ FUNC( LS_Player_SetTeam )
 	return ( true );
 }
 
-void SERVERCONSOLE_UpdatePlayerInfo( LONG lPlayer, ULONG ulUpdateFlags );
-void SERVERCONSOLE_UpdateScoreboard( void );
 FUNC( LS_Team_Score )
 // Team_Score (int howmuch, bool nogrin)
 {
@@ -2116,7 +2114,7 @@ FUNC( LS_Team_Score )
 	if ( !it || !it->player || it->player->bOnTeam == false )
 		return ( false );
 
-	TEAM_SetScore( it->player->Team, TEAM_GetScore( it->player->Team ) + arg0, true );
+	TEAM_SetPointCount( it->player->Team, TEAM_GetPointCount( it->player->Team ) + arg0, true );
 	PLAYER_SetPoints ( it->player, it->player->lPointCount + arg0 );
 
 	return ( false );
@@ -2138,7 +2136,7 @@ FUNC( LS_Team_GivePoints )
 		return ( false );
 
 	// Give the point(s) to the team.
-	TEAM_SetScore( arg0, TEAM_GetScore( arg0 ) + arg1, !!arg2 );
+	TEAM_SetPointCount( arg0, TEAM_GetPointCount( arg0 ) + arg1, !!arg2 );
 
 	if ( it && it->player && it->player->bOnTeam )
 	{
@@ -2952,9 +2950,14 @@ FUNC(LS_ChangeCamera)
 		}
 	}
 
-	// [AK] Reset the local player's HUD if we change to another player's view.
-	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) && ( players[consoleplayer].camera->player ))
-		G_FinishChangeSpy( ULONG( players[consoleplayer].camera->player - players ));
+	// [AK] Change the HUD to match the player that we should be looking through.
+	if ( NETWORK_GetState( ) != NETSTATE_SERVER )
+	{
+		if ( players[consoleplayer].camera->player )
+			G_FinishChangeSpy( static_cast<int>( players[consoleplayer].camera->player - players ), true );
+		else
+			G_FinishChangeSpy( consoleplayer, true );
+	}
 
 	return true;
 }
@@ -3345,7 +3348,10 @@ FUNC(LS_SendToCommunicator)
 			// [BB] Play the sound on the client.
 			const ULONG ulPlayer = static_cast<ULONG> ( it->player - players );
 			if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+			{
+				SERVERCOMMANDS_StopOriginlessSound( CHAN_VOICE, ulPlayer, SVCF_ONLYTHISCLIENT );
 				SERVERCOMMANDS_Sound( CHAN_VOICE, name, 1, ATTN_NORM, ulPlayer, SVCF_ONLYTHISCLIENT );
+			}
 
 			if (arg2 == 0)
 			{
@@ -3524,7 +3530,8 @@ FUNC(LS_StartConversation)
 	{
 		return false;
 	}
-	if (target->Conversation != NULL)
+	// [SB] In multiplayer, the server initiates conversations.
+	if (target->Conversation != NULL && !NETWORK_InClientMode())
 	{
 		// Give the NPC a chance to play a brief animation
 		target->ConversationAnimation (0);

@@ -149,6 +149,12 @@ DEFINE_ACTION_FUNCTION(AActor, A_LightningClip)
 	AActor *target = NULL;
 	int zigZag;
 
+	// [RK] The server will handle the target lock on.
+	if (NETWORK_InClientMode())
+		return;
+
+	const fixed_t oldz = self->z; // [RK] Old z position
+
 	if (self->flags3 & MF3_FLOORHUGGER)
 	{
 		if (self->lastenemy == NULL)
@@ -163,6 +169,11 @@ DEFINE_ACTION_FUNCTION(AActor, A_LightningClip)
 		self->z = self->ceilingz-self->height;
 		target = self->tracer;
 	}
+
+	// [RK] Send update on the Z changes if necessary.
+	if ( NETWORK_GetState() == NETSTATE_SERVER && ( oldz != self->z ))
+		SERVERCOMMANDS_MoveThing(self, CM_Z);
+
 	if (self->flags3 & MF3_FLOORHUGGER)
 	{ // floor lightning zig-zags, and forces the ceiling lightning to mimic
 		cMo = self->lastenemy;
@@ -185,6 +196,12 @@ DEFINE_ACTION_FUNCTION(AActor, A_LightningClip)
 			}
 			self->special1--;
 		}
+		// [RK] Update the thrusts to the clients.
+		if (NETWORK_GetState() == NETSTATE_SERVER)
+		{
+			SERVERCOMMANDS_MoveThingExact( self, CM_ANGLE|CM_VELX|CM_VELY );
+			SERVERCOMMANDS_MoveThingExact( cMo, CM_ANGLE|CM_VELX|CM_VELY );
+		}
 	}
 	if(target)
 	{
@@ -198,6 +215,10 @@ DEFINE_ACTION_FUNCTION(AActor, A_LightningClip)
 			self->velx = 0;
 			self->vely = 0;
 			P_ThrustMobj (self, self->angle, self->Speed>>1);
+
+			// [RK] Send the new position to the clients.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+				SERVERCOMMANDS_MoveThingExact( self, CM_X|CM_Y|CM_ANGLE|CM_VELX|CM_VELY );
 		}
 	}
 }
@@ -216,12 +237,21 @@ DEFINE_ACTION_FUNCTION(AActor, A_LightningZap)
 	AActor *mo;
 	fixed_t deltaZ;
 
+	// [RK] The server will handle the spawning of lightning projectiles.
+	if( NETWORK_InClientMode() )
+		return;
+
 	CALL_ACTION(A_LightningClip, self);
 
 	self->health -= 8;
 	if (self->health <= 0)
 	{
 		self->SetState (self->FindState(NAME_Death));
+
+		// [RK] Update the client on the state change.
+		if( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_SetThingState( self, STATE_DEATH );
+
 		return;
 	}
 	if (self->flags3 & MF3_FLOORHUGGER)
@@ -249,10 +279,14 @@ DEFINE_ACTION_FUNCTION(AActor, A_LightningZap)
 		{
 			mo->velz = -20*FRACUNIT;
 		}
+
+		// [RK] Spwn the projectile on the clients.
+		if( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_SpawnMissile(mo);
 	}
 	if ((self->flags3 & MF3_FLOORHUGGER) && pr_zapf() < 160)
 	{
-		S_Sound (self, CHAN_BODY, self->ActiveSound, 1, ATTN_NORM);
+		S_Sound (self, CHAN_BODY, self->ActiveSound, 1, ATTN_NORM, true); // [RK] Inform clients.
 	}
 }
 
@@ -354,6 +388,10 @@ DEFINE_ACTION_FUNCTION(AActor, A_ZapMimic)
 {
 	AActor *mo;
 
+	// [RK] The server will move the lightning projectile.
+	if (NETWORK_InClientMode())
+		return;
+
 	mo = self->lastenemy;
 	if (mo)
 	{
@@ -365,6 +403,10 @@ DEFINE_ACTION_FUNCTION(AActor, A_ZapMimic)
 		{
 			self->velx = mo->velx;
 			self->vely = mo->vely;
+
+			// [RK] Update the lightning position.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+				SERVERCOMMANDS_MoveThingExact( self, CM_VELX | CM_VELY );
 		}
 	}
 }
@@ -377,6 +419,10 @@ DEFINE_ACTION_FUNCTION(AActor, A_ZapMimic)
 
 DEFINE_ACTION_FUNCTION(AActor, A_LastZap)
 {
+	// [RK] The server will handle projectile spawning.
+	if( NETWORK_InClientMode() )
+		return;
+
 	const PClass *lightning=PClass::FindClass((ENamedName) self->GetClass()->Meta.GetMetaInt (ACMETA_MissileName, NAME_LightningZap));
 
 	AActor *mo;
@@ -387,6 +433,13 @@ DEFINE_ACTION_FUNCTION(AActor, A_LastZap)
 		mo->SetState (mo->FindState (NAME_Death));
 		mo->velz = 40*FRACUNIT;
 		mo->Damage = 0;
+
+		// [RK] Spawn the lightning projectile on the clients then set the state.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+		{
+			SERVERCOMMANDS_SpawnMissile(mo);
+			SERVERCOMMANDS_SetThingState(mo, STATE_DEATH);
+		}
 	}
 }
 

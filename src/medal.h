@@ -50,148 +50,134 @@
 #ifndef __MEDAL_H__
 #define __MEDAL_H__
 
+#include <vector>
 #include "doomdef.h"
 #include "info.h"
+#include "v_font.h"
+
+#include "medal_enums.h"
 
 //*****************************************************************************
 //	DEFINES
 
 #define	MEDAL_ICON_DURATION			( 3 * TICRATE )
 
-// Same values as defined in AFloatyIcon::States[].
-// [Dusk] Now an enumeration.
 enum
 {
-	S_TERMINATORARTIFACT		= 0,
-	S_CHAT						= ( S_TERMINATORARTIFACT + 4 ),
-	S_INCONSOLE					= ( S_CHAT + 1 ),
-	S_INMENU					= ( S_INCONSOLE + 2 ),
-	S_ALLY						= ( S_INMENU + 4 ),
-	S_WHITEFLAG					= ( S_ALLY + 1 ),
-	S_EXCELLENT					= ( S_WHITEFLAG + 6 ),
-	S_INCREDIBLE				= ( S_EXCELLENT + 1 ),
-	S_IMPRESSIVE				= ( S_INCREDIBLE + 1 ),
-	S_MOST_IMPRESSIVE			= ( S_IMPRESSIVE + 1 ),
-	S_DOMINATION				= ( S_MOST_IMPRESSIVE + 1 ),
-	S_TOTAL_DOMINATION			= ( S_DOMINATION + 1 ),
-	S_ACCURACY					= ( S_TOTAL_DOMINATION + 1 ),
-	S_PRECISION					= ( S_ACCURACY + 1 ),
-	S_VICTORY					= ( S_PRECISION + 1 ),
-	S_PERFECT					= ( S_VICTORY + 1 ),
-	S_FIRSTFRAG					= ( S_PERFECT + 1 ),
-	S_TERMINATION				= ( S_FIRSTFRAG + 1 ),
-	S_CAPTURE					= ( S_TERMINATION + 1 ),
-	S_TAG						= ( S_CAPTURE + 1 ),
-	S_ASSIST					= ( S_TAG + 1 ),
-	S_DEFENSE					= ( S_ASSIST + 1 ),
-	S_LLAMA						= ( S_DEFENSE + 1 ),
-	S_YOUFAILIT					= ( S_LLAMA + 1 ),
-	S_YOURSKILLISNOTENOUGH		= ( S_YOUFAILIT + 1 ),
-	S_LAG						= ( S_YOURSKILLISNOTENOUGH + 1 ),
-	S_FISTING					= ( S_LAG + 1 ),
-	S_SPAM						= ( S_FISTING + 1 ),
-	S_POSSESSIONARTIFACT		= ( S_SPAM + 1 ),
+	SPRITE_CHAT,
+	SPRITE_VOICECHAT,
+	SPRITE_INCONSOLE,
+	SPRITE_INMENU,
+	SPRITE_ALLY,
+	SPRITE_ENEMY,
+	SPRITE_LAG,
+	SPRITE_WHITEFLAG,
+	SPRITE_TERMINATORARTIFACT,
+	SPRITE_POSSESSIONARTIFACT,
+	SPRITE_TEAMITEM,
+	NUM_SPRITES
 };
 
 //*****************************************************************************
 enum
 {
-	MEDAL_EXCELLENT,
-	MEDAL_INCREDIBLE,
+	// Never show ally/enemy icons.
+	SHOW_ICON_NEVER,
 
-	MEDAL_IMPRESSIVE,
-	MEDAL_MOSTIMPRESSIVE,
+	// Only show ally/enemy icons in team-based game modes.
+	SHOW_ICON_TEAMS_ONLY,
 
-	MEDAL_DOMINATION,
-	MEDAL_TOTALDOMINATION,
-
-	MEDAL_ACCURACY,
-	MEDAL_PRECISION,
-
-	MEDAL_YOUFAILIT,
-	MEDAL_YOURSKILLISNOTENOUGH,
-
-	MEDAL_LLAMA,
-	MEDAL_SPAM,
-
-	MEDAL_VICTORY,
-	MEDAL_PERFECT,
-
-	MEDAL_TERMINATION,
-	MEDAL_FIRSTFRAG,
-	MEDAL_CAPTURE,
-	MEDAL_TAG,
-	MEDAL_ASSIST,
-	MEDAL_DEFENSE,
-	MEDAL_FISTING,
-
-	NUM_MEDALS
+	// Show ally/enemy icons in all game modes.
+	SHOW_ICON_ALWAYS,
 };
-
-
-//*****************************************************************************
-#define	MEDALQUEUE_DEPTH			NUM_MEDALS
 
 //*****************************************************************************
 //	STRUCTURES
 
-typedef struct
+struct MEDAL_t
 {
-	// Icon that displays on the screen when this medal is received.
-	const char	szLumpName[8];
+	// [AK] A name used to identify the medal.
+	const FName		name;
 
-	// Frame the floaty icon above the player's head is set to.
-	USHORT		usFrame;
+	// Icon that displays on the screen when this medal is received.
+	FTextureID		icon;
+
+	// [AK] Icon that displays on the scoreboard, if defined.
+	FTextureID		scoreboardIcon;
+
+	// [AK] The floaty icon class to spawn above the player's head.
+	const PClass	*iconClass;
+
+	// State that the floaty icon above the player's head is set to.
+	FState			*iconState;
 
 	// Text that appears below the medal icon when received.
-	const char	*szStr;
+	FString			text;
 
 	// Color that text is displayed in.
-	ULONG		ulTextColor;
+	EColorRange		textColor;
+
+	// [AK] Color that the quantity of the medal is displayed in.
+	FString			quantityColor;
 
 	// Announcer entry that's played when this medal is triggered.
-	const char	szAnnouncerEntry[32];
+	FString			announcerEntry;
 
 	// [RC] The "lower" medal that this overrides.
-	ULONG		ulLowerMedal;
+	MEDAL_t			*lowerMedal;
 
 	// Name of sound to play when this medal type is triggered.
-	const char	*szSoundName;
+	FSoundID		sound;
 
-} MEDAL_t;
+	// [AK] Which flags are enabled for this medal.
+	unsigned int	flags;
+
+	// [AK] How much of this medal that each player currently has.
+	unsigned int	awardedCount[MAXPLAYERS];
+
+	MEDAL_t( FName name ) :
+		name( name ),
+		iconClass( nullptr ),
+		iconState( nullptr ),
+		textColor( CR_UNTRANSLATED ),
+		lowerMedal( nullptr ),
+		flags( 0 ),
+		awardedCount{ 0 }
+	{
+		icon.SetInvalid( );
+		scoreboardIcon.SetInvalid( );
+	}
+};
 
 //*****************************************************************************
-typedef struct
+struct MEDALQUEUE_t
 {
-	// Type of medal in this queue entry.
-	ULONG		ulMedal;
+	// The medals in this queue.
+	std::vector<MEDAL_t *>	medals;
 
 	// Amount of time before the medal display in this queue expires.
-	ULONG		ulTick;
+	unsigned int			ticks;
 
-} MEDALQUEUE_t;
+	MEDALQUEUE_t( void ) : ticks( 0 ) { }
+};
 
 //*****************************************************************************
 //	PROTOTYPES
 
 // Standard API.
-void	MEDAL_Construct( void );
-void	MEDAL_Input( void );
-void	MEDAL_Tick( void );
-void	MEDAL_Render( void );
+void		MEDAL_Construct( void );
+void		MEDAL_Tick( void );
+void		MEDAL_Render( void );
 
-void	MEDAL_GiveMedal( ULONG ulPlayer, ULONG ulMedal );
-void	MEDAL_RenderAllMedals( LONG lYOffset );
-void	MEDAL_RenderAllMedalsFullscreen( player_t *pPlayer );
-ULONG	MEDAL_GetDisplayedMedal( ULONG ulPlayer );
-void	MEDAL_ClearMedalQueue( ULONG ulPlayer );
-void	MEDAL_PlayerDied( ULONG ulPlayer, ULONG ulSourcePlayer );
-void	MEDAL_ResetFirstFragAwarded( void );
-
-//*****************************************************************************
-//	EXTERNAL CONSOLE VARIABLES
-
-EXTERN_CVAR( Bool, cl_medals )
-EXTERN_CVAR( Bool, cl_icons )
+bool		MEDAL_GiveMedal( const ULONG player, const ULONG medalIndex, const bool silent = false );
+bool		MEDAL_GiveMedal( const ULONG player, const FName medalName, const bool silent = false );
+void		MEDAL_SetMedalAwardedCount( const unsigned int player, const unsigned int medalIndex, const unsigned int count );
+int			MEDAL_GetMedalIndex( const FName medalName );
+MEDAL_t		*MEDAL_GetMedal( const FName medalName );
+MEDAL_t		*MEDAL_GetDisplayedMedal( const ULONG player );
+void		MEDAL_RetrieveAwardedMedals( const unsigned int player, TArray<MEDAL_t *> &list );
+void		MEDAL_ResetPlayerMedals( const ULONG player, const bool resetAll );
+void		MEDAL_PlayerDied( ULONG ulPlayer, ULONG ulSourcePlayer );
+void		MEDAL_ResetFirstFragAwarded( void );
 
 #endif

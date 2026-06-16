@@ -553,6 +553,9 @@ void FGameConfigFile::ArchiveGameData (const char *gamename)
 		SetSection (section, true);
 		ClearCurrentSection ();
 		C_ArchiveCVars (this, CVAR_MOD|CVAR_ARCHIVE|CVAR_AUTO|CVAR_USERINFO);
+
+		// [AK] We must also archive any local CVars defined in CVARINFO.
+		C_ArchiveCVars (this, CVAR_MOD|CVAR_ARCHIVE|CVAR_AUTO);
 	}
 
 	strncpy (subsection, "ConsoleVariables", sublen);
@@ -560,18 +563,21 @@ void FGameConfigFile::ArchiveGameData (const char *gamename)
 	ClearCurrentSection ();
 	C_ArchiveCVars (this, CVAR_ARCHIVE);
 
+	// [AK] Singleplayer with multiplayer emulation isn't a networked game.
+	const bool isNetworkGame = !((NETWORK_GetState() == NETSTATE_SINGLE) || (NETWORK_GetState() == NETSTATE_SINGLE_MULTIPLAYER));
+
 	// Do not overwrite the serverinfo section if playing a netgame, and
 	// this machine was not the initial host.
-	if (( NETWORK_GetState( ) == NETSTATE_SINGLE ) || consoleplayer == 0)
+	if (!isNetworkGame || consoleplayer == 0)
 	{
-		strncpy (subsection, ( NETWORK_GetState( ) != NETSTATE_SINGLE ) ? "NetServerInfo" : "LocalServerInfo", sublen);
+		strncpy (subsection, isNetworkGame ? "NetServerInfo" : "LocalServerInfo", sublen);
 		SetSection (section, true);
 		ClearCurrentSection ();
 		C_ArchiveCVars (this, CVAR_ARCHIVE|CVAR_SERVERINFO);
 
 		if (bModSetup)
 		{
-			strncpy (subsection, ( NETWORK_GetState( ) != NETSTATE_SINGLE ) ? "NetServerInfo.Mod" : "LocalServerInfo.Mod", sublen);
+			strncpy (subsection, isNetworkGame ? "NetServerInfo.Mod" : "LocalServerInfo.Mod", sublen);
 			SetSection (section, true);
 			ClearCurrentSection ();
 			C_ArchiveCVars (this, CVAR_MOD|CVAR_ARCHIVE|CVAR_AUTO|CVAR_SERVERINFO);

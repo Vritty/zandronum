@@ -69,6 +69,7 @@
 #include "v_text.h"
 #include "gi.h"
 #include "gameconfigfile.h"
+#include "scoreboard.h"
 
 struct FLatchedValue
 {
@@ -233,32 +234,36 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 			Printf( "%s cannot be changed during a campaign.\n", GetName( ));
 			return;
 		}
-		// [AK] Check if we (indirectly) changed any flags locked in the current game mode.
-		else if ( Flags & CVAR_GAMEMODELOCK )
+		// [AK] Locked CVars need to be treated as unlocked for clients that are gaining RCON access.
+		else if (( NETWORK_InClientMode( ) == false ) || ( CLIENT_GainingRCONAccess( ) == false ))
 		{
-			int mask = GAMEMODE_GetCurrentFlagsetMask( static_cast<FIntCVar *>( this ), true );
-			int oldValue = GetGenericRep( CVAR_Int ).Int;
-			int newValue = ToInt( value, type );
-
-			// [AK] If we changed any flags that are supposed to be locked, we need to switch them back.
-			// Also print the names of all affected locked flags.
-			if (( mask ) && ( oldValue & mask ) ^ ( newValue & mask ))
+			// [AK] Check if we (indirectly) changed any flags locked in the current game mode.
+			if ( Flags & CVAR_GAMEPLAYFLAGSET )
 			{
+				int oldValue = GetGenericRep( CVAR_Int ).Int;
+				int newValue = ToInt( value, type );
+				int changedBits = ( oldValue ^ newValue );
+				int lockedBitMask = 0;
+
+				// [AK] If we changed any flags that are supposed to be locked, we need to switch them back.
+				// Also print the names of all affected locked flags.
 				for ( unsigned int i = 0; i < 32; i++ )
 				{
-					int bit = ( 1 << i );
+					unsigned int bit = ( 1 << i );
 
-					if (( mask & bit ) && (( oldValue & bit ) ^ ( newValue & bit )))
+					if ( changedBits & bit )
 					{
 						for ( FBaseCVar* cvar = CVars; cvar; cvar = cvar->GetNext( ))
 						{
 							if ( cvar->IsFlagCVar( ) == false )
-							continue;
+								continue;
 
 							FFlagCVar *flag = static_cast<FFlagCVar *>( cvar );
 
-							if (( flag->GetValueVar( ) == this ) && ( flag->GetBitVal( ) == bit ))
+							if (( flag->GetValueVar( ) == this ) && ( flag->GetBitVal( ) == bit ) && ( GAMEMODE_IsGameplaySettingLocked( flag )))
 							{
+								lockedBitMask |= bit;
+
 								Printf( "%s cannot be changed in this game mode.\n", flag->GetName( ));
 								break;
 							}
@@ -266,14 +271,36 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 					}
 				}
 
-				// [AK] It's easier if we just switch the CVar type to an integer.
-				value.Int = ( newValue & ~mask ) | ( oldValue & mask );
-				type = CVAR_Int;
+				// [AK] Did we have to change some locked flags? Determine what value the flagset should be now.
+				// It's also easier if we switch the CVar type to an integer.
+				if ( lockedBitMask != 0 )
+				{
+					value.Int = ( newValue & ~lockedBitMask ) | ( oldValue & lockedBitMask );
+					type = CVAR_Int;
+				}
+			}
+			// [AK] Don't change this CVar if it's locked in the current game mode.
+			else if (( Flags & CVAR_GAMEPLAYSETTING ) && ( GAMEMODE_IsGameplaySettingLocked( this )))
+			{
+				Printf( "%s cannot be changed in this game mode.\n", GetName( ));
+				return;
 			}
 		}
 	}
 
-	if ((Flags & CVAR_LATCH) && gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
+	// [TP] If we have RCON access, tell the server to set this value.
+	if (NETWORK_GetState() == NETSTATE_CLIENT && (CLIENT_HasRCONAccess() || CLIENT_GainingRCONAccess()) && (Flags & (CVAR_SERVERINFO | CVAR_SENSITIVESERVERSETTING)))
+	{
+		// [TP] Note that we do not set the CVar here. The server will tell us when it's changed.
+		// If we set it by ourselves and this packet gets lost, the CVar value desyncs.
+		// [AK] If we're gaining RCON access, then we must set it because we're resetting it back
+		// to its default value. The server will send the correct value to us later.
+		if ( CLIENT_HasRCONAccess())
+			CLIENTCOMMANDS_RCONSetCVar(Name, ToString(value, type));
+		else
+			ForceSet(value, type);
+	}
+	else if ((Flags & CVAR_LATCH) && gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
 	{
 		FLatchedValue latch;
 
@@ -284,15 +311,6 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 		else
 			latch.Value.String = copystring(value.String);
 		LatchedValues.Push (latch);
-	}
-	// [TP] If we have RCON access, tell the server to set this value.
-	else if ( NETWORK_GetState() == NETSTATE_CLIENT
-		&& CLIENT_HasRCONAccess()
-		&& ( Flags & ( CVAR_SERVERINFO | CVAR_SENSITIVESERVERSETTING )))
-	{
-		// [TP] Note that we do not set the CVar here. The server will tell us when it's changed.
-		// If we set it by ourselves and this packet gets lost, the CVar value desyncs.
-		CLIENTCOMMANDS_RCONSetCVar( Name, ToString( value, type ));
 	}
 	// [BC] Support for client-side demos.
 	else if ((Flags & CVAR_SERVERINFO) && gamestate != GS_STARTUP && !demoplayback && ( CLIENTDEMO_IsPlaying( ) == false ))
@@ -328,7 +346,7 @@ void FBaseCVar::SetGenericRep (UCVarValue value, ECVarType type)
 	}
 
 	// [TP] Inform RCON clients about server setting changes
-	if ( NETWORK_GetState() == NETSTATE_SERVER && ( Flags & ( CVAR_SENSITIVESERVERSETTING | CVAR_SERVERINFO )))
+	if (( NETWORK_GetState() == NETSTATE_SERVER ) && ( Flags & ( CVAR_SENSITIVESERVERSETTING | CVAR_SERVERINFO )))
 		SERVERCOMMANDS_SyncCVarToAdmins( *this );
 }
 
@@ -1676,6 +1694,26 @@ void UnlatchCVars (void)
 		if (var.Type == CVAR_String)
 			delete[] var.Value.String;
 		var.Variable->Flags = oldflags;
+
+		// [AK] Setting the CVar is supposed to remove the CVAR_ISDEFAULT flag,
+		// but restoring the old flags can re-enable it. Make sure it stays off.
+		var.Variable->Flags &= ~CVAR_ISDEFAULT;
+	}
+}
+
+void DestroyCVarsFlagged (DWORD flags)
+{
+	FBaseCVar *cvar = CVars;
+	FBaseCVar *next = cvar;
+
+	while(cvar)
+	{
+		next = cvar->m_Next;
+
+		if(cvar->Flags & flags)
+			delete cvar;
+
+		cvar = next;
 	}
 }
 
@@ -1754,8 +1792,11 @@ void C_RestoreServerInfoCVars( void )
 {
 	FLatchedValue var;
 
-	while ( SavedServerInfoValues.Pop( var ))
+	while ( SavedServerInfoValues.Size( ) > 0 )
 	{
+		var = SavedServerInfoValues[0];
+		SavedServerInfoValues.Delete( 0 );
+
 		var.Variable->SetGenericRep( var.Value, var.Type );
 		if ( var.Type == CVAR_String )
 			delete[] var.Value.String;
@@ -1818,14 +1859,22 @@ void FBaseCVar::CmdSet (const char *newval)
 	if (GetFlags() & CVAR_NOSET)
 		Printf ("%s is write protected.\n", GetName());
 	else if (GetFlags() & CVAR_LATCH)
-		Printf ("%s will be changed for next game.\n", GetName());
+	{
+		// [AK] Don't print this message on the client's end when they have RCON access
+		// and are trying to change a serverinfo CVar. They will tell the server to set
+		// this CVar and the server will print this message to them.
+		if (!(GetFlags() & (CVAR_SERVERINFO | CVAR_SENSITIVESERVERSETTING)) || (NETWORK_GetState() != NETSTATE_CLIENT) || !CLIENT_HasRCONAccess())
+			Printf ("%s will be changed for next game.\n", GetName());
+	}
 
 	// [AK] If this is a net ServerInfo CVar that was entered as a custom parameter on the
 	// command line, keep a copy of the value. We'll need to restore it once the server
 	// has read all ServerInfo CVars from its config file upon startup.
 	if ((gamestate == GS_STARTUP) && (NETWORK_GetState() == NETSTATE_SERVER))
 	{
-		if ((Flags & (CVAR_SERVERINFO | CVAR_ARCHIVE)) == (CVAR_SERVERINFO | CVAR_ARCHIVE))
+		// [AK] We'll also include compatflags and compatflags2, because compatmode is saved into
+		// the config file and screws with these two CVars during startup.
+		if ((Flags & (CVAR_SERVERINFO | CVAR_ARCHIVE)) == (CVAR_SERVERINFO | CVAR_ARCHIVE) || (this == &compatflags || this == &compatflags2))
 		{
 			FLatchedValue saved;
 			saved.Variable = this;

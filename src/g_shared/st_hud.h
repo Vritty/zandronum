@@ -71,9 +71,16 @@ bool	HUD_IsVisible( void );
 bool	HUD_IsFullscreen( void );
 
 void	HUD_Render( ULONG ulDisplayPlayer );
-void	HUD_Refresh( void );
+void	HUD_Refresh( unsigned int displayPlayer );
+void	HUD_RefreshPlayerCounts( void );
+void	HUD_ShouldRefreshBeforeRendering( void );
+void	HUD_DrawTargetName( player_t *pPlayer );
 void	HUD_DrawCoopInfo( void );
-void	HUD_DrawFragMessage( player_t *pFraggedPlayer, bool bFraggedBy );
+void	HUD_DrawStandardMessage( const char *pszMessage, EColorRange color, const bool bClearScreen = false, float fHoldTime = 3.0f, float fOutTime = 2.0f, const bool bInformClients = false );
+void	HUD_DrawCNTRMessage( const char *pszMessage, EColorRange color, float fHoldTime = 3.0f, float fOutTime = 0.25f, const bool bInformClients = false, const ULONG ulPlayerExtra = MAXPLAYERS, const ULONG ulFlags = 0 );
+void	HUD_DrawSUBSMessage( const char *pszMessage, EColorRange color, float fHoldTime = 3.0f, float fOutTime = 0.25f, const bool bInformClients = false, const ULONG ulPlayerExtra = MAXPLAYERS, const ULONG ulFlags = 0 );
+void	HUD_PrepareToDrawFragMessage( player_t *pPlayer, AActor *pSource, FName MeansOfDeath );
+void	HUD_ClearFragAndPlaceMessages( const bool bInformClients );
 bool	HUD_ShouldDrawRank( ULONG ulPlayer );
 bool	HUD_IsTied( ULONG ulPlayerNum );
 bool	HUD_IsTied( void );
@@ -82,9 +89,9 @@ ULONG	HUD_GetNumPlayers( void );
 ULONG	HUD_GetNumSpectators( void );
 ULONG	HUD_GetRank( void );
 LONG	HUD_GetSpread( void );
-void	HUD_SetRespawnTimeLeft( LONG lRespawnTime );
+void	HUD_SetRespawnTimeLeft( float fRespawnTime );
 FString	HUD_SpellOrdinal( int ranknum, bool bColored = false );
 FString HUD_BuildPointString( void );
-FString HUD_BuildPlaceString( ULONG ulPlayer );
+FString HUD_BuildPlaceString( unsigned int player, unsigned int rank, bool isTied );
 
 #endif	// __ST_HUD_H__

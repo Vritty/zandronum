@@ -291,7 +291,7 @@ enum
 	DF2_YES_FREEAIMBFG		= 1 << 8,	// Allow BFG freeaiming in multiplayer games.
 	DF2_BARRELS_RESPAWN		= 1 << 9,	// Barrels respawn (duh)
 	DF2_NO_RESPAWN_INVUL	= 1 << 10,	// No respawn invulnerability.
-	DF2_COOP_SHOTGUNSTART	= 1 << 11,	// All playres start with a shotgun when they respawn
+	DF2_SHOTGUNSTART		= 1 << 11,	// All playres start with a shotgun when they respawn
 	DF2_SAME_SPAWN_SPOT		= 1 << 12,	// Players respawn in the same place they died (co-op)
 	DF2_YES_KEEPFRAGS		= 1 << 13,	// Don't clear frags after each level
 	DF2_NO_RESPAWN			= 1 << 14,	// Player cannot respawn
@@ -389,6 +389,24 @@ enum
 
 	// [AK] Players aren't pushed by attacks caused by their teammates (e.g. BFG tracers).
 	ZADF_DONT_PUSH_ALLIES = 1 << 22,
+
+	// [AK] If enabled, the join queue is cleared between level changes.
+	ZADF_DONT_KEEP_JOIN_QUEUE = 1 << 23,
+
+	// [JS] Players can spy other players' stats in PVP gamemodes.
+	ZADF_DONT_HIDE_STATS = 1 << 24,
+
+	// [AK] Prevents player colors from being overriden.
+	ZADF_DONT_OVERRIDE_PLAYER_COLORS = 1 << 25,
+
+	// [AK] Teleport fog won't be spawned when a player does.
+	ZADF_NO_SPAWN_TELEFOG = 1 << 26,
+
+	// [AK] Ally icons won't appear over a player's head.
+	ZADF_NO_ALLY_ICONS = 1 << 27,
+
+	// [AK] Enemy icons won't appear over a player's head.
+	ZADF_NO_ENEMY_ICONS = 1 << 28,
 };
 
 // [RH] Compatibility flags.

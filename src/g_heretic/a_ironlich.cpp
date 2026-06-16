@@ -168,18 +168,29 @@ DEFINE_ACTION_FUNCTION(AActor, A_LichAttack)
 
 DEFINE_ACTION_FUNCTION(AActor, A_WhirlwindSeek)
 {
+	// [RK] Don't let the client do any of this
+	if ( NETWORK_InClientMode() )
+		return;
+
 	self->health -= 3;
 	if (self->health < 0)
 	{
 		self->velx = self->vely = self->velz = 0;
 		self->SetState (self->FindState(NAME_Death));
 		self->flags &= ~MF_MISSILE;
+
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+		{
+			SERVERCOMMANDS_MoveThingExact(self, CM_VELX|CM_VELY|CM_VELZ);
+			SERVERCOMMANDS_SetThingState(self, STATE_DEATH);
+			SERVERCOMMANDS_SetThingFlags(self, FLAGSET_FLAGS);
+		}
 		return;
 	}
 	if ((self->special2 -= 3) < 0)
 	{
 		self->special2 = 58 + (pr_seek() & 31);
-		S_Sound (self, CHAN_BODY, "ironlich/attack3", 1, ATTN_NORM);
+		S_Sound (self, CHAN_BODY, "ironlich/attack3", 1, ATTN_NORM, true); // [RK] Inform the clients.
 	}
 	if (self->tracer && self->tracer->flags&MF_SHADOW)
 	{
@@ -200,6 +211,10 @@ DEFINE_ACTION_FUNCTION(AActor, A_LichIceImpact)
 	angle_t angle;
 	AActor *shard;
 
+	// [RK] The server handles the spawning of the projectile.
+	if ( NETWORK_InClientMode() )
+		return;
+
 	for (i = 0; i < 8; i++)
 	{
 		shard = Spawn("HeadFX2", self->x, self->y, self->z, ALLOW_REPLACE);
@@ -210,6 +225,11 @@ DEFINE_ACTION_FUNCTION(AActor, A_LichIceImpact)
 		shard->velx = FixedMul (shard->Speed, finecosine[angle]);
 		shard->vely = FixedMul (shard->Speed, finesine[angle]);
 		shard->velz = -FRACUNIT*6/10;
+
+		// [RK] Spawn the missle on the clients.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+			SERVERCOMMANDS_SpawnMissileExact(shard, CM_ANGLE|CM_VELX|CM_VELY|CM_VELZ);
+
 		P_CheckMissileSpawn (shard, self->radius);
 	}
 }

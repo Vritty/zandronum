@@ -438,7 +438,7 @@ E8 PartyTime "Party Time"
 	#ED5519 #F9D300 180 256
 Console:
 	#330048 #9B0078 0 99
-	#BA0076 #ED3C19 100 179 
+	#BA0076 #ED3C19 100 179
 	#ED5519 #F9D300 180 256
 }
 
@@ -1032,7 +1032,7 @@ L0 SkulkingAbout "Skulking About"
 	#60202B #C9215C 146 256
 Console:
 	#111012 #C9215C 0 256
-} 
+}
 
 L1 Parma
 {
@@ -1073,7 +1073,7 @@ L5 FakeWater "Fake Water"
 	#005DD1 #2FCCFF 121 256
 Console:
 	#0045D1 #2FCCFF 0 256
-} 
+}
 
 L6 Bruiser
 {
@@ -1084,7 +1084,7 @@ Console:
 	#1A0000 #7C0A04 0 110
 	#8A1408 #EE6C28 111 221
 	#FD7F2D #FFCF2E 222 256
-} 
+}
 
 L7 Unidronum
 {
@@ -1095,7 +1095,7 @@ Console:
 	#000C18 #003050 0 80
 	#003C64 #408BB4 81 140
 	#549EC0 #B0F7F7 141 256
-} 
+}
 
 L8 Beetlejuice
 {
@@ -1103,7 +1103,7 @@ L8 Beetlejuice
 	#B2CCA3 #E3FFD4 121 256
 Console:
 	#292929 #E3FFD4 0 256
-} 
+}
 
 L9 GoldenNails "Golden Nails"
 {
@@ -1973,7 +1973,7 @@ V1 IvyRopes "Ivy Ropes"
 	#56792D #62B500 190 256
 Console:
 	#0D2D01 #62B500 0 256
-}  
+}
 
 V2 SleakHardware "Sleak Hardware"
 {
@@ -2439,4 +2439,992 @@ Console:
 	#611F23 #9E2F39 0 45
 	#AD3C46 #E67684 46 130
 	#F18D8F #FBCAC3 131 256
+}
+
+// =================================================================================================
+
+10 Soba
+{
+	#1F1B17 #302A23 0 59
+	#393229 #B7A58D 60 255
+Console:
+	#302A23 #B7A58D 0 255
+}
+
+11 LilacFantasy "Lilac Fantasy"
+{
+	#2E2A4D #8476C2 0 160
+	#8E86CE #A3B9E7 161 256
+Console:
+	#2E2A4D #8476C2 0 160
+	#8E86CE #A3B9E7 161 256
+}
+
+12 TangoForTwo "Tango for Two"
+{
+	#933B2F #C27E63 0 60
+	#C78768 #E1A65F 61 160
+	#E7BB70 #FFEFA1 161 256
+Console:
+	#AB5347 #C27E63 0 110
+	#C78768 #E1A65F 111 221
+	#E7BB70 #FFEFA1 222 256
+}
+
+13 Nightwatch
+{
+	#282E3A #315C55 0 155
+	#52766C #7EA890 156 256
+Console:
+	#282E3A #315C55 0 155
+	#52766C #7EA890 156 256
+}
+
+14 FleeingReality "Fleeing Reality"
+{
+	#A1205F #5D1956 0 110
+	#3C1858 #121014 111 256
+Console:
+	#121014 #A1205F 0 256
+}
+
+15 MatchaMochi "Matcha Mochi"
+{
+	#515010 #A6A86F 0 89
+	#B2B57E #E9EDD5 90 256
+Console:
+	#515010 #A0A269 0 140
+	#B2B57E #E1E4D3 141 256
+}
+
+16 Tentacoolio
+{
+	#33151D #581028 0 79
+	#672234 #A75363 80 160
+	#AA5A69 #E5D1D2 161 256
+Console:
+	#33151D #581028 0 79
+	#672234 #A75363 80 160
+	#AA5A69 #E5D1D2 161 256
+}
+
+17 Palpatine
+{
+	#1F228B #9060EA 0 130
+	#C19EF7 #F6EDFE 131 256
+Console:
+	#3C3BDA #845BE8 0 180
+	#A574F2 #F6EDFE 181 256
+}
+
+18 Arancia
+{
+	#90220F #FF551D 0 111
+	#FF5A1F #FF8B3E 112 256
+Console:
+	#90220F #FF551D 0 111
+	#FF5A1F #FF8B3E 112 256
+}
+
+19 ShakenSnowball "Shaken Snowball"
+{
+	#FDFFE4 #FDFFE4 0 10
+	#E4C600 #EAD71F 11 256
+Console:
+	#846A00 #CBD917 0 256
+}
+
+// =================================================================================================
+
+20 EDMCrusher "EDM Crusher"
+{
+	#482C67 #482C67 0 10
+	#FF88B7 #BD185E 11 177
+	#BD185E #FF88B7 178 256
+Console:
+	#D61F57 #DFBBD5 0 256
+}
+
+21 WorldOfDoom "World of Doom"
+{
+	#082939 #189BD8 0 255
+Console:
+	#082939 #189BD8 0 255
+}
+
+22 Lisianthus
+{
+	#3F2D59 #A86AAA 0 100
+	#BB7DBB #FBC6F6 101 256
+Console:
+	#3F2D59 #A86AAA 0 100
+	#BB7DBB #FBC6F6 101 256
+}
+
+23 Solisequious
+{
+	#7A2D35 #D3601E 0 78
+	#D7702D #FDA12D 79 170
+	#FFBC47 #FFE4CD 171 256
+Console:
+	#7A2D35 #D3601E 0 78
+	#D7702D #FDA12D 79 170
+	#FFBC47 #FFE4CD 171 256
+}
+
+24 Pharmariffic
+{
+	#006F2F #006F2F 0 10
+	#7CA08C #9EB8A9 11 140
+	#A6BFB1 #F1FFF7 141 256
+Console:
+	#006F2F #DFFDEC 0 256
+}
+
+25 SaltCaramel "Salt Caramel"
+{
+	#592417 #905128 0 81
+	#B36932 #C47125 82 160
+	#DB7B14 #EBA223 161 256
+Console:
+	#592417 #9B572B 0 50
+	#B36932 #C47125 51 160
+	#DB7B14 #EBA223 161 256
+}
+
+26 Ischaemia
+{
+	#BE0000 #5F0B0B 0 50
+	#360606 #8F0303 51 190
+	#050000 #8F0303 191 256
+Console:
+	#050000 #BE0000 0 256
+}
+
+27 Cyanara
+{
+	#154A4A #0B6D6C 0 50
+	#109192 #25FAF4 51 204
+	#64EFFF #E2FCFF 205 256
+Console:
+	#087473 #45ECEB 0 256
+}
+
+28 LaserPierced "Laser Pierced"
+{
+	#72FF00 #72FF00 0 10
+	#328F00 #000000 11 255
+Console:
+	#000000 #328F00 0 255
+}
+
+29 VoidMeister "Void Meister"
+{
+	#D973F2 #D973F2 0 10
+	#DA50EA #000F46 11 255
+Console:
+	#000F46 #D973F2 0 255
+}
+
+// =================================================================================================
+
+30 GlitzyGoddess "Glitzy Goddess"
+{
+	#200B06 #A10813 0 210
+	#C41624 #E76678 211 256
+Console:
+	#200B06 #A10813 0 210
+	#C41624 #EF8C9B 211 256
+}
+
+31 Quetzalcoatl
+{
+	#179AE8 #4AD9FF 0 50
+	#67EA75 #B2F327 51 159
+	#D2F935 #FFFD67 160 256
+Console:
+	#036FD2 #67EA75 0 79
+	#86FD36 #FFFD67 80 256
+}
+
+32 MomoSoftness "Momo Softness"
+{
+	#912327 #F1523E 0 87
+	#FF8456 #FFDD7B 88 256
+Console:
+	#912327 #F1523E 0 80
+	#FF8456 #FFDD7B 81 256
+}
+
+33 SweetPotato "Sweet Potato"
+{
+	#44091F #B94167 0 190
+	#D65079 #EE687E 191 256
+Console:
+	#510B26 #D55079 0 256
+}
+
+34 Seasalt
+{
+	#141E4A #3E5BA1 0 190
+	#4162A9 #5893E3 191 256
+Console:
+	#16204E #3E5BA1 0 190
+	#4162A9 #5893E3 191 256
+}
+
+35 BalloonHands "Balloon Hands"
+{
+	#D600B0 #D600B0 0 11
+	#FF00D2 #FFFFFF 12 256
+Console:
+	#D600B0 #FFFFFF 0 256
+}
+
+36 Goblin
+{
+	#311842 #59717F 0 80
+	#599885 #6EC990 81 146
+	#80DB8E #CDFFAB 147 256
+Console:
+	#4D2A65 #C5FFAB 0 256
+}
+
+37 Acacia
+{
+	#251117 #772C33 0 176
+	#82382F #A23619 177 256
+Console:
+	#251117 #A23619 0 256
+}
+
+38 Shellfish
+{
+	#251B24 #614184 0 80
+	#79548F #BC71AC 81 146
+	#D975B3 #FFDCBE 147 256
+Console:
+	#251B24 #614184 0 80
+	#79548F #BC71AC 81 146
+	#D975B3 #FFDCBE 147 256
+}
+
+39 ShrimpSpecial "Shrimp Special"
+{
+	#FFCDBE #FFCDBE 0 10
+	#ED3D33 #FE8F73 11 256
+Console:
+	#ED3D33 #FFC9BB 0 256
+}
+
+// =================================================================================================
+
+40 TwentySixteen "Twenty Sixteen"
+{
+	#251403 #382001 0 60
+	#452802 #835108 61 180
+	#8D5B0A #EAC23C 181 256
+Console:
+	#251403 #8D5B0A 0 256
+}
+
+41 Crucible
+{
+	#FFFAF8 #FFFAF8 0 10
+	#920B03 #F53724 11 256
+Console:
+	#920B03 #F53724 0 256
+}
+
+42 MotherEarth "Mother Earth"
+{
+	#F9F100 #F9F100 0 10
+	#2F1549 #8237A0 11 55
+	#8C3FAB #F98138 56 256
+Console:
+	#883E82 #F98138 0 256
+}
+
+43 DeadStar "Dead Star"
+{
+	#000000 #00001F 0 60
+	#00002B #1F007F 61 129
+	#1F007D #DF007F 130 256
+Console:
+	#1F007F #DF007F 0 256
+}
+
+44 CircleFlora "Circle Flora"
+{
+	#24552C #62D467 0 159
+	#7CED75 #DBFF98 160 256
+Console:
+	#24552C #62D467 0 159
+	#7CED75 #DBFF98 160 256
+}
+
+45 AgedSystem "Aged System"
+{
+	#433513 #E3B443 0 170
+	#EEBE4B #F9DA8F 171 256
+Console:
+	#433513 #E3B443 0 170
+	#EEBE4B #F9DA8F 171 256
+}
+
+46 JustVibing "Just Vibing"
+{
+	#03011F #290651 0 79
+	#300756 #322966 80 159
+	#2C3B68 #0E9473 160 256
+Console:
+	#34075A #159E7C 0 256
+}
+
+47 Ordertune
+{
+	#673A3A #A9787B 0 111
+	#AE8082 #D6BCBD 112 211
+	#DFD1D1 #FFFFFF 212 256
+Console:
+	#30170E #A9787B 0 111
+	#AE8082 #D6BCBD 112 256
+}
+
+48 DigitalKitsune "Digital Kitsune"
+{
+	#6B5529 #DBAF3B 0 105
+	#E4BC4B #F9D768 106 256
+Console:
+	#6B5529 #E3BE54 0 256
+}
+
+49 ToriGate "Tori Gate"
+{
+	#000000 #600D09 0 174
+	#6A0E09 #FB1C1C 175 256
+Console:
+	#000000 #DE1500 0 256
+}
+
+// =================================================================================================
+
+50 TarPit "Tar Pit"
+{
+	#000000 #1E161D 0 132
+	#2F232B #63504A 133 256
+Console:
+	#1E161D #63504A 0 256
+}
+
+51 CoredAndSeedless "Cored and Seedless"
+{
+	#384335 #4C9446 0 142
+	#69A45D #DEE3B6 143 256
+Console:
+	#384335 #4C9446 0 132
+	#69A45D #E2DCC2 133 256
+}
+
+52 ComfortInFloof "Comfort in Floof"
+{
+	#AC5156 #AC5156 0 10
+	#D17C81 #F2ABB1 11 67
+	#F2ABB1 #F9EDD5 68 100
+	#D17C81 #F9EDD5 101 150
+	#F2ABB1 #F9EDD5 151 256
+Console:
+	#AC5156 #F9EDD5 0 256
+}
+
+53 OnTheJob "On the Job"
+{
+	#000000 #0D0D0D 0 10
+	#8F1B00 #FF3000 11 256
+Console:
+	#8F1B00 #FF3000 0 256
+}
+
+54 FlippedUpside "Flipped Upside"
+{
+	#FFE92E #88C824 0 48
+	#51B61A #2E763C 49 158
+	#2A5D41 #0B3F33 159 256
+Console:
+	#113420 #B095E8 0 256
+}
+
+55 Unsettlement
+{
+	#FF57E9 #FF57E9 0 10
+	#FF0072 #20022F 11 256
+Console:
+	#20022F #FF0072 0 256
+}
+
+56 OnlyKeepsake "Only Keepsake"
+{
+	#AD7CCC #AD7CCC 0 10
+	#FFAF51 #FFCB67 11 134
+	#FFD967 #FDF3A3 135 179
+	#FFF8C1 #FFFFFF 180 256
+Console:
+	#AD7CCC #FDF3A3 0 256
+}
+
+57 SolemnCairn "Solemn Cairn"
+{
+	#1F1C1C #907772 0 65
+	#443025 #A2817E 66 256
+Console:
+	#2D2D2D #867066 0 256
+}
+
+58 Intergalastic
+{
+	#53BDFF #253CC1 0 83
+	#4E41AE #4633A9 84 166
+	#6D2A7C #F7713D 167 256
+Console:
+	#FFBA57 #1EB3DE 0 256
+}
+
+59 SoulThieveryCorp "Soul Thievery Corp"
+{
+	#E95044 #E95044 0 10
+	#110F17 #9E2952 11 256
+Console:
+	#292534 #91729B 0 256
+}
+
+60 RequestDenied "Request Denied"
+{
+	#3B3130 #905F5B 0 120
+	#B6796B #DF9995 121 199
+	#EAA4A4 #FFD1B6 200 255
+Console:
+	#3B3130 #905F5B 0 100
+	#B6796B #DF9995 101 189
+	#EAA4A4 #FFD1B6 190 255
+}
+
+61 BrutalistRitual "Brutalist Ritual"
+{
+	#36342F #71716C 0 94
+	#81827B #A2A69D 95 187
+	#505050 #F2EFE4 188 256
+Console:
+	#3B3130 #905F5B 0 256
+}
+
+62 CryForNature "Cry for Nature"
+{
+	#534B52 #69833D 0 118
+	#749846 #88C63C 119 200
+	#9BD94F #A8EC51 201 256
+Console:
+	#3D353C #88C63C 0 256
+}
+
+63 InPassing "In Passing"
+{
+	#3A2E2C #354673 0 123
+	#43537B #847896 124 200
+	#A48C96 #B48E8E 201 256
+Console:
+	#354673 #D8B0B5 0 256
+}
+
+64 MelonFizz "Melon Fizz"
+{
+	#BDF694 #BDF694 0 10
+	#046045 #47CB75 11 166
+	#5DD67C #7FEA89 167 256
+Console:
+	#046045 #5DD67C 0 256
+}
+
+65 PeachPop "Peach Pop"
+{
+	#FFC573 #FFC573 0 10
+	#AF0C46 #F56A5A 11 166
+	#F6825F #FF9A56 167 256
+Console:
+	#AF0C46 #FF9A56 0 256
+}
+
+66 Ramune
+{
+	#A0EAFF #A0EAFF 0 10
+	#532D60 #2D67FF 11 166
+	#3C7DFF #6CBCFF 167 256
+Console:
+	#532D60 #3C7DFF 0 256
+}
+
+67 BudoBuzz "Budo Buzz"
+{
+	#D198FD #D198FD 0 10
+	#7E1954 #AC2DD0 11 166
+	#B142E6 #D999FE 167 256
+Console:
+	#7E1954 #D999FE 0 256
+}
+
+68 WhatCountsInside "What Counts Inside"
+{
+	#36111B #A75559 0 178
+	#C66361 #D79178 179 256
+Console:
+	#532D60 #3C7DFF 0 256
+}
+
+69 PrettyNice "Pretty Nice"
+{
+	#FF5994 #FF8ED4 0 45
+	#FF9BDA #F0C8D7 46 99
+	#FAF3D4 #FFFFFF 100 256
+Console:
+	#FE70C7 #FFFFFF 0 256
+}
+
+// =================================================================================================
+
+70 VelvetSleeves "Velvet Sleeves"
+{
+	#120713 #311432 0 157
+	#411D3B #744556 158 256
+Console:
+	#120713 #311432 0 157
+	#411D3B #744556 158 256
+}
+
+71 Tasque'd
+{
+	#1B2433 #3E4651 0 89
+	#3C5B7B #2789BC 90 156
+	#239ED8 #31CAFF 157 200
+	#61E3FF #FFFFFF 201 256
+Console:
+	#1B2433 #4FB3E7 0 157
+}
+
+72 Sponge
+{
+	#706F15 #C9D230 0 140
+	#D6E031 #F4FF3D 141 256
+Console:
+	#597015 #E0EA34 0 256
+}
+
+73 SmokedFlesh "Smoked Flesh"
+{
+	#0A0B07 #451616 0 159
+	#661717 #D21A1A 160 256
+Console:
+	#0A0B07 #661717 0 256
+}
+
+74 Traffikljussallad
+{
+	#862600 #862600 0 10
+	#963C00 #DDB500 11 161
+	#F0D208 #B1FF28 162 256
+Console:
+	#963C00 #DDB500 0 161
+	#F0D208 #B1FF28 162 256
+}
+
+75 TheGreatWarrior "The Great Warrior"
+{
+	#591D41 #591D41 0 10
+	#872E4E #C0474E 11 99
+	#FD6A5A #FE9A3A 100 161
+	#FCBC41 #FFDF74 162 256
+Console:
+	#591D41 #872E4E 0 161
+	#C0474E #FCBC41 162 256
+}
+
+76 MegaPlumber "Mega Plumber"
+{
+	#01126A #01126A 0 10
+	#011EB3 #FF0808 11 221
+	#FF2727 #FF3D3D 222 256
+Console:
+	#01126A #FF0808 0 256
+}
+
+77 OtherPlumber "Other Plumber"
+{
+	#01126A #01126A 0 10
+	#011EB3 #00CE05 11 221
+	#00E806 #30FF35 222 256
+Console:
+	#01126A #00E806 0 256
+}
+
+78 BadAtPlumbing "Bad at Plumbing"
+{
+	#4E016A #4E016A 0 10
+	#8912B5 #D5AF00 11 187
+	#E5CB0C #FFE727 188 256
+Console:
+	#4E016A #D4BC0B 0 256
+}
+
+79 EventideFollowing "Eventide Following"
+{
+	#0A0323 #25136A 0 161
+	#371E82 #7444B5 162 256
+Console:
+	#0A0323 #25136A 0 161
+	#371E82 #7444B5 162 256
+}
+
+// =================================================================================================
+
+80 Eviterniteal // By Jimmy
+{
+	#10312B #3E8C5F 0 127
+	#3E8C5F #77FF6F 128 256
+Console:
+	#10312B #3E8C5F 0 127
+	#3E8C5F #77FF6F 128 256
+}
+
+81 AngledBloke "Angled Bloke"
+{
+	#000000 #000000 0 10
+	#4C034F #4C034F 11 127
+	#7E0F7A #7E0F7A 128 199
+	#BD1EB9 #BD1EB9 200 256
+Console:
+	#4C034F #DBDBDB 0 256
+}
+
+82 StagnantPools "Stagnant Pools"
+{
+	#1F1D1D #343C28 0 83
+	#504942 #4F6146 84 139
+	#4B5E44 #7F786C 140 199
+	#56463D #666666 200 256
+Console:
+	#1F1D1D #7F786C 0 256
+}
+
+83 Deluge
+{
+	#001F16 #0A593C 0 155
+	#15734F #25B37B 156 256
+Console:
+	#001F16 #0A593C 0 155
+	#15734F #25B37B 156 256
+}
+
+84 MutedSpaces "Muted Spaces"
+{
+	#14111D #2F2C42 0 160
+	#3C3758 #4D4969 161 256
+Console:
+	#14111D #2F2C42 0 160
+	#3C3758 #4D4969 161 256
+}
+
+85 FractalAnomaly "Fractal Anomaly"
+{
+	#071328 #373175 0 65
+	#433C8A #6456A7 66 157
+	#7462B4 #BE82D9 158 194
+	#E393EC #F6D3F7 195 256
+Console:
+	#433C8A #6456A7 0 160
+	#7462B4 #BC8BDA 161 199
+	#D99CE9 #F6D2F8 200 256
+}
+
+86 MicrotonalProtocol "Microtonal Protocol"
+{
+	#C3D1B0 #C89A8A 0 63
+	#B97083 #994082 64 187
+	#80397F #36136D 188 256
+Console:
+	#36136D #994082 0 256
+}
+
+87 JustKetchup "Just Ketchup"
+{
+	#560000 #560000 0 10
+	#8E0000 #B20000 11 127
+	#C30000 #FF2E2E 128 256
+Console:
+	#8E0000 #B20000 0 127
+	#C30000 #FF2E2E 128 256
+}
+
+88 FoolsKing "Fool's King"
+{
+	#3E2406 #7F5D2E 0 67
+	#9C7543 #C3AA4E 68 160
+	#CDBB59 #F9EFC5 161 256
+Console:
+	#3E2406 #7F5D2E 0 78
+	#9C7543 #C3AA4E 79 160
+	#CDBB59 #FBE6AD 161 256
+}
+
+89 WinterHug "Winter Hug"
+{
+	#20284B #7E8DB6 0 160
+	#9DB0D0 #DAE5F7 161 256
+Console:
+	#20284B #7E8DB6 0 160
+	#9DB0D0 #DAE5F7 161 256
+}
+
+90 SimplyBlue "Simply Blue"
+{
+	#121C33 #324E8D 0 127
+	#39599F #B6BDCC 128 256
+Console:
+	#121C33 #324E8D 0 127
+	#39599F #B6BDCC 128 256
+}
+
+91 UltimateGreen "Ultimate Green"
+{
+	#1B1F0F #526637 0 127
+	#5E743D #B4E688 128 256
+Console:
+	#1B1F0F #526637 0 127
+	#5E743D #B4E688 128 256
+}
+
+92 RoseusTenebrae "Roseus Tenebrae"
+{
+	#30292C #706A83 0 127
+	#7A7791 #E15A81 128 189
+	#FE6492 #FF9AE4 190 256
+Console:
+	#30292C #706A83 0 127
+	#7A7791 #E15A81 128 189
+	#FE6492 #FF9AE4 190 256
+}
+
+93 PastelFantasy "Pastel Fantasy"
+{
+	#E88383 #FFD6A5 0 64
+	#FDFFB6 #CAFFBF 65 127
+	#9BF6FF #B9D4FF 128 190
+	#D3C1FF #FFDDF3 191 256
+Console:
+	#B9D4FF #FFDDF3 0 256
+}
+
+94 MakingProgress "Making Progress"
+{
+	#1888C9 #1888C9 0 10
+	#01CFFE #95BAD6 11 110
+	#E6ADC0 #FEAABA 111 178
+	#FEAABA #FFFFFF 179 256
+Console:
+	#1888C9 #FEAABA 0 127
+}
+
+95 InTheSun "In the Sun"
+{
+	#A53B25 #A53B25 0 10
+	#EB8177 #F5BD9B 11 179
+	#F8D6A8 #FFF4D6 180 256
+Console:
+	#C85C4A #F8D6A8 0 127
+}
+
+96 AfternoonNap "Afternoon Nap"
+{
+	#7F101F #BC475A 0 128
+	#CB635A #F4CA94 129 256
+Console:
+	#7F101F #BC475A 0 128
+	#CB635A #F4CA94 129 256
+}
+
+97 BoozeCruise "Booze Cruise"
+{
+	#01406F #176773 0 45
+	#2B7C80 #63C771 46 128
+	#84D376 #F9FD95 129 256
+Console:
+	#01406F #176773 0 45
+	#2B7C80 #63C771 46 128
+	#84D376 #F9FD95 129 256
+}
+
+98 BnuuyOfHearts "Bnuuy of Hearts"
+{
+	#BAC2DB #BAC2DB 0 10
+	#BF2255 #F775A1 11 256
+Console:
+	#3F4152 #CDD0E6 0 256
+}
+
+99 DoYouRemember "Do You Remember"
+{
+	#4A1C1E #6B3B3B 0 78
+	#774544 #A58281 79 178
+	#B69A99 #ECE3E1 179 256
+Console:
+	#4A1C1E #6B3B3B 0 128
+	#774544 #A58281 129 178
+	#B69A99 #ECE3E1 179 256
+}
+
+// =================================================================================================
+
+00 BigBody "Big Body"
+{
+	#472522 #A64527 0 56
+	#C95527 #FC9829 57 135
+	#FCB829 #FCFB32 136 256
+Console:
+	#472522 #A64527 0 56
+	#C95527 #FC9829 57 135
+	#FCB829 #FCFB32 136 256
+}
+
+01 KunziteBlend "Kunzite Blend"
+{
+	#4C0517 #C42C69 0 165
+	#D6498B #FFFFFF 166 256
+Console:
+	#4C0517 #C42C69 0 164
+	#D6498B #FFFFFF 165 256
+}
+
+02 InvertBinary "Invert Binary"
+{
+	#FFFFFF #FFFFFF 0 10
+	#000000 #000000 11 256
+Console:
+	#FFFFFF #000000 0 256
+}
+
+03 PostTraumaticRest "Post Traumatic Rest"
+{
+	#3F2C30 #3F2C30 0 10
+	#433D9C #DB72AA 11 166
+	#DD8FA1 #EFCB79 167 256
+Console:
+	#433D9C #DB72AA 0 166
+	#DD8FA1 #EFCB79 167 256
+}
+
+04 AbbeyRoad "Abbey Road"
+{
+	#1D1A16 #3A3B3C 0 99
+	#4C5150 #586D5D 100 168
+	#488148 #75AEC9 169 256
+Console:
+	#1D1A16 #3A3B3C 0 99
+	#4C5150 #5E7165 100 168
+	#64866E #75AEC9 169 256
+}
+
+05 TsunamiEffect "Tsunami Effect"
+{
+	#0B0B0F #3F3F57 0 155
+	#474767 #8B8BCB 156 256
+Console:
+	#0B0B0F #3F3F57 0 177
+	#474767 #8B8BCB 178 256
+}
+
+06 CupOMocha "Cup O'Mocha"
+{
+	#3F231E #735340 0 126
+	#7D5B46 #AA7D5B 127 199
+	#7D5B46 #C0915A 200 256
+Console:
+	#4D2B25 #735340 0 126
+	#7D5B46 #AA7D5B 127 256
+}
+
+07 Trinket
+{
+	#1B1600 #F6CA02 0 177
+	#FFD40E #FFF7D7 178 256
+Console:
+	#1B1600 #F6CA02 0 177
+	#FFD40E #FFF7D7 178 256
+}
+
+08 GalacticBusPass "Galactic Bus Pass"
+{
+	#0B0B0F #232323 0 88
+	#373737 #6F7357 89 154
+	#637D52 #6EBC56 155 173
+	#7ECA5B #ACF86C 174 256
+Console:
+	#0B0B0F #232323 0 103
+	#373737 #6F7357 104 155
+	#479246 #6EBC56 156 199
+	#7ECA5B #ACF86C 200 256
+}
+
+09 GravityAirport "Gravity Airport"
+{
+	#0D0D0D #1C1129 0 67
+	#251631 #42366F 68 166
+	#503D80 #7653AC 167 256
+Console:
+	#131313 #3A3063 0 177
+	#42366F #7653AC 178 256
+}
+
+// =================================================================================================
+//
+// [Fuzzball] WANTED TO ADD SOME RANDOM ONES... KINDA SECRET BUT NOT REALLY IF YOU'RE READING THIS!
+//
+// =================================================================================================
+
+ZZ Spood
+{
+	#2B212A #9F156A 0 110
+	#D34194 #FFFFFF 111 256
+Console:
+	#2B212A #9F156A 0 110
+	#D34194 #FFFFFF 111 256
+}
+
+BB PhantomBrickworks "Phantom Brickworks"
+{
+	#2E3F2E #2E3F2E 0 10
+	#A99B7A #E3D7BB 11 256
+Console:
+	#2E3F2E #E3D7BB 0 256
+}
+
+MR Maractus
+{
+	#29625B #29625B 0 10
+	#4A6D37 #91C972 11 256
+Console:
+	#29625B #91C972 0 256
+}
+
+4V Zap
+{
+	#FFC600 #0E0091 0 166
+	#0B0070 #000000 167 256
+Console:
+	#0B0070 #FFC600 0 256
+}
+
+XX What
+{
+	#FC00FF #5A1414 0 100
+	#FC00FF #5A1414 101 170
+	#FC00FF #5A1414 171 256
+Console:
+	#631D6D #C70000 0 256
 }

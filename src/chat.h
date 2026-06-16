@@ -51,6 +51,7 @@
 #define __CHAT_H__
 
 #include "c_cvars.h"
+#include "c_dispatch.h"
 #include "d_event.h"
 
 //*****************************************************************************
@@ -90,6 +91,7 @@ typedef enum
 //	PROTOTYPES
 
 void		CHAT_Construct( void );
+void		CHAT_Destruct( void );
 void		CHAT_Tick( void );
 bool		CHAT_Input( event_t *pEvent );
 void		CHAT_Render( void );
@@ -100,9 +102,16 @@ const char	*CHAT_GetChatMessage( ULONG ulPlayer, ULONG ulOffset ); // [AK]
 void		CHAT_AddChatMessage( ULONG ulPlayer, const char *pszString ); // [AK]
 void		CHAT_ClearChatMessages( ULONG ulPlayer ); // [AK]
 void		CHAT_SerializeMessages( FArchive &arc ); // [AK]
+bool		CHAT_CleanChatString( FString &ChatString );
 void		CHAT_PrintChatString( ULONG ulPlayer, ULONG ulMode, const char *pszString );
 bool		CHAT_CanPrivateChatToTeammatesOnly( void );
 bool		CHAT_CanSendPrivateMessageTo( ULONG ulSender, ULONG ulReceiver );
+bool		CHAT_CanUseTeamChat( unsigned int player, bool printMessage );
+void		CHAT_IgnorePlayer( const unsigned int player, const bool ignoreVoice, const unsigned int ticks, const char *reason );
+void		CHAT_ExecuteIgnoreCmd( FCommandLine &argv, const bool isIndexCmd, const bool isVoiceCmd );
+void		CHAT_UnignorePlayer( const unsigned int player, const bool unignoreVoice );
+void		CHAT_ExecuteUnignoreCmd( FCommandLine &argv, const bool isIndexCmd, const bool isVoiceCmd );
+void		CHAT_PrintMutedMessage( const bool doVoice );
 
 //*****************************************************************************
 //  EXTERNAL CONSOLE VARIABLES

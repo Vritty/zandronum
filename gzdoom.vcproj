@@ -1089,6 +1089,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\scoreboard_margin.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\sectinfo.cpp"
 				>
 			</File>
@@ -1194,6 +1198,10 @@
 			</File>
 			<File
 				RelativePath=".\src\v_video.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\voicechat.cpp"
 				>
 			</File>
 			<File
@@ -1594,6 +1602,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\medal_enums.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\memarena.h"
 				>
 			</File>
@@ -1734,6 +1746,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\scoreboard_enums.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\sectinfo.h"
 				>
 			</File>
@@ -1839,6 +1855,10 @@
 			</File>
 			<File
 				RelativePath=".\src\vectors.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\voicechat.h"
 				>
 			</File>
 			<File
@@ -2321,10 +2341,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\g_shared\a_flags.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\src\g_shared\a_flashfader.cpp"
 				>
 			</File>
@@ -2438,6 +2454,10 @@
 			</File>
 			<File
 				RelativePath=".\src\g_shared\a_springpad.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\g_shared\a_teamitems.cpp"
 				>
 			</File>
 			<File

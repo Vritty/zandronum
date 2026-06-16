@@ -67,6 +67,15 @@ DEFINE_ACTION_FUNCTION(AActor, A_PotteryExplode)
 			mo->velz = ((pr_pottery()&7)+5)*(3*FRACUNIT/4);
 			mo->velx = (pr_pottery.Random2())<<(FRACBITS-6);
 			mo->vely = (pr_pottery.Random2())<<(FRACBITS-6);
+
+			// [RK] Clients spawn these on their own. In order to prevent the 
+			// server from printing warnings when the server calls P_ExplodeMissile,
+			// we also mark this as SERVERSIDEONLY.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+			{
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->FreeNetID();
+			}
 		}
 	}
 	S_Sound (mo, CHAN_BODY, "PotteryExplode", 1, ATTN_NORM);
@@ -156,9 +165,20 @@ void AZCorpseLynchedNoHeart::PostBeginPlay ()
 
 DEFINE_ACTION_FUNCTION(AActor, A_CorpseBloodDrip)
 {
+	AActor *mo; // [RK] Added mo
+
 	if (pr_drip() <= 128)
 	{
-		Spawn ("CorpseBloodDrip", self->x, self->y, self->z + self->height/2, ALLOW_REPLACE);
+		mo = Spawn ("CorpseBloodDrip", self->x, self->y, self->z + self->height/2, ALLOW_REPLACE);
+
+		// [RK] Clients spawn these on their own. In order to prevent the 
+		// server from printing warnings when the server calls P_ExplodeMissile,
+		// we also mark this as SERVERSIDEONLY.
+		if  ( NETWORK_GetState() == NETSTATE_SERVER && mo )
+		{
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->FreeNetID();
+		}
 	}
 }
 

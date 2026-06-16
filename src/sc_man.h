@@ -63,6 +63,9 @@ public:
 
 	bool isText();
 
+	// [AK] Gets the enumeration of the parsed string by searching through a string table, using the given "GetValueFrom" function.
+	int MustGetEnumName(const char *EnumName, const char *FlagPrefix, int (*GetValueFromName) (const char *Name), const bool StringAlreadyParse = false);
+
 	// Members ------------------------------------------------------
 	char *String;
 	int StringLen;

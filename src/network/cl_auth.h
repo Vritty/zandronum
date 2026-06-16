@@ -48,6 +48,22 @@
 #ifndef __CL_AUTH_H__
 #define __CL_AUTH_H__
 
+//*****************************************************************************
+//	PROTOTYPES
+
 void	CLIENT_ProcessSRPServerCommand( LONG lCommand, BYTESTREAM_s *pByteStream );
+void	CLIENT_LogOut( void );
+bool	CLIENT_IsLoggedIn( void );
+
+#ifdef WIN32
+void	CLIENT_RetrieveUserAndLogIn( const FString username );
+#endif
+
+//*****************************************************************************
+//	EXTERNAL CONSOLE VARIABLES
+
+#ifdef WIN32
+EXTERN_CVAR( String, login_default_user )
+#endif
 
 #endif	// __CL_AUTH_H__

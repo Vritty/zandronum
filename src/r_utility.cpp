@@ -747,6 +747,9 @@ void R_ClearPastViewer (AActor *actor)
 //
 //==========================================================================
 
+// [AK] We need chase_height to setup the free chasecam view.
+EXTERN_CVAR(Float, chase_height)
+
 void R_SetupFrame (AActor *actor)
 {
 	if (actor == NULL)
@@ -757,6 +760,7 @@ void R_SetupFrame (AActor *actor)
 	player_t *player = actor->player;
 	unsigned int newblend;
 	InterpolationViewer *iview;
+	bool usingFreeChasecam = false; // [AK]
 
 	if (player != NULL && player->mo == actor)
 	{	// [RH] Use camera instead of viewplayer
@@ -799,6 +803,9 @@ void R_SetupFrame (AActor *actor)
 		// [RH] Use chasecam view
 		P_AimCamera (camera, iview->nviewx, iview->nviewy, iview->nviewz, viewsector);
 		r_showviewer = true;
+
+		// [AK] Check if we're supposed to be using the free chasecam.
+		usingFreeChasecam = FreeChasecam::IsBeingUsed();
 	}
 	else
 	{
@@ -808,13 +815,34 @@ void R_SetupFrame (AActor *actor)
 		viewsector = camera->Sector;
 		r_showviewer = false;
 	}
-	iview->nviewpitch = camera->pitch;
+
+	// [AK] If we're using the free chasecam, calculate the pitch of the view based on its
+	// distance from the actor we're spying on.
+	if (usingFreeChasecam)
+	{
+		float fX = FIXED2FLOAT(camera->x - iview->nviewx);
+		float fY = FIXED2FLOAT(camera->y - iview->nviewy);
+		float fDist = sqrt(fX * fX + fY * fY);
+
+		fixed_t deltaZ = camera->z - camera->floorclip + camera->height + static_cast<fixed_t>(chase_height * FRACUNIT);
+		deltaZ -= iview->nviewz;
+
+		// [AK] Calculate the angle. Keep in mind that the pitch's sign is reversed (i.e. up is negative)!
+		iview->nviewpitch = R_PointToAngle2(0, 0, FLOAT2FIXED(fDist), -deltaZ);
+	}
+	else
+	{
+		iview->nviewpitch = camera->pitch;
+	}
+
 	if (camera->player != 0)
 	{
 		player = camera->player;
 	}
 
-	iview->nviewangle = camera->angle;
+	// [AK] If we're using the free chasecam, use our own angle instead of the actor's who we're spying.
+	iview->nviewangle = usingFreeChasecam ? FreeChasecam::cameraAngle : camera->angle;
+
 	if (iview->otic == -1 || r_NoInterpolate)
 	{
 		R_ResetViewInterpolation ();
@@ -841,19 +869,24 @@ void R_SetupFrame (AActor *actor)
 	interpolator.DoInterpolations (r_TicFrac);
 
 	// Keep the view within the sector's floor and ceiling
-	fixed_t theZ = viewsector->ceilingplane.ZatPoint (viewx, viewy) - 4*FRACUNIT;
-	if (viewz > theZ)
+	// [AK] Allow spectators without physical restrictions to pass through floors/ceilings.
+	if (P_IsSpectatorUnrestricted(camera) == false)
 	{
-		viewz = theZ;
+		fixed_t theZ = viewsector->ceilingplane.ZatPoint (viewx, viewy) - 4*FRACUNIT;
+		if (viewz > theZ)
+		{
+			viewz = theZ;
+		}
+
+		theZ = viewsector->floorplane.ZatPoint (viewx, viewy) + 4*FRACUNIT;
+		if (viewz < theZ)
+		{
+			viewz = theZ;
+		}
 	}
 
-	theZ = viewsector->floorplane.ZatPoint (viewx, viewy) + 4*FRACUNIT;
-	if (viewz < theZ)
-	{
-		viewz = theZ;
-	}
-
-	if (!paused)
+	// [AK] Don't apply earthquake effects to free-roaming spectators.
+	if (!paused && ((camera->player == nullptr) || (camera->player->bSpectating == false)))
 	{
 		int intensity = DEarthquake::StaticGetQuakeIntensity (camera);
 		if (intensity != 0)

@@ -140,16 +140,20 @@ void FGLRenderer::SetViewArea()
 	viewsector = R_PointInSubsector(viewx, viewy)->render_sector;
 
 	// keep the view within the render sector's floor and ceiling
-	fixed_t theZ = viewsector->ceilingplane.ZatPoint (viewx, viewy) - 4*FRACUNIT;
-	if (viewz > theZ)
+	// [AK] Allow spectators without physical restrictions to pass through floors/ceilings.
+	if (P_IsSpectatorUnrestricted(mViewActor) == false)
 	{
-		viewz = theZ;
-	}
+		fixed_t theZ = viewsector->ceilingplane.ZatPoint (viewx, viewy) - 4*FRACUNIT;
+		if (viewz > theZ)
+		{
+			viewz = theZ;
+		}
 
-	theZ = viewsector->floorplane.ZatPoint (viewx, viewy) + 4*FRACUNIT;
-	if (viewz < theZ)
-	{
-		viewz = theZ;
+		theZ = viewsector->floorplane.ZatPoint (viewx, viewy) + 4*FRACUNIT;
+		if (viewz < theZ)
+		{
+			viewz = theZ;
+		}
 	}
 
 	// Get the heightsec state from the render sector, not the current one!
@@ -406,6 +410,9 @@ void FGLRenderer::RenderScene(int recursion)
 	glDisable(GL_POLYGON_OFFSET_FILL);	// just in case
 
 	int pass;
+
+	// [AK] Take care of gl_texture and ZADF_FORCE_VIDEO_DEFAULTS.
+	OVERRIDE_GL_TEXTURE_IF_NECESSARY
 
 	if (mLightCount > 0 && gl_fixedcolormap == CM_DEFAULT && gl_lights && gl_dynlight_shader)
 	{

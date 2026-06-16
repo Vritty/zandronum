@@ -2,6 +2,7 @@
 #include "info.h"
 #include "m_random.h"
 #include "m_fixed.h"
+#include "network.h" // [RK] Added include
 
 static FRandom pr_dirt ("SpawnDirt");
 
@@ -49,6 +50,15 @@ void P_SpawnDirt (AActor *actor, fixed_t radius)
 		mo = Spawn (dtype, x, y, z, ALLOW_REPLACE);
 		if (mo)
 		{
+			// [RK] Clients spawn these on their own. In order to prevent the 
+			// server from printing warnings when the server calls P_ExplodeMissile,
+			// we also mark this as SERVERSIDEONLY.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+			{
+				mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+				mo->FreeNetID();
+			}
+
 			mo->velz = pr_dirt()<<10;
 		}
 	}

@@ -72,6 +72,7 @@ void JOINQUEUE_Construct( void );
 
 void JOINQUEUE_RemovePlayerFromQueue ( unsigned int player );
 void JOINQUEUE_RemovePlayerAtPosition ( unsigned int position );
+void JOINQUEUE_PlayerJoinsAtPosition( const unsigned int position );
 void JOINQUEUE_PlayerLeftGame( int player, bool pop );
 void JOINQUEUE_PopQueue( int slotCount );
 unsigned int JOINQUEUE_AddPlayer( unsigned int player, unsigned int team );

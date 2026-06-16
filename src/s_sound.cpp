@@ -144,6 +144,9 @@ FBoolCVar noisedebug ("noise", false, 0);	// [RH] Print sound debugging info?
 CVAR (Int, snd_channels, 32, CVAR_ARCHIVE|CVAR_GLOBALCONFIG)	// number of channels available
 CVAR (Bool, snd_flipstereo, false, CVAR_ARCHIVE|CVAR_GLOBALCONFIG)
 
+// [AK] Prevents any music changes as if a playlist was playing, originally from ZCC.
+CVAR (Bool, snd_lockmusic, false, CVAR_ARCHIVE);
+
 // CODE --------------------------------------------------------------------
 
 //==========================================================================
@@ -1328,10 +1331,14 @@ void S_Sound (const FPolyObj *poly, int channel, FSoundID sound_id, float volume
 //
 //==========================================================================
 
-void S_Sound (fixed_t x, fixed_t y, fixed_t z, int channel, FSoundID sound_id, float volume, float attenuation)
+void S_Sound (fixed_t x, fixed_t y, fixed_t z, int channel, FSoundID sound_id, float volume, float attenuation, bool bSoundOnClient) // [RK] Added bSoundOnClient.
 {
 	FVector3 pt(FIXED2FLOAT(x), FIXED2FLOAT(z), FIXED2FLOAT(y));
 	S_StartSound (NULL, NULL, NULL, &pt, channel, sound_id, volume, attenuation);
+
+	// [RK] Instruct the clients to play the sound.
+	if (bSoundOnClient && (NETWORK_GetState() == NETSTATE_SERVER))
+		SERVERCOMMANDS_SoundPoint(x, y, z, channel, S_GetName(sound_id), volume, attenuation);
 }
 
 //==========================================================================
@@ -2103,8 +2110,36 @@ void S_UpdateSounds (AActor *listenactor)
 		S_ActivatePlayList(false);
 	}
 
+	// [AK] Variables that are only relevant when using the free chasecam.
+	bool usingFreeChasecam = false;
+	fixed_t oldAngle = 0;
+	fixed_t oldPitch = 0;
+
+	// [AK] If the free chasecam is being used by the listening actor, set
+	// their angle and pitch to match that of the free chasecam.
+	if ((listenactor != nullptr) && (listenactor == players[consoleplayer].camera))
+	{
+		usingFreeChasecam = FreeChasecam::IsBeingUsed();
+
+		if (usingFreeChasecam)
+		{
+			oldAngle = listenactor->angle;
+			listenactor->angle = FreeChasecam::cameraAngle;
+
+			oldPitch = listenactor->pitch;
+			listenactor->pitch = FreeChasecam::cameraPitch;
+		}
+	}
+
 	// should never happen
 	S_SetListener(listener, listenactor);
+
+	// [AK] Restore the listening actor's angle and pitch if necessary.
+	if (usingFreeChasecam)
+	{
+		listenactor->angle = oldAngle;
+		listenactor->pitch = oldPitch;
+	}
 
 	for (FSoundChan *chan = Channels; chan != NULL; chan = chan->NextChan)
 	{
@@ -2540,7 +2575,8 @@ bool S_ChangeMusic (const char *musicname, int order, bool looping, bool force)
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return ( false );
 
-	if (!force && PlayList)
+	// [AK] Don't change if we also want to lock the music.
+	if (!force && ( PlayList || snd_lockmusic ))
 	{ // Don't change if a playlist is active
 		return false;
 	}

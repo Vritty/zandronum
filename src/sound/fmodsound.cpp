@@ -65,6 +65,8 @@ extern HWND Window;
 #include "v_palette.h"
 #include "cmdlib.h"
 #include "s_sound.h"
+// [AK] New #includes.
+#include "voicechat.h"
 
 #if FMOD_VERSION > 0x42899 && FMOD_VERSION < 0x43600
 #error You are trying to compile with an unsupported version of FMOD.
@@ -1194,6 +1196,10 @@ bool FMODSoundRenderer::Init()
 	Sys->set3DSettings(0.5f, 96.f, 1.f);
 	Sys->set3DRolloffCallback(RolloffCallback);
 	snd_sfxvolume.Callback ();
+
+	// [AK] Initialize the VoIP controller after initializing FMOD.
+	VOIPController::GetInstance( ).Init( Sys );
+
 	return true;
 }
 
@@ -1237,6 +1243,9 @@ void FMODSoundRenderer::Shutdown()
 			SfxReverbPlaceholder->release();
 			SfxReverbPlaceholder = NULL;
 		}
+
+		// [AK] Shut down the VoIP controller.
+		VOIPController::GetInstance( ).Shutdown( );
 
 		Sys->close();
 		if (OutputPlugin != 0)
@@ -2233,6 +2242,7 @@ void FMODSoundRenderer::UpdateListener(SoundListener *listener)
 	FMOD_VECTOR pos, vel;
 	FMOD_VECTOR forward;
 	FMOD_VECTOR up;
+	float sfxPitch = 0.0f; // [AK]
 
 	if (!listener->valid)
 	{
@@ -2333,6 +2343,10 @@ void FMODSoundRenderer::UpdateListener(SoundListener *listener)
 			}
 		}
 	}
+
+	// [AK] Update the pitch of the VoIP controller to match that of the SFX.
+	if ( PausableSfx->getPitch( &sfxPitch ) == FMOD_OK )
+		VOIPController::GetInstance( ).SetPitch( sfxPitch );
 }
 
 //==========================================================================
@@ -2425,6 +2439,10 @@ void FMODSoundRenderer::Sync(bool sync)
 
 void FMODSoundRenderer::UpdateSounds()
 {
+	// [AK] Check if any VoIP channels should still play in 3D mode, and
+	// update the 3D attributes of those that can.
+	VOIPController::GetInstance( ).UpdateProximityChat( );
+
 	// Any sounds played between now and the next call to this function
 	// will start exactly one tic from now.
 	Sys->getDSPClock(&DSPClock.Hi, &DSPClock.Lo);

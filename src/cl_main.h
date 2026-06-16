@@ -89,6 +89,16 @@ enum CONNECTIONSTATE_e
 
 };
 
+// [AK] Information that the client can tell the server to (un)hide.
+enum
+{
+	// Their account name.
+	HIDEINFO_ACCOUNTNAME,
+
+	// Their country.
+	HIDEINFO_COUNTRY,
+};
+
 //[BB] Client connect flags.
 enum
 {
@@ -123,7 +133,6 @@ void				CLIENT_EndTick( void );
 CONNECTIONSTATE_e	CLIENT_GetConnectionState( void );
 void				CLIENT_SetConnectionState( CONNECTIONSTATE_e State );
 NETBUFFER_s			*CLIENT_GetLocalBuffer( void );
-void				CLIENT_SetLocalBuffer( NETBUFFER_s *pBuffer );
 ULONG				CLIENT_GetLastServerTick( void );
 void				CLIENT_SetLastServerTick( ULONG ulTick );
 ULONG				CLIENT_GetLastConsolePlayerUpdateTick( void );
@@ -155,16 +164,17 @@ bool				CLIENT_ReadPacketHeader( BYTESTREAM_s *pByteStream );
 void				CLIENT_ParsePacket( BYTESTREAM_s *pByteStream, bool bSequencedPacket );
 void				CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream );
 void				CLIENT_PrintCommand( LONG lCommand );
+void				CLIENT_RestoreServerInfoCVars( void );
 void				CLIENT_QuitNetworkGame( const char *pszError );
 void				CLIENT_SendCmd( void );
 void				CLIENT_WaitForServer( void );
 
 // Support functions to make things work more smoothly.
 void				CLIENT_AuthenticateLevel( const char *pszMapName );
-AActor				*CLIENT_SpawnThing( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z, LONG lNetID, BYTE spawnFlags = 0 );
-void				CLIENT_SpawnMissile( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z, fixed_t VelX, fixed_t VelY, fixed_t VelZ, LONG lNetID, LONG lTargetNetID );
+AActor				*CLIENT_SpawnThing( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z, unsigned short netID, BYTE spawnFlags = 0 );
+void				CLIENT_SpawnMissile( const PClass *pType, fixed_t X, fixed_t Y, fixed_t Z, fixed_t VelX, fixed_t VelY, fixed_t zelZ, unsigned short netID, unsigned short targetNetID );
 void				CLIENT_MoveThing( AActor *pActor, fixed_t X, fixed_t Y, fixed_t Z );
-AActor				*CLIENT_FindThingByNetID( LONG lID );
+AActor				*CLIENT_FindThingByNetID( unsigned short netID );
 void				CLIENT_RestoreSpecialPosition( AActor *pActor );
 void				CLIENT_RestoreSpecialDoomThing( AActor *pActor, bool bFog );
 AInventory			*CLIENT_FindPlayerInventory( ULONG ulPlayer, const PClass *pType );
@@ -186,7 +196,7 @@ void				CLIENT_ClearAllPlayers( void );
 void				CLIENT_LimitProtectedCVARs( void );
 bool				CLIENT_CanClipMovement( AActor *pActor );
 void STACK_ARGS		CLIENT_PrintWarning( const char* format, ... ) GCCPRINTF( 1, 2 );
-bool				CLIENT_ReadActorFromNetID( int netid, const PClass *subclass, bool allowNull, AActor *&actor,
+bool				CLIENT_ReadActorFromNetID( unsigned short netID, const PClass *subclass, bool allowNull, AActor *&actor,
 											   const char *commandName = "CLIENT_ReadActorFromNetID",
 											   const char *parameterName = "actor" );
 bool				CLIENT_HasRCONAccess();

@@ -295,6 +295,11 @@ static void SpawnFly(AActor *self, const PClass *spawntype, FSoundID sound)
 		newmobj = Spawn (spawntype, targ->x, targ->y, targ->z, ALLOW_REPLACE);
 		if (newmobj != NULL)
 		{
+			// [BC] If we're the server, tell clients to spawn the new monster.
+			// [RK] We'll spawn it on the clients now since CallAction will move it.
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
+				SERVERCOMMANDS_SpawnThing( newmobj );
+
 			// Make the new monster hate what the boss eye hates
 			if (eye != NULL)
 			{
@@ -313,13 +318,18 @@ static void SpawnFly(AActor *self, const PClass *spawntype, FSoundID sound)
 				// telefrag anything in this spot
 				P_TeleportMove (newmobj, newmobj->x, newmobj->y, newmobj->z, true);
 
-				// [BC] If we're the server, tell clients to spawn the new monster.
+				// [RK] The server updates the state info to the clients.
 				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 				{
-					SERVERCOMMANDS_SpawnThing( newmobj );
 					if ( newmobj->state == newmobj->SeeState )
 						SERVERCOMMANDS_SetThingState( newmobj, STATE_SEE );
 				}
+			}
+			else
+			{
+				// [RK] IF for some reason the monster wants to die at this point we'll remove it
+				if ( NETWORK_GetState( ) == NETSTATE_SERVER )
+					SERVERCOMMANDS_DestroyThing( newmobj );
 			}
 			newmobj->flags4 |= MF4_BOSSSPAWNED;
 		}

@@ -848,6 +848,15 @@ DEFINE_PROPERTY(hitobituary, S, Actor)
 }
 
 //==========================================================================
+// [SB]
+//==========================================================================
+DEFINE_PROPERTY(selfobituary, S, Actor)
+{
+	PROP_STRING_PARM(str, 0);
+	info->Class->Meta.SetMetaString (AMETA_SelfObituary, str);
+}
+
+//==========================================================================
 //
 //==========================================================================
 DEFINE_PROPERTY(donthurtshooter, 0, Actor)
@@ -2836,4 +2845,90 @@ DEFINE_CLASS_PROPERTY_PREFIX( player, maxskinsizefactor, F_F, PlayerPawn )
 	info->Class->Meta.SetMetaFixed( APMETA_MaxSkinHeightFactor, heightfactor );
 }
 
+//==========================================================================
+// [AK]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(stillbobspeed, F, Weapon)
+{
+	PROP_FIXED_PARM(i, 0);
+	defaults->StillBobSpeed = i;
+}
 
+//==========================================================================
+// [AK]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(stillbobrange, F, Weapon)
+{
+	PROP_FIXED_PARM(i, 0);
+	defaults->StillBobRange = i;
+}
+
+//==========================================================================
+// [JM]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(swaystyle, S, Weapon)
+{
+	static const char* names[] = { "Normal", "DownOnly", "UpOnly", "HorizontalOnly", NULL };
+	static const int styles[] = { WEAPON_SWAY_NORMAL, WEAPON_SWAY_DOWNONLY, WEAPON_SWAY_UPONLY, WEAPON_SWAY_HORIZONTALONLY };
+	PROP_STRING_PARM(id, 0);
+	int match = MatchString(id, names);
+	if (match < 0)
+	{
+		I_Error("Unknown swaystyle %s", id);
+		match = 0;
+	}
+	defaults->SwayStyle = styles[match];
+}
+
+//==========================================================================
+// [JM]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(viewswayspeed, F, Weapon)
+{
+	PROP_FIXED_PARM(i, 0);
+	defaults->ViewSwaySpeed = i;
+}
+
+//==========================================================================
+// [AK]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(motionswayspeed, F, Weapon)
+{
+	PROP_FIXED_PARM(i, 0);
+	defaults->MotionSwaySpeed = i;
+}
+
+//==========================================================================
+// [AK]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(jumpswayspeed, F, Weapon)
+{
+	PROP_FIXED_PARM(i, 0);
+	defaults->JumpSwaySpeed = i;
+}
+
+//==========================================================================
+// [JM]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(viewpitchstyle, S, Weapon)
+{
+	static const char* names[] = { "Full", "UpOnly", "DownOnly", "DownAndUp", "Centered", NULL };
+	static const int styles[] = { WEAPON_PITCH_FULL, WEAPON_PITCH_UPONLY, WEAPON_PITCH_DOWNONLY, WEAPON_PITCH_DOWNANDUP, WEAPON_PITCH_CENTERED };
+	PROP_STRING_PARM(id, 0);
+	int match = MatchString(id, names);
+	if (match < 0)
+	{
+		I_Error("Unknown viewpitchstyle %s", id);
+		match = 0;
+	}
+	defaults->ViewPitchStyle = styles[match];
+}
+
+//==========================================================================
+// [JM]
+//==========================================================================
+DEFINE_CLASS_PROPERTY(viewpitchoffset, F, Weapon)
+{
+	PROP_FIXED_PARM(i, 0);
+	defaults->ViewPitchOffset = i;
+}

@@ -102,11 +102,9 @@ void BROWSER_Construct( void )
 
 	// Setup our master server message buffer.
 	g_MasterServerBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-	g_MasterServerBuffer.Clear();
 
 	// Setup our server message buffer.
 	g_ServerBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-	g_ServerBuffer.Clear();
 
 	// Allow the user to specify which port the master server is on.
 	pszPort = Args->CheckValue( "-masterport" );
@@ -226,7 +224,7 @@ LONG BROWSER_GetNumPWADs( ULONG ulServer )
 	if (( ulServer >= MAX_BROWSER_SERVERS ) || ( g_BrowserServerList[ulServer].ulActiveState != AS_ACTIVE ))
 		return ( false );
 
-	return ( g_BrowserServerList[ulServer].lNumPWADs );
+	return ( g_BrowserServerList[ulServer].PWADNames.Size( ));
 }
 
 //*****************************************************************************
@@ -234,6 +232,10 @@ LONG BROWSER_GetNumPWADs( ULONG ulServer )
 const char *BROWSER_GetPWADName( ULONG ulServer, ULONG ulWadIdx )
 {
 	if (( ulServer >= MAX_BROWSER_SERVERS ) || ( g_BrowserServerList[ulServer].ulActiveState != AS_ACTIVE ))
+		return ( " " );
+
+	// [SB] Also check the index is valid.
+	if ( ulWadIdx >= g_BrowserServerList[ulServer].PWADNames.Size())
 		return ( " " );
 
 	return ( g_BrowserServerList[ulServer].PWADNames[ulWadIdx].GetChars( ));
@@ -339,6 +341,34 @@ const char *BROWSER_GetVersion( ULONG ulServer )
 		return ( " " );
 
 	return ( g_BrowserServerList[ulServer].Version.GetChars( ));
+}
+
+//*****************************************************************************
+// [SB]
+const char *BROWSER_GetGameModeName( ULONG ulServer )
+{
+	if (( ulServer >= MAX_BROWSER_SERVERS ) || ( g_BrowserServerList[ulServer].ulActiveState != AS_ACTIVE ))
+		return ( " " );
+
+	// [SB] If the server didn't specify the name, use the name we know this mode by.
+	if ( g_BrowserServerList[ulServer].GameModeName.IsEmpty( ))
+		return ( GAMEMODE_GetName( g_BrowserServerList[ulServer].GameMode ));
+
+	return ( g_BrowserServerList[ulServer].GameModeName.GetChars( ));
+}
+
+//*****************************************************************************
+// [SB]
+const char *BROWSER_GetGameModeShortName( ULONG ulServer )
+{
+	if (( ulServer >= MAX_BROWSER_SERVERS ) || ( g_BrowserServerList[ulServer].ulActiveState != AS_ACTIVE ))
+		return ( " " );
+
+	// [SB] If the server didn't specify the name, use the name we know this mode by.
+	if ( g_BrowserServerList[ulServer].GameModeShortName.IsEmpty( ))
+		return ( GAMEMODE_GetShortName( g_BrowserServerList[ulServer].GameMode ));
+
+	return ( g_BrowserServerList[ulServer].GameModeShortName.GetChars( ));
 }
 
 //*****************************************************************************
@@ -543,10 +573,11 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 	// Read in the PWAD information.
 	if ( ulFlags & SQF_PWADS )
 	{
-		g_BrowserServerList[lServer].lNumPWADs = pByteStream->ReadByte();
-		if ( g_BrowserServerList[lServer].lNumPWADs > 0 )
+		ULONG ulNumPWADs = static_cast<ULONG>( pByteStream->ReadByte() );
+		if ( ulNumPWADs > 0 )
 		{
-			for ( ulIdx = 0; ulIdx < (ULONG)g_BrowserServerList[lServer].lNumPWADs; ulIdx++ )
+			g_BrowserServerList[lServer].PWADNames.Resize( ulNumPWADs );
+			for ( ulIdx = 0; ulIdx < ulNumPWADs; ulIdx++ )
 				g_BrowserServerList[lServer].PWADNames[ulIdx] = pByteStream->ReadString();
 		}
 	}
@@ -748,6 +779,17 @@ void BROWSER_ParseServerQuery( BYTESTREAM_s *pByteStream, bool bLAN )
 			char code[3];
 			pByteStream->ReadBuffer( code, 3 );
 		}
+
+		// [SB] Game mode names
+		if ( ulFlags2 & SQF2_GAMEMODE_NAME )
+		{
+			g_BrowserServerList[lServer].GameModeName = pByteStream->ReadString();
+		}
+
+		if ( ulFlags2 & SQF2_GAMEMODE_SHORTNAME )
+		{
+			g_BrowserServerList[lServer].GameModeShortName = pByteStream->ReadString();
+		}
 	}
 
 	// Now that this server has been read in, resort the servers in the menu.
@@ -856,10 +898,12 @@ static void browser_QueryServer( ULONG ulServer )
 	}
 
 	// Clear out the buffer, and write out launcher challenge.
+	// [SB] Added extended flags that we want.
 	g_ServerBuffer.Clear();
 	g_ServerBuffer.ByteStream.WriteLong( LAUNCHER_SERVER_CHALLENGE );
-	g_ServerBuffer.ByteStream.WriteLong( SQF_NAME|SQF_URL|SQF_EMAIL|SQF_MAPNAME|SQF_MAXCLIENTS|SQF_PWADS|SQF_GAMETYPE|SQF_IWAD|SQF_NUMPLAYERS|SQF_PLAYERDATA );
+	g_ServerBuffer.ByteStream.WriteLong( SQF_NAME|SQF_URL|SQF_EMAIL|SQF_MAPNAME|SQF_MAXCLIENTS|SQF_PWADS|SQF_GAMETYPE|SQF_IWAD|SQF_NUMPLAYERS|SQF_PLAYERDATA|SQF_EXTENDED_INFO );
 	g_ServerBuffer.ByteStream.WriteLong( I_MSTime( ));
+	g_ServerBuffer.ByteStream.WriteLong( SQF2_GAMEMODE_NAME|SQF2_GAMEMODE_SHORTNAME );
 
 	// Send the server our packet.
 	NETWORK_LaunchPacket( &g_ServerBuffer, g_BrowserServerList[ulServer].Address );
@@ -886,8 +930,8 @@ CCMD( dumpserverlist )
 		Printf( "\nServer #%d\n----------------\n", static_cast<unsigned int> (ulIdx) );
 		Printf( "Name: %s\n", g_BrowserServerList[ulIdx].HostName.GetChars() );
 		Printf( "Address: %s\n", g_BrowserServerList[ulIdx].Address.ToString() );
-		Printf( "Gametype: %d\n", g_BrowserServerList[ulIdx].GameMode );
-		Printf( "Num PWADs: %d\n", static_cast<int> (g_BrowserServerList[ulIdx].lNumPWADs) );
+		Printf( "Gametype: %d (%s)\n", g_BrowserServerList[ulIdx].GameMode, BROWSER_GetGameModeName(ulIdx) );
+		Printf( "Num PWADs: %d\n", static_cast<int> (g_BrowserServerList[ulIdx].PWADNames.Size()) );
 		Printf( "Players: %d/%d\n", static_cast<int> (g_BrowserServerList[ulIdx].lNumPlayers), static_cast<int> (g_BrowserServerList[ulIdx].lMaxClients) );
 		Printf( "Ping: %d\n", static_cast<int> (g_BrowserServerList[ulIdx].lPing) );
 	}

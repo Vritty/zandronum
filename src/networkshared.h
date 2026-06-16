@@ -133,6 +133,10 @@ enum
 
 	// [BB] Server is acknowledging the receipt of a ban list.
 	SERVER_MASTER_BANLIST_RECEIPT,
+
+	// [SB] Server is sending a launcher a segmented response.
+	// Skipped 5660031 for compatiblity with old segmented implementation.
+	SERVER_LAUNCHER_CHALLENGE_SEGMENTED = 5660032,
 };
 
 // [BB] Protocol version of the master server, currently only used in conjunction with LAUNCHER_MASTER_CHALLENGE.
@@ -191,10 +195,6 @@ class IPStringArray
 private:
 	char szAddress[4][4];
 
-	const char* operator[] ( int i ) const
-	{
-		return szAddress[i];
-	}
 public:
 
 	void Clear()
@@ -254,6 +254,14 @@ public:
 		return os << szAddress[0] << "." << szAddress[1] << "." << szAddress[2] << "." << szAddress[3];
 	}
 
+	const char* operator[] ( int i ) const
+	{
+		if (( i < 0 ) || ( i >= 4 ))
+			return nullptr;
+
+		return szAddress[i];
+	}
+
 	operator std::string () const
 	{
 		std::string stringRepresentation;
@@ -309,6 +317,8 @@ struct IPADDRESSBAN_s
 	// [RC] Time that the ban expires, or NULL for an infinite ban.
 	time_t		tExpirationDate;
 
+	// [AK] Returns the expiration date and time as a string.
+	std::string GetExpirationAsString( void ) const;
 };
 
 //*****************************************************************************
@@ -483,8 +493,9 @@ public:
 	unsigned int	size() const { return static_cast<unsigned int>( _ipVector.size( )); }
 	void			clear() { _ipVector.clear(); }
 	void			push_back ( IPADDRESSBAN_s &IP ) { _ipVector.push_back(IP); }
-	const char*		getErrorMessage() const { return _error.c_str(); }
-	
+	const char		*getErrorMessage() const { return _error.c_str(); }
+	const char		*getFilename() const { return _filename.c_str(); } // [AK]
+
 	std::vector<IPADDRESSBAN_s>&	getVector() { return _ipVector; }
 
 //*************************************************************************
@@ -510,7 +521,7 @@ class QueryIPQueue
 		NETADDRESS_s		Address;
 
 		// Expiration date.
-		long				lNextAllowedTime;
+		unsigned long		nextAllowedTime;
 
 	};
 
@@ -521,21 +532,21 @@ class QueryIPQueue
 	STORED_QUERY_IP_t			_IPQueue[MAX_QUERY_IPS];
 
 	// Head and tail of the queue.
-	unsigned int				_iQueueHead;
-	unsigned int				_iQueueTail;
+	unsigned int				_queueHead;
+	unsigned int				_queueTail;
 
 	// How long entries will last (seconds).
-	unsigned int				_iEntryLength;
+	unsigned int				_entryLength;
 
 //*************************************************************************
 public:
-	QueryIPQueue( int iEntryLength ) : _iQueueHead( 0 ), _iQueueTail( 0 ), _iEntryLength( iEntryLength )
+	QueryIPQueue( int entryLength ) : _queueHead( 0 ), _queueTail( 0 ), _entryLength( entryLength )
 	{
 	}
 
-	void	adjustHead( const LONG CurrentTime );
+	void	adjustHead( const unsigned long currentTime );
 	bool	addressInQueue( const NETADDRESS_s AddressFrom ) const;
-	void	addAddress( const NETADDRESS_s AddressFrom, const LONG lCurrentTime, std::ostream *errorOut = NULL );
+	void	addAddress( const NETADDRESS_s AddressFrom, const unsigned long currentTime, std::ostream *errorOut = NULL );
 	bool	isFull( ) const;
 };
 

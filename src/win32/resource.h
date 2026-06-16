@@ -38,7 +38,6 @@
 #define IDD_BANLIST                     155
 #define IDD_KICKBAN		                156
 #define IDD_CHANGEMAP                   157
-#define IDD_EDITBAN                     159
 #define IDD_GENERALSETTINGS             160
 
 // 161 was the old kick dialog, which
@@ -95,7 +94,6 @@
 #define IDC_BANFILE                     1049
 #define IDC_REASON                      1049
 #define IDC_MAPNAME                     1049
-#define IDC_BANBOX                      1049
 #define IDC_INPUTBOX                    1049
 #define IDC_LOGFILE                     1049
 #define IDC_PASSWORD                    1049

@@ -83,7 +83,7 @@ void A_Unblock(AActor *self, bool drop, bool okforclients) // [EP] Added 'okforc
 
 		// [EP] Inform the clients if needed.
 		if ( NETWORK_GetState() == NETSTATE_SERVER )
-			SERVERCOMMANDS_FlashStealthMonster( self );
+			SERVERCOMMANDS_FlashStealthMonster( self, self->visdir );
 	}
 
 	// [EP] Save the previous flags.

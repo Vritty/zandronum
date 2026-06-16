@@ -163,7 +163,7 @@ bool COOP_PlayersVoodooDollsNeedToBeSpawned ( const ULONG ulPlayer )
 void COOP_SpawnVoodooDollsForPlayerIfNecessary ( const ULONG ulPlayer, const bool bSpawnEvenIfPlayerIsNotIngame )
 {
 	// [BB] Only the server spawns voodoo dolls.
-	if ( NETWORK_GetState() != NETSTATE_SERVER )
+	if ( NETWORK_GetState() != NETSTATE_SERVER && NETWORK_GetState() != NETSTATE_SINGLE_MULTIPLAYER )
 		return;
 
 	// [BB] The current game mode doesn't need voodoo dolls.
@@ -196,8 +196,8 @@ void COOP_SpawnVoodooDollsForPlayerIfNecessary ( const ULONG ulPlayer, const boo
 
 			// [BB] The clients will not spawn the doll, so mark it accordingly and free it's network ID.
 			pDoll->NetworkFlags |= NETFL_SERVERSIDEONLY;
-			g_NetIDList.freeID ( pDoll->NetID );
-			pDoll->NetID = -1;
+			g_ActorNetIDList.freeID ( pDoll->NetID );
+			pDoll->NetID = 0;
 
 			// [BB] If we would just set the player pointer to NULL, a lot of things wouldn't work
 			// at all for the voodoo dolls (e.g. floor scrollers), so we set it do a pointer to a

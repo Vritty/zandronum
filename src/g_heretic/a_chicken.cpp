@@ -106,6 +106,15 @@ DEFINE_ACTION_FUNCTION(AActor, A_Feathers)
 		mo->vely = pr_feathers.Random2() << 8;
 		mo->velz = FRACUNIT + (pr_feathers() << 9);
 		mo->SetState (mo->SpawnState + (pr_feathers()&7));
+
+		// [RK] Clients spawn these on their own. In order to prevent the 
+		// server from printing warnings when the server calls P_ExplodeMissile,
+		// we also mark this as SERVERSIDEONLY.
+		if ( NETWORK_GetState() == NETSTATE_SERVER )
+		{
+			mo->NetworkFlags |= NETFL_SERVERSIDEONLY;
+			mo->FreeNetID();
+		}
 	}
 }
 

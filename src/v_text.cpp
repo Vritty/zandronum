@@ -345,75 +345,19 @@ void V_ColorizeString( char *pszString )
 	}
 
 	char *p = pszString, c;
-	int i;
 
 	while ( (c = *p++) )
 	{
-		// If we don't encounter a slash, keep parsing.
-		if (c != '\\')
-			*pszString++ = c;
+		// [AK] If we encounter a "\c", put the escaped code in the string.
+		if (( c == '\\' ) && ( *p == 'c' ))
+		{
+			*pszString++ = TEXTCOLOR_ESCAPE;
+			p++;
+		}
+		// Otherwise, keep parsing.
 		else
 		{
-			switch (*p)
-			{
-				case 'c':
-					*pszString++ = TEXTCOLOR_ESCAPE;
-					break;
-				case 'n':
-					*pszString++ = '\n';
-					break;
-				case 't':
-					*pszString++ = '\t';
-					break;
-				case 'r':
-					*pszString++ = '\r';
-					break;
-//				case '\n':
-//					break;
-				case 'x':
-				case 'X':
-					c = 0;
-					for (i = 0; i < 2; i++)
-					{
-						p++;
-						if (*p >= '0' && *p <= '9')
-							c = (c << 4) + *p-'0';
-						else if (*p >= 'a' && *p <= 'f')
-							c = (c << 4) + 10 + *p-'a';
-						else if (*p >= 'A' && *p <= 'F')
-							c = (c << 4) + 10 + *p-'A';
-						else
-						{
-							p--;
-							break;
-						}
-					}
-					*pszString++ = c;
-					break;
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-					c = 0;
-					for (i = 0; i < 3; i++) {
-						c <<= 3;
-						if (*p >= '0' && *p <= '7')
-							c += *p-'0';
-						else
-							break;
-						p++;
-					}
-					*pszString++ = c;
-					break;
-				default:
-					*pszString++ = *p;
-					break;
-			}
-			p++;
+			*pszString++ = c;
 		}
 	}
 	*pszString = 0;
@@ -424,13 +368,7 @@ void V_ColorizeString( char *pszString )
 // are not needed anymore using this.
 void V_ColorizeString( FString &String )
 {
-	const int length = (int) String.Len();
-	char *tempCharArray = new char[length+1];
-	strncpy( tempCharArray, String.GetChars(), length );
-	tempCharArray[length] = 0;
-	V_ColorizeString( tempCharArray );
-	String = tempCharArray;
-	delete[] tempCharArray;
+	String.Substitute( "\\c", TEXTCOLOR_ESCAPE );
 }
 
 //*****************************************************************************
@@ -671,9 +609,9 @@ void V_CleanPlayerName( FString &String, bool bPrintWarning )
 			// [AK] Ignore color codes, also taking into account those that use square brackets.
 			if ( tempColorizedString[j] == TEXTCOLOR_ESCAPE )
 			{
-				if (( String[++j] != '\0' ) && ( String[j] == '[' ))
+				if (( tempColorizedString[++j] != '\0' ) && ( tempColorizedString[j] == '[' ))
 				{
-					while (( String[j] != '\0') && ( String[j] != ']' ))
+					while (( tempColorizedString[j] != '\0') && ( tempColorizedString[j] != ']' ))
 					{
 						j++;
 					}
@@ -773,13 +711,24 @@ void V_RemoveTrailingCrap( char *pszString )
 		// [BB] Remove trailing color code of type "\c[X]".
 		else if ( pszString[ulStringLength-1] == ']' )
 		{
+			bool bHitClosingBracket = false;
 			int i = 0;
+
 			for ( i = ulStringLength-2; i >= 2; --i )
 			{
-				if ( pszString[i] == '[' )
+				// [AK] If we hit another ']' (e.g. "\c[X]]"), then it's not a trailing color code.
+				if ( pszString[i] == ']' )
+				{
+					bHitClosingBracket = true;
+					break;
+				}
+
+				// [AK] We should keep checking for "\c[" until we reach the beginning of the string,
+				// in case the string contains something like "\c[X[[[]".
+				if ( ( pszString[i] == '[' ) && V_ColorCodeStart ( pszString, i-2 ) )
 					break;
 			}
-			if ( ( i >= 2 ) && V_ColorCodeStart ( pszString, i-2 ) )
+			if ( ( bHitClosingBracket == false ) && ( i >= 2  ) )
 			{
 				pszString[i-2] = 0;
 				ulStringLength = static_cast<ULONG>(strlen( pszString ));
@@ -801,7 +750,7 @@ void V_RemoveTrailingCrap( char *pszString )
 			if ( pChar > strrchr(pszString, ']') )
 			{
 				const int index = pChar - pszString;
-				if ( ( index > 2 ) && V_ColorCodeStart ( pszString, index-2 ) )
+				if ( ( index >= 2 ) && V_ColorCodeStart ( pszString, index-2 ) )
 				{
 					pszString[index-2] = 0;
 					ulStringLength = static_cast<ULONG>(strlen( pszString ));

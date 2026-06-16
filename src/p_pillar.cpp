@@ -236,8 +236,12 @@ void DPillar::Tick ()
 			SERVERCOMMANDS_SetSectorCeilingPlane( ULONG( m_Sector - sectors ));
 		}
 
-		SN_StopSequence (m_Sector, CHAN_FLOOR);
-		Destroy ();
+		// [RK] Destroy the pillar on the server/host end.
+		if ( NETWORK_InClientMode () == false )
+		{
+			SN_StopSequence(m_Sector, CHAN_FLOOR);
+			Destroy();
+		}
 	}
 	else
 	{
@@ -375,7 +379,7 @@ bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 		if ( pPillar )
 		{
 			// [BC] Assign the mover's network ID. However, don't do this on the client end.
-			if ( NETWORK_InClientMode() == false )
+			if ( NETWORK_GetState() == NETSTATE_SERVER )
 				pPillar->SetID ( P_GetFirstFreePillarID( ) );
 
 			// [BC] If we're the server, tell clients to create the pillar.
@@ -407,27 +411,5 @@ DPillar *P_GetPillarByID( LONG lID )
 //
 LONG P_GetFirstFreePillarID( void )
 {
-	LONG		lIdx;
-	DPillar		*pPillar;
-	bool		bIDIsAvailable;
-
-	for ( lIdx = 0; lIdx < 8192; lIdx++ )
-	{
-		TThinkerIterator<DPillar>		Iterator;
-
-		bIDIsAvailable = true;
-		while (( pPillar = Iterator.Next( )))
-		{
-			if ( pPillar->GetID( ) == lIdx )
-			{
-				bIDIsAvailable = false;
-				break;
-			}
-		}
-
-		if ( bIDIsAvailable )
-			return ( lIdx );
-	}
-
-	return ( -1 );
+	return NETWORK_GetFirstFreeID<DPillar>();
 }

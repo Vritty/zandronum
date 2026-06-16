@@ -50,6 +50,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <cmath>
 #include <stdarg.h>
 #include <time.h>
 
@@ -118,10 +119,12 @@
 #include "r_data/colormaps.h"
 #include "network_enums.h"
 #include "d_protocol.h"
+#include "p_conversation.h"
 #include "p_enemy.h"
 #include "network/packetarchive.h"
 #include "p_lnspec.h"
 #include "unlagged.h"
+#include "scoreboard.h"
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
@@ -175,6 +178,7 @@ static	void	server_PrintWithIP( FString message, const NETADDRESS_s &address );
 static	void	server_PerformBacktrace( ULONG ulClient, ULONG ulNumLateMoveCMDs );
 static	bool	server_ShouldPerformBacktrace( ULONG ulClient );
 static	void	server_FixZFromBacktrace( APlayerPawn *pmo, fixed_t oldFloorZ );
+static	void	server_ForceRenamePlayer( ULONG playerIndex ); // [SB]
 
 // [RC]
 #ifdef CREATE_PACKET_LOG
@@ -191,7 +195,11 @@ static	CLIENT_s		g_aClients[MAXPLAYERS];
 static	LONG			g_lCurrentClient;
 
 // Number of ticks that have passed since start of... level?
-static	LONG			g_lGameTime = 0;
+static	unsigned int	g_GameTime = 0;
+
+// [AK] How many ticks to shift to ensure that the tick rate remains at 35 ticks per
+// second if overflows occur when getting "new" and "previous" ticks in SERVER_Tick.
+static	double			g_GameTicShift = 0.0;
 
 #ifndef NO_SERVER_GUI
 // Storage for commands issued through various menu options to be executed all at once.
@@ -267,7 +275,7 @@ CVAR( String, sv_motd, "", CVAR_ARCHIVE )
 CVAR( Bool, sv_defaultdmflags, false, 0 )
 CVAR( Bool, sv_forcepassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
 CVAR( Bool, sv_forcejoinpassword, false, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_SERVERINFO )
-CVAR( Int, sv_forcerespawntime, 0, CVAR_ARCHIVE|CVAR_SERVERINFO ) // [RK]
+CVAR( Int, sv_forcerespawntime, 0, CVAR_ARCHIVE|CVAR_SERVERINFO|CVAR_GAMEPLAYSETTING ) // [RK]
 CVAR( Bool, sv_showlauncherqueries, false, CVAR_ARCHIVE )
 CVAR( Bool, sv_timestamp, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Int, sv_timestampformat, 0, CVAR_ARCHIVE|CVAR_NOSETBYACS )
@@ -275,6 +283,7 @@ CVAR( Int, sv_colorstripmethod, 0, CVAR_ARCHIVE )
 CVAR( Bool, sv_minimizetosystray, true, CVAR_ARCHIVE )
 CVAR( Int, sv_queryignoretime, 10, CVAR_ARCHIVE )
 CVAR( Bool, sv_markchatlines, false, CVAR_ARCHIVE )
+CVAR( Int, sv_distinguishteamchatlines, 0, CVAR_ARCHIVE )
 CVAR( Flag, sv_nokill, dmflags2, DF2_NOSUICIDE )
 CVAR( Bool, sv_pure, true, CVAR_SERVERINFO | CVAR_LATCH )
 CVAR( Int, sv_maxclientsperip, 2, CVAR_ARCHIVE | CVAR_SERVERINFO )
@@ -283,6 +292,8 @@ CVAR( Bool, sv_forcelogintojoin, false, CVAR_ARCHIVE|CVAR_NOSETBYACS )
 CVAR( Bool, sv_useticbuffer, true, CVAR_ARCHIVE|CVAR_NOSETBYACS|CVAR_DEBUGONLY )
 CVAR( Int, sv_showcommands, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY )
 CVAR( Int, sv_smoothplayers_debuginfo, 0, CVAR_ARCHIVE|CVAR_DEBUGONLY ) // [AK]
+CVAR( Bool, sv_noplayertimeout, false, CVAR_NOSETBYACS|CVAR_DEBUGONLY ) // [SB]
+CVAR( Bool, sv_printconnectionmessages, true, CVAR_ARCHIVE|CVAR_NOSETBYACS ) // [SB]
 
 //*****************************************************************************
 // [AK] Smooths the movement of lagging players using extrapolation and correction.
@@ -359,7 +370,7 @@ CUSTOM_CVAR( Int, sv_maxclients, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE | CVAR_SER
 
 //*****************************************************************************
 // [BB] To stay compatible with old mods, the default value is at most 32.
-CUSTOM_CVAR( Int, sv_maxplayers, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE | CVAR_SERVERINFO )
+CUSTOM_CVAR( Int, sv_maxplayers, MIN ( MAXPLAYERS, 32 ), CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_GAMEPLAYSETTING )
 {
 	if ( self < 0 )
 		self = 0;
@@ -448,34 +459,22 @@ CUSTOM_CVAR( Int, sv_allowprivatechat, PRIVATECHAT_EVERYONE, CVAR_ARCHIVE | CVAR
 	}
 
 	// [AK] Notify the clients about the change.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), self.GetGenericRep( CVAR_Int ).Int );
-		SERVERCOMMANDS_SetGameModeLimits( );
-	}
+	SERVER_SettingChanged( self, false );
 }
 
 //*****************************************************************************
 //
-CUSTOM_CVAR( Int, sv_respawndelaytime, 1, CVAR_ARCHIVE | CVAR_SERVERINFO )
+CUSTOM_CVAR( Float, sv_respawndelaytime, 1.0f, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_GAMEPLAYSETTING )
 {
-	if ( self < 1 )
+	// [AK] The respawn delay time should always be at least a tic long.
+	if ( self <= 0.0f )
 	{
-		self = 1;
-		return;
-	}
-	else if ( self > 255 )
-	{
-		self = 255;
+		self = 1.0f / TICRATE;
 		return;
 	}
 
 	// [AK] Notify the clients about the change.
-	if (( NETWORK_GetState( ) == NETSTATE_SERVER ) && ( gamestate != GS_STARTUP ))
-	{
-		SERVER_Printf( "%s changed to: %d\n", self.GetName( ), self.GetGenericRep( CVAR_Int ).Int );
-		SERVERCOMMANDS_SetGameModeLimits( );
-	}
+	SERVER_SettingChanged( self, false, 1 );
 }
 
 //*****************************************************************************
@@ -533,7 +532,6 @@ void SERVER_Construct( void )
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
     {
 		g_aClients[ulIdx].PacketBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-		g_aClients[ulIdx].PacketBuffer.Clear();
 
 		// Initialize the saved packet buffer.
 		g_aClients[ulIdx].SavedPackets.Initialize( g_ulMaxPacketSize );
@@ -541,7 +539,6 @@ void SERVER_Construct( void )
 
 		// Initialize the unreliable packet buffer.
 		g_aClients[ulIdx].UnreliablePacketBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-		g_aClients[ulIdx].UnreliablePacketBuffer.Clear();
 
 		// This is currently an open slot.
 		g_aClients[ulIdx].State = CLS_FREE;
@@ -643,35 +640,79 @@ void SERVER_Destruct( void )
 //DWORD	g_LastMS, g_LastSec, g_FrameCount, g_LastCount, g_LastTic;
 
 void			SERVERCONSOLE_UpdateStatistics( void );
+void			SERVERCONSOLE_UpdateScoreboard( void );
 
 //*****************************************************************************
 //
-void SERVERCONSOLE_UpdateScoreboard( void );
+unsigned int server_GetDeltaTicks( unsigned int &nowTime, const unsigned int previousTics )
+{
+	static bool alreadyShiftedGameTic = false;
+	unsigned int newTics = 0;
+
+	nowTime = I_MSTime( );
+
+	// [AK] Check if an integer overflow occurred in the timer (i.e. the "now"
+	// time suddenly became smaller than the "previous" time). This happens once
+	// every ~49 days when the server runs constantly.
+	if ( nowTime < g_GameTime )
+	{
+		// [AK] First, get the "max" number of ticks if I_MSTime returns its
+		// maxiumum possible value. This should be equal to 150323855.325.
+		const double maxTics = UINT_MAX / MS_PER_TIC;
+		double wholePortion = 0.0;
+
+		// [AK] Next, split the whole (150323855) and fractional (0.325) portions
+		// of maxTics from each other.
+		const double fractionPortion = std::modf( maxTics, &wholePortion );
+
+		// [AK] Remember that maxTics doesn't round to a whole number completely,
+		// meaning that when the overflow occurs, we must compensate for an extra
+		// 0.325 of a tic (~11 ms). If we don't do this, the tick rate will briefly
+		// become ~1011 ms for 35 ticks, which can cause discrepancies between the
+		// server and clients.
+		//
+		// By adding this to a global tic shift variable, and then calculating our
+		// "new" and "previous" ticks based on this shift, we ensure that the tick
+		// rate always stays at ~1000 ms for 35 ticks, which is what we want.
+		if ( alreadyShiftedGameTic == false )
+		{
+			g_GameTicShift += fractionPortion;
+			alreadyShiftedGameTic = true;
+		}
+
+		newTics = static_cast<unsigned>( wholePortion + g_GameTicShift + nowTime / MS_PER_TIC );
+	}
+	else
+	{
+		// [AK] Reset this boolean after the integer overflow fixes itself.
+		if ( alreadyShiftedGameTic )
+			alreadyShiftedGameTic = false;
+
+		newTics = static_cast<unsigned>( g_GameTicShift + nowTime / MS_PER_TIC );
+	}
+
+	return newTics - previousTics;
+}
+
+//*****************************************************************************
+//
 void SERVER_Tick( void )
 {
-	LONG			lNowTime;
-	LONG			lNewTics;
-	LONG			lPreviousTics;
-	LONG			lCurTics;
-	ULONG			ulIdx;
+	unsigned int nowTime = 0;
 
 	I_DoSelect();
-	lPreviousTics = static_cast<LONG> ( g_lGameTime / (( 1.0 / TICRATE ) * 1000.0 ) );
 
-	lNowTime = I_MSTime( );
-	lNewTics = static_cast<LONG> ( lNowTime / (( 1.0 / TICRATE ) * 1000.0 ) );
+	const unsigned int previousTics = static_cast<unsigned>( g_GameTicShift + g_GameTime / MS_PER_TIC );
+	unsigned int deltaTics = server_GetDeltaTicks( nowTime, previousTics );
 
-	lCurTics = lNewTics - lPreviousTics;
-	while ( lCurTics <= 0 )
+	while ( deltaTics == 0 )
 	{
 		// [BB] Recieve packets whenever possible (not only once each tic) to allow
 		// for an accurate ping measurement.
 		SERVER_GetPackets( );
 
 		I_Sleep( 1 );
-		lNowTime = I_MSTime( );
-		lNewTics = static_cast<LONG> ( lNowTime / (( 1.0 / TICRATE ) * 1000.0 ) );
-		lCurTics = lNewTics - lPreviousTics;
+		deltaTics = server_GetDeltaTicks( nowTime, previousTics );
 	}
 
 #ifdef NO_SERVER_GUI
@@ -685,14 +726,34 @@ void SERVER_Tick( void )
 	while ( g_ServerCommandQueue.Size( ))
 		SERVER_DeleteCommand( );
 #endif
-	
-	int iOldTime = level.time;
-	while ( lCurTics-- )
+
+	int oldTime = level.time;
+
+	while ( deltaTics-- )
 	{
 		//DObject::BeginFrame ();
 
 		// Recieve packets.
 		SERVER_GetPackets( );
+
+		// [AK] After receiving packets, check if we didn't receive a movement
+		// command from an in-game players during this gametic. If that's the
+		// case, increment the number of missing packets for the player.
+		if ( gamestate == GS_LEVEL )
+		{
+			for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
+			{
+				if (( SERVER_IsValidClient( i ) == false ) || ( players[i].bSpectating ))
+					continue;
+
+				// [AK] If we didn't receive the command from them because they
+				// recently joined the game and it's still taking time for the
+				// commands to arrive (i.e. their last move tick is still zero),
+				// don't treat it as a missing packet.
+				if (( g_aClients[i].lLastMoveTick != 0 ) && ( g_aClients[i].lLastMoveTick != gametic ))
+					g_aClients[i].numMissingPackets++;
+			}
+		}
 
 		// We have to record player positions before their mobj moves.
 		// [BB] Tick the unlagged module.
@@ -710,10 +771,10 @@ void SERVER_Tick( void )
 		maketic++;
 
 		// Update the scoreboard if we have a new second to display.
-		if ( timelimit && (( level.time % TICRATE ) == 0 ) && ( level.time != iOldTime ))
+		if ( timelimit && (( level.time % TICRATE ) == 0 ) && ( level.time != oldTime ))
 		{
 			SERVERCONSOLE_UpdateScoreboard( );
-			iOldTime = level.time;
+			oldTime = level.time;
 		}
 
 		if ( g_lMapRestartTimer > 0 )
@@ -749,12 +810,12 @@ void SERVER_Tick( void )
 		SERVER_SendOutPackets( );
 
 		// [BB] Send out sheduled packets, respecting sv_maxpacketspertick.
-		for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+		for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
 		{
-			if ( g_aClients[ulIdx].State == CLS_FREE )
+			if ( g_aClients[i].State == CLS_FREE )
 				continue;
 
-			SERVER_GetClient ( ulIdx )->SavedPackets.Tick ( );
+			SERVER_GetClient ( i )->SavedPackets.Tick ( );
 		}
 
 		// Potentially send an update to the master server.
@@ -772,21 +833,21 @@ void SERVER_Tick( void )
 		// Print stats and get out.
 		FStat::PrintStat( );
 
-		for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+		for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
 		{
-			if (( SERVER_IsValidClient( ulIdx ) == false ) || ( players[ulIdx].bSpectating ))
+			if (( SERVER_IsValidClient( i ) == false ) || ( players[i].bSpectating ))
 				continue;
 
-			if ( g_aClients[ulIdx].lLastMoveTick != gametic && g_aClients[ulIdx].lOverMovementLevel > -MAX_OVERMOVEMENT_LEVEL )
+			if ( g_aClients[i].lLastMoveTick != gametic && g_aClients[i].lOverMovementLevel > -MAX_OVERMOVEMENT_LEVEL )
 			{
-				g_aClients[ulIdx].lOverMovementLevel--;
-//					Printf( "%s: -- (%d)\n", players[ulIdx].userinfo.GetName(), g_aClients[ulIdx].lOverMovementLevel );
+				g_aClients[i].lOverMovementLevel--;
+//					Printf( "%s: -- (%d)\n", players[i].userinfo.GetName(), g_aClients[i].lOverMovementLevel );
 			}
 
 			// [BB] If the client didn't authenticate the new map by now, likely his authentication packet was lost.
 			// Ask him to authenticate again.
-			if ( ( SERVER_GetClient( ulIdx )->State == CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION ) && ( ( level.maptime % ( 2 * TICRATE ) ) == 0 ) )
-				SERVERCOMMANDS_MapAuthenticate ( level.mapname, ulIdx, SVCF_ONLYTHISCLIENT );
+			if ( ( SERVER_GetClient( i )->State == CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION ) && ( ( level.maptime % ( 2 * TICRATE ) ) == 0 ) )
+				SERVERCOMMANDS_MapAuthenticate ( level.mapname, i, SVCF_ONLYTHISCLIENT );
 		}
 
 		// Do some statistic stuff every second.
@@ -796,19 +857,19 @@ void SERVER_Tick( void )
 			g_lTotalServerSeconds++;
 
 			// Count the number of active players.
-			LONG lCurrentNumPlayers = 0;
-			for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+			LONG currentNumPlayers = 0;
+			for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
 			{
-				if ( SERVER_IsValidClient( ulIdx ) == false )
+				if ( SERVER_IsValidClient( i ) == false )
 					continue;
 
 				g_lTotalNumPlayers++; // Divided by g_lTotalServerSeconds to form an average.
-				lCurrentNumPlayers++;
+				currentNumPlayers++;
 			}
 
 			// Check for new peak records!
-			if ( lCurrentNumPlayers > g_lMaxNumPlayers )
-				g_lMaxNumPlayers = lCurrentNumPlayers;
+			if ( currentNumPlayers > g_lMaxNumPlayers )
+				g_lMaxNumPlayers = currentNumPlayers;
 			if ( g_lCurrentOutboundDataTransfer > g_lMaxOutboundDataTransfer )
 				g_lMaxOutboundDataTransfer = g_lCurrentOutboundDataTransfer;
 			if ( g_lCurrentInboundDataTransfer > g_lMaxInboundDataTransfer )
@@ -848,18 +909,18 @@ void SERVER_Tick( void )
 		g_LastMS = ms;
 	}
 */
-	g_lGameTime = lNowTime;
+	g_GameTime = nowTime;
 
 	// [BB] Remove IP adresses from g_floodProtectionIPQueue that have been in there long enough.
-	g_floodProtectionIPQueue.adjustHead ( g_lGameTime / 1000 );
+	g_floodProtectionIPQueue.adjustHead ( g_GameTime / 1000 );
 
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	for ( unsigned int i = 0; i < MAXPLAYERS; i++ )
 	{
-		if (( SERVER_IsValidClient( ulIdx ) == false ) || ( players[ulIdx].bSpectating ))
+		if (( SERVER_IsValidClient( i ) == false ) || ( players[i].bSpectating ))
 			continue;
 
-		if ( g_aClients[ulIdx].lOverMovementLevel >= MAX_OVERMOVEMENT_LEVEL )
-			SERVER_KickPlayer( ulIdx, "Abnormal level of movement commands detected!" );
+		if ( g_aClients[i].lOverMovementLevel >= MAX_OVERMOVEMENT_LEVEL )
+			SERVER_KickPlayer( i, "Abnormal level of movement commands detected!" );
 	}
 }
 
@@ -1067,45 +1128,39 @@ void SERVER_CheckTimeouts( void )
 	{
 		if ( SERVER_IsValidClient( ulIdx ) == false )
 		{
-			if ( ( g_aClients[ulIdx].State != CLS_FREE )
+			if ( !sv_noplayertimeout && ( g_aClients[ulIdx].State != CLS_FREE )
 			     && ( ( gametic - g_aClients[ulIdx].ulLastCommandTic ) >= ( CLIENT_TIMEOUT * TICRATE ) ) )
 			{
 				Printf( "Unfinished connection from %s timed out.\n", g_aClients[ulIdx].Address.ToString() );
-				SERVER_DisconnectClient( ulIdx, false, false );
+				SERVER_DisconnectClient( ulIdx, false, false, LEAVEREASON_TIMEOUT );
 			}
 			continue;
 		}
+
+		const int lastCommandTicDiff = gametic - g_aClients[ulIdx].ulLastCommandTic;
 
 		// If we haven't gotten a packet from this client in CLIENT_TIMEOUT seconds,
 		// disconnect him.
-		if (( gametic - g_aClients[ulIdx].ulLastCommandTic ) >= ( CLIENT_TIMEOUT * TICRATE ))
+		if ( !sv_noplayertimeout && lastCommandTicDiff >= CLIENT_TIMEOUT * TICRATE )
 		{
-		    SERVER_DisconnectClient( ulIdx, true, true );
+		    SERVER_DisconnectClient( ulIdx, true, true, LEAVEREASON_TIMEOUT );
 			continue;
 		}
 
-		if ( players[ulIdx].bSpectating )
-			continue;
-
 		// Also check to see if the client is lagging.
-		if (( gametic - g_aClients[ulIdx].ulLastCommandTic ) >= TICRATE )
+		// [AK] Players don't send updates as often during intermissions or when
+		// they're spectating, so give them more time before marking them as lagging.
+		if ( lastCommandTicDiff >= (( gamestate == GS_INTERMISSION || players[ulIdx].bSpectating ) ? TICRATE * 5 : TICRATE ))
 		{
-			// Have not heard from the client in at least one second; mark him as
-			// lagging and tell clients.
-			if ( players[ulIdx].bLagging == false )
-			{
-				players[ulIdx].bLagging = true;
-				SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_LAGGING );
-			}
+			// Have not heard from them in a while; mark them as lagging and tell clients.
+			if (( players[ulIdx].statuses & PLAYERSTATUS_LAGGING ) == false )
+				PLAYER_SetStatus( &players[ulIdx], PLAYERSTATUS_LAGGING, true );
 		}
 		else
 		{
 			// Player is no longer lagging. Tell clients.
-			if ( players[ulIdx].bLagging )
-			{
-				players[ulIdx].bLagging = false;
-				SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_LAGGING );
-			}
+			if ( players[ulIdx].statuses & PLAYERSTATUS_LAGGING )
+				PLAYER_SetStatus( &players[ulIdx], PLAYERSTATUS_LAGGING, false );
 		}
 	}
 }
@@ -1186,21 +1241,16 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 	if ( ( ulMode == CHATMODE_NONE ) || ( ulMode >= NUM_CHATMODES ) )
 		return;
 
-	// Potentially prevent spectators from talking to active players during LMS games.
-	const bool bForbidChatToPlayers = GAMEMODE_IsClientForbiddenToChatToPlayers( ulPlayer );
+	// [AK] Verify if the player is sending a team chat message, and is allowed to.
+	if ( ( ulMode == CHATMODE_TEAM ) && ( CHAT_CanUseTeamChat( ulPlayer, true ) == false ) )
+		return;
 
+	// Potentially prevent spectators from talking to active players during LMS games.
+	const bool bForbidChatToPlayers = GAMEMODE_IsClientForbiddenToChatToPlayers( ulPlayer, false );
 	FString cleanedChatString = pszString;
 
-	// [BB] Remove any kind of trailing crap.
-	V_RemoveTrailingCrapFromFString ( cleanedChatString );
-
-	// [K6] Idk why is this part processed as FString, but let me join in on the fun and possibly strip ascii control characters.
-	// ...except 28 which is TEXTCOLOR_ESCAPE.
-	static const char strips[] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,29,30,31,127,0 };
-	cleanedChatString.StripChars ( strips );
-
 	// [BB] If the chat string is empty now, it only contained crap and is ignored.
-	if ( cleanedChatString.IsEmpty() )
+	if ( CHAT_CleanChatString( cleanedChatString ) == false )
 		return;
 
 	// [BB] Replace the pointer to the chat string, with the cleaned version.
@@ -1214,15 +1264,11 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 	}
 	else
 	{
-		// [AK] Remove any color codes that may still be in the chat message.
-		FString cleanedStringWithoutColor = cleanedChatString;
-		V_RemoveColorCodes( cleanedStringWithoutColor );
-
-		CHAT_AddChatMessage( ulPlayer, cleanedStringWithoutColor );
+		CHAT_AddChatMessage( ulPlayer, pszString );
 
 		// [AK] Trigger an event script indicating that a chat message was received.
 		// If the event returns 0, then don't print the message or send it to the clients.
-		if ( GAMEMODE_HandleEvent( GAMEEVENT_CHAT, NULL, ulPlayer != MAXPLAYERS ? ulPlayer : -1, ulMode - CHATMODE_GLOBAL ) == 0 )
+		if ( GAMEMODE_HandleEvent( GAMEEVENT_CHAT, NULL, ulPlayer != MAXPLAYERS ? ulPlayer : -1, ulMode - CHATMODE_GLOBAL, true ) == 0 )
 			return;
 
 		SERVERCOMMANDS_PlayerSay( ulPlayer, pszString, ulMode, bForbidChatToPlayers );
@@ -1239,41 +1285,73 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 			return;
 	}
 
+	FString message;
+
 	// [BB] This is to make the lines readily identifiable, necessary
 	// for MiX-MaN's IRC server control tool for example.
-	if( sv_markchatlines )
-		Printf( "CHAT " );
+	if ( sv_markchatlines )
+		message = "CHAT ";
+
+	// [AK] Distinguish team chat messages from normal chat messages if we want to.
+	if (( sv_distinguishteamchatlines > 0 ) && ( ulMode == CHATMODE_TEAM ))
+	{
+		if ( PLAYER_IsTrueSpectator( &players[ulPlayer] ))
+		{
+			message += "<SPEC> ";
+		}
+		else if ( players[ulPlayer].bOnTeam )
+		{
+			// [AK] If sv_distinguishteamchatlines is set to 1, then show the team's name.
+			// If it's greater than 1, then show the team's number instead.
+			if ( sv_distinguishteamchatlines == 1 )
+			{
+				FString teamName = TEAM_GetName( players[ulPlayer].Team );
+				teamName.ToUpper( );
+
+				message.AppendFormat( "<%s> ", teamName.GetChars( ));
+			}
+			else
+			{
+				message.AppendFormat( "<TEAM #%d> ", players[ulPlayer].Team + 1 );
+			}
+		}
+	}
+
 	// Print this message in the server's local window.
 	if ( strnicmp( "/me", pszString, 3 ) == 0 )
 	{
-		FString message;
 		pszString += 3;
 
 		if ( ulMode == CHATMODE_PRIVATE_SEND )
 		{
 			if ( ulPlayer == MAXPLAYERS )
-				message.Format( "<To %s> ", players[ulReceiver].userinfo.GetName() );
+				message.AppendFormat( "<To %s> ", players[ulReceiver].userinfo.GetName() );
 			else
-				message.Format( "<From %s> ", players[ulPlayer].userinfo.GetName() );
+				message.AppendFormat( "<From %s> ", players[ulPlayer].userinfo.GetName() );
 		}
 
+		// [AK] Don't print the same message twice for the current RCON client.
+		CONSOLE_ShouldPrintToRCONPlayer( false );
 		message.AppendFormat( "* %s%s", ulPlayer != MAXPLAYERS ? players[ulPlayer].userinfo.GetName() : "<Server>", pszString );
-		Printf( "%s\n", message.GetChars() );
 	}
 	else
 	{
 		if ( ulMode == CHATMODE_PRIVATE_SEND )
 		{
 			if ( ulPlayer == MAXPLAYERS )
-				Printf( "<To %s>: %s\n", players[ulReceiver].userinfo.GetName(), pszString );
+				message.AppendFormat( "<To %s>: %s", players[ulReceiver].userinfo.GetName(), pszString );
 			else
-				Printf( "<From %s>: %s\n", players[ulPlayer].userinfo.GetName(), pszString );
+				message.AppendFormat( "<From %s>: %s", players[ulPlayer].userinfo.GetName(), pszString );
 		}
 		else
 		{
-			Printf( "%s: %s\n", ulPlayer != MAXPLAYERS ? players[ulPlayer].userinfo.GetName() : "<Server>", pszString );
+			// [AK] Don't print the same message twice for the current RCON client.
+			CONSOLE_ShouldPrintToRCONPlayer( false );
+			message.AppendFormat( "%s: %s", ulPlayer != MAXPLAYERS ? players[ulPlayer].userinfo.GetName() : "<Server>", pszString );
 		}
 	}
+
+	Printf( "%s\n", message.GetChars() );
 }
 
 //*****************************************************************************
@@ -1345,12 +1423,10 @@ bool SERVER_PerformAuthenticationChecksum( BYTESTREAM_s *pByteStream )
 
 //*****************************************************************************
 //
-void SERVERCONSOLE_ReListPlayers( void );
 void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 {
 	LONG								lCommand;
 	ULONG								ulIdx;
-	PLAYERSAVEDINFO_t					*pSavedInfo;
 	ULONG								ulState;
 	ULONG								ulCountdownTicks;
 	AInventory							*pInventory;
@@ -1467,6 +1543,11 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 	if ( ( SERVER_CountPlayers( true ) > static_cast<unsigned> (sv_maxclients) ) )
 		SERVERCOMMANDS_PrintMOTD( "Emergency!\n\nYou are joining from localhost even though the server is full.\nDo whatever is necessary to clean the situation and disconnect afterwards.\n", g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
+	// [RK] Since clients don't end votes when traversing hubs
+	// the vote will be cleared here after a MAP command has executed.
+	if ( CALLVOTE_GetVoteState() == false && level.clusterflags & CLUSTER_HUB )
+		SERVERCOMMANDS_ClearVote( g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+
 	// If we're in a duel or LMS mode, tell him the state of the game mode.
 	if ( duel || lastmanstanding || teamlms || possession || teampossession || survival || invasion )
 	{
@@ -1561,8 +1642,9 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 	// [TP] Tell the client his account name.
 	SERVERCOMMANDS_SetPlayerAccountName( g_lCurrentClient, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
-	// [AK] Inform the client of the map rotation list.
+	// [AK] Inform the client of the map rotation list and the next entry.
 	SERVERCOMMANDS_SyncMapRotation(g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+	SERVERCOMMANDS_SetNextMapPosition( g_lCurrentClient, SVCF_ONLYTHISCLIENT );
 
 	// Send a snapshot of the level.
 	SERVER_SendFullUpdate( g_lCurrentClient );
@@ -1635,18 +1717,22 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 	}
 
 	// Check and see if this is a disconnected player. If so, restore his fragcount.
-	pSavedInfo = SERVER_SAVE_GetSavedInfo( players[g_lCurrentClient].userinfo.GetName(), g_aClients[g_lCurrentClient].Address );
-	if (( pSavedInfo ) && ( g_aClients[g_lCurrentClient].bWantNoRestoreFrags == false ))
+	SavedPlayerInfo *savedInfo = SERVER_SAVE_GetSavedInfo( players[g_lCurrentClient].userinfo.GetName( ), g_aClients[g_lCurrentClient].Address );
+
+	if (( savedInfo != nullptr ) && ( g_aClients[g_lCurrentClient].bWantNoRestoreFrags == false ))
 	{
-		PLAYER_SetFragcount( &players[g_lCurrentClient], pSavedInfo->lFragCount, false, false );
-		PLAYER_SetWins( &players[g_lCurrentClient], pSavedInfo->lWinCount );
-		players[g_lCurrentClient].lPointCount = pSavedInfo->lPointCount;
+		PLAYER_SetFragcount( &players[g_lCurrentClient], savedInfo->fragCount, false, false );
+		PLAYER_SetWins( &players[g_lCurrentClient], savedInfo->winCount );
+		players[g_lCurrentClient].lPointCount = savedInfo->pointCount;
 
 		if ( teamgame )
 			SERVERCOMMANDS_SetPlayerPoints( g_lCurrentClient );
 
+		// [AK] Also restore their death count.
+		PLAYER_SetDeaths( &players[g_lCurrentClient], savedInfo->deathCount );
+
 		// [RC] Also restore his playing time. This should agree with 'restore frags' as a whole, clean slate option.
-		players[g_lCurrentClient].ulTime = pSavedInfo->ulTime;
+		players[g_lCurrentClient].ulTime = savedInfo->time;
 	}
 
 	// If this player is on a team, tell all the other clients that a team has been selected
@@ -1658,9 +1744,19 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 	{
 		// [K6/BB] Show the player's country on connect, if the GeoIP db is available.
 		FString countryInfo;
+
+		// [AK] Always save the player's country index, even if they want to hide it.
+		players[g_lCurrentClient].ulCountryIndex = NETWORK_GetCountryIndexFromAddress( SERVER_GetClient( g_lCurrentClient )->Address );
+
 		// [BB] All players see the connect message, so only show the country code if the player doesn't want it to be hidden.
-		if ( NETWORK_IsGeoIPAvailable() && ( SERVER_GetClient( g_lCurrentClient )->bWantHideCountry == false ) )
-			countryInfo.AppendFormat ( " (from: %s)", NETWORK_GetCountryCodeFromAddress ( SERVER_GetClient( g_lCurrentClient )->Address ).GetChars() );
+		// [AK] Also don't show it if their country index is "N/A".
+		if (( SERVER_GetClient( g_lCurrentClient )->bWantHideCountry == false ) && ( players[g_lCurrentClient].ulCountryIndex > 0 ))
+		{
+			countryInfo.AppendFormat( " (from: %s)", NETWORK_GetCountryCodeFromIndex( players[g_lCurrentClient].ulCountryIndex, false ));
+
+			// [AK] Send this player's country index to everyone.
+			SERVERCOMMANDS_SetPlayerCountry( g_lCurrentClient );
+		}
 
 		FString message;
 		message.Format( "%s{ip} %s.%s\n", players[g_lCurrentClient].userinfo.GetName(),
@@ -1694,11 +1790,12 @@ void SERVER_ConnectNewPlayer( BYTESTREAM_s *pByteStream )
 	SERVERCOMMANDS_EndSnapshot( g_lCurrentClient );
 
 	// [RC] Clients may wish to ignore this new player.
-	SERVERCOMMANDS_PotentiallyIgnorePlayer( g_lCurrentClient );
+	// [AK] This may also update the new player's VoIP channel volume for clients.
+	SERVERCOMMANDS_PotentiallySendPlayerCommRule( g_lCurrentClient );
 
 	// [AK] Trigger an event script indicating that the client has connected to the server.
 	// Also indicate if they had previously connected to the server.
-	GAMEMODE_HandleEvent( GAMEEVENT_PLAYERCONNECT, NULL, g_lCurrentClient, !!pSavedInfo );
+	GAMEMODE_HandleEvent( GAMEEVENT_PLAYERCONNECT, NULL, g_lCurrentClient, !!savedInfo );
 }
 
 //*****************************************************************************
@@ -1709,6 +1806,7 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 	ULONG	ulTime;
 	LONG	lCommand;
 	ULONG   ulFlags2 = 0; // [SB] extended flags
+	bool	bSendSegmentedResponse = false; // [SB]
 
 	// If either this IP is in our flood protection queue, or the queue is full (DOS), ignore the request.
 	if ( g_floodProtectionIPQueue.isFull( ) || g_floodProtectionIPQueue.addressInQueue( NETWORK_GetFromAddress( )))
@@ -1769,11 +1867,17 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 			if ( ulFlags & SQF_EXTENDED_INFO )
 				ulFlags2 = pByteStream->ReadLong();
 
+			// [SB] Handle a special '2' byte as a request for a segmented response.
+			if ( pByteStream->pbStream + 1 <= pByteStream->pbStreamEnd )
+			{
+				bSendSegmentedResponse = pByteStream->ReadByte() == 2;
+			}
+
 			// Received launcher query!
 			if ( sv_showlauncherqueries )
 				Printf( "Launcher challenge from: %s\n", NETWORK_GetFromAddress().ToString() );
 
-			SERVER_MASTER_SendServerInfo( NETWORK_GetFromAddress( ), ulFlags, ulTime, ulFlags2, false );
+			SERVER_MASTER_SendServerInfo( NETWORK_GetFromAddress( ), ulFlags, ulTime, ulFlags2, false, bSendSegmentedResponse );
 			return;
 		// [RC] Master server is sending us the holy banlist.
 		case MASTER_SERVER_BANLIST:
@@ -1798,9 +1902,11 @@ void SERVER_DetermineConnectionType( BYTESTREAM_s *pByteStream )
 			return;
 		default:
 
-			Printf( "Unknown challenge (%d) from %s. Ignoring IP for 10 seconds.\n", static_cast<int> (lCommand), NETWORK_GetFromAddress().ToString() );
+			// [SB]
+			if ( sv_printconnectionmessages )
+				Printf( "Unknown challenge (%d) from %s. Ignoring IP for 10 seconds.\n", static_cast<int> (lCommand), NETWORK_GetFromAddress().ToString() );
 			// [BB] Block all further challenges of this IP for ten seconds to prevent log flooding.
-			g_floodProtectionIPQueue.addAddress ( NETWORK_GetFromAddress( ), g_lGameTime / 1000 );
+			SERVER_IgnoreIP( NETWORK_GetFromAddress( ));
 
 #ifdef CREATE_PACKET_LOG
 			server_LogPacket(pByteStream,  NETWORK_GetFromAddress( ), "Unknown connection challenge.");
@@ -1825,7 +1931,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	FString			clientVersion;
 	FString			clientPassword;
 	char			szServerPassword[MAX_NETWORK_STRING];
-	unsigned int	clientNetworkGameVersion;
+	int				clientNetworkGameVersion;
 	IPStringArray	szAddress;
 	ULONG			ulIdx;
 	NETADDRESS_s	AddressFrom;
@@ -1888,7 +1994,7 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 		lClient = g_lCurrentClient;
 
 	if ( g_aClients[lClient].State >= CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION )
-		SERVER_DisconnectClient( lClient, false, true );
+		SERVER_DisconnectClient( lClient, false, true, LEAVEREASON_RECONNECT );
 
 	// Read in the client version info.
 	clientVersion = pByteStream->ReadString();
@@ -1927,7 +2033,10 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	g_aClients[lClient].UnreliablePacketBuffer.Clear();
 
 	// Who is connecting?
-	Printf( "Connect (v%s): %s\n", clientVersion.GetChars(), NETWORK_GetFromAddress().ToString() );
+	// [SB] Only print if sv_printconnectionmessages is enabled.
+	// We still see the player's IP when the "<player> has connected" message is printed once they're in the game.
+	if ( sv_printconnectionmessages )
+		Printf( "Connect (v%s): %s\n", clientVersion.GetChars(), NETWORK_GetFromAddress().ToString() );
 
 	// Setup the client.
 	g_aClients[lClient].State = CLS_CHALLENGE;
@@ -2027,12 +2136,14 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	g_aClients[lClient].lLastPacketLossTick = 0;
 	g_aClients[lClient].lLastMoveTick = 0;
 	g_aClients[lClient].lLastMoveTickProcess = 0;
+	g_aClients[lClient].usLastWeaponNetworkIndex = 0;
 	g_aClients[lClient].lOverMovementLevel = 0;
 	g_aClients[lClient].bRunEnterScripts = false;
 	g_aClients[lClient].bSuspicious = false;
 	g_aClients[lClient].ulNumConsistencyWarnings = 0;
-	g_aClients[lClient].szSkin[0] = 0;
-	g_aClients[lClient].IgnoredAddresses.clear();
+	g_aClients[lClient].numMissingPackets = 0;
+	g_aClients[lClient].skinName = "";
+	g_aClients[lClient].commRules.clear( );
 	g_aClients[lClient].ScreenWidth = 0;
 	g_aClients[lClient].ScreenHeight = 0;
 	g_aClients[lClient].ulClientGameTic = 0;
@@ -2217,6 +2328,15 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 		// [CK] We use a bitfield now.
 		else if ( name == NAME_CL_ClientFlags )
 			pPlayer->userinfo.ClientFlagsChanged ( value.ToLong() );
+		// [AK]
+		else if ( name == NAME_Voice_Enable )
+			pPlayer->userinfo.VoiceEnableChanged ( value.ToLong() );
+		// [AK]
+		else if ( name == NAME_Voice_ListenFilter )
+			pPlayer->userinfo.VoiceListenFilterChanged ( value.ToLong() );
+		// [AK]
+		else if ( name == NAME_Voice_TransmitFilter )
+			pPlayer->userinfo.VoiceTransmitFilterChanged ( value.ToLong() );
 		// If this is a Hexen game, read in the player's class.
 		else if ( name == NAME_PlayerClass )
 		{
@@ -2246,7 +2366,7 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 	{
 		// Store the name of the skin the client gave us, so others can view the skin
 		// even if the server doesn't have the skin loaded.
-		strncpy( g_aClients[g_lCurrentClient].szSkin, szSkin, MAX_SKIN_NAME + 1 );
+		g_aClients[g_lCurrentClient].skinName = szSkin;
 
 		// [BB] This can't be done if PlayerClass == -1, but shouldn't be necessary anyway,
 		// since it's done as soon as the player is spawned in P_SpawnPlayer.
@@ -2261,7 +2381,8 @@ bool SERVER_GetUserInfo( BYTESTREAM_s *pByteStream, bool bAllowKick, bool bEnfor
 		static const std::set<FName> required = {
 			NAME_Name, NAME_Autoaim, NAME_Gender, NAME_Skin, NAME_RailColor,
 			NAME_CL_ConnectionType, NAME_CL_ClientFlags,
-			NAME_Handicap, NAME_CL_TicsPerUpdate, NAME_Color, NAME_ColorSet
+			NAME_Handicap, NAME_CL_TicsPerUpdate, NAME_Color, NAME_ColorSet,
+			NAME_Voice_Enable, NAME_Voice_ListenFilter, NAME_Voice_TransmitFilter
 		};
 		std::set<FName> missing;
 		std::set_difference( required.begin(), required.end(), names.begin(), names.end(),
@@ -2308,10 +2429,10 @@ void SERVER_ConnectionError( NETADDRESS_s Address, const char *pszMessage, ULONG
 	NETBUFFER_s	TempBuffer;
 
 	TempBuffer.Init( MAX_UDP_PACKET, BUFFERTYPE_WRITE );
-	TempBuffer.Clear();
 
 	// Display error message locally in the console.
-	Printf( "Denied connection for %s: %s\n", Address.ToString(), pszMessage );
+	if ( sv_printconnectionmessages )
+		Printf( "Denied connection for %s: %s\n", Address.ToString(), pszMessage );
 
 	// Make sure the packet has a packet header. The client is expecting this!
 	TempBuffer.ByteStream.WriteHeader( SVC_HEADER );
@@ -2332,34 +2453,38 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 	g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( SVCC_ERROR );
 	g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( ulErrorCode );
 
+	FString printMessage;
+
 	// Display error message locally in the console.
 	switch ( ulErrorCode )
 	{
 	case NETWORK_ERRORCODE_WRONGPASSWORD:
 
-		Printf( "Incorrect password.\n" );
+		printMessage.Format( "Incorrect password.\n" );
 		break;
 	case NETWORK_ERRORCODE_WRONGVERSION:
 
-		Printf( "Incorrect version.\n" );
+		printMessage.Format( "Incorrect version.\n" );
 
 		// Tell the client what version this server using.
 		g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( DOTVERSIONSTR );
 		break;
 	case NETWORK_ERRORCODE_WRONGPROTOCOLVERSION:
 
-		Printf( "Incorrect protocol version.\n" );
+		printMessage.Format( "Incorrect protocol version.\n" );
 
 		// Tell the client what version this server using.
 		g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( GetVersionStringRev() );
 		break;
 	case NETWORK_ERRORCODE_BANNED:
 		{
-			FString banReason = SERVERBAN_GetBanList( )->getEntryComment( g_aClients[ulClient].Address );
+			IPADDRESSBAN_s *entry = SERVERBAN_GetBanInformation( g_aClients[ulClient].Address );
+			FString banReason = (( entry != nullptr ) && ( strlen( entry->szComment ) > 0 )) ? entry->szComment : "";
+
 			if ( banReason.IsNotEmpty() )
-				Printf( "Client banned (reason: %s)\n", banReason.GetChars() );
+				printMessage.Format( "Client banned (reason: %s)\n", banReason.GetChars() );
 			else
-				Printf( "Client banned.\n" );
+				printMessage.Format( "Client banned.\n" );
 
 			bool masterban = SERVERBAN_IsIPMasterBanned( g_aClients[ulClient].Address );
 			g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( masterban );
@@ -2368,7 +2493,7 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 			{
 				// Tell the client why he was banned, and when his ban expires.
 				g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( banReason );
-				g_aClients[ulClient].PacketBuffer.ByteStream.WriteLong( (LONG) SERVERBAN_GetBanList( )->getEntryExpiration( g_aClients[ulClient].Address ));
+				g_aClients[ulClient].PacketBuffer.ByteStream.WriteLong(( entry != nullptr ) ? static_cast<int>( entry->tExpirationDate ) : 0 );
 				g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( sv_hostemail );
 			}
 		}
@@ -2376,32 +2501,38 @@ void SERVER_ClientError( ULONG ulClient, ULONG ulErrorCode )
 	case NETWORK_ERRORCODE_AUTHENTICATIONFAILED:
 	case NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED:
 
-		g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( NETWORK_GetPWADList().Size() );
-		for ( unsigned int i = 0; i < NETWORK_GetPWADList().Size(); ++i )
+		// [SB] Send all authenticated WADs to the client for comparison.
+		g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( NETWORK_GetAuthenticatedWADsList().Size() );
+		for ( unsigned int i = 0; i < NETWORK_GetAuthenticatedWADsList().Size(); ++i )
 		{
-			const NetworkPWAD& pwad = NETWORK_GetPWADList()[i];
+			const NetworkPWAD& pwad = NETWORK_GetAuthenticatedWADsList()[i];
 			g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( pwad.name );
 			g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( pwad.checksum );
 		}
 
-		Printf( "%s authentication failed.\n", ( ulErrorCode == NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED ) ? "Protected lump" : "Level" );
+		printMessage.Format( "%s authentication failed.\n", ( ulErrorCode == NETWORK_ERRORCODE_PROTECTED_LUMP_AUTHENTICATIONFAILED ) ? "Protected lump" : "Level" );
 		break;
 	case NETWORK_ERRORCODE_USERINFOREJECTED:
 
-		Printf( "Userinfo rejected.\n" );
+		printMessage.Format( "Userinfo rejected.\n" );
 		break;
 	}
 
 	// Send the packet off.
 	SERVER_SendClientPacket( ulClient, true );
 
-	Printf( "%s disconnected. Ignoring IP for 10 seconds.\n", g_aClients[ulClient].Address.ToString() );
+	// [SB] Only print if sv_printconnectionmessages is set, or the client was already in the game.
+	if ( sv_printconnectionmessages || g_aClients[ulClient].State >= CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION )
+	{
+		Printf( "%s", printMessage.GetChars() );
+		Printf( "%s disconnected. Ignoring IP for 10 seconds.\n", g_aClients[ulClient].Address.ToString() );
+	}
 
 	// [BB] Block this IP for ten seconds to prevent log flooding.
-	g_floodProtectionIPQueue.addAddress ( g_aClients[ulClient].Address, g_lGameTime / 1000 );
+	SERVER_IgnoreIP( g_aClients[ulClient].Address );
 
 	// [BB] Be sure to properly disconnect the client.
-	SERVER_DisconnectClient( ulClient, false, false );
+	SERVER_DisconnectClient( ulClient, false, false, LEAVEREASON_ERROR );
 }
 
 //*****************************************************************************
@@ -2447,11 +2578,6 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 			if ( pInventory->IsKindOf( RUNTIME_CLASS( APowerup )))
 			{
 				SERVERCOMMANDS_GivePowerup( ulIdx, static_cast<APowerup *>( pInventory ), ulClient, SVCF_ONLYTHISCLIENT );
-				if (( pInventory->IsKindOf( RUNTIME_CLASS( APowerInvulnerable ))) &&
-					(( pPlayer->mo->effects & FX_VISIBILITYFLICKER ) || ( pPlayer->mo->effects & FX_RESPAWNINVUL )))
-				{
-					SERVERCOMMANDS_PlayerRespawnInvulnerability( ulIdx );
-				}
 
 				// [BB] If it's a rune, we need to explicitly set its icon since it was set by the RuneGiver.
 				if ( pInventory == pInventory->Owner->Rune )
@@ -2505,23 +2631,24 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		// [BB] Clients need to know the active weapons of other players, so send it.
 		SERVERCOMMANDS_WeaponChange( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
+		// [geNia] Clients need to know player's current skin in ACS.
+		SERVERCOMMANDS_SetPlayerACSSkin( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
+
 		// [BB] It's possible that the MaxHealth property was changed dynamically with ACS, so send it.
 		SERVERCOMMANDS_SetPlayerMaxHealth( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [BB] Send the number of lives left.
 		SERVERCOMMANDS_SetPlayerLivesLeft( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
-		// [BB] Also tell this player's chat / console status to the new client.
-		SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_CHATTING, ulClient, SVCF_ONLYTHISCLIENT );
-		SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_INCONSOLE, ulClient, SVCF_ONLYTHISCLIENT );
-		SERVERCOMMANDS_SetPlayerStatus( ulIdx, PLAYERSTATUS_INMENU, ulClient, SVCF_ONLYTHISCLIENT );
+		// [BB] Send this player's statuses to the new client.
+		SERVERCOMMANDS_SetPlayerStatus( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [BB] If this player has any cheats, also inform the new client.
 		if( players[ulIdx].cheats )
 			SERVERCOMMANDS_SetPlayerCheats(  ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [Dusk] Hexen armor values
-			SERVERCOMMANDS_SyncHexenArmorSlots( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
+		SERVERCOMMANDS_SyncHexenArmorSlots( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [WS] Update the player's properties if they changed.
 		SERVER_UpdateActorProperties( players[ulIdx].mo, ulClient );
@@ -2529,6 +2656,10 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 		// [TP] Update the player's TID, if there is one.
 		if ( players[ulIdx].mo->tid )
 			SERVERCOMMANDS_SetThingTID( players[ulIdx].mo, ulClient, SVCF_ONLYTHISCLIENT );
+
+		// [AK] Update the player's country index if they're not a bot, they aren't hiding it, and it isn't "N/A".
+		if (( players[ulIdx].bIsBot == false ) && ( g_aClients[ulIdx].bWantHideCountry == false ) && ( players[ulIdx].ulCountryIndex > 0 ))
+			SERVERCOMMANDS_SetPlayerCountry( ulIdx, ulClient, SVCF_ONLYTHISCLIENT );
 
 		// [TP] Account name.
 		if ( g_aClients[ulIdx].WantHideAccount == false )
@@ -2538,6 +2669,11 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 	// Server may have already picked a team for the incoming player. If so, tell him!
 	if (( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS ) && players[ulClient].bOnTeam )
 		SERVERCOMMANDS_SetPlayerTeam( ulClient, ulClient, SVCF_ONLYTHISCLIENT );
+
+	// [AK] In case this player's already dead, let them know how much time they
+	// have left until they can respawn again.
+	if ( players[ulClient].playerstate == PST_DEAD )
+		SERVERCOMMANDS_SetLocalPlayerRespawnDelayTime( ulClient );
 
 	// [BB] This game mode uses teams, so inform the incoming player about the scores/wins/frags of the teams.
 	if ( GAMEMODE_GetCurrentFlags() & GMF_PLAYERSONTEAMS )
@@ -2578,7 +2714,11 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 	// Send Domination State
 	if ( domination )
 	{
-		SERVERCOMMANDS_SetDominationState( ulClient, SVCF_ONLYTHISCLIENT );
+		for ( unsigned int i = 0; i < level.info->SectorInfo.Points.Size(); i++ )
+		{
+			SERVERCOMMANDS_SetDominationPointOwner( i, level.info->SectorInfo.Points[i].owner, false, ulClient, SVCF_ONLYTHISCLIENT );
+			SERVERCOMMANDS_SetDominationPointState( i, level.info->SectorInfo.Points[i], ulClient, SVCF_ONLYTHISCLIENT );
+		}
 	}
 
 	// If we're in duel mode, tell the client how many duels have taken place.
@@ -2595,7 +2735,7 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 	{
 		// If the actor doesn't have a network ID, don't spawn it (it
 		// probably isn't important).
-		if ( pActor->NetID == -1 )
+		if ( pActor->NetID == 0 )
 			continue;
 
 		// [BB] The other clients already have destroyed this actor, so don't spawn it.
@@ -2678,6 +2818,9 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 
 				if ( pActor->velz != 0 )
 					ulBits |= CM_VELZ;
+
+				if ( pActor->pitch != 0 )
+					ulBits |= CM_PITCH;
 
 				if ( pActor->movedir != 0 )
 					ulBits |= CM_MOVEDIR;
@@ -2824,10 +2967,42 @@ void SERVER_SendFullUpdate( ULONG ulClient )
 	// [TP] Inform the client of the state of the join queue
 	SERVERCOMMANDS_SyncJoinQueue( ulClient, SVCF_ONLYTHISCLIENT );
 
+	// [AK] Inform the client of the medals that each player has earned.
+	SERVERCOMMANDS_SyncPlayerMedalCounts( ulClient, SVCF_ONLYTHISCLIENT );
+
 	// [BB] Let the client know that the full update is completed.
 	SERVERCOMMANDS_FullUpdateCompleted( ulClient );
 	// [BB] The client will let us know that it received the update.
 	SERVER_GetClient ( ulClient )->bFullUpdateIncomplete = true;
+
+	// [AK] Tell the client everything they need to know about custom player values.
+	// This must be done after the client received the full update.
+	if ( gameinfo.CustomPlayerData.CountUsed( ) > 0 )
+	{
+		TMap<FName, PlayerData>::Iterator it( gameinfo.CustomPlayerData );
+		TMap<FName, PlayerData>::Pair *pair;
+
+		while ( it.NextPair( pair ))
+		{
+			const PlayerValue DefaultVal = pair->Value.GetDefaultValue( );
+
+			// [AK] First, tell them to reset everyone's values to default.
+			SERVERCOMMANDS_ResetCustomPlayerValue( pair->Value, MAXPLAYERS, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+
+			for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+			{
+				// [AK] Ignore the client themselves, or invalid players.
+				if (( ulIdx == static_cast<ULONG>( g_lCurrentClient )) || ( PLAYER_IsValidPlayer( ulIdx ) == false ))
+					continue;
+
+				// [AK] Don't bother sending out values that are already equal to the default value.
+				if ( pair->Value.GetValue( ulIdx ) == DefaultVal )
+					continue;
+
+				SERVERCOMMANDS_SetCustomPlayerValue( pair->Value, ulIdx, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+			}
+		}
+	}
 }
 
 //*****************************************************************************
@@ -2978,9 +3153,29 @@ void SERVER_AdjustPlayersReactiontime( const ULONG ulPlayer )
 
 //*****************************************************************************
 //
-void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
+void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo, LEAVEREASON_e reason )
 {
-	ULONG	ulIdx;
+	const CLIENTSTATE_e OldState = g_aClients[ulClient].State;
+
+	// [RK] Disconnectd players need their vote removed/cancelled.
+	CALLVOTE_DisconnectedVoter( ulClient );
+
+	// [AK] Clear all the saved chat messages this player said.
+	CHAT_ClearChatMessages( ulClient );
+
+	// [AK] Reset this player's custom values to their default values.
+	PLAYER_ResetCustomValues( ulClient );
+
+	// [BB] Morphed players need to be unmorphed before disconnecting.
+	// [AK] Using MORPH_UNDOBYTIMEOUT ensures this succeeds when they're invulnerable.
+	if ( players[ulClient].morphTics )
+		P_UndoPlayerMorphWithoutFlash( &players[ulClient], &players[ulClient], MORPH_UNDOBYTIMEOUT, true );
+
+	// If they're disconnecting while carrying an important item like a flag, etc.,
+	// make sure they drop it before leaving.
+	// [AK] This must be executed before telling the clients the player left.
+	if ( players[ulClient].mo != nullptr )
+		players[ulClient].mo->DropImportantItems( true );
 
 	if ( bBroadcast )
 	{
@@ -3001,16 +3196,6 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 			Printf( "%s disconnected.\n", g_aClients[ulClient].Address.ToString() );
 	}
 
-	// [RK] Disconnectd players need their vote removed/cancelled.
-	CALLVOTE_DisconnectedVoter( ulClient );
-
-	// [AK] Clear all the saved chat messages this player said.
-	CHAT_ClearChatMessages( ulClient );
-
-	// [BB] Morphed players need to be unmorphed before disconnecting.
-	if (players[ulClient].morphTics)
-		P_UndoPlayerMorph (&players[ulClient], &players[ulClient]);
-
 	// Inform the other clients that this player has been disconnected.
 	SERVERCOMMANDS_DisconnectPlayer( ulClient );
 
@@ -3018,31 +3203,23 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 	// lost everything.
 	if ( bSaveInfo )
 	{
-		PLAYERSAVEDINFO_t	Info;
+		SavedPlayerInfo info;
+		info.address = g_aClients[ulClient].Address;
+		info.fragCount = players[ulClient].fragcount;
+		info.pointCount = players[ulClient].lPointCount;
+		info.winCount = players[ulClient].ulWins;
+		info.deathCount = players[ulClient].ulDeathCount;
+		info.time = players[ulClient].ulTime; // [RC] Save time
+		info.name = players[ulClient].userinfo.GetName( );
 
-		Info.Address		= g_aClients[ulClient].Address;
-		Info.lFragCount		= players[ulClient].fragcount;
-		Info.lPointCount	= players[ulClient].lPointCount;
-		Info.lWinCount		= players[ulClient].ulWins;
-		Info.ulTime			= players[ulClient].ulTime; // [RC] Save time
-		Info.Name			= players[ulClient].userinfo.GetName();
-
-		SERVER_SAVE_SaveInfo( &Info );
+		SERVER_SAVE_SaveInfo( info );
 	}
 	else
 	{
-		PLAYERSAVEDINFO_t	*pInfo;
+		SavedPlayerInfo *info = SERVER_SAVE_GetSavedInfo( players[ulClient].userinfo.GetName( ), g_aClients[ulClient].Address );
 
-		pInfo = SERVER_SAVE_GetSavedInfo( players[ulClient].userinfo.GetName(), g_aClients[ulClient].Address );
-		if ( pInfo )
-		{
-			pInfo->Address.Clear();
-			pInfo->bInitialized = false;
-			pInfo->lFragCount = 0;
-			pInfo->lPointCount = 0;
-			pInfo->lWinCount = 0;
-			pInfo->Name = "";
-		}
+		if ( info )
+			SERVER_SAVE_ClearInfo( *info );
 	}
 
 	// If this player was eligible to get an assist, cancel that.
@@ -3054,9 +3231,6 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 		// [BB] Stop all scripts of the player that are still running.
 		if ( !( zacompatflags & ZACOMPATF_DONT_STOP_PLAYER_SCRIPTS_ON_DISCONNECT ) )
 			FBehavior::StaticStopMyScripts ( players[ulClient].mo );
-		// If he's disconnecting while carrying an important item like a flag, etc., make sure he, 
-		// drops it before he leaves.
-		players[ulClient].mo->DropImportantItems( true );
 
 		players[ulClient].mo->Destroy( );
 		players[ulClient].mo = NULL;
@@ -3067,17 +3241,20 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 	// [BB] Clear any cheats the player had. Note: This may not be done before the player dropped the important items!
 	players[ulClient].cheats = players[ulClient].cheats2 = 0;
 
-	memset( &g_aClients[ulClient].Address, 0, sizeof( g_aClients[ulClient].Address ));
+	g_aClients[ulClient].Address.Clear( );
 	g_aClients[ulClient].State = CLS_FREE;
 	g_aClients[ulClient].ulLastGameTic = 0;
 	playeringame[ulClient] = false;
 
 	// Run the disconnect scripts now that the player is leaving.
-	if (( players[ulClient].bSpectating == false ) ||
-		( players[ulClient].bDeadSpectator ))
-	{
+	// [AK] Only do this if the client is already spawned.
+	if (( OldState >= CLS_SPAWNED_BUT_NEEDS_AUTHENTICATION ) && (( players[ulClient].bSpectating == false ) || ( players[ulClient].bDeadSpectator )))
 		PLAYER_LeavesGame( ulClient );
-	}
+
+	// [SB] Fire event scripts indicating this client disconnected.
+	// GAMEEVENT_PLAYERCONNECT is only fired after their state reaches CLS_SPAWNED, so do the same here.
+	if ( OldState >= CLS_SPAWNED )
+		GAMEMODE_HandleEvent( GAMEEVENT_PLAYERLEAVESSERVER, nullptr, ulClient, reason );
 
 	// Redo the scoreboard.
 	SERVERCONSOLE_ReListPlayers( );
@@ -3097,7 +3274,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 	PLAYER_ResetPlayerData( &players[ulClient] );
 
 	// If this player was the enemy of another bot, tell the bot.
-	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
 		if (( playeringame[ulIdx] == false ) || ( players[ulIdx].pSkullBot == NULL ))
 			continue;
@@ -3111,7 +3288,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 	{
 		for ( ULONG i = 0; i < teams.Size( ); i++ )
 		{
-			TEAM_SetScore( i, 0, false );
+			TEAM_SetPointCount( i, 0, false );
 			TEAM_SetFragCount( i, 0, false );
 			TEAM_SetDeathCount( i, 0 );
 			TEAM_SetWinCount( i, 0, false );
@@ -3122,7 +3299,7 @@ void SERVER_DisconnectClient( ULONG ulClient, bool bBroadcast, bool bSaveInfo )
 
 		// If playing Domination reset ownership
 		if ( domination )
-			DOMINATION_Reset();
+			DOMINATION_Clear();
 	}
 
 	// If no one is left on the server and we're using a cvar lobby map,
@@ -3141,7 +3318,7 @@ void SERVER_SendHeartBeat( void )
 	ULONG	ulIdx;
 
 	// Ping clients once every second.
-	if (( gametic % ( 1 * TICRATE )) || ( gamestate == GS_INTERMISSION ))
+	if ( gametic % TICRATE )
 		return;
 
 	SERVERCOMMANDS_Ping( I_MSTime( ));
@@ -3601,7 +3778,7 @@ void SERVER_ReconnectNewLevel( const char *pszMapName )
 		SERVER_SendClientPacket( ulIdx, true );
 
 		// Disconnect the client.
-		SERVER_DisconnectClient( ulIdx, false, false );
+		SERVER_DisconnectClient( ulIdx, false, false, LEAVEREASON_RECONNECT );
 	}
 }
 
@@ -3656,23 +3833,25 @@ void SERVER_KickAllPlayers( const char *pszReason )
 //
 void SERVER_KickPlayer( ULONG ulPlayer, const char *pszReason )
 {
-	ULONG	ulIdx;
-	char	szKickString[512];
-	char	szName[64];
+	ULONG		ulIdx;
+	FString		kickString;
+	FString		playerName;
 
 	// Make sure the target is valid and applicable.
 	if (( ulPlayer >= MAXPLAYERS ) || ( !playeringame[ulPlayer] ))
 		return;
 
-	sprintf( szName, "%s", players[ulPlayer].userinfo.GetName() );
-	V_RemoveColorCodes( szName );
+	playerName = players[ulPlayer].userinfo.GetName();
+	V_RemoveColorCodes( playerName );
 
 	// Build the full kick string.
-	sprintf( szKickString, TEXTCOLOR_ORANGE "%s" TEXTCOLOR_ORANGE " was kicked from the server! Reason: %s\n", szName, pszReason );
-	Printf( "%s", szKickString );
+	// [AK] Don't print this for the current RCON client, though.
+	kickString.Format( TEXTCOLOR_ORANGE "%s was kicked from the server! Reason: %s\n", playerName.GetChars(), pszReason );
+	CONSOLE_ShouldPrintToRCONPlayer( false );
+	Printf( "%s", kickString.GetChars() );
 
 	// Rebuild the string that will be displayed to clients. This time, color codes are allowed.
-	sprintf( szKickString, TEXTCOLOR_ORANGE "%s" TEXTCOLOR_ORANGE " was kicked from the server! Reason: %s\n", players[ulPlayer].userinfo.GetName(), pszReason );
+	kickString.Format( TEXTCOLOR_ORANGE "%s" TEXTCOLOR_ORANGE " was kicked from the server! Reason: %s\n", players[ulPlayer].userinfo.GetName(), pszReason );
 
 	// Send the message out to all clients.
 	for ( ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
@@ -3680,7 +3859,7 @@ void SERVER_KickPlayer( ULONG ulPlayer, const char *pszReason )
 		if ( SERVER_IsValidClient( ulIdx ) == false )
 			continue;
 
-		SERVER_PrintfPlayer( PRINT_HIGH, ulIdx, "%s", szKickString );
+		SERVER_PrintfPlayer( PRINT_HIGH, ulIdx, "%s", kickString.GetChars() );
 	}
 
 	// If we're kicking a bot, just remove him.
@@ -3695,7 +3874,7 @@ void SERVER_KickPlayer( ULONG ulPlayer, const char *pszReason )
 		g_aClients[ulPlayer].SavedPackets.ClearScheduling();
 
 		// Tell the other players that this player has been kicked.
-		SERVER_DisconnectClient( ulPlayer, true, false );
+		SERVER_DisconnectClient( ulPlayer, true, false, LEAVEREASON_KICKED );
 	}
 }
 
@@ -3780,14 +3959,14 @@ bool SERVER_IsEveryoneReadyToGoOn( void )
 
 			// If there's a valid player in game who is not ready to go on, we
 			// know we can't proceed.
-			if ( players[ulIdx].bReadyToGoOn == false )
+			if (( players[ulIdx].statuses & PLAYERSTATUS_READYTOGOON ) == false )
 				return ( false );
 		}
 		else
 		{
 			// Else if we're dealing with a spectator, we must handle it in a
 			// different way.
-			if ( players[ulIdx].bReadyToGoOn == true )
+			if ( players[ulIdx].statuses & PLAYERSTATUS_READYTOGOON )
 				ulSpectatorCountReady++;
 		}
 	}
@@ -3837,7 +4016,8 @@ bool SERVER_IsPlayerAllowedToKnowHealth( ULONG ulPlayer, ULONG ulPlayer2 )
 		return ( false );
 
 	// If these players's are not teammates, then disallow knowledge of health.
-	if ( players[ulPlayer].mo->IsTeammate( players[ulPlayer2].mo ) == false )
+	// [JS] Unless ZADF_DONT_HIDE_STATS is enabled.
+	if (( players[ulPlayer].mo->IsTeammate( players[ulPlayer2].mo ) == false ) && (( zadmflags & ZADF_DONT_HIDE_STATS ) == false ))
 		return ( false );
 
 	// Passed all checks!
@@ -3848,25 +4028,26 @@ bool SERVER_IsPlayerAllowedToKnowHealth( ULONG ulPlayer, ULONG ulPlayer2 )
 // 
 // [RC] Is this player ignoring players at this address?
 // Returns 0 (if not), -1 (if indefinitely), or the tics until expiration (if temporarily).
+// [AK] Updated to return either if this address's chat messages or voice are ignored.
 //
-LONG SERVER_GetPlayerIgnoreTic( ULONG ulPlayer, NETADDRESS_s Address )
+LONG SERVER_GetPlayerIgnoreTic( const unsigned int player, NETADDRESS_s address, const bool doVoice )
 {
-	// Remove all expired entries first. ([RC] We could combine the loops, but not all of the old entries would be removed.)
-	for ( std::list<STORED_QUERY_IP_s>::iterator i = SERVER_GetClient( ulPlayer )->IgnoredAddresses.begin(); i != SERVER_GetClient( ulPlayer )->IgnoredAddresses.end( ); )
-	{
-		if (( i->lNextAllowedGametic != -1 ) && ( i->lNextAllowedGametic <= gametic ))
-			i = SERVER_GetClient( ulPlayer )->IgnoredAddresses.erase( i ); // Returns a new iterator.
-		else
-			++i;
-	}
+	// Remove all expired entries first.
+	SERVER_GetClient( player )->UpdateCommRules( );
+
+	std::list<ClientCommRule> &list = SERVER_GetClient( player )->commRules;
 
 	// Search for entries with this address.
-	for ( std::list<STORED_QUERY_IP_s>::iterator i = SERVER_GetClient( ulPlayer )->IgnoredAddresses.begin(); i != SERVER_GetClient( ulPlayer )->IgnoredAddresses.end(); ++i )
+	for ( std::list<ClientCommRule>::iterator i = list.begin( ); i != list.end( ); i++ )
 	{
-		if ( i->Address.CompareNoPort( Address ))
+		const bool ignored = doVoice ? i->ignoreVoice : i->ignoreChat;
+
+		if (( i->address.CompareNoPort( address )) && ( ignored ))
 		{
-			if ( i->lNextAllowedGametic != -1 )
-				return i->lNextAllowedGametic - gametic;
+			const int unignoredGametic = doVoice ? i->unignoreVoiceGametic : i->unignoreChatGametic;
+
+			if ( unignoredGametic != -1 )
+				return unignoredGametic - gametic;
 			else
 				return -1;
 		}
@@ -3967,7 +4148,7 @@ void SERVER_SetMapMusic( const char *pszMusic, int order )
 
 //*****************************************************************************
 //
-void SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon )
+void SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon, bool bGiveReverseOrder )
 {
 	AInventory	*pInventory;
 
@@ -3992,7 +4173,13 @@ void SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon )
 	TArray<AInventory *> inventory;
 	// [BB] First but the stuff into a TArray.
 	for ( pInventory = players[ulClient].mo->Inventory; pInventory != NULL; pInventory = pInventory->Inventory )
-		inventory.Push ( pInventory );
+	{
+		// [RK] Determine if we want to give the inventory backwards if true or fowards if false.
+		if ( bGiveReverseOrder )
+			inventory.Push( pInventory );
+		else
+			inventory.Insert( 0, pInventory );
+	}
 	// [BB] Then give them in reverse order.
 	while ( inventory.Size() )
 	{
@@ -4019,11 +4206,6 @@ void SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon )
 				SERVERCOMMANDS_GivePowerup( ulClient, static_cast<APowerup *>( pInventory ) );
 			else
 				SERVERCOMMANDS_GivePowerup( ulClient, static_cast<APowerup *>( pInventory ), ulClient, SVCF_ONLYTHISCLIENT );
-			if (( pInventory->IsKindOf( RUNTIME_CLASS( APowerInvulnerable ))) &&
-				(( players[ulClient].mo->effects & FX_VISIBILITYFLICKER ) || ( players[ulClient].mo->effects & FX_RESPAWNINVUL )))
-			{
-				SERVERCOMMANDS_PlayerRespawnInvulnerability( ulClient );
-			}
 
 			// [BB] If it's a rune, we need to explicitly set its icon since it was set by the RuneGiver.
 			if ( pInventory == pInventory->Owner->Rune )
@@ -4064,7 +4246,15 @@ void SERVER_ResetInventory( ULONG ulClient, const bool bChangeClientWeapon )
 	// [BB]: After giving back the inventory, inform the player about which weapon he is using.
 	// This at least partly fixes the "Using unknown weapon type" bug.
 	if ( bChangeClientWeapon )
+	{
+		// [AK] After clearing the player's inventory, any weapons that we gave back
+		// to them could've made them select it unintentionally. This is especially
+		// true if they just morphed with NOMORPHLIMITATIONS enabled and they don't
+		// have a morph weapon, but they were carrying other weapons before. If we're
+		// going to tell them which weapon they're using, clear their weapon first.
+		SERVERCOMMANDS_ClearConsoleplayerWeapon( ulClient );
 		SERVERCOMMANDS_WeaponChange( ulClient, ulClient, SVCF_ONLYTHISCLIENT );
+	}
 
 	// [Dusk] Also inform the client about his Hexen armor values as
 	// SERVERCOMMANDS_DestroyAllInventory clears it from the client.
@@ -4186,9 +4376,10 @@ void SERVER_ClearSectorLinks( void )
 //
 void SERVER_UpdateLoopingChannels( AActor *pActor, int channel, FSoundID soundid, float fVolume, float fAttenuation, bool bRemove )
 {
-	FSoundChan chan;
+	FSoundChan chan = { };
 
-	chan.NextChan = NULL;
+	chan.NextChan = nullptr;
+	chan.PrevChan = nullptr;
 	chan.Actor = pActor;
 	chan.EntChannel = channel & 7;
 	chan.ChanFlags = channel & ~7;
@@ -4376,7 +4567,7 @@ void SERVER_SyncServerModCVars ( const int PlayerToSync )
 //
 void SERVER_IgnoreIP( NETADDRESS_s Address )
 {
-	g_floodProtectionIPQueue.addAddress( Address, g_lGameTime / 1000 );
+	g_floodProtectionIPQueue.addAddress( Address, g_GameTime / 1000 );
 }
 
 //*****************************************************************************
@@ -4433,6 +4624,10 @@ void SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags )
 	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( gamestate == GS_STARTUP ) || ( value == oldValue ))
 		return;
 
+	// [AK] Don't do anything with lmsallowedweapons unless we're playing (T)LMS.
+	if (( &flagset == &lmsallowedweapons ) && ( lastmanstanding == false ) && ( teamlms == false ))
+		return;
+
 	FString result;
 	int flagsChanged = 0;
 
@@ -4444,26 +4639,27 @@ void SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags )
 		if ((( value ^ oldValue ) & bit ) == 0 )
 			continue;
 
-		// [AK] Print the name of the CVar and its new value while we still can.
-		if ( ++flagsChanged <= maxflags )
+		for ( FBaseCVar* cvar = CVars; cvar; cvar = cvar->GetNext( ))
 		{
-			for ( FBaseCVar* cvar = CVars; cvar; cvar = cvar->GetNext( ) )
+			// [AK] Make sure that this CVar is a flag.
+			if ( cvar->IsFlagCVar( ) == false )
+				continue;
+
+			FFlagCVar* flagCVar = static_cast<FFlagCVar*>( cvar );
+
+			// [AK] Check if this CVar belongs to the flagset and matches the corresponding bit.
+			if (( flagCVar->GetValueVar( ) == &flagset ) && ( flagCVar->GetBitVal( ) == bit ))
 			{
-				// [AK] Make sure that this CVar is a flag.
-				if ( cvar->IsFlagCVar( ) == false )
-					continue;
-
-				FFlagCVar* flagCVar = static_cast<FFlagCVar*>( cvar );
-
-				// [AK] Check if this CVar belongs to the flagset and matches the corresponding bit.
-				if (( flagCVar->GetValueVar( ) == &flagset ) && ( flagCVar->GetBitVal( ) == bit ))
+				// [AK] Print the name of the CVar and its new value while we still can.
+				if ( ++flagsChanged <= maxflags )
 				{
 					if ( flagsChanged > 1 )
 						result += ", ";
 
 					result.AppendFormat( "%s %s", flagCVar->GetName( ), ( value & bit ) ? "ON" : "OFF" );
-					break;
 				}
+
+				break;
 			}
 		}
 	}
@@ -4473,22 +4669,58 @@ void SERVER_FlagsetChanged( FIntCVar& flagset, int maxflags )
 	if ( flagsChanged > maxflags )
 		result.Format( "%d flags changed", flagsChanged );
 
-	SERVER_Printf( "%s changed to: %d (%s)\n", flagset.GetName( ), value, result.GetChars() );
+	if ( result.IsNotEmpty( ))
+		SERVER_Printf( "%s changed to: %d (%s)\n", flagset.GetName( ), value, result.GetChars( ));
+	else
+		SERVER_Printf( "%s changed to: %d\n", flagset.GetName( ), value );
 
 	// [AK] We also need to tell the clients to update the changed flagset.
-	if ( flagset == *lmsspectatorsettings )
-	{
+	if ( &flagset == &lmsspectatorsettings )
 		SERVERCOMMANDS_SetLMSSpectatorSettings( );
-	}
-	else if ( flagset == *lmsallowedweapons )
-	{
-		if (( lastmanstanding ) || ( teamlms ))
-			SERVERCOMMANDS_SetLMSAllowedWeapons( );
-	}
+	else if ( &flagset == &lmsallowedweapons )
+		SERVERCOMMANDS_SetLMSAllowedWeapons( );
 	else
-	{
 		SERVERCOMMANDS_SetGameDMFlags( );
+}
+
+//*****************************************************************************
+//
+// [AK] Prints the name of a CVar and its new value to the console, sends an update
+// to the clients, and possibly updates the server console's scoreboard.
+//
+void SERVER_SettingChanged( FBaseCVar &cvar, bool bUpdateConsole, int maxDecimals )
+{
+	// [AK] Only continue if we're the server.
+	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( gamestate == GS_STARTUP ))
+		return;
+
+	FString result;
+
+	// [AK] Store the CVar's value into a string so that we can print it.
+	switch ( cvar.GetRealType( ))
+	{
+		case CVAR_Float:
+			if ( maxDecimals <= 0 )
+				result.Format( "%f", cvar.GetGenericRep( CVAR_Float ).Float );
+			else
+				result.Format( "%.*f", maxDecimals, cvar.GetGenericRep( CVAR_Float ).Float );
+			break;
+
+		case CVAR_String:
+			result = cvar.GetGenericRep( CVAR_String ).String;
+			break;
+
+		default:
+			result.Format( "%d", cvar.GetGenericRep( CVAR_Int ).Int );
+			break;
 	}
+
+	SERVER_Printf( "%s changed to: %s\n", cvar.GetName( ), result.GetChars( ));
+	SERVERCOMMANDS_SetGameModeLimits( );
+
+	// [AK] Update the server console's score if necessary.
+	if ( bUpdateConsole )
+		SERVERCONSOLE_UpdateScoreboard( );
 }
 
 //*****************************************************************************
@@ -4666,13 +4898,26 @@ void SERVER_ParsePacket( BYTESTREAM_s *pByteStream )
 			// this could be abused to keep non finished connections alive.
 			if ( g_aClients[g_lCurrentClient].State < CLS_AUTHENTICATED )
 			{
-				// [BB] Under these special, rare circumstances valid clients can send illegal commands.
-				if ( g_aClients[g_lCurrentClient].State != CLS_AUTHENTICATED_BUT_OUTDATED_MAP )
-					Printf( "Illegal command (%d) from non-authenticated client (%s).\n", static_cast<int> (lCommand), NETWORK_GetFromAddress().ToString() );
+				// [AK] Allow non-authenticated clients to still send CLC_QUIT commands,
+				// in case they left while connecting to the server. This way, their slot
+				// can be freed so that another client may use it.
+				if (( g_aClients[g_lCurrentClient].State > CLS_CHALLENGE ) && ( lCommand == CLC_QUIT ))
+				{
+					// [SB] But only print the message if sv_printconnectionmessages is enabled.
+					if ( sv_printconnectionmessages )
+						Printf( "Non-authenticated client (%s) disconnected.\n", NETWORK_GetFromAddress().ToString() );
+				}
+				else
+				{
+					// [BB] Under these special, rare circumstances valid clients can send illegal commands.
+					// [SB] But only print the message if sv_printconnectionmessages is enabled.
+					if ( g_aClients[g_lCurrentClient].State != CLS_AUTHENTICATED_BUT_OUTDATED_MAP && sv_printconnectionmessages )
+						Printf( "Illegal command (%ld) from non-authenticated client (%s).\n", lCommand, NETWORK_GetFromAddress().ToString() );
 
-				// [BB] Ignore the rest of the packet, it can't be valid.
-				while ( pByteStream->ReadByte() != -1 );
-				break;
+					// [BB] Ignore the rest of the packet, it can't be valid.
+					while ( pByteStream->ReadByte() != -1 );
+					break;
+				}
 			}
 
 
@@ -4718,63 +4963,37 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 	case CLC_QUIT:
 
 		// Client has left the game.
-		SERVER_DisconnectClient( g_lCurrentClient, true, true );
+		// [AK] Don't broadcast or save info for non-authenticated clients.
+		if ( g_aClients[g_lCurrentClient].State < CLS_AUTHENTICATED )
+			SERVER_DisconnectClient( g_lCurrentClient, false, false, LEAVEREASON_LEFT );
+		else
+			SERVER_DisconnectClient( g_lCurrentClient, true, true, LEAVEREASON_LEFT );
+
 		break;
-	case CLC_STARTCHAT:
-	case CLC_ENDCHAT:
-	case CLC_ENTERCONSOLE:
-	case CLC_EXITCONSOLE:
-	case CLC_ENTERMENU:
-	case CLC_EXITMENU:
-
-		// [BB] If the client is flooding the server with commands, the client is
-		// kicked and we don't need to handle the command.
-		if ( server_CheckForClientMinorCommandFlood ( g_lCurrentClient ) == true )
-			return ( true );
-
-		if ( lCommand == CLC_STARTCHAT )
+	case CLC_SETSTATUS:
 		{
-			// Client is beginning to type.
-			players[g_lCurrentClient].bChatting = true;
+			const int statuses = pByteStream->ReadByte( );
 
-			// Tell clients about the change in this player's chatting status.
-			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_CHATTING );
-		}
-		else if ( lCommand == CLC_ENDCHAT )
-		{
-			// Client is done talking.
-			players[g_lCurrentClient].bChatting = false;
+			// [BB] If the client is flooding the server with commands, the client is
+			// kicked and we don't need to handle the command.
+			if ( server_CheckForClientMinorCommandFlood ( g_lCurrentClient ) == true )
+				return ( true );
 
-			// Tell clients about the change in this player's chatting status.
-			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_CHATTING );
-		}
-		else if ( lCommand == CLC_ENTERCONSOLE )
-		{
+			const int oldStatuses = players[g_lCurrentClient].statuses;
+			const int mask = PLAYERSTATUS_CHATTING | PLAYERSTATUS_INCONSOLE | PLAYERSTATUS_INMENU;
 
-			// Player has entered the console - give him an icon.
-			players[g_lCurrentClient].bInConsole = true;
-			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INCONSOLE );
-		}
-		else if ( lCommand == CLC_EXITCONSOLE )
-		{
-			// Player has left the console - remove his icon.
-			players[g_lCurrentClient].bInConsole = false;
-			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INCONSOLE );
-		}
-		else if ( lCommand == CLC_ENTERMENU )
-		{
+			// [AK] The only statuses the client needs to sync with the server are the
+			// "chatting" and "in console/menu" ones. This is intended to prevent
+			// malicious clients from changing the "lagging" or "ready to go" statuses
+			// to pretend they're lagging or unready themselves on the intermission
+			// screen. Reset these bits to zero, then set them to whatever they sent us.
+			players[g_lCurrentClient].statuses &= ~mask;
+			players[g_lCurrentClient].statuses |= ( statuses & mask );
 
-			// Player has entered the console - give him an icon.
-			players[g_lCurrentClient].bInMenu = true;
-			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INMENU );
+			if ( players[g_lCurrentClient].statuses != oldStatuses )
+				SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, g_lCurrentClient, SVCF_SKIPTHISCLIENT );
 		}
-		else if ( lCommand == CLC_EXITMENU )
-		{
-			// Player has left the console - remove his icon.
-			players[g_lCurrentClient].bInMenu = false;
-			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_INMENU );
-		}
-		return false;
+		break;
 	case CLC_IGNORE:
 
 		// Player whishes to ignore / unignore someone.
@@ -4823,7 +5042,7 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 
 		// Client wishes to join the game after spectating.
 		return ( server_RequestJoin( pByteStream ));
-	case CLC_REQUESTRCON:
+	case CLC_CHANGERCONSTATUS:
 
 		// Client is attempting to gain remote control access to the server.
 		return ( server_RequestRCON( pByteStream ));
@@ -4861,15 +5080,12 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 	case CLC_READYTOGOON:
 
 		// Users can only toggle if they haven't yet, and we must be in intermission.
-		if ( gamestate != GS_INTERMISSION || players[g_lCurrentClient].bReadyToGoOn )
+		if ( gamestate != GS_INTERMISSION || ( players[g_lCurrentClient].statuses & PLAYERSTATUS_READYTOGOON ))
 			return ( false );
 
 		// Toggle this player (specator)'s "ready to go on" status.
 		// [RC] Now a permanent choice.
-		players[g_lCurrentClient].bReadyToGoOn = true;
-
-		if ( SERVER_IsEveryoneReadyToGoOn( ) == false )
-			SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, PLAYERSTATUS_READYTOGOON );
+		PLAYER_SetStatus( &players[g_lCurrentClient], PLAYERSTATUS_READYTOGOON, true );
 
 		return false;
 	case CLC_CHANGEDISPLAYPLAYER:
@@ -5004,16 +5220,30 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 		}
 		break;
 
-	case CLC_SETWANTHIDEACCOUNT:
-		// [TP] Player changes his stance on whether or not he wants his account to be displayed.
+	case CLC_SETWANTHIDEINFO:
+		// [TP/AK] Player changes his stance on whether or not he wants his info to be displayed.
 		{
 			// [TP] If the client is flooding the server with commands, the client is
 			// kicked and we don't need to handle the command.
 			if ( server_CheckForClientMinorCommandFlood ( g_lCurrentClient ) == true )
 				return ( true );
 
-			SERVER_GetClient( SERVER_GetCurrentClient() )->WantHideAccount = !!pByteStream->ReadByte();
-			SERVERCOMMANDS_SetPlayerAccountName( g_lCurrentClient );
+			CLIENT_s *const client = SERVER_GetClient( SERVER_GetCurrentClient());
+			const int info = pByteStream->ReadByte();
+			const bool value = !!pByteStream->ReadByte();
+
+			if ( info == HIDEINFO_ACCOUNTNAME )
+			{
+				client->WantHideAccount = value;
+				SERVERCOMMANDS_SetPlayerAccountName( g_lCurrentClient );
+			}
+			else if ( info == HIDEINFO_COUNTRY )
+			{
+				client->bWantHideCountry = value;
+
+				if ( players[g_lCurrentClient].ulCountryIndex > 0 )
+					SERVERCOMMANDS_SetPlayerCountry( g_lCurrentClient );
+			}
 		}
 		return false;
 
@@ -5063,6 +5293,78 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			}
 		}
 		break;
+
+	case CLC_VOIPAUDIOPACKET:
+		{
+			const unsigned int frame = pByteStream->ReadLong( );
+			const unsigned int length = pByteStream->ReadShort( );
+			unsigned char *data = new unsigned char[length];
+
+			pByteStream->ReadBuffer( data, length );
+
+			// [AK] Only send out the VoIP audio packet if the player isn't ignored.
+			if ( players[g_lCurrentClient].ignoreVoice.enabled == false )
+				SERVERCOMMANDS_PlayerVoIPAudioPacket( g_lCurrentClient, frame, data, length );
+
+			delete[] data;
+		}
+		break;
+
+	case CLC_SETVOIPCHANNELVOLUME:
+		{
+			const unsigned int targetPlayer = pByteStream->ReadByte( );
+			const float volume = clamp<float>( pByteStream->ReadFloat( ), 0.0f, 2.0f );
+
+			if ( SERVER_IsValidClient( targetPlayer ))
+			{
+				NETADDRESS_s address = SERVER_GetClient( targetPlayer )->Address;
+				std::list<ClientCommRule> &list = SERVER_GetClient( g_lCurrentClient )->commRules;
+
+				for ( std::list<ClientCommRule>::iterator i = list.begin( ); i != list.end( ); i++ )
+				{
+					if ( i->address.CompareNoPort( address ))
+					{
+						i->VoIPChannelVolume = volume;
+
+						if ( i->IsObsolete( ))
+							list.erase( i );
+
+						return false;
+					}
+				}
+
+				if ( volume != 1.0f )
+				{
+					ClientCommRule entry( address );
+					entry.VoIPChannelVolume = volume;
+
+					list.push_back( entry );
+				}
+			}
+		}
+		break;
+
+	// [SB] Strife conversation stuff
+	case CLC_CONVERSATIONREPLY:
+		{
+			const int selection = pByteStream->ReadLong( );
+
+			auto npc = players[g_lCurrentClient].ConversationNPC;
+			if ( npc != nullptr && npc->Conversation != nullptr )
+			{
+				P_ConversationReply( g_lCurrentClient, npc->Conversation->ThisNodeNum, selection );
+			}
+
+			break;
+		}
+
+	case CLC_CONVERSATIONCLOSE:
+		{
+			P_ConversationClose( g_lCurrentClient );
+
+			break;
+		}
+		
 	default:
 
 		Printf( PRINT_HIGH, "SERVER_ParseCommands: Unknown client message: %d\n", static_cast<int> (lCommand) );
@@ -5080,7 +5382,7 @@ bool SERVER_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 // [RC] Finds the first player (or, optionally, bot) with the given name; returns MAXPLAYERS if none were found.
 ULONG SERVER_GetPlayerIndexFromName( const char *pszName, bool bIgnoreColors, bool bReturnBots )
 {
-	char	szPlayerName[64];
+	FString		playerName;
 
 	for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
 	{
@@ -5090,11 +5392,11 @@ ULONG SERVER_GetPlayerIndexFromName( const char *pszName, bool bIgnoreColors, bo
 		// Optionally remove the color codes from the player name.
 		if ( bIgnoreColors )
 		{
-			sprintf( szPlayerName, "%s", players[ulIdx].userinfo.GetName() );
-			V_RemoveColorCodes( szPlayerName );
+			playerName = players[ulIdx].userinfo.GetName( );
+			V_RemoveColorCodes( playerName );
 		}
 
-		if ( stricmp( bIgnoreColors ? szPlayerName : players[ulIdx].userinfo.GetName(), pszName ) == 0 )
+		if ( stricmp( bIgnoreColors ? playerName.GetChars( ) : players[ulIdx].userinfo.GetName( ), pszName ) == 0 )
 		{
 			if ( !players[ulIdx].bIsBot || bReturnBots )
 				return ulIdx;
@@ -5220,14 +5522,23 @@ static bool server_ParseBufferedCommand ( BYTESTREAM_s *pByteStream )
 		{
 			if ( recentCMDs->getOldestEntry( i ) == ulClientTic )
 			{
-				delete cmd;
-				return false;
+				// [AK] Non-move (i.e. weapon select) commands with the same client gametic but
+				// different weapon net ids are not duplicates, so don't delete them.
+				if (( bIsMoveCMD ) || ( cmd->getWeaponNetworkIndex( ) == g_aClients[g_lCurrentClient].usLastWeaponNetworkIndex ))
+				{
+					delete cmd;
+					return false;
+				}
 			}
 		}
 
 		// [AK] Save this gametic into the ring buffer for later use.
 		recentCMDs->put( ulClientTic );
 	}
+
+	// [AK] Save the net id of the weapon sent last if this is a non-move (i.e. weapon select) command.
+	if ( bIsMoveCMD == false )
+		g_aClients[g_lCurrentClient].usLastWeaponNetworkIndex = cmd->getWeaponNetworkIndex( );
 
 	if ( sv_useticbuffer )
 	{
@@ -5533,33 +5844,91 @@ void SERVER_ResetClientExtrapolation( ULONG ulClient, bool bAfterBacktrace )
 
 //*****************************************************************************
 //
+void SERVER_DestroyActorIfClientsidedOnly( AActor *actor )
+{
+	if (( NETWORK_GetState( ) != NETSTATE_SERVER ) || ( actor == nullptr ))
+		return;
+
+	// [AK] This actor is clientsided only, but the server might've only spawned
+	// it so that it could tell the clients to spawn it (e.g. the "summon" CCMD
+	// or from a serversided ACS script). By this point, the server doesn't need
+	// it anymore and it must be destroyed.
+	if ( actor->NetworkFlags & NETFL_CLIENTSIDEONLY )
+	{
+		actor->ClearCounters( );
+		actor->Destroy( );
+		actor = nullptr;
+	}
+}
+
+//*****************************************************************************
+//
+ClientCommRule::ClientCommRule( NETADDRESS_s address ) :
+	address( address ),
+	ignoreChat( false ),
+	ignoreVoice( false ),
+	unignoreChatGametic( 0 ),
+	unignoreVoiceGametic( 0 ),
+	VoIPChannelVolume( 1.0f ) { }
+
+//*****************************************************************************
+//
+void ClientCommRule::SetIgnore( const bool doVoice, const bool ignore, const int unignoreTick )
+{
+	if ( doVoice )
+	{
+		ignoreVoice = ignore;
+		unignoreVoiceGametic = unignoreTick;
+	}
+	else
+	{
+		ignoreChat = ignore;
+		unignoreChatGametic = unignoreTick;
+	}
+}
+
+//*****************************************************************************
+//
+bool ClientCommRule::IsObsolete( void ) const
+{
+	return (( ignoreChat == false ) && ( ignoreVoice == false ) && ( VoIPChannelVolume == 1.0f ));
+}
+
+//*****************************************************************************
+//
 static bool server_Ignore( BYTESTREAM_s *pByteStream )
 {
-	ULONG	ulTargetIdx = pByteStream->ReadByte();
-	bool	bIgnore = !!pByteStream->ReadByte();
-	LONG	lTicks = pByteStream->ReadLong();
+	const unsigned int targetPlayer = pByteStream->ReadByte( );
+	const bool ignore = !!pByteStream->ReadBit( );
+	const bool doVoice = !!pByteStream->ReadBit( );
+	const int ticks = pByteStream->ReadLong( );
 
-	if ( !SERVER_IsValidClient( ulTargetIdx ))
+	if ( !SERVER_IsValidClient( targetPlayer ))
 		return false;
 
-	// First, remove any entries using this IP.
-	NETADDRESS_s AddressToIgnore  = SERVER_GetClient( ulTargetIdx )->Address;
-	for ( std::list<STORED_QUERY_IP_s>::iterator i = SERVER_GetClient( g_lCurrentClient )->IgnoredAddresses.begin(); i != SERVER_GetClient( g_lCurrentClient )->IgnoredAddresses.end( ); )
+	const int unignoreTick = ( ticks == -1 ) ? ticks : ( gametic + ticks );
+	NETADDRESS_s addressToIgnore = SERVER_GetClient( targetPlayer )->Address;
+	std::list<ClientCommRule> &list = SERVER_GetClient( g_lCurrentClient )->commRules;
+
+	for ( std::list<ClientCommRule>::iterator i = list.begin( ); i != list.end( ); i++ )
 	{
-		if ( i->Address.CompareNoPort( AddressToIgnore ))
-			i = SERVER_GetClient( g_lCurrentClient )->IgnoredAddresses.erase( i ); // Returns a new iterator.
-		else
-			++i;
+		if ( i->address.CompareNoPort( addressToIgnore ))
+		{
+			i->SetIgnore( doVoice, ignore, unignoreTick );
+
+			if ( i->IsObsolete( ))
+				list.erase( i );
+
+			return false;
+		}
 	}
 
-	// Now, add the new entry. If an entry had existed before, this "updates" it.
-	if ( bIgnore )
+	if ( ignore )
 	{
-		STORED_QUERY_IP_s Entry;
-		Entry.Address = AddressToIgnore;
-		Entry.lNextAllowedGametic = ( lTicks == -1 ) ? lTicks : ( gametic + lTicks );
+		ClientCommRule entry( addressToIgnore );
+		entry.SetIgnore( doVoice, true, unignoreTick );
 
-		SERVER_GetClient( g_lCurrentClient )->IgnoredAddresses.push_back( Entry );
+		list.push_back( entry );
 	}
 
 	return false;
@@ -5580,7 +5949,7 @@ static bool server_CheckForClientCommandFlood( ULONG ulClient )
 	{
 		if ( ( gametic - g_aClients[ulClient].commandInstances.getOldestEntry() ) <= floodWindowLength * TICRATE )
 		{
-			SERVERBAN_BanPlayer( ulClient, "10min", "Client command flood." );
+			SERVERBAN_BanPlayer( ulClient, "10min", "Client command flood.", 0 );
 			return ( true );
 		}
 	}
@@ -5611,7 +5980,7 @@ static bool server_CheckForClientMinorCommandFlood( ULONG ulClient )
 	{
 		if ( ( gametic - g_aClients[ulClient].minorCommandInstances.getOldestEntry() ) <= floodWindowLength * TICRATE )
 		{
-			SERVERBAN_BanPlayer( ulClient, "10min", "Client command flood." );
+			SERVERBAN_BanPlayer( ulClient, "10min", "Client command flood.", 0 );
 			return ( true );
 		}
 	}
@@ -5715,60 +6084,13 @@ static bool server_Say( BYTESTREAM_s *pByteStream )
 		return ( true );
 
 	// [RC] Are this player's chats ignored?
-	if ( players[ulPlayer].bIgnoreChat )
-	{
-		// [BB] Tell the player that (and for how long) he is muted.
-		// Except when the muting time is not limited.
-		FString message = "The server has muted you. Nobody can see your messages";
-		if ( players[ulPlayer].lIgnoreChatTicks != -1 )
-		{
-			// [EP] Print how many minutes and how many seconds are left.
-			LONG lMinutes = players[ulPlayer].lIgnoreChatTicks / ( TICRATE * MINUTE );
-			LONG lSeconds = ( players[ulPlayer].lIgnoreChatTicks / TICRATE ) % MINUTE;
-			if ( ( lMinutes > 0 ) && ( lSeconds > 0 ) )
-			{
-				message.AppendFormat( " for %d minute%s and %d second%s",
-							static_cast<int>(lMinutes),
-							lMinutes == 1 ? "" : "s",
-							static_cast<int>(lSeconds),
-							lSeconds == 1 ? "" : "s");
-			}
-			// [EP] If the time to wait is just some tics,
-			// tell the player that he can wait just a bit.
-			// There's no need to print the tics.
-			else if ( ( lMinutes == 0 ) && ( lSeconds == 0 ) )
-			{
-				message += " for less than a second";
-			}
-			else
-			{
-				if ( lMinutes > 0 )
-				{
-					message.AppendFormat( " for %d minute%s",
-							static_cast<int>(lMinutes),
-							lMinutes == 1 ? "" : "s");
-				}
-
-				if ( lSeconds > 0 )
-				{
-					message.AppendFormat( " for %d second%s",
-							static_cast<int>(lSeconds),
-							lSeconds == 1 ? "" : "s");
-				}
-			}
-		}
-		message += ".\n";
-
-		SERVER_PrintfPlayer( ulPlayer, "%s", message.GetChars() );
+	if ( players[ulPlayer].ignoreChat.enabled )
 		return ( false );
-	}
 
 	// Check for chat flooding.
 	if ( server_CheckForChatFlood ( ulPlayer ) == true )
 	{
-		players[ulPlayer].bIgnoreChat = true;
-		players[ulPlayer].lIgnoreChatTicks = 15 * TICRATE;
-		SERVER_PrintfPlayer( ulPlayer, "Please refrain from chatting so much. You've been muted for 15 seconds.\n" );
+		CHAT_IgnorePlayer( ulPlayer, false, 15 * TICRATE, "chatting too much" );
 		return ( false );
 	}
 	// Or, relay the chat message onto clients.
@@ -5885,73 +6207,77 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 		moveCmd.usWeaponNetworkIndex = 0;
 }
 
-bool ClientMoveCommand::process( const ULONG ulClient ) const
+bool ClientMoveCommand::process( const ULONG clientIndex ) const
 {
-	player_t *pPlayer = &players[ulClient];
-	ticcmd_t *pCmd = &pPlayer->cmd;
-	memcpy( pCmd, &moveCmd, sizeof( ticcmd_t ));
+	CLIENT_s *client = SERVER_GetClient( clientIndex );
+	player_t *player = &players[clientIndex];
+	ticcmd_t *cmd = &player->cmd;
+	memcpy( cmd, &moveCmd, sizeof( ticcmd_t ));
 
-	g_aClients[ulClient].ulClientGameTic = moveCmd.ulGametic;
+	client->ulClientGameTic = moveCmd.ulGametic;
 	// Important: We should only accept their update if it's less than or equal
 	// to ours. The clients should never send a larger gametic unless they're
 	// hacking the data or something has become corrupt.
 	// We also will only accept newer gametics to prevent clients from going
 	// back in time and attempting to cheat with stale states.
-	if ( ( moveCmd.ulServerGametic <= unsigned ( gametic ) ) && ( unsigned ( g_aClients[ulClient].lLastServerGametic ) < moveCmd.ulServerGametic ) )
-		g_aClients[ulClient].lLastServerGametic = moveCmd.ulServerGametic; // [CK] Use the gametic from what we saw
+	if (( moveCmd.ulServerGametic <= static_cast<unsigned>( gametic )) && ( static_cast<unsigned>( client->lLastServerGametic ) < moveCmd.ulServerGametic ))
+		client->lLastServerGametic = moveCmd.ulServerGametic; // [CK] Use the gametic from what we saw
 
 	// If the client is attacking, he always sends the name of the weapon he's using.
 	// [AK] Only do this when we're not extrapolating this player's movement.
-	if (( pCmd->ucmd.buttons & BT_ATTACK ) && ( SERVER_IsExtrapolatingPlayer( ulClient ) == false ))
+	if (( cmd->ucmd.buttons & BT_ATTACK ) && ( SERVER_IsExtrapolatingPlayer( clientIndex ) == false ))
 	{
 		// If the name of the weapon the client is using doesn't match the name of the
 		// weapon we think he's using, do something to rectify the situation.
 		// [BB] Only do this if the client is fully spawned and authenticated.
-		if ( ( SERVER_GetClient( ulClient )->State == CLS_SPAWNED ) && ( ( pPlayer->ReadyWeapon == NULL ) || ( pPlayer->ReadyWeapon->GetClass( )->getActorNetworkIndex() != moveCmd.usWeaponNetworkIndex ) ) )
+		if (( client->State == CLS_SPAWNED ) && (( player->ReadyWeapon == nullptr ) || ( player->ReadyWeapon->GetClass( )->getActorNetworkIndex( ) != moveCmd.usWeaponNetworkIndex )))
 		{
 			// [BB] Directly after a map change this workaround seems to do more harm than good,
 			// (client and server are possibly changing weapons and one of them is slightly ahead)
 			// so don't use it when the level just started. The inventory reset that the server does
 			// on the clients after a map change most likely has to do with this slight sync issues.
 			// [BB] Do this anyway if the server thinks that the player doesn't have any weapon.
-			if ( ( level.maptime > 3*TICRATE )
-				|| ( ( SERVER_GetClient( ulClient )->State == CLS_SPAWNED ) && ( pPlayer->ReadyWeapon == NULL ) && ( pPlayer->PendingWeapon == WP_NOCHANGE ) ) )
+			// [AK] Don't do this if we're processing a move commmand sent by the client before they
+			// respawned. Doing so causes their weapon to desync, especially at higher pings.
+			if ((( level.maptime > 3 * TICRATE ) || (( client->State == CLS_SPAWNED ) && ( player->ReadyWeapon == nullptr ) && ( player->PendingWeapon == WP_NOCHANGE ))) &&
+				( static_cast<int>( moveCmd.ulServerGametic - player->lastRespawnTick ) > 0 ))
 			{
-				const PClass *pType = NETWORK_GetClassFromIdentification( moveCmd.usWeaponNetworkIndex );
-				if (( pType ) && ( pType->IsDescendantOf( RUNTIME_CLASS( AWeapon ))))
+				const PClass *type = NETWORK_GetClassFromIdentification( moveCmd.usWeaponNetworkIndex );
+				if (( type ) && ( type->IsDescendantOf( RUNTIME_CLASS( AWeapon ))))
 				{
-					if ( pPlayer->mo )
+					if ( player->mo )
 					{
-						AInventory *pInventory = pPlayer->mo->FindInventory( pType );
-						if ( pInventory )
+						AInventory *inventory = player->mo->FindInventory( type );
+						if ( inventory )
 						{
-							pPlayer->PendingWeapon = static_cast<AWeapon *>( pInventory );
+							player->PendingWeapon = static_cast<AWeapon *>( inventory );
 							// [BB] Since the client tells us that he is attacking with this weapon,
 							// we can assume this to be client selected.
-							pPlayer->bClientSelectedWeapon = true;
+							player->bClientSelectedWeapon = true;
 
 							// Update other spectators with this info.
-							SERVERCOMMANDS_SetPlayerPendingWeapon( ulClient, ulClient, SVCF_SKIPTHISCLIENT );
+							SERVERCOMMANDS_SetPlayerPendingWeapon( clientIndex, clientIndex, SVCF_SKIPTHISCLIENT );
 						}
 //						else if ( g_ulWeaponCheckGracePeriodTicks == 0 )
 //						{
-//							SERVER_KickPlayer( ulClient, "Using unowned weapon." );
+//							SERVER_KickPlayer( clientIndex, "Using unowned weapon." );
 //							return ( true );
 //						}
 					}
 				}
 				else
 				{
-					if( moveCmd.usWeaponNetworkIndex == 0 )
+					if ( moveCmd.usWeaponNetworkIndex == 0 )
 					{
-						// [BB] For some reason the clients think he as no ready weapon, 
-						// but the server thinks he as one. Although this should not happen,
+						// [BB] For some reason the clients think he has no ready weapon,
+						// but the server thinks he has one. Although this should not happen,
 						// we make a workaround for this here. Just tell the client to bring
 						// up the weapon, the server thinks he is using.
-						SERVERCOMMANDS_WeaponChange( ulClient, ulClient, SVCF_ONLYTHISCLIENT );
+						SERVERCOMMANDS_WeaponChange( clientIndex, clientIndex, SVCF_ONLYTHISCLIENT );
 					}
-					else{
-						SERVER_KickPlayer( ulClient, "Using unknown weapon type." );
+					else
+					{
+						SERVER_KickPlayer( clientIndex, "Using unknown weapon type." );
 						return ( true );
 					}
 				}
@@ -5959,90 +6285,69 @@ bool ClientMoveCommand::process( const ULONG ulClient ) const
 		}
 	}
 
-	// [BB] Instead of kicking players that send too many movement commands, we just ignroe the excessive commands.
+	// [BB] Instead of kicking players that send too many movement commands, we just ignore the excessive commands.
 	// Note: The kick code is still there, but isn't triggered anymore since we are reducing lOverMovementLevel here.
-	if ( g_aClients[ulClient].lOverMovementLevel >= MAX_OVERMOVEMENT_LEVEL )
+	if ( client->lOverMovementLevel >= MAX_OVERMOVEMENT_LEVEL )
 	{
-		g_aClients[ulClient].lOverMovementLevel = MAX_OVERMOVEMENT_LEVEL - 1;
+		client->lOverMovementLevel = MAX_OVERMOVEMENT_LEVEL - 1;
 		return false;
 	}
 
 	if ( gamestate == GS_LEVEL )
 	{
-		if ( pPlayer->mo )
+		if ( player->mo )
 		{
 			// We already processed a movement command this tic.
-			if ( g_aClients[ulClient].lLastMoveTickProcess == gametic )
+			if ( client->lLastMoveTickProcess == gametic )
 			{
 				// [Leo] We have no choice left but to tick the body now.
-				pPlayer->mo->Tick( );
+				player->mo->Tick( );
 
 				// [EP] Make sure that the server sets the proper player psprite settings before running the psprite-events from this client command.
-				P_NewPspriteTick( pPlayer );
+				P_NewPspriteTick( player );
 			}
 
 			// [BB] Ignore the angle and pitch sent by the client if the client isn't authenticated yet.
 			// In this case the client still sends these values based on the previous map.
-			if (SERVER_GetClient(ulClient)->State == CLS_SPAWNED) {
-				pPlayer->mo->pitch = moveCmd.pitch;
+			if ( client->State == CLS_SPAWNED )
+			{
+				player->mo->pitch = moveCmd.pitch;
+
 				// [HYP] Lock angle if speed is above sr40
-				if ( !sv_cheats && ( pCmd->ucmd.sidemove > ( sidemove[1] << 8 ) || pCmd->ucmd.sidemove < -(sidemove[1] << 8) ) )
-				{
-					pCmd->ucmd.yaw = 0;
-				}
+				if ( !sv_cheats && ( cmd->ucmd.sidemove > ( sidemove[1] << 8 ) || cmd->ucmd.sidemove < -( sidemove[1] << 8 )))
+					cmd->ucmd.yaw = 0;
 				else //only update angle if speed is at or below sr40, disregard angle changes for speeds above
-				{
-					pPlayer->mo->angle = moveCmd.angle;
-				}
+					player->mo->angle = moveCmd.angle;
 			}
 
 			// Makes sure the pitch is valid (should we kick them if it's not?)
-			if ( pPlayer->mo->pitch < ( -ANGLE_1 * 90 ))
-				pPlayer->mo->pitch = -ANGLE_1*90;
-			else if ( pPlayer->mo->pitch > ( ANGLE_1 * 90 ))
-				pPlayer->mo->pitch = ( ANGLE_1 * 90 );
+			if ( player->mo->pitch < ( -ANGLE_1 * 90 ))
+				player->mo->pitch = -ANGLE_1*90;
+			else if ( player->mo->pitch > ( ANGLE_1 * 90 ))
+				player->mo->pitch = ( ANGLE_1 * 90 );
 
-			P_PlayerThink( pPlayer );
+			P_PlayerThink( player );
 
 			// P_PlayerThink was called this tic, this is used to tick the body afterwards.
-			g_aClients[ulClient].lLastMoveTickProcess = gametic;
+			client->lLastMoveTickProcess = gametic;
 
 			// [BB] We possibly process more than one move of this client per tic,
 			// so we have to update oldbuttons (otherwise a door that just started to
 			// open will be closed immediately again, looking as if it didn't move at all).
-			pPlayer->oldbuttons = pPlayer->cmd.ucmd.buttons;
+			player->oldbuttons = player->cmd.ucmd.buttons;
 		}
 	}
 
-	// If CLC_ENDCHAT got missed, and the player is doing stuff, then obviously he is no longer chatting.
-
+	// If the player is doing stuff, then obviously he is no longer chatting.
 	// [RC] This actually isn't necessarily true. By using a joystick, a player can both move and chat.
 	// I'm not going to change it though, because since they can move, they shouldn't be protected by the llama medal. Also, it'd confuse people.
 	// [WS] I agree with Rive's statement above and we need the same treatment for the console status.
-	if (( pCmd->ucmd.buttons != 0 ) ||
-		( pCmd->ucmd.forwardmove != 0 ) ||
-		( pCmd->ucmd.sidemove != 0 ) ||
-		( pCmd->ucmd.upmove != 0 ))
+	if (( cmd->ucmd.buttons != 0 ) || ( cmd->ucmd.forwardmove != 0 ) || ( cmd->ucmd.sidemove != 0 ) || ( cmd->ucmd.upmove != 0 ))
 	{
 		// [K6/BB] The client is pressing a button, so not afk.
-		g_aClients[ulClient].lLastActionTic = gametic;
-		if ( pPlayer->bChatting )
-		{
-			pPlayer->bChatting = false;
-			SERVERCOMMANDS_SetPlayerStatus( ulClient, PLAYERSTATUS_CHATTING );
-		}
+		client->lLastActionTic = gametic;
 
-		if ( pPlayer->bInConsole )
-		{
-			pPlayer->bInConsole = false;
-			SERVERCOMMANDS_SetPlayerStatus( ulClient, PLAYERSTATUS_INCONSOLE );
-		}
-
-		if ( pPlayer->bInMenu )
-		{
-			pPlayer->bInMenu = false;
-			SERVERCOMMANDS_SetPlayerStatus( ulClient, PLAYERSTATUS_INMENU );
-		}
+		PLAYER_SetStatus( player, PLAYERSTATUS_CHATTING | PLAYERSTATUS_INCONSOLE | PLAYERSTATUS_INMENU, false );
 	}
 
 	return ( false );
@@ -6091,6 +6396,9 @@ static bool server_MissingPacket( BYTESTREAM_s *pByteStream )
 		}
 	}
 
+	// [AK] Increment the number of missing packets for this client.
+	g_aClients[g_lCurrentClient].numMissingPackets++;
+
 	// Mark this client as having requested missing packets.
 	g_aClients[g_lCurrentClient].lLastPacketLossTick = gametic;
 
@@ -6101,16 +6409,14 @@ static bool server_MissingPacket( BYTESTREAM_s *pByteStream )
 //
 static bool server_UpdateClientPing( BYTESTREAM_s *pByteStream )
 {
-	ULONG	ulPing;
-
-	ulPing = pByteStream->ReadLong();
-
+	const unsigned int oldTime = pByteStream->ReadLong( );
 	const unsigned int nowTime = I_MSTime( );
+
 	// [BB] This ping information from the client doesn't make sense.
-	if ( ulPing > nowTime )
+	if ( oldTime > nowTime )
 		return false;
 
-	ULONG currentPing = (nowTime - ulPing);
+	ULONG currentPing = nowTime - oldTime;
 	const ULONG ticLength = 1000 / TICRATE;
 	player_t *p = &players[g_lCurrentClient];
 	// [BB] Lag spike, reset the averaging.
@@ -6121,13 +6427,14 @@ static bool server_UpdateClientPing( BYTESTREAM_s *pByteStream )
 	}
 	else
 	{
-		ULONG oldPing = p->ulPing;
-		ULONG ulPingAverages = p->ulPingAverages;
 		p->ulPing = ( p->ulPingAverages * p->ulPing + currentPing ) / ( 1 + p->ulPingAverages );
 		// [BB] The most recent ping measurement should always have a noticeable influence on the average ping.
 		if ( p->ulPingAverages < 20 )
 			p->ulPingAverages++;
 	}
+
+	// [AK] Don't let the client timeout.
+	g_aClients[g_lCurrentClient].ulLastCommandTic = gametic;
 
 	return ( false );
 }
@@ -6189,7 +6496,8 @@ bool ClientWeaponSelectCommand::process( const ULONG ulClient ) const
 	}
 
 	// [BB] Morph workaround: If the player is morphed, he can't change his weapon.
-	if ( players[ulClient].morphTics )
+	// [Binary] Unless +NOMORPHLIMITATIONS is used
+	if ( players[ulClient].morphTics && !( players[ulClient].mo && (players[ulClient].mo->PlayerFlags & PPF_NOMORPHLIMITATIONS) ) )
 		return false;
 
 	// [BB] Since the server is not giving the player a weapon while spawning, P_BringUpWeapon doesn't call A_Raise for
@@ -6360,29 +6668,66 @@ static bool server_RequestJoin( BYTESTREAM_s *pByteStream )
 static bool server_RequestRCON( BYTESTREAM_s *pByteStream )
 {
 	const char	*pszUserPassword;
-
-	// If the user password matches our PW, and we have a PW set, give him RCON access.
-	pszUserPassword = pByteStream->ReadString();
+	const bool bIsLoggingIn = !!pByteStream->ReadByte(); // [AK]
 
 	// [BB] If the client is flooding the server with commands, the client is
 	// kicked and we don't need to handle the command.
 	if ( server_CheckForClientCommandFlood ( g_lCurrentClient ) == true )
 		return ( true );
 
-	if (( strlen( sv_rconpassword ) > 0 ) && ( strcmp( sv_rconpassword, pszUserPassword ) == 0 ))
+	if ( bIsLoggingIn )
 	{
-		g_aClients[g_lCurrentClient].bRCONAccess = true;
-		SERVER_PrintfPlayer( g_lCurrentClient, "RCON access granted.\n" );
-		Printf( "RCON access for %s is granted!\n", players[g_lCurrentClient].userinfo.GetName() );
+		// If the user password matches our PW, and we have a PW set, give him RCON access.
+		pszUserPassword = pByteStream->ReadString();
+
+		if ( g_aClients[g_lCurrentClient].bRCONAccess )
+		{
+			SERVER_PrintfPlayer( g_lCurrentClient, "You already have RCON access.\n" );
+			return ( false );
+		}
+
+		if (( strlen( sv_rconpassword ) > 0 ) && ( strcmp( sv_rconpassword, pszUserPassword ) == 0 ))
+		{
+			g_aClients[g_lCurrentClient].bRCONAccess = true;
+			SERVER_PrintfPlayer( g_lCurrentClient, "RCON access granted.\n" );
+			Printf( "RCON access for %s is granted!\n", players[g_lCurrentClient].userinfo.GetName() );
+
+			SERVERCOMMANDS_RCONAccess( g_lCurrentClient );
+
+			// [AK] After giving the client RCON access, send all non-default
+			// server settings to them. The client resets these on their end first.
+			for ( FBaseCVar *cvar = CVars; cvar != nullptr; cvar = cvar->GetNext( ))
+			{
+				// [AK] Ignore flag and mask CVars, use their respective flagsets instead.
+				if (( cvar->IsFlagCVar( )) || ( cvar->IsMaskCVar( )))
+					continue;
+
+				if (( cvar->IsServerCVar( )) && (( cvar->GetFlags( ) & CVAR_ISDEFAULT ) == false ))
+					SERVERCOMMANDS_SetCVar( *cvar, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+			}
+		}
+		else
+		{
+			g_aClients[g_lCurrentClient].bRCONAccess = false;
+			SERVER_PrintfPlayer( g_lCurrentClient, "Incorrect RCON password.\n" );
+			Printf( "Incorrect RCON password attempt from %s.\n", players[g_lCurrentClient].userinfo.GetName() );
+		}
 	}
 	else
 	{
+		if ( g_aClients[g_lCurrentClient].bRCONAccess == false )
+		{
+			SERVER_PrintfPlayer( g_lCurrentClient, "You don't have RCON access.\n" );
+			return ( false );
+		}
+
 		g_aClients[g_lCurrentClient].bRCONAccess = false;
-		SERVER_PrintfPlayer( g_lCurrentClient, "Incorrect RCON password.\n" );
-		Printf( "Incorrect RCON password attempt from %s.\n", players[g_lCurrentClient].userinfo.GetName() );
+		SERVER_PrintfPlayer( g_lCurrentClient, "You have logged out of RCON.\n" );
+		Printf( "%s has logged out of RCON.\n", players[g_lCurrentClient].userinfo.GetName() );
+
+		SERVERCOMMANDS_RCONAccess( g_lCurrentClient );
 	}
 
-	SERVERCOMMANDS_RCONAccess( g_lCurrentClient );
 	return ( false );
 }
 
@@ -6541,14 +6886,30 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	players[g_lCurrentClient].mo->DropImportantItems( false );
 
 	// [BB] Morphed players need to be unmorphed before changing teams.
+	// [AK] Using MORPH_UNDOBYTIMEOUT ensures this succeeds when they're invulnerable.
 	if ( players[g_lCurrentClient].morphTics )
-		P_UndoPlayerMorph ( &players[g_lCurrentClient], &players[g_lCurrentClient] );
+		P_UndoPlayerMorphWithoutFlash( &players[g_lCurrentClient], &players[g_lCurrentClient], MORPH_UNDOBYTIMEOUT, true );
 
 	// Save this. This will determine our message.
 	bOnTeam = players[g_lCurrentClient].bOnTeam;
 
 	// Set the new team.
 	PLAYER_SetTeam( &players[g_lCurrentClient], lDesiredTeam, true );
+
+	// [AK] Now that they're on the new team, send the client the current health and armor of their new teammates.
+	// These commands invoke SERVER_IsPlayerAllowedToKnowHealth, so only their teammates' stats are updated.
+	// This isn't necessary if ZADF_DONT_HIDE_STATS is enabled because the stats of all players should already be synced.
+	if (( zadmflags & ZADF_DONT_HIDE_STATS ) == false )
+	{
+		for ( ULONG ulIdx = 0; ulIdx < MAXPLAYERS; ulIdx++ )
+		{
+			if ( ulIdx != static_cast<ULONG>( g_lCurrentClient ))
+			{
+				SERVERCOMMANDS_SetPlayerHealth( ulIdx, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+				SERVERCOMMANDS_SetPlayerArmor( ulIdx, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+			}
+		}
+	}
 
 	// [AK] Set the client's gametic so that it doesn't think it's lagging.
 	g_aClients[g_lCurrentClient].ulClientGameTic = ulGametic;
@@ -6577,9 +6938,18 @@ static bool server_ChangeTeam( BYTESTREAM_s *pByteStream )
 	// [BB] If the player was a spectator, we have to set the state to
 	// PST_ENTERNOINVENTORY. Otherwise the enter scripts are not executed.
 	if ( players[g_lCurrentClient].bSpectating )
+	{
 		players[g_lCurrentClient].playerstate = PST_ENTERNOINVENTORY;
+
+		// [AK] Reset the player's last move tick to zero so that the server
+		// doesn't immediately assume they're missing packets because it doesn't
+		// receive their movement commands right away, depending on their ping.
+		g_aClients[g_lCurrentClient].lLastMoveTick = 0;
+	}
 	else
+	{
 		players[g_lCurrentClient].playerstate = PST_REBORNNOINVENTORY;
+	}
 
 	// Also, take away spectator status.
 	players[g_lCurrentClient].bSpectating = false;
@@ -6735,14 +7105,7 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 			if ( pActor )
 			{
 				SERVERCOMMANDS_SpawnMissile( pActor );
-
-				// [AK] If this actor is clientsided only then remove it from our end. We only had to
-				// spawn it so we could tell the clients to spawn it, but we don't need it anymore.
-				if ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY )
-				{
-					pActor->Destroy();
-					pActor = NULL;
-				}
+				SERVER_DestroyActorIfClientsidedOnly( pActor );
 			}
 		}
 		else
@@ -6790,13 +7153,7 @@ static bool server_SummonCheat( BYTESTREAM_s *pByteStream, LONG lType )
 						SERVERCOMMANDS_SetThingAngle( pActor );
 				}
 
-				// [AK] If this actor is clientsided only then remove it from our end. We only had to
-				// spawn it so we could tell the clients to spawn it, but we don't need it anymore.
-				if ( pActor->NetworkFlags & NETFL_CLIENTSIDEONLY )
-				{
-					pActor->Destroy();
-					pActor = NULL;
-				}
+				SERVER_DestroyActorIfClientsidedOnly( pActor );
 			}
 		}
 	}
@@ -6994,6 +7351,9 @@ static bool server_AuthenticateLevel( BYTESTREAM_s *pByteStream )
 	// weapon changes again.
 	SERVERCOMMANDS_SetIgnoreWeaponSelect( g_lCurrentClient, false );
 
+	// [AK] Update this player's own statuses.
+	SERVERCOMMANDS_SetPlayerStatus( g_lCurrentClient, g_lCurrentClient, SVCF_ONLYTHISCLIENT );
+
 	// Send a snapshot of the level.
 	SERVER_SendFullUpdate( g_lCurrentClient );
 
@@ -7100,69 +7460,98 @@ static bool server_CallVote( BYTESTREAM_s *pByteStream )
 	{
 	case VOTECMD_KICK:
 
-		bVoteAllowed = !sv_nokickvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_KICK );
 		sprintf( szCommand, "kick" );
 		break;
 
 	case VOTECMD_FORCETOSPECTATE:
 
-		bVoteAllowed = !sv_noforcespecvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_FORCESPEC );
 		sprintf( szCommand, "forcespec" );
 		break;
 
 	case VOTECMD_MAP:
 
-		bVoteAllowed = !sv_nomapvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_MAP );
 		sprintf( szCommand, "map" );
 		break;
 	case VOTECMD_CHANGEMAP:
 
-		bVoteAllowed = !sv_nochangemapvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_CHANGEMAP );
 		sprintf( szCommand, "changemap" );
 		break;
 	case VOTECMD_FRAGLIMIT:
 
-		bVoteAllowed = !sv_nofraglimitvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_FRAGLIMIT );
 		sprintf( szCommand, "fraglimit" );
 		break;
 	case VOTECMD_TIMELIMIT:
 
-		bVoteAllowed = !sv_notimelimitvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_TIMELIMIT );
 		sprintf( szCommand, "timelimit" );
 		break;
 	case VOTECMD_WINLIMIT:
 
-		bVoteAllowed = !sv_nowinlimitvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_WINLIMIT );
 		sprintf( szCommand, "winlimit" );
 		break;
 	case VOTECMD_DUELLIMIT:
 
-		bVoteAllowed = !sv_noduellimitvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_DUELLIMIT );
 		sprintf( szCommand, "duellimit" );
 		break;
 	case VOTECMD_POINTLIMIT:
 
-		bVoteAllowed = !sv_nopointlimitvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_POINTLIMIT );
 		sprintf( szCommand, "pointlimit" );
 		break;
 	case VOTECMD_FLAG:
 
-		bVoteAllowed = !sv_noflagvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_FLAG );
 		sprintf( szCommand, "flag" );
 		break;
 	case VOTECMD_NEXTMAP:
 
-		bVoteAllowed = !sv_nonextmapvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_NEXTMAP );
 		sprintf( szCommand, "nextmap" );
 		break;
 	case VOTECMD_NEXTSECRET:
 
-		bVoteAllowed = !sv_nonextsecretvote;
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_NEXTSECRET );
 		sprintf( szCommand, "nextsecret" );
+		break;
+	case VOTECMD_RESETMAP:
+
+		bVoteAllowed = !( sv_forbidvoteflags & FORBIDVOTE_RESETMAP );
+		sprintf( szCommand, "resetmap" );
 		break;
 	default:
 
-		return ( false );
+		{
+			const VOTETYPE_s *customVoteType = CALLVOTE_GetCustomVoteTypeDefinition( ulVoteCmd );
+			if ( customVoteType == nullptr )
+			{
+				return ( false );
+			}
+			else if ( customVoteType->forbidCvarName.IsEmpty() )
+			{
+				bVoteAllowed = true;
+			}
+			else
+			{
+				FBaseCVar* cvar = FindCVar( customVoteType->forbidCvarName, nullptr );
+				bVoteAllowed = cvar && ( cvar->GetGenericRep( CVAR_Bool ).Bool == false );
+			}
+
+			// [TRSR] Perform any necessary pre-vote conversions.
+			CALLVOTE_ConvertCustomVoteParameter( customVoteType, Parameters );
+
+			// [TP] Put the name of the vote type into the command for the vote module to work with this
+			// (we won't actually execute it as a command but run the script instead if and when the vote
+			// does pass)
+			// [TRSR] If the vote isn't allowed, we should use the display name for the error.
+			snprintf( szCommand, sizeof szCommand, "%s", bVoteAllowed ? customVoteType->name.GetChars() : customVoteType->displayName.GetChars() );
+		}
 	}
 
 	// Begin the vote, if that type is allowed.
@@ -7172,7 +7561,7 @@ static bool server_CallVote( BYTESTREAM_s *pByteStream )
 		// and the parameter from each other.
 		if ( ulVoteCmd == VOTECMD_FLAG )
 		{
-			sprintf( szCommand, Parameters.Left( Parameters.IndexOf( ' ' )).GetChars( ));
+			sprintf( szCommand, "%s", Parameters.Left( Parameters.IndexOf( ' ' )).GetChars( ));
 			Parameters = Parameters.Right( Parameters.Len() - ( strlen( szCommand ) + 1 ));
 		}
 
@@ -7384,8 +7773,8 @@ static bool server_CheckLogin ( const ULONG ulClient )
 //
 static bool server_InfoCheat( BYTESTREAM_s *pByteStream )
 {
-	LONG lID = pByteStream->ReadShort();
-	AActor* linetarget = CLIENT_FindThingByNetID( lID );
+	unsigned short netID = pByteStream->ReadShort();
+	AActor* linetarget = CLIENT_FindThingByNetID( netID );
 	bool extended = !!pByteStream->ReadByte();
 
 	// [TP] Except not if we don't allow cheats.
@@ -7398,7 +7787,7 @@ static bool server_InfoCheat( BYTESTREAM_s *pByteStream )
 	if ( linetarget == NULL )
 	{
 		SERVER_PrintfPlayer( g_lCurrentClient,
-			"The server couldn't find the actor you're pointing at! netid: %ld\n", lID );
+			"The server couldn't find the actor you're pointing at! netid: %u\n", netID );
 		return false;
 	}
 
@@ -7428,8 +7817,10 @@ static bool server_InfoCheat( BYTESTREAM_s *pByteStream )
 static void server_PrintWithIP( FString message, const NETADDRESS_s &address )
 {
 	// [TP] First print locally a version of this message with the IP address shown.
+	// [AK] Don't print it for the current RCON client, though.
 	FString localmessage = message;
 	localmessage.Substitute( "{ip}", FString( " (" ) + address.ToString() + ")" );
+	CONSOLE_ShouldPrintToRCONPlayer( false );
 	Printf( "%s", localmessage.GetChars() );
 
 	// [TP] Then print a version of the message without the IP address to clients.
@@ -7616,7 +8007,7 @@ static void server_FixZFromBacktrace( APlayerPawn *pmo, fixed_t oldFloorZ )
 
 //*****************************************************************************
 //
-FString CLIENT_s::GetAccountName() const
+FString CLIENT_s::GetAccountName( void ) const
 {
 	if ( loggedIn )
 	{
@@ -7629,6 +8020,56 @@ FString CLIENT_s::GetAccountName() const
 		result.Format ( "%td@localhost", this - g_aClients );
 		return result;
 	}
+}
+
+//*****************************************************************************
+//
+void CLIENT_s::UpdateCommRules( void )
+{
+	for ( std::list<ClientCommRule>::iterator i = commRules.begin( ); i != commRules.end( ); )
+	{
+		// [AK] Check if this address's chat messages are now unignored.
+		if (( i->ignoreChat ) && ( i->unignoreChatGametic != -1 ) && ( i->unignoreChatGametic <= gametic ))
+			i->SetIgnore( false, false, 0 );
+
+		// [AK] The same goes for this address's VoIP audio packets.
+		if (( i->ignoreVoice ) && ( i->unignoreVoiceGametic != -1 ) && ( i->unignoreVoiceGametic <= gametic ))
+			i->SetIgnore( true, false, 0 );
+
+		if ( i->IsObsolete( ))
+			i = commRules.erase( i );
+		else
+			i++;
+	}
+}
+
+//*****************************************************************************
+// [SB] Used by the forcerename and forcerename_idx commands.
+static void server_ForceRenamePlayer( ULONG playerIndex )
+{
+	// Make sure the target is valid and applicable.
+	if ( PLAYER_IsValidPlayer ( playerIndex ) == false )
+	{
+		Printf( "No such player!\n" );
+		return;
+	}
+
+	FString oldName( players[playerIndex].userinfo.GetName() );
+	FString newName = PLAYER_GenerateUniqueName();
+
+	players[playerIndex].userinfo.NameChanged( newName );
+	SERVERCOMMANDS_SetPlayerUserInfo( playerIndex, { NAME_Name } );
+
+	// Inform the player in question.
+	FString message;
+	message.Format( "A server administrator has forcibly changed your name. You have been renamed to '%s'.\n", newName.GetChars() );
+	SERVERCOMMANDS_PrintMid( message, true, playerIndex, SVCF_ONLYTHISCLIENT );
+
+	// and everyone else.
+	SERVER_Printf( "%s is now known as %s\n", oldName.GetChars(), players[playerIndex].userinfo.GetName() );
+
+	// Update clients using the RCON utility.
+	SERVER_RCON_UpdateInfo( SVRCU_PLAYERDATA );
 }
 
 //*****************************************************************************
@@ -7693,8 +8134,8 @@ CCMD( kick_ip )
 
 CCMD( kick )
 {
-	ULONG	ulIdx;
-	char	szPlayerName[64];
+	ULONG		ulIdx;
+	FString		playerName;
 
 	// [AK] This function may not be used by ConsoleCommand.
 	if ( ACS_IsCalledFromConsoleCommand( ))
@@ -7717,10 +8158,10 @@ CCMD( kick )
 			continue;
 
 		// Removes the color codes from the player name so it appears as the server sees it in the window.
-		sprintf( szPlayerName, "%s", players[ulIdx].userinfo.GetName() );
-		V_RemoveColorCodes( szPlayerName );
+		playerName = players[ulIdx].userinfo.GetName( );
+		V_RemoveColorCodes( playerName );
 
-		if ( stricmp( szPlayerName, argv[1] ) == 0 )
+		if ( playerName.CompareNoCase( argv[1] ) == 0 )
 		{
 			// If we provided a reason, give it.
 			if ( argv.argc( ) >= 3 )
@@ -7840,6 +8281,73 @@ CCMD( kickfromgame )
 CCMD( kickfromgame_idx )
 {
 	Cmd_forcespec_idx( argv, who, key );
+}
+
+//*****************************************************************************
+// [SB] Commands to forcibly change a player's name.
+//
+CCMD( forcerename_idx )
+{
+	// This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
+	// Only the server can do this.
+	if ( NETWORK_GetState() != NETSTATE_SERVER )
+		return;
+
+	if ( argv.argc() < 2 )
+	{
+		Printf( "Usage: forcerename_idx <player index>\nYou can get the list of players and indexes with the ccmd playerinfo.\n" );
+		return;
+	}
+
+	int playerIndex;
+	if ( argv.SafeGetNumber(1, playerIndex) == false )
+		return;
+
+	if ( playerIndex < 0 || playerIndex >= MAXPLAYERS )
+		return;
+
+	server_ForceRenamePlayer( playerIndex );
+}
+
+CCMD( forcerename )
+{
+	// This function may not be used by ConsoleCommand.
+	if ( ACS_IsCalledFromConsoleCommand( ))
+		return;
+
+	// Only the server can do this.
+	if ( NETWORK_GetState() != NETSTATE_SERVER )
+		return;
+
+	if ( argv.argc() < 2 )
+	{
+		Printf( "Usage: forcerename <playername>\n" );
+		return;
+	}
+
+	// Loop through all the players, and try to find one that matches the given name.
+	for ( ULONG idx = 0; idx < MAXPLAYERS; idx++ )
+	{
+		if ( playeringame[idx] == false )
+			continue;
+
+		// Removes the color codes from the player name so it appears as the server sees it in the window.
+		FString playerName = players[idx].userinfo.GetName();
+		V_RemoveColorCodes( playerName );
+
+		if ( playerName.CompareNoCase( argv[1] ) == 0 )
+		{
+			server_ForceRenamePlayer( idx );
+
+			return;
+		}
+	}
+
+	// Didn't find a player that matches the name.
+	Printf( "Unknown player: %s\n", argv[1] );
 }
 
 //*****************************************************************************
@@ -7985,10 +8493,10 @@ static void	server_LogPacket( BYTESTREAM_s *pByteStream, NETADDRESS_s Address, c
 	if ( !g_HackerIPList.isIPInList( Address ) )
 	{
 		IPStringArray szAddress;
-		Address.ToIPStringArray ( szAddress );
+		szAddress.SetFrom( Address );
 		std::string reason;
 		reason = "Hacker";
-		g_HackerIPList.addEntry( szAddress[0], szAddress[1], szAddress[2],  szAddress[3], "", pszReason, reason, SERVERBAN_ParseBanLength ( "perm" ) );
+		g_HackerIPList.addEntry( szAddress, "", pszReason, reason, SERVERBAN_ParseBanLength ( "perm" ) );
 	}
 
 	// Write the start of the log entry.

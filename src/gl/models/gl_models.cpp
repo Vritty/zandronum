@@ -714,7 +714,8 @@ void gl_RenderFrameModels( const FSpriteModelFrame *smf,
 				if ( (smf->flags & MDL_INTERPOLATEDOUBLEDFRAMES) )
 				{
 					const FState *prevState = curState - 1;
-					if ( (curState->sprite == prevState->sprite) && ( curState->Frame == prevState->Frame) )
+					// [AK] Make sure the previous state is valid before trying to use it.
+					if ( (ti->ActorInfo->OwnsState(prevState)) && (curState->sprite == prevState->sprite) && ( curState->Frame == prevState->Frame) )
 					{
 						inter /= 2.;
 						inter += 0.5;

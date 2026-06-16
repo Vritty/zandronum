@@ -40,13 +40,13 @@ const char *GetGitTime();
 const char *GetVersionString();
 // [BB]
 const char *GetVersionStringRev();
-unsigned int GetRevisionNumber();
+int GetRevisionNumber();
 
 /** Lots of different version numbers **/
 
 #define GAME_MAJOR_VERSION 3
 #define GAME_MINOR_VERSION 1
-#define GAMEVER_STRING "3.1"
+#define GAMEVER_STRING "3.2.1"
 #define DOTVERSIONSTR GAMEVER_STRING
 #define VERSIONSTR DOTVERSIONSTR
 
