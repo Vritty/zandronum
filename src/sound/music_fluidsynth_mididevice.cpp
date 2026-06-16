@@ -46,6 +46,17 @@
 
 // MACROS ------------------------------------------------------------------
 
+// Defaults for chorus type; FluidSynth 2.x headers provide the MOD_* enums but
+// not FLUID_CHORUS_DEFAULT_TYPE.
+#ifndef FLUID_CHORUS_MOD_SINE
+#define FLUID_CHORUS_MOD_SINE		0
+#define FLUID_CHORUS_MOD_TRIANGLE	1
+#endif
+
+#ifndef FLUID_CHORUS_DEFAULT_TYPE
+#define FLUID_CHORUS_DEFAULT_TYPE FLUID_CHORUS_MOD_SINE
+#endif
+
 #ifdef DYN_FLUIDSYNTH
 
 #ifdef _WIN32
@@ -59,7 +70,22 @@
 #else
 #include <dlfcn.h>
 
+#if defined(__APPLE__)
+#define FLUIDSYNTHLIB	"libfluidsynth.dylib"
+#else
 #define FLUIDSYNTHLIB	"libfluidsynth.so.1"
+#endif
+
+#if defined(__APPLE__)
+static const char *const FluidSynthLibPaths[] =
+{
+	FLUIDSYNTHLIB,
+	"/opt/homebrew/lib/libfluidsynth.dylib",
+	"/usr/local/lib/libfluidsynth.dylib",
+	"@executable_path/../Frameworks/libfluidsynth.dylib",
+};
+#endif
+
 #endif
 
 #define FLUID_REVERB_DEFAULT_ROOMSIZE 0.2f
@@ -67,14 +93,10 @@
 #define FLUID_REVERB_DEFAULT_WIDTH 0.5f
 #define FLUID_REVERB_DEFAULT_LEVEL 0.9f
 
-#define FLUID_CHORUS_MOD_SINE		0
-#define FLUID_CHORUS_MOD_TRIANGLE	1
-
 #define FLUID_CHORUS_DEFAULT_N 3
 #define FLUID_CHORUS_DEFAULT_LEVEL 2.0f
 #define FLUID_CHORUS_DEFAULT_SPEED 0.3f
 #define FLUID_CHORUS_DEFAULT_DEPTH 8.0f
-#define FLUID_CHORUS_DEFAULT_TYPE FLUID_CHORUS_MOD_SINE
 
 #endif
 
@@ -248,6 +270,44 @@ CUSTOM_CVAR(Int, fluid_chorus_type, FLUID_CHORUS_DEFAULT_TYPE, CVAR_ARCHIVE|CVAR
 		currSong->FluidSettingInt("z.chorus-changed", 0);
 }
 
+#ifndef DYN_FLUIDSYNTH
+static void FluidSynth_ApplyReverb(fluid_synth_t *synth)
+{
+	fluid_synth_set_reverb_group_roomsize(synth, 0, fluid_reverb_roomsize);
+	fluid_synth_set_reverb_group_damp(synth, 0, fluid_reverb_damping);
+	fluid_synth_set_reverb_group_width(synth, 0, fluid_reverb_width);
+	fluid_synth_set_reverb_group_level(synth, 0, fluid_reverb_level);
+}
+
+static void FluidSynth_ApplyChorus(fluid_synth_t *synth)
+{
+	fluid_synth_set_chorus_group_nr(synth, 0, fluid_chorus_voices);
+	fluid_synth_set_chorus_group_level(synth, 0, fluid_chorus_level);
+	fluid_synth_set_chorus_group_speed(synth, 0, fluid_chorus_speed);
+	fluid_synth_set_chorus_group_depth(synth, 0, fluid_chorus_depth);
+	fluid_synth_set_chorus_group_type(synth, 0, fluid_chorus_type);
+}
+
+static void FluidSynth_SetReverbOn(fluid_synth_t *synth, int on)
+{
+	fluid_synth_reverb_on(synth, -1, on);
+}
+
+static void FluidSynth_SetChorusOn(fluid_synth_t *synth, int on)
+{
+	fluid_synth_chorus_on(synth, -1, on);
+}
+#else
+#define FluidSynth_ApplyReverb(synth) \
+	fluid_synth_set_reverb((synth), fluid_reverb_roomsize, fluid_reverb_damping, \
+		fluid_reverb_width, fluid_reverb_level)
+#define FluidSynth_ApplyChorus(synth) \
+	fluid_synth_set_chorus((synth), fluid_chorus_voices, fluid_chorus_level, \
+		fluid_chorus_speed, fluid_chorus_depth, fluid_chorus_type)
+#define FluidSynth_SetReverbOn(synth, on) fluid_synth_set_reverb_on((synth), (on))
+#define FluidSynth_SetChorusOn(synth, on) fluid_synth_set_chorus_on((synth), (on))
+#endif
+
 // CODE --------------------------------------------------------------------
 
 //==========================================================================
@@ -290,10 +350,8 @@ FluidSynthMIDIDevice::FluidSynthMIDIDevice()
 		return;
 	}
 	fluid_synth_set_interp_method(FluidSynth, -1, fluid_interp);
-	fluid_synth_set_reverb(FluidSynth, fluid_reverb_roomsize, fluid_reverb_damping,
-		fluid_reverb_width, fluid_reverb_level);
-	fluid_synth_set_chorus(FluidSynth, fluid_chorus_voices, fluid_chorus_level,
-		fluid_chorus_speed, fluid_chorus_depth, fluid_chorus_type);
+	FluidSynth_ApplyReverb(FluidSynth);
+	FluidSynth_ApplyChorus(FluidSynth);
 	if (0 == LoadPatchSets(fluid_patchset))
 	{
 #ifdef __unix__
@@ -535,13 +593,11 @@ void FluidSynthMIDIDevice::FluidSettingInt(const char *setting, int value)
 	}
 	else if (strcmp(setting, "z.reverb-changed") == 0)
 	{
-		fluid_synth_set_reverb(FluidSynth, fluid_reverb_roomsize, fluid_reverb_damping,
-			fluid_reverb_width, fluid_reverb_level);
+		FluidSynth_ApplyReverb(FluidSynth);
 	}
 	else if (strcmp(setting, "z.chorus-changed") == 0)
 	{
-		fluid_synth_set_chorus(FluidSynth, fluid_chorus_voices, fluid_chorus_level,
-			fluid_chorus_speed, fluid_chorus_depth, fluid_chorus_type);
+		FluidSynth_ApplyChorus(FluidSynth);
 	}
 	else if (0 == fluid_settings_setint(FluidSettings, setting, value))
 	{
@@ -550,11 +606,11 @@ void FluidSynthMIDIDevice::FluidSettingInt(const char *setting, int value)
 	// fluid_settings_setint succeeded; update these settings in the running synth, too
 	else if (strcmp(setting, "synth.reverb.active") == 0)
 	{
-		fluid_synth_set_reverb_on(FluidSynth, value);
+		FluidSynth_SetReverbOn(FluidSynth, value);
 	}
 	else if (strcmp(setting, "synth.chorus.active") == 0)
 	{
-		fluid_synth_set_chorus_on(FluidSynth, value);
+		FluidSynth_SetChorusOn(FluidSynth, value);
 	}
 }
 
@@ -614,10 +670,10 @@ FString FluidSynthMIDIDevice::GetStats()
 	int polyphony = fluid_synth_get_polyphony(FluidSynth);
 	int voices = fluid_synth_get_active_voice_count(FluidSynth);
 	double load = fluid_synth_get_cpu_load(FluidSynth);
-	char *chorus, *reverb;
+	int chorus = 0, reverb = 0;
+	fluid_settings_getint(FluidSettings, "synth.chorus.active", &chorus);
+	fluid_settings_getint(FluidSettings, "synth.reverb.active", &reverb);
 	int maxpoly;
-	fluid_settings_getstr(FluidSettings, "synth.chorus.active", &chorus);
-	fluid_settings_getstr(FluidSettings, "synth.reverb.active", &reverb);
 	fluid_settings_getint(FluidSettings, "synth.polyphony", &maxpoly);
 	CritSec.Leave();
 
@@ -625,7 +681,7 @@ FString FluidSynthMIDIDevice::GetStats()
 			   TEXTCOLOR_YELLOW "%6.2f" TEXTCOLOR_NORMAL "%% CPU   "
 			   "Reverb: " TEXTCOLOR_YELLOW "%3s" TEXTCOLOR_NORMAL
 			   " Chorus: " TEXTCOLOR_YELLOW "%3s",
-		voices, polyphony, maxpoly, load, reverb, chorus);
+		voices, polyphony, maxpoly, load, reverb ? "yes" : "no", chorus ? "yes" : "no");
 	return out;
 }
 
@@ -656,7 +712,6 @@ bool FluidSynthMIDIDevice::LoadFluidSynth()
 		{ (void **)&fluid_settings_setnum,				"fluid_settings_setnum" },
 		{ (void **)&fluid_settings_setstr,				"fluid_settings_setstr" },
 		{ (void **)&fluid_settings_setint,				"fluid_settings_setint" },
-		{ (void **)&fluid_settings_getstr,				"fluid_settings_getstr" },
 		{ (void **)&fluid_settings_getint,				"fluid_settings_getint" },
 		{ (void **)&fluid_synth_set_reverb_on,			"fluid_synth_set_reverb_on" },
 		{ (void **)&fluid_synth_set_chorus_on,			"fluid_synth_set_chorus_on" },
@@ -693,12 +748,27 @@ bool FluidSynthMIDIDevice::LoadFluidSynth()
 		}
 	}
 #else
+#if defined(__APPLE__)
+	FluidSynthSO = NULL;
+	for (size_t i = 0; i < countof(FluidSynthLibPaths); ++i)
+	{
+		FluidSynthSO = dlopen((libname = FluidSynthLibPaths[i]), RTLD_LAZY);
+		if (FluidSynthSO != NULL)
+			break;
+	}
+	if (FluidSynthSO == NULL)
+	{
+		Printf(TEXTCOLOR_RED"Could not load " FLUIDSYNTHLIB ": %s\n", dlerror());
+		return false;
+	}
+#else
 	FluidSynthSO = dlopen((libname = FLUIDSYNTHLIB), RTLD_LAZY);
 	if (FluidSynthSO == NULL)
 	{
 		Printf(TEXTCOLOR_RED"Could not load " FLUIDSYNTHLIB ": %s\n", dlerror());
 		return false;
 	}
+#endif
 #endif
 
 	for (size_t i = 0; i < countof(imports); ++i)
