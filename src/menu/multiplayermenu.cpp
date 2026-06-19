@@ -634,6 +634,11 @@ public:
 	{
 		Super::Ticker( );
 
+#ifdef NO_FMOD
+		if ( VOIPController::GetInstance( ).IsTestingMicrophone( ))
+			VOIPController::GetInstance( ).UpdateAudioStreams( );
+#endif
+
 		FOptionValues **opt = OptionValues.CheckKey( "ZA_RecordDrivers" );
 		TArray<FString> recordDriverList;
 

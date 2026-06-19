@@ -270,18 +270,15 @@ CCMD( voice_unignore_idx )
 	CHAT_ExecuteUnignoreCmd( argv, true, true );
 }
 
-// [AK] Everything past this point only compiles if compiling with sound and FMOD.
-#if !defined(NO_SOUND) && !defined(NO_FMOD)
+#ifndef NO_SOUND
 
 static void voicechat_SetChannelVolume( FCommandLine &argv, const bool isIndexCmd )
 {
 	int player = MAXPLAYERS;
 
-	// [AK] Mods are not allowed to change a VoIP channel's volume.
 	if ( ACS_IsCalledFromConsoleCommand( ))
 		return;
 
-	// [AK] Show a tip message if there's no arguments.
 	if ( argv.argc( ) < 2 )
 	{
 		Printf( "Sets a player's channel volume.\nUsage: %s <%s> <volume, 0.0 to 2.0>\n", argv[0], isIndexCmd ? "index" : "name" );
@@ -296,8 +293,6 @@ static void voicechat_SetChannelVolume( FCommandLine &argv, const bool isIndexCm
 			return;
 		}
 
-		// [AK] If no volume was passed with this command's arguments, then just
-		// print the current volume of the player's channel.
 		if ( argv.argc( ) < 3 )
 		{
 			Printf( "%s's channel volume is %.3g.\n", players[player].userinfo.GetName( ), VOIPController::GetInstance( ).GetChannelVolume( player ));
@@ -308,7 +303,6 @@ static void voicechat_SetChannelVolume( FCommandLine &argv, const bool isIndexCm
 	}
 }
 
-// [AK] Changes the volume of one VoIP channel, using the player's name or index.
 CCMD( voice_chanvolume )
 {
 	voicechat_SetChannelVolume( argv, false );
@@ -319,7 +313,6 @@ CCMD( voice_chanvolume_idx )
 	voicechat_SetChannelVolume( argv, true );
 }
 
-// [AK] Lists all recording devices that are currently connected.
 CCMD( voice_listrecorddrivers )
 {
 	TArray<FString> recordDriverList;
@@ -328,6 +321,10 @@ CCMD( voice_listrecorddrivers )
 	for ( unsigned int i = 0; i < recordDriverList.Size( ); i++ )
 		Printf( "%d. %s\n", i, recordDriverList[i].GetChars( ));
 }
+
+#endif // NO_SOUND
+
+#ifndef NO_FMOD
 
 //*****************************************************************************
 //	FUNCTIONS
@@ -2069,7 +2066,7 @@ void VOIPController::VOIPChannel::UpdateEndDelay( const bool resetEpoch )
 	channel->setDelay( FMOD_DELAYTYPE_DSPCLOCK_END, newDSPHi, newDSPLo );
 }
 
-#endif // NO_SOUND || NO_FMOD
+#endif // NO_FMOD
 
 //*****************************************************************************
 //
@@ -2330,6 +2327,11 @@ void FOptionMenuMicTestBar::Ticker( void )
 {
 	FOptionMenuItem::Ticker( );
 	grayed = !Selectable( );
+
+#ifdef NO_FMOD
+	if ( VOIPController::GetInstance( ).IsTestingMicrophone( ))
+		VOIPController::GetInstance( ).UpdateAudioStreams( );
+#endif
 }
 
 //*****************************************************************************

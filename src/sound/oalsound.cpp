@@ -42,6 +42,9 @@
 #include "doomstat.h"
 #include "templates.h"
 #include "oalsound.h"
+#ifdef NO_FMOD
+#include "voicechat.h"
+#endif
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "i_system.h"
@@ -924,8 +927,26 @@ OpenALSoundRenderer::OpenALSoundRenderer()
         }
     }
 
-    if(EnvSlot)
+	if(EnvSlot)
         Printf("  EFX enabled\n");
+
+    VoIPSources.Resize(MAXPLAYERS);
+    for(size_t i = 0; i < VoIPSources.Size(); i++)
+    {
+        alGenSources(1, &VoIPSources[i]);
+        if(getALError() != AL_NO_ERROR)
+        {
+            VoIPSources.Resize(i);
+            break;
+        }
+    }
+    FreeVoIP = VoIPSources;
+    if(VoIPSources.Size() > 0)
+        DPrintf("  Allocated " TEXTCOLOR_BLUE "%u" TEXTCOLOR_NORMAL " VoIP sources\n", VoIPSources.Size());
+
+#ifdef NO_FMOD
+    VOIPController::GetInstance().Init(this);
+#endif
 }
 #undef LOAD_FUNC
 
@@ -934,8 +955,16 @@ OpenALSoundRenderer::~OpenALSoundRenderer()
     if(!Device)
         return;
 
+#ifdef NO_FMOD
+    VOIPController::GetInstance().Shutdown();
+#endif
+
     while(Streams.Size() > 0)
         delete Streams[0];
+
+    alDeleteSources(VoIPSources.Size(), VoIPSources.Size() > 0 ? &VoIPSources[0] : NULL);
+    VoIPSources.Clear();
+    FreeVoIP.Clear();
 
     alDeleteSources(Sources.Size(), &Sources[0]);
     Sources.Clear();
@@ -966,6 +995,24 @@ OpenALSoundRenderer::~OpenALSoundRenderer()
     Context = NULL;
     alcCloseDevice(Device);
     Device = NULL;
+}
+
+ALuint OpenALSoundRenderer::AllocVoIPSource()
+{
+    if(FreeVoIP.Size() == 0)
+        return 0;
+    return FreeVoIP.Pop();
+}
+
+void OpenALSoundRenderer::FreeVoIPSource(ALuint source)
+{
+    if(source == 0)
+        return;
+
+    alSourceRewind(source);
+    alSourcei(source, AL_BUFFER, 0);
+    getALError();
+    FreeVoIP.Push(source);
 }
 
 void OpenALSoundRenderer::SetSfxVolume(float volume)
@@ -1722,6 +1769,10 @@ void OpenALSoundRenderer::UpdateListener(SoundListener *listener)
             for(uint32 i = 0;i < ReverbSfx.Size();++i)
                 alSourcef(ReverbSfx[i], AL_PITCH, PITCH_MULT);
             getALError();
+
+#ifdef NO_FMOD
+            VOIPController::GetInstance().SetPitch(PITCH_MULT);
+#endif
         }
     }
     else if(WasInWater)
@@ -1746,6 +1797,10 @@ void OpenALSoundRenderer::UpdateListener(SoundListener *listener)
         for(uint32 i = 0;i < ReverbSfx.Size();++i)
             alSourcef(ReverbSfx[i], AL_PITCH, 1.f);
         getALError();
+
+#ifdef NO_FMOD
+        VOIPController::GetInstance().SetPitch(1.f);
+#endif
     }
 }
 
@@ -1771,6 +1826,11 @@ void OpenALSoundRenderer::UpdateSounds()
     }
 
     PurgeStoppedSources();
+
+#ifdef NO_FMOD
+    VOIPController::GetInstance().UpdateAudioStreams();
+    VOIPController::GetInstance().UpdateProximityChat();
+#endif
 }
 
 bool OpenALSoundRenderer::IsValid()

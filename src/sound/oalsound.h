@@ -7,7 +7,7 @@
 
 #ifndef NO_OPENAL
 
-#if defined (__APPLE__) && (_WIN32)
+#if defined(__APPLE__) || defined(_WIN32)
 #include <AL/al.h>
 #include <AL/alc.h>
 #else 
@@ -42,6 +42,13 @@
 #define AL_FORMAT_STEREO_FLOAT32                 0x10011
 #endif
 
+#ifndef ALC_EXT_capture
+#define ALC_EXT_capture 1
+#define ALC_CAPTURE_DEVICE_SPECIFIER             0x310
+#define ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER     0x311
+#define ALC_CAPTURE_SAMPLES                      0x312
+#endif
+
 #ifndef AL_EXT_MCFORMATS
 #define AL_EXT_MCFORMATS 1
 #define AL_FORMAT_QUAD8                          0x1204
@@ -61,7 +68,7 @@
 #define AL_FORMAT_71CHN32                        0x1212
 #endif
 
-#if defined (__APPLE__) && (_WIN32)
+#if defined(__APPLE__) || defined(_WIN32)
 #include <AL/efx.h>
 #else
 #include "efx.h"
@@ -125,6 +132,9 @@ public:
 	virtual void PrintDriversList();
 	virtual FString GatherStats();
 
+	ALuint AllocVoIPSource();
+	void FreeVoIPSource(ALuint source);
+
 private:
     struct {
         bool EXT_EFX;
@@ -187,6 +197,8 @@ private:
 	ALCcontext *Context;
 
 	TArray<ALuint> Sources;
+	TArray<ALuint> VoIPSources;
+	TArray<ALuint> FreeVoIP;
 
 	ALfloat SfxVolume;
 	ALfloat MusicVolume;

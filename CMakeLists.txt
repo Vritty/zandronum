@@ -304,9 +304,9 @@ add_subdirectory( wadsrc_st )
 add_subdirectory( src )
 
 # [AK] Library for noise suppression for VoIP.
-if ( NOT NO_SOUND AND NOT NO_FMOD )
+if ( NOT NO_SOUND )
 	add_subdirectory( rnnoise )
-endif ( NOT NO_SOUND AND NOT NO_FMOD )
+endif ( NOT NO_SOUND )
 
 if( NOT WIN32 AND NOT APPLE )
 	# [BB] We don't need output_sdl (only used for sound), if we are just building the server.
@@ -336,7 +336,7 @@ set(CPACK_PACKAGE_VENDOR "Zandronum Team" CACHE STRING "Vendor name for display 
 #set(CPACK_PACKAGE_DESCRIPTION_FILE )
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
 set(CPACK_PACKAGE_VERSION_MAJOR "3")
-set(CPACK_PACKAGE_VERSION_MINOR "1")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
+set(CPACK_PACKAGE_VERSION_PATCH "1")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CMAKE_BINARY_DIR}")
 include(CPack)

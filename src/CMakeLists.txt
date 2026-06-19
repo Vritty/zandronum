@@ -697,11 +697,11 @@ if( MPG123_FOUND )
     include_directories( "${MPG123_INCLUDE_DIR}" )
 endif( MPG123_FOUND )
 # [AK] We need Opus for encoding/decoding VoIP audio packets, and RNNoise for noise suppression.
-if ( NOT NO_SOUND AND NOT NO_FMOD )
+if ( NOT NO_SOUND )
 	find_package( Opus REQUIRED )
 	include_directories( ${OPUS_INCLUDE_DIR} )
-	set( ZDOOM_LIBS ${ZDOOM_LIBS} ${OPUS_LIBRARIES} rnnoise )
-endif ( NOT NO_SOUND AND NOT NO_FMOD )
+	set( ZDOOM_LIBS ${ZDOOM_LIBS} ${OPUS_LIBRARIES} )
+endif ( NOT NO_SOUND )
 
 if( NOT DYN_FLUIDSYNTH)
 	if( FLUIDSYNTH_FOUND )
@@ -1278,6 +1278,7 @@ add_executable( zdoom WIN32 MACOSX_BUNDLE
 	v_text.cpp
 	v_video.cpp
 	voicechat.cpp #ZA
+	voicechat_openal.cpp #ZA
 	w_wad.cpp
 	wi_stuff.cpp
 	za_database.cpp #ZA
@@ -1483,6 +1484,9 @@ endif(${CMAKE_SYSTEM_NAME} STREQUAL "SunOS")
 
 # [BB] Added GeoIP, huffman & sqlite
 target_link_libraries( zdoom ${ZDOOM_LIBS} gdtoa dumb lzma GeoIP sqlite3 )
+if( NOT NO_SOUND )
+	target_link_libraries( zdoom rnnoise )
+endif( NOT NO_SOUND )
 include_directories( .
 	g_doom
 	g_heretic

@@ -56,11 +56,18 @@
 #include "i_soundinternal.h"
 #include "v_font.h"
 
-// [AK] Only include FMOD, Opus, and RNNoise files if compiling with sound and FMOD.
-#if !defined(NO_SOUND) && !defined(NO_FMOD)
-#include "fmod_wrap.h"
+// [AK] Include Opus and RNNoise whenever sound is enabled.
+#if !defined(NO_SOUND)
 #include "opus.h"
 #include "rnnoise.h"
+#endif
+
+#if !defined(NO_SOUND) && !defined(NO_FMOD)
+#include "fmod_wrap.h"
+#endif
+
+#if !defined(NO_SOUND) && defined(NO_FMOD) && !defined(NO_OPENAL)
+class OpenALSoundRenderer;
 #endif
 
 //*****************************************************************************
@@ -148,8 +155,8 @@ class VOIPController
 public:
 	static VOIPController &GetInstance( void ) { static VOIPController instance; return instance; }
 
-// [AK] Some of these functions only exist as stubs if compiling without sound or FMOD.
-#if defined(NO_SOUND) || defined(NO_FMOD)
+// [AK] Some of these functions only exist as stubs if compiling without sound.
+#ifdef NO_SOUND
 
 	void Tick( void ) { }
 	void StartRecording( void ) { }
@@ -176,6 +183,141 @@ public:
 private:
 	VOIPController( void ) { }
 	~VOIPController( void ) { }
+
+#elif defined(NO_FMOD)
+
+	void Init( OpenALSoundRenderer *renderer );
+	void Shutdown( void );
+	void Activate( void );
+	void Deactivate( void );
+	void Tick( void );
+	void StartRecording( void );
+	void StopRecording( void );
+	void StartTransmission( const TRANSMISSIONTYPE_e type, const bool getRecordPosition );
+	void StopTransmission( void );
+	bool IsVoiceChatAllowed( void ) const;
+	bool IsPlayerTalking( const unsigned int player ) const;
+	bool IsRecording( void ) const;
+	bool IsTestingMicrophone( void ) const { return isTesting; }
+	float GetTestRMSVolume( void ) const { return testRMSVolume; }
+	float GetChannelVolume( const unsigned int player ) const;
+	void SetChannelVolume( const unsigned int player, float volume, const bool updateServer );
+	void SetVolume( float volume );
+	void SetPitch( float pitch );
+	void SetMicrophoneTest( const bool enable );
+	void RetrieveRecordDrivers( TArray<FString> &list ) const;
+	FString GrabStats( void ) const;
+	void ReceiveAudioPacket( const unsigned int player, const unsigned int frame, const unsigned char *data, const unsigned int length );
+	void UpdateProximityChat( void );
+	void UpdateRolloffDistances( void );
+	void RemoveVoIPChannel( const unsigned int player );
+	void UpdateAudioStreams( void );
+
+	static const int RECORD_SAMPLE_RATE = 48000;
+	static const int PLAYBACK_SAMPLE_RATE = 24000;
+	static const int SAMPLE_SIZE = sizeof( float );
+	static const int RECORD_SOUND_LENGTH = RECORD_SAMPLE_RATE;
+	static const int PLAYBACK_SOUND_LENGTH = PLAYBACK_SAMPLE_RATE;
+	static const int READ_BUFFER_SIZE = 2048;
+	static const int OPENAL_READ_BUFFER_SIZE = 960;
+	static const int OPENAL_JITTER_TICS = 1;
+	static const int OPENAL_STREAM_CHUNK_SAMPLES = 480;
+	static const int OPENAL_MONITOR_MIN_QUEUED = 4;
+	static const int OPENAL_MONITOR_PREFILL = OPENAL_STREAM_CHUNK_SAMPLES;
+	static const int FRAME_SIZE = 10;
+	static const int RECORD_SAMPLES_PER_FRAME = ( RECORD_SAMPLE_RATE * FRAME_SIZE ) / 1000;
+	static const int PLAYBACK_SAMPLES_PER_FRAME = ( PLAYBACK_SAMPLE_RATE * FRAME_SIZE ) / 1000;
+	static const int MAX_PACKET_SIZE = 1276;
+	static const int STREAM_BUFFER_COUNT = 8;
+
+private:
+	struct VOIPChannel
+	{
+		struct AudioFrame
+		{
+			unsigned int frame;
+			float samples[PLAYBACK_SAMPLES_PER_FRAME];
+		};
+
+		const unsigned int player;
+		TArray<AudioFrame> jitterBuffer;
+		TArray<float> extraSamples;
+		uint32 source;
+		uint32 streamBuffers[STREAM_BUFFER_COUNT];
+		OpusDecoder *decoder;
+		int playbackTick;
+		unsigned int lastReadPosition;
+		unsigned int lastPlaybackPosition;
+		unsigned int lastFrameRead;
+		unsigned int samplesRead;
+		unsigned int samplesPlayed;
+		unsigned int endDelaySamples;
+		float playbackRing[PLAYBACK_SOUND_LENGTH];
+		bool isPlaying;
+		bool buffersAllocated;
+		FISoundChannel soundChan;
+		TArray<float> pendingSamples;
+
+		VOIPChannel( const unsigned int player );
+		~VOIPChannel( void );
+
+		bool ShouldPlayIn3DMode( void ) const;
+		int GetUnreadSamples( void ) const;
+		int DecodeOpusFrame( const unsigned char *inBuffer, const unsigned int inLength, float *outBuffer, const unsigned int outLength );
+		void StartPlaying( void );
+		void ReadSamples( float *outBuffer, const unsigned int numSamples );
+		void Update3DAttributes( void );
+		void UpdatePlayback( void );
+		void UpdateEndDelay( const bool resetEpoch );
+		void FeedStreamBuffers( void );
+		void StopPlayback( void );
+		void OnPlaybackEnded( void );
+		void ApplyGain( void );
+		void FeedDirectSamples( const float *samples, const unsigned int count );
+		bool IsMonitorChannel( void ) const;
+	};
+
+	VOIPController( void );
+	~VOIPController( void ) { Shutdown( ); }
+
+	void PollCapture( void );
+	void ReadRecordSamples( float *samples, unsigned int length );
+	void SendAudioPacket( void );
+	void UpdateTestRMSVolume( const float *samples, const unsigned int length );
+	int EncodeOpusFrame( const float *inBuffer, const unsigned int inLength, unsigned char *outBuffer, const unsigned int outLength );
+
+	void UpdatePlaybackChannels( void );
+
+	VOIPChannel *VoIPChannels[MAXPLAYERS];
+	float channelVolumes[MAXPLAYERS];
+	float testRMSVolume;
+	OpenALSoundRenderer *renderer;
+	void *captureDevice;
+	float recordRing[RECORD_SOUND_LENGTH];
+	unsigned int captureTotalSamples;
+	unsigned int captureReadTotal;
+	OpusEncoder *encoder;
+	OpusRepacketizer *repacketizer;
+	RNNModel *denoiseModel;
+	DenoiseState *denoiseState;
+	int recordDriverID;
+	unsigned int framesSent;
+	unsigned int lastRecordPosition;
+	unsigned char lastPackedTOC;
+	float outputVolume;
+	float outputPitch;
+	bool outputMuted;
+	bool isInitialized;
+	bool isActive;
+	bool isTesting;
+	bool isRecordButtonPressed;
+	bool isCapturing;
+	TRANSMISSIONTYPE_e transmissionType;
+
+	struct CompressedBuffer { unsigned char data[MAX_PACKET_SIZE]; };
+	TArray<CompressedBuffer> compressedBuffers;
+
+	FISoundChannel proximityInfo;
 
 #else
 
@@ -302,7 +444,7 @@ private:
 	// calculate the sound's volume based on distance.
 	FISoundChannel proximityInfo;
 
-#endif // NO_SOUND || NO_FMOD
+#endif // NO_SOUND / NO_FMOD / FMOD
 
 };
 
@@ -360,6 +502,12 @@ private:
 //	EXTERNAL CONSOLE VARIABLES
 
 EXTERN_CVAR( Int, voice_recorddriver )
+EXTERN_CVAR( Bool, voice_suppressnoise )
+EXTERN_CVAR( String, voice_noisemodelfile )
+EXTERN_CVAR( Bool, voice_muteself )
+EXTERN_CVAR( Float, voice_recordsensitivity )
+EXTERN_CVAR( Float, voice_recordvolume )
+EXTERN_CVAR( Float, voice_outputvolume )
 EXTERN_CVAR( Int, sv_allowvoicechat )
 EXTERN_CVAR( Bool, sv_proximityvoicechat )
 EXTERN_CVAR( Float, sv_minproximityrolloffdist )
