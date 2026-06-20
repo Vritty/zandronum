@@ -34,6 +34,11 @@ Here's why you should kill your time with Zandronum, versus vanilla Doom:
     * Bots, and support for custom bots
 * So much more!
 
+Acknowledgements
+-----
+
+Special thanks to [Octobus](https://octobus.net/) and [Clever Cloud](https://clever-cloud.com/) for generously providing hosting services for this project.
+
 Links
 -----
 
