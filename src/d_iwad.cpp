@@ -50,10 +50,72 @@
 #include "version.h"
 // [BB] New #includes.
 #include "doomerrors.h"
+#ifdef __APPLE__
+#include <stdlib.h>
+#include <string.h>
+#include "c_dispatch.h"
+#include "sdl/osx/i_sandbox.h"
+#endif
 
 
 CVAR (Bool, queryiwad, true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG);
 CVAR (String, defaultiwad, "", CVAR_ARCHIVE|CVAR_GLOBALCONFIG);
+
+#ifdef __APPLE__
+//==========================================================================
+//
+// D_GrantSandboxWadAccess
+//
+// [mac] Prompts the user to grant the sandboxed build read access to their WAD
+// folder(s) via a native folder panel, persists a security-scoped bookmark for
+// each, and registers the folders in IWADSearch.Directories so they are found
+// on the next launch. Returns true if at least one folder was granted. Only
+// call for interactive launches.
+//
+//==========================================================================
+
+static bool D_GrantSandboxWadAccess()
+{
+	char *folders = I_AddSandboxWadFolder();
+	if (folders == NULL)
+	{
+		return false;
+	}
+
+	if (GameConfig != NULL && GameConfig->SetSection("IWADSearch.Directories", true))
+	{
+		char *line = folders;
+		while (line != NULL && *line != '\0')
+		{
+			char *newline = strchr(line, '\n');
+			if (newline != NULL)
+			{
+				*newline = '\0';
+			}
+			if (*line != '\0')
+			{
+				GameConfig->SetValueForKey("Path", line, true);
+			}
+			line = (newline != NULL) ? newline + 1 : NULL;
+		}
+	}
+
+	free(folders);
+	return true;
+}
+
+CCMD (addwadfolder)
+{
+	if (D_GrantSandboxWadAccess())
+	{
+		Printf("Added WAD folder access. Restart " GAMENAME " (or reconnect via Doomseeker) to use it.\n");
+	}
+	else
+	{
+		Printf("No WAD folder was added.\n");
+	}
+}
+#endif // __APPLE__
 
 //==========================================================================
 //
@@ -290,6 +352,14 @@ int FIWadManager::ScanIWAD (const char *iwad)
 {
 	FResourceFile *iwadfile = FResourceFile::OpenResourceFile(iwad, NULL, true);
 
+	// FileExists() can succeed while OpenResourceFile() fails (permissions,
+	// sandbox, race). Returning through GetIWadInfo() without ClearChecks()
+	// would null-dereference mLumpsFound, so bail out early.
+	if (iwadfile == NULL)
+	{
+		return -1;
+	}
+
 	if (iwadfile != NULL)
 	{
 		ClearChecks();
@@ -398,6 +468,12 @@ int FIWadManager::IdentifyVersion (TArray<FString> &wadfiles, const char *iwad, 
 	{
 		iwadparm = iwad;
 	}
+
+#ifdef __APPLE__
+	// [mac] Allow one rescan after the user grants access to a WAD folder.
+	bool macTriedGrant = false;
+macRescan:
+#endif
 
 	if (iwadparm)
 	{
@@ -514,6 +590,32 @@ int FIWadManager::IdentifyVersion (TArray<FString> &wadfiles, const char *iwad, 
 		}
 	}
 
+#ifdef __APPLE__
+	// [mac] Sandboxed builds cannot read WAD paths outside their container. If
+	// nothing was found on an interactive launch, offer to grant access to a WAD
+	// folder and rescan. Never prompt on a non-interactive (Doomseeker) launch,
+	// which has no foreground GUI and would hang on the modal.
+	if (numwads == 0 && !macTriedGrant && !I_IsNonInteractiveLaunch() && queryiwad)
+	{
+		macTriedGrant = true;
+		if (D_GrantSandboxWadAccess())
+		{
+			for (unsigned w = 0; w < wads.Size(); ++w)
+			{
+				wads[w] = WadStuff();
+			}
+			memset(&foundwads[0], 0, foundwads.Size() * sizeof(foundwads[0]));
+			iwadparm = Args->CheckValue ("-iwad");
+			if (iwadparm == NULL && iwad != NULL && *iwad != 0)
+			{
+				iwadparm = iwad;
+			}
+			iwadparmfound = false;
+			goto macRescan;
+		}
+	}
+#endif
+
 	if (numwads == 0)
 // [BB] Skulltag uses Rivecoder's IWAD setup screen now (only available under Windows).
 #ifdef _WIN32
@@ -535,7 +637,10 @@ int FIWadManager::IdentifyVersion (TArray<FString> &wadfiles, const char *iwad, 
 #elif defined(__APPLE__)
 					  "1. Place one or more of these wads in ~/Library/Application Support/" GAMENAMELOWERCASE "/\n"
 					  "2. Edit your ~/Library/Preferences/" GAMENAMELOWERCASE ".ini and add the directories\n"
-					  "of your iwads to the list beneath [IWADSearch.Directories]");
+					  "of your iwads to the list beneath [IWADSearch.Directories]\n"
+					  "3. If this is a sandboxed build launched via Doomseeker, run " GAMENAME " once\n"
+					  "normally, open the console (~) and use \"addwadfolder\" to grant access to the\n"
+					  "folder that holds your WADs, then reconnect.");
 #else
 					  "1. Place one or more of these wads in ~/.config/" GAMENAMELOWERCASE "/.\n"
 					  "2. Edit your ~/.config/" GAMENAMELOWERCASE "/" GAMENAMELOWERCASE ".ini and add the directories of your\n"
@@ -563,6 +668,16 @@ int FIWadManager::IdentifyVersion (TArray<FString> &wadfiles, const char *iwad, 
 				}
 			}
 		}
+#ifdef __APPLE__
+		// [mac] A non-interactive launch (e.g. Doomseeker) has no usable
+		// foreground GUI; the modal IWAD picker would hang forever, so fall back
+		// to the default/preferred IWAD instead.
+		if (I_IsNonInteractiveLaunch())
+		{
+			pickwad = defiwad;
+		}
+		else
+#endif
 		pickwad = I_PickIWad (&wads[0], (int)numwads, queryiwad, defiwad);
 		if (pickwad >= 0)
 		{

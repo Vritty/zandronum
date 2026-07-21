@@ -772,6 +772,7 @@ set( PLAT_SDL_SOURCES
 	sdl/st_start.cpp )
 set( PLAT_MAC_SOURCES
 	sdl/osx/iwadpicker_cocoa.mm
+	sdl/osx/i_sandbox_cocoa.mm
 	sdl/i_system_cocoa.mm
     sdl/osx/zandronum.icns )
     
@@ -799,6 +800,7 @@ elseif( APPLE )
 		set( OTHER_SYSTEM_SOURCES ${PLAT_WIN32_SOURCES} )
         set_source_files_properties( sdl/osx/zandronum.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources )
         set_source_files_properties( sdl/osx/iwadpicker_cocoa.mm PROPERTIES COMPILE_FLAGS -fobjc-exceptions )
+        set_source_files_properties( sdl/osx/i_sandbox_cocoa.mm PROPERTIES COMPILE_FLAGS -fobjc-exceptions )
         set_source_files_properties("${SDL2_LIBRARY}" PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
         set_source_files_properties("${FMOD_LIBRARY}" PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
 endif()

@@ -64,6 +64,9 @@
 #include "r_utility.h"
 #include "doomstat.h"
 #include "za_misc.h"
+#ifdef __APPLE__
+#include "sdl/osx/i_sandbox.h"
+#endif
 
 // MACROS ------------------------------------------------------------------
 
@@ -341,6 +344,20 @@ int main (int argc, char **argv)
 
         I_StartupJoysticks();
         C_InitConsole (80*8, 25*8, false);
+#ifdef __APPLE__
+        // Re-acquire read access to WAD folders the user previously granted, so
+        // sandboxed builds can open absolute -iwad/-file paths (e.g. from
+        // Doomseeker) before IWAD detection runs.
+        I_RestoreSandboxWadAccess();
+        // One-time tip for sandboxed users who have not granted a folder yet.
+        // Skip on non-interactive launches (Doomseeker) where nobody sees it.
+        if (!I_IsNonInteractiveLaunch() && I_ShouldPromptForWadFolder())
+        {
+            Printf (GAMENAME " is sandboxed and cannot read WADs outside its container yet.\n"
+                    "Open the console (~) and type \"addwadfolder\" to grant access to the folder\n"
+                    "that holds your IWAD/PWAD files, then restart or reconnect via Doomseeker.\n");
+        }
+#endif
         D_DoomMain ();
     }
     catch (class CDoomError &error)

@@ -80,6 +80,7 @@
 
 #ifdef __APPLE__
 #include <ApplicationServices/ApplicationServices.h>
+#include "sdl/osx/i_sandbox.h"
 #endif // __APPLE__
 
 EXTERN_CVAR (String, language)
@@ -203,7 +204,13 @@ void STACK_ARGS I_FatalError (const char *error, ...)
         va_end (argptr);
 
 #ifdef __APPLE__
-        Mac_I_FatalError(errortext);
+        // A non-interactive launch (e.g. Doomseeker) has no usable foreground
+        // GUI; the modal alert would block forever, so skip it and rely on the
+        // stderr message + exit below.
+        if (!I_IsNonInteractiveLaunch())
+        {
+            Mac_I_FatalError(errortext);
+        }
 #endif // __APPLE__
         
         // Record error to log (if logging)
